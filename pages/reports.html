@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reports — LightWatch</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/home.css" />
+  <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar__inner">
+
+      <div class="brand">
+        <span class="brand__mark">LW</span>
+        <span>LightWatch</span>
+      </div>
+
+      <input type="checkbox" id="nav-toggle" class="nav-toggle" />
+      <label for="nav-toggle" class="nav-toggle-label" aria-label="Toggle navigation">
+        <span class="bar"></span>
+        <span class="bar"></span>
+        <span class="bar"></span>
+      </label>
+
+      <nav class="nav" id="primaryNav">
+        <a href="./home.html" class="nav__link" data-nav="home">Home</a>
+        <a href="./reports.html" class="nav__link nav__link--active" data-nav="reports">Reports</a>
+        <a href="./alerts.html" class="nav__link" data-nav="alerts">Alerts</a>
+        <a href="./account.html" class="nav__link" data-nav="account">Account</a>
+      </nav>
+
+      <button type="button" id="profileMenuButton" class="topbar__user" aria-expanded="false" aria-controls="userSidebarPanel">
+        <span class="avatar-name" id="topbarUserName">Guest</span>
+        <span class="avatar" id="topbarAvatar">?</span>
+      </button>
+
+    </div>
+  </header>
+
+  <main class="page">
+
+    <div class="page__header">
+      <div>
+        <div class="page__eyebrow">Reports</div>
+        <h1 class="page__title">All reports</h1>
+        <p class="page__subtitle">Every status report submitted across LightWatch locations in Kumasi.</p>
+      </div>
+    </div>
+
+    <div class="card report-card">
+      <div class="card__head">
+        <span class="card__title">Recent activity</span>
+        <span class="card__meta">Sorted by newest first</span>
+      </div>
+      <div class="report-list">
+        <article class="report-item report-item--success">
+          <div>
+            <strong>Light restored — Bantama</strong>
+            <p class="report-item__text">Community reports confirm power returned after 1h 12m of outage.</p>
+          </div>
+          <span class="report-item__time">3m ago</span>
+        </article>
+        <article class="report-item report-item--warning">
+          <div>
+            <strong>Check signal — Bantama</strong>
+            <p class="report-item__text">Signal strength is unstable near the market square.</p>
+          </div>
+          <span class="report-item__time">11m ago</span>
+        </article>
+        <article class="report-item report-item--info">
+          <div>
+            <strong>New contributor — Bantama</strong>
+            <p class="report-item__text">A nearby volunteer added a fresh update from Bantama.</p>
+          </div>
+          <span class="report-item__time">24m ago</span>
+        </article>
+        <article class="report-item report-item--warning">
+          <div>
+            <strong>Outage reported — Asafo</strong>
+            <p class="report-item__text">Multiple contributors flagged an outage near Asafo Market.</p>
+          </div>
+          <span class="report-item__time">41m ago</span>
+        </article>
+        <article class="report-item report-item--success">
+          <div>
+            <strong>Light restored — Adum</strong>
+            <p class="report-item__text">Power confirmed back on along the main commercial strip.</p>
+          </div>
+          <span class="report-item__time">1h ago</span>
+        </article>
+      </div>
+    </div>
+
+    <p class="footnote">LightWatch — meter &amp; grid status monitoring</p>
+
+  </main>
+
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+  <aside class="user-sidebar-panel" id="userSidebarPanel" aria-hidden="true">
+    <button type="button" class="user-sidebar__close" id="userSidebarClose" aria-label="Close profile panel">×</button>
+    <div class="card profile-card profile-card--sidebar">
+      <div class="card__head">
+        <span class="card__title">Logged in as</span>
+        <span class="card__meta">User profile</span>
+      </div>
+      <div class="profile-card__avatar">
+        <span class="avatar avatar--large" id="sidebarAvatar">?</span>
+      </div>
+      <div class="profile-card__info">
+        <div class="profile-card__name" id="sidebarName">Not signed in</div>
+      </div>
+      <div class="profile-card__details">
+        <div><span>Contact</span><strong id="sidebarContact">—</strong></div>
+        <div><span>Region</span><strong id="sidebarRegion">—</strong></div>
+        <div><span>Last login</span><strong id="sidebarLastLogin">—</strong></div>
+      </div>
+      <button type="button" class="btn btn--primary btn--block" onclick="window.location.href='account.html'">Manage account</button>
+      <button type="button" class="btn btn--ghost btn--block" id="sidebarSignOutBtn">Log out</button>
+    </div>
+  </aside>
+
+  <div id="bottom_nav_wrapper">
+    <div class="bottom-icons-container">
+      <a href="./home.html" class="bottom-nav-link" data-nav="home" aria-label="Home">
+        <span class="bottom-nav-icon">⌂</span>
+        <span class="bottom-nav-label">Home</span>
+      </a>
+      <a href="./reports.html" class="bottom-nav-link bottom-nav-link--active" data-nav="reports" aria-label="Reports">
+        <span class="bottom-nav-icon">▤</span>
+        <span class="bottom-nav-label">Reports</span>
+      </a>
+      <button type="button" class="bottom-nav-link bottom-nav-link--button" id="bottomNavUserBtn" data-nav="account" aria-label="User profile">
+        <span class="bottom-nav-icon">◐</span>
+        <span class="bottom-nav-label">You</span>
+      </button>
+    </div>
+  </div>
+
+  <script src="../js/config.js"></script>
+  <script src="../js/profile.js"></script>
+  <script src="../js/nav.js"></script>
+
+</body>
+</html>

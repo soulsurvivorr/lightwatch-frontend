@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="icon" href="../images/dev-logo.png" type="image/x-icon">
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="../css/signup_prompt.css">
+</head>
+<body>
+   <section>
+      <div style="padding: 1rem;">
+        <div id="dev-logo-cont">
+            <img src="../images/dev-logo.png" alt="Site Logo">
+            <p>LightWatch GH</p>
+        </div>
+        <div id="main-content_wrapper">
+            <div class="submit-info-section">
+                <div>
+                    <button>
+                        <img src="../icons/encrypted.png" alt="Encrypted">
+                    </button>
+                    <h3>Let's Complete your profile</h3>
+                    <p>This helps us personlize your experience and keep you updated about power status in your area.</p>
+                </div>
+            </div>
+            <div id="input-field-section">
+                <div class="user-icon-container" style="text-align: center;">
+                    <button class="user-profile-btn">
+                        <img src="" alt="User Profile">
+                    </button>
+                    <h3>Almost there!</h3>
+                    <p>Kindly provide a few details to get started.</p>
+                </div>
+
+                <form id="signupForm">
+                     <div class="prompt-input-tabs">
+                    <p>Full Name</p>
+                    <input class="prompt-inputs" type="name" name="" id="name" placeholder="e.g. Kofi Sarkodie" required>
+                </div>
+                <div class="prompt-input-tabs">
+                    <p>Email or Phone number</p>
+                    <input class="prompt-inputs" type="name" name="" id="email-phone" placeholder="e.g. sark@gmail.com or 123456789" required>
+                    <p id="email_phone-error"></p>
+                </div>
+                <div class="prompt-input-tabs">
+                    <p>Region</p>
+                    <select class="prompt-inputs" id="region" required>
+                        <option value="">Choose your region</option>
+                        <option value="Greater Accra">Greater Accra</option>
+                        <option value="Ashanti">Ashanti</option>
+                        <option value="Eastern">Eastern</option>
+                        <option value="Western">Western</option>
+                        <option value="Volta">Volta</option>
+                        <option value="Central">Central</option>
+                        <option value="Northern">Northern</option>
+                        <option value="Upper East">Upper East</option>
+                        <option value="Upper West">Upper West</option>
+                        <option value="Bono">Bono</option>
+                        <option value="Bono East">Bono East</option>
+                        <option value="Ahafo">Ahafo</option>
+                        <option value="Oti">Oti</option>
+                        <option value="Savannah">Savannah</option>
+                        <option value="North East">North East</option>
+                        <option value="Western North">Western North</option>
+                    </select>
+                </div>
+                <div class="prompt-input-tabs">
+                    <p>City / Town</p>
+                    <input class="prompt-inputs" type="text" name="" id="city" placeholder="Enter your city or town" required>
+                </div>
+                <div class="notify-wrapper" style="margin-top: 1.3rem">
+                    <p style="font-weight: 600; font-size: .9rem;">Stay Updated</p>
+                    <div style="display: flex; align-items: center; margin: .1rem 0 1rem 0; gap: 10px; ">
+                        <input class="notify-checkbox" type="checkbox" name="" id="">
+                        <p  style="font-size: .8rem">Receive outage alerts and updates in my area</p>
+                    </div>
+                </div>
+                <button class="submit-btn" id="signUpBtn" type="submit">Submit & Continue</button>
+                </form>
+               
+                <footer>Your information is secure and will never be shared</footer>
+            </div>
+        </div>
+      </div>
+   </section>
+
+   <script src="../js/config.js"></script>
+   <script src="../Js/signup.js"></script>
+</body>
+</html>

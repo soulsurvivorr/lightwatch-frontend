@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="icon" href="../images/dev-logo.png" type="image/x-icon">
+<title>LightWatch Admin</title>
+<style>
+  :root {
+    --bg: #0B1220; --panel: #121B2E; --panel2: #16213A;
+    --border: #1E2A42; --border2: #2A3A5C;
+    --teal: #3DD9C2; --teal-dim: #1F4D47;
+    --amber: #F2B33D; --red: #E5484D; --red-dim: #4D1F22;
+    --txt: #EAF0FA; --muted: #AEB9CC; --faint: #6B7A99;
+    --font: "Inter","Segoe UI",sans-serif;
+    --display: "Space Grotesk","Segoe UI",sans-serif;
+    --r-sm: 6px; --r-md: 10px; --r-lg: 16px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--txt); font-family: var(--font); font-size: 14px; min-height: 100vh; }
+  h1,h2,h3 { font-family: var(--display); }
+
+  /* LOGIN */
+  #loginScreen { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; }
+  .login-card { width:100%; max-width:320px; background:var(--panel); border:1px solid var(--border); border-radius:var(--r-lg); padding:32px 26px; }
+  .login-card h1 { font-size:1.2rem; margin-bottom:6px; }
+  .login-card p { color:var(--faint); font-size:0.82rem; margin-bottom:20px; }
+  .login-card input { width:100%; background:var(--bg); border:1px solid var(--border2); border-radius:var(--r-md); padding:11px 13px; color:var(--txt); font-size:0.9rem; margin-bottom:12px; }
+  .login-card input:focus { outline:none; border-color:var(--teal); }
+  .login-card button { width:100%; padding:11px; border-radius:var(--r-md); border:none; background:var(--teal); color:#06241f; font-weight:700; font-size:0.9rem; cursor:pointer; }
+  #loginError { color:var(--red); font-size:0.8rem; margin-top:10px; min-height:1em; }
+
+  /* TOPBAR */
+  #dashboard { display:none; }
+  .topbar { border-bottom:1px solid var(--border); background:rgba(18,27,46,0.9); backdrop-filter:blur(6px); position:sticky; top:0; z-index:10; }
+  .topbar__inner { max-width:1200px; margin:0 auto; padding:14px 24px; display:flex; align-items:center; justify-content:space-between; gap:16px; }
+  .brand { display:flex; align-items:center; gap:10px; font-weight:700; font-size:1rem; }
+  .brand__mark { width:26px; height:26px; border-radius:var(--r-sm); background:linear-gradient(135deg,var(--teal),var(--teal-dim)); display:flex; align-items:center; justify-content:center; font-size:0.75rem; color:#fff; font-weight:700; }
+  .topbar-right { display:flex; align-items:center; gap:10px; }
+  .live-dot { width:8px; height:8px; border-radius:50%; background:var(--teal); box-shadow:0 0 6px rgba(61,217,194,0.8); animation:pulse-dot 2s ease-out infinite; }
+  @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .live-label { font-size:0.75rem; color:var(--teal); }
+  .logout-btn { background:transparent; border:1px solid var(--border2); color:var(--muted); padding:7px 13px; border-radius:var(--r-md); cursor:pointer; font-size:0.82rem; }
+  .logout-btn:hover { border-color:var(--red); color:var(--red); }
+
+  /* MAIN */
+  main { max-width:1200px; margin:0 auto; padding:24px 24px 64px; }
+
+  /* SUMMARY */
+  .summary-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:24px; }
+  .s-card { background:var(--panel); border:1px solid var(--border); border-radius:var(--r-lg); padding:16px 18px; position:relative; overflow:hidden; }
+  .s-card::after { content:""; position:absolute; right:-16px; top:-16px; width:70px; height:70px; border-radius:50%; background:radial-gradient(circle,rgba(61,217,194,0.1),transparent 70%); }
+  .s-card__label { font-size:0.7rem; color:var(--faint); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:8px; }
+  .s-card__value { font-family:var(--display); font-size:1.7rem; font-weight:600; line-height:1; }
+  .s-card__delta { font-size:0.75rem; color:var(--faint); margin-top:6px; }
+  .s-card__delta span { color:var(--teal); font-weight:600; }
+
+  /* TABS */
+  .tabs { display:flex; gap:4px; border-bottom:1px solid var(--border); margin-bottom:16px; }
+  .tab-btn { background:transparent; border:none; color:var(--faint); padding:10px 16px; font-size:0.88rem; font-weight:600; cursor:pointer; border-bottom:2px solid transparent; transition:color 0.15s; }
+  .tab-btn.active { color:var(--teal); border-bottom-color:var(--teal); }
+  .tab-btn:hover:not(.active) { color:var(--muted); }
+  .panel { display:none; }
+  .panel.active { display:block; }
+
+  /* ACTIVITY LOG */
+  .activity-log { display:flex; flex-direction:column; gap:0; background:var(--panel); border:1px solid var(--border); border-radius:var(--r-lg); overflow:hidden; }
+  .log-item { display:grid; grid-template-columns: 90px 1fr auto; gap:12px; align-items:center; padding:12px 16px; border-bottom:1px solid var(--border); font-size:0.82rem; }
+  .log-item:last-child { border-bottom:none; }
+  .log-item__time { color:var(--faint); font-size:0.75rem; }
+  .log-item__content { color:var(--txt); }
+  .log-item__content strong { color:var(--teal); }
+  .log-item__badge { font-size:0.72rem; padding:3px 8px; border-radius:999px; white-space:nowrap; }
+  .badge-chat { background:var(--teal-dim); color:var(--teal); }
+  .badge-signup { background:#1F3D2A; color:#3DD975; }
+  .badge-signin { background:#1F2D4D; color:#7BA6FF; }
+
+  /* TABLES */
+  table { width:100%; border-collapse:collapse; background:var(--panel); border:1px solid var(--border); border-radius:var(--r-lg); overflow:hidden; }
+  thead { background:var(--panel2); }
+  th,td { text-align:left; padding:11px 14px; font-size:0.82rem; border-bottom:1px solid var(--border); }
+  th { color:var(--faint); font-size:0.68rem; text-transform:uppercase; letter-spacing:0.05em; }
+  tbody tr:last-child td { border-bottom:none; }
+  tbody tr:hover { background:rgba(255,255,255,0.025); }
+  td.faint { color:var(--faint); }
+  td.teal { color:var(--teal); font-weight:500; }
+
+  /* TOOLBAR */
+  .toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; flex-wrap:wrap; }
+  .toolbar__left { display:flex; align-items:center; gap:8px; }
+  .status-msg { font-size:0.82rem; color:var(--faint); }
+  .refresh-btn { background:transparent; border:1px solid var(--border2); color:var(--muted); padding:6px 12px; border-radius:var(--r-md); cursor:pointer; font-size:0.8rem; }
+  .refresh-btn:hover { border-color:var(--teal); color:var(--teal); }
+  .search-input { background:var(--panel2); border:1px solid var(--border); border-radius:var(--r-md); padding:7px 12px; color:var(--txt); font-size:0.82rem; width:200px; }
+  .search-input:focus { outline:none; border-color:var(--teal); }
+
+  .empty-state { text-align:center; padding:36px 20px; color:var(--faint); font-size:0.85rem; }
+
+  @media(max-width:700px) {
+    .summary-grid { grid-template-columns:1fr 1fr; }
+    .log-item { grid-template-columns:1fr; gap:4px; }
+    table,thead,tbody,th,td,tr { display:block; }
+    thead { display:none; }
+    tbody tr { background:var(--panel); border:1px solid var(--border); border-radius:var(--r-md); margin-bottom:8px; padding:10px 12px; }
+    td { border-bottom:none; padding:4px 2px; display:flex; justify-content:space-between; gap:8px; }
+    td::before { content:attr(data-label); color:var(--faint); font-size:0.68rem; text-transform:uppercase; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-card">
+    <h1>LightWatch Admin</h1>
+    <p>Private. Authorized access only.</p>
+    <input type="password" id="pwInput" placeholder="Admin password" autocomplete="current-password" />
+    <button id="loginBtn" type="button">Sign in</button>
+    <div id="loginError"></div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+  <header class="topbar">
+    <div class="topbar__inner">
+      <div class="brand">
+        <span class="brand__mark">LW</span>
+        <span>Admin Dashboard</span>
+      </div>
+      <div class="topbar-right">
+        <span class="live-dot"></span>
+        <span class="live-label">Live</span>
+        <button class="logout-btn" id="logoutBtn" type="button">Log out</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Summary -->
+    <div class="summary-grid">
+      <div class="s-card">
+        <div class="s-card__label">Total users</div>
+        <div class="s-card__value" id="sTotal">—</div>
+        <div class="s-card__delta"><span id="sNew24h">—</span> joined in last 24h</div>
+      </div>
+      <div class="s-card">
+        <div class="s-card__label">Total chat messages</div>
+        <div class="s-card__value" id="sChats">—</div>
+        <div class="s-card__delta"><span id="sChats24h">—</span> in last 24h</div>
+      </div>
+      <div class="s-card">
+        <div class="s-card__label">Active locations</div>
+        <div class="s-card__value" id="sLocations">—</div>
+        <div class="s-card__delta">Unique areas with chat</div>
+      </div>
+      <div class="s-card">
+        <div class="s-card__label">Last activity</div>
+        <div class="s-card__value" style="font-size:1rem;" id="sLastActivity">—</div>
+        <div class="s-card__delta">Most recent event</div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="activity" type="button">Live activity</button>
+      <button class="tab-btn" data-tab="users" type="button">Users</button>
+      <button class="tab-btn" data-tab="chats" type="button">Chat messages</button>
+    </div>
+
+    <!-- Activity log panel -->
+    <div class="panel active" id="activityPanel">
+      <div class="toolbar">
+        <div class="toolbar__left">
+          <span class="status-msg" id="activityStatus">Loading…</span>
+          <button class="refresh-btn" id="refreshActivity" type="button">↻ Refresh</button>
+        </div>
+        <span style="font-size:0.75rem;color:var(--faint);">Auto-refreshes every 15s</span>
+      </div>
+      <div class="activity-log" id="activityLog">
+        <div class="empty-state">Loading activity…</div>
+      </div>
+    </div>
+
+    <!-- Users panel -->
+    <div class="panel" id="usersPanel">
+      <div class="toolbar">
+        <span class="status-msg" id="usersStatus">Loading users…</span>
+        <input class="search-input" type="text" id="userSearch" placeholder="Search by name or contact…" />
+      </div>
+      <table id="usersTable" style="display:none;">
+        <thead>
+          <tr>
+            <th>Name</th><th>Email / Phone</th><th>Region</th><th>City</th>
+            <th>Chat handle</th><th>Joined</th>
+          </tr>
+        </thead>
+        <tbody id="usersTbody"></tbody>
+      </table>
+      <div id="usersEmpty" class="empty-state" style="display:none;">No users registered yet.</div>
+    </div>
+
+    <!-- Chats panel -->
+    <div class="panel" id="chatsPanel">
+      <div class="toolbar">
+        <span class="status-msg" id="chatsStatus">Loading messages…</span>
+        <input class="search-input" type="text" id="chatSearch" placeholder="Search messages or location…" />
+      </div>
+      <table id="chatsTable" style="display:none;">
+        <thead>
+          <tr>
+            <th>Handle</th><th>Message</th><th>Location</th><th>Sent</th>
+          </tr>
+        </thead>
+        <tbody id="chatsTbody"></tbody>
+      </table>
+      <div id="chatsEmpty" class="empty-state" style="display:none;">No chat messages yet.</div>
+    </div>
+  </main>
+</div>
+
+<script>
+      const API = "https://lightwatch-backend.onrender.com";
+      const TK = "lw_admin_tk";
+
+      function getToken() { return sessionStorage.getItem(TK); }
+      function setToken(t) { sessionStorage.setItem(TK, t); }
+      function clearToken() { sessionStorage.removeItem(TK); }
+
+      function esc(str) {
+        const d = document.createElement("div");
+        d.textContent = String(str ?? "");
+        return d.innerHTML;
+      }
+
+      function fmtDate(iso) {
+        if (!iso) return "—";
+        return new Date(iso).toLocaleString([], { dateStyle: "short", timeStyle: "short" });
+      }
+
+      function fmtRel(iso) {
+        if (!iso) return "—";
+        const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+        if (diff < 60) return `${diff}s ago`;
+        if (diff < 3600) return `${Math.floor(diff/60)}m ago`;
+        if (diff < 86400) return `${Math.floor(diff/3600)}h ago`;
+        return `${Math.floor(diff/86400)}d ago`;
+      }
+
+      async function apiFetch(path) {
+        const res = await fetch(`${API}${path}`, {
+          headers: { Authorization: `Bearer ${getToken()}` }
+        });
+        if (res.status === 401 || res.status === 403) {
+          clearToken(); showLogin("Session expired."); throw new Error("auth");
+        }
+        if (!res.ok) throw new Error("Request failed");
+        return res.json();
+      }
+
+      function showLogin(msg) {
+        document.getElementById("loginScreen").style.display = "flex";
+        document.getElementById("dashboard").style.display = "none";
+        if (msg) document.getElementById("loginError").textContent = msg;
+      }
+
+      function showDashboard() {
+        document.getElementById("loginScreen").style.display = "none";
+        document.getElementById("dashboard").style.display = "block";
+        loadAll();
+        setInterval(loadActivity, 15000);
+      }
+
+      let allUsers = [], allChats = [];
+
+      async function loadAll() {
+        loadSummary();
+        loadActivity();
+        loadUsers();
+        loadChats();
+      }
+
+      async function loadSummary() {
+        try {
+          const s = await apiFetch("/admin/summary");
+          document.getElementById("sTotal").textContent = s.userCount;
+          document.getElementById("sNew24h").textContent = s.newUsers24h;
+          document.getElementById("sChats").textContent = s.chatCount;
+          document.getElementById("sChats24h").textContent = s.newChats24h;
+        } catch(e) {}
+      }
+
+      async function loadActivity() {
+        try {
+          const [users, chats] = await Promise.all([
+            apiFetch("/admin/users"),
+            apiFetch("/admin/chats")
+          ]);
+
+          // Build a merged activity feed sorted by date
+          const events = [
+            ...users.map(u => ({ type:"signup", time: u.createdAt, name: u.name, contact: u.emailPhone, location: u.city ? `${u.city}, ${u.region}` : u.region })),
+            ...chats.map(c => ({ type:"chat", time: c.createdAt, handle: c.handle, text: c.text, location: c.location }))
+          ].sort((a,b) => new Date(b.time) - new Date(a.time)).slice(0, 60);
+
+          // Unique locations
+          const locs = new Set(chats.map(c => c.location?.split(",")[0]?.trim()).filter(Boolean));
+          document.getElementById("sLocations").textContent = locs.size || "—";
+
+          if (events.length > 0) {
+            document.getElementById("sLastActivity").textContent = fmtRel(events[0].time);
+          }
+
+          const log = document.getElementById("activityLog");
+          if (events.length === 0) {
+            log.innerHTML = `<div class="empty-state">No activity yet.</div>`;
+            document.getElementById("activityStatus").textContent = "No activity yet.";
+            return;
+          }
+
+          log.innerHTML = events.map(ev => {
+            if (ev.type === "signup") return `
+              <div class="log-item">
+                <span class="log-item__time">${fmtRel(ev.time)}</span>
+                <span class="log-item__content">
+                  <strong>${esc(ev.name)}</strong> signed up — ${esc(ev.contact)}
+                  ${ev.location ? `<span style="color:var(--faint);"> · ${esc(ev.location)}</span>` : ""}
+                </span>
+                <span class="log-item__badge badge-signup">New user</span>
+              </div>`;
+            return `
+              <div class="log-item">
+                <span class="log-item__time">${fmtRel(ev.time)}</span>
+                <span class="log-item__content">
+                  <strong>${esc(ev.handle)}</strong>: "${esc(ev.text.length > 60 ? ev.text.slice(0,60)+"…" : ev.text)}"
+                  ${ev.location ? `<span style="color:var(--faint);"> in ${esc(ev.location)}</span>` : ""}
+                </span>
+                <span class="log-item__badge badge-chat">Chat</span>
+              </div>`;
+          }).join("");
+
+          document.getElementById("activityStatus").textContent = `${events.length} recent events`;
+        } catch(e) {
+          if (e.message !== "auth") document.getElementById("activityStatus").textContent = "Could not load activity.";
+        }
+      }
+
+      async function loadUsers() {
+        try {
+          allUsers = await apiFetch("/admin/users");
+          renderUsers(allUsers);
+          document.getElementById("usersStatus").textContent = `${allUsers.length} registered user${allUsers.length !== 1 ? "s" : ""}`;
+        } catch(e) {
+          if (e.message !== "auth") document.getElementById("usersStatus").textContent = "Could not load users.";
+        }
+      }
+
+      function renderUsers(users) {
+        const tbody = document.getElementById("usersTbody");
+        const table = document.getElementById("usersTable");
+        const empty = document.getElementById("usersEmpty");
+        if (!users.length) { table.style.display = "none"; empty.style.display = "block"; return; }
+        tbody.innerHTML = users.map(u => `
+          <tr>
+            <td data-label="Name">${esc(u.name)}</td>
+            <td data-label="Contact" class="teal">${esc(u.emailPhone)}</td>
+            <td data-label="Region">${esc(u.region)}</td>
+            <td data-label="City">${esc(u.city)}</td>
+            <td data-label="Handle" class="faint">${esc(u.chatHandle || "—")}</td>
+            <td data-label="Joined" class="faint">${fmtDate(u.createdAt)}</td>
+          </tr>`).join("");
+        table.style.display = "table";
+        empty.style.display = "none";
+      }
+
+      async function loadChats() {
+        try {
+          allChats = await apiFetch("/admin/chats");
+          renderChats(allChats);
+          document.getElementById("chatsStatus").textContent = `${allChats.length} message${allChats.length !== 1 ? "s" : ""}`;
+        } catch(e) {
+          if (e.message !== "auth") document.getElementById("chatsStatus").textContent = "Could not load messages.";
+        }
+      }
+
+      function renderChats(chats) {
+        const tbody = document.getElementById("chatsTbody");
+        const table = document.getElementById("chatsTable");
+        const empty = document.getElementById("chatsEmpty");
+        if (!chats.length) { table.style.display = "none"; empty.style.display = "block"; return; }
+        tbody.innerHTML = chats.map(c => `
+          <tr>
+            <td data-label="Handle" class="teal">${esc(c.handle)}</td>
+            <td data-label="Message">${esc(c.text)}</td>
+            <td data-label="Location" class="faint">${esc(c.location)}</td>
+            <td data-label="Sent" class="faint">${fmtDate(c.createdAt)}</td>
+          </tr>`).join("");
+        table.style.display = "table";
+        empty.style.display = "none";
+      }
+
+      // Tab switching
+      document.querySelectorAll(".tab-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+          document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+          btn.classList.add("active");
+          document.getElementById(`${btn.dataset.tab}Panel`).classList.add("active");
+        });
+      });
+
+      // Search
+      document.getElementById("userSearch")?.addEventListener("input", e => {
+        const q = e.target.value.toLowerCase();
+        renderUsers(allUsers.filter(u =>
+          (u.name||"").toLowerCase().includes(q) ||
+          (u.emailPhone||"").toLowerCase().includes(q) ||
+          (u.city||"").toLowerCase().includes(q)
+        ));
+      });
+
+      document.getElementById("chatSearch")?.addEventListener("input", e => {
+        const q = e.target.value.toLowerCase();
+        renderChats(allChats.filter(c =>
+          (c.text||"").toLowerCase().includes(q) ||
+          (c.location||"").toLowerCase().includes(q) ||
+          (c.handle||"").toLowerCase().includes(q)
+        ));
+      });
+
+      document.getElementById("refreshActivity")?.addEventListener("click", loadActivity);
+
+      // Login
+      async function handleLogin() {
+        const pw = document.getElementById("pwInput").value.trim();
+        const errEl = document.getElementById("loginError");
+        const btn = document.getElementById("loginBtn");
+        errEl.textContent = "";
+        if (!pw) { errEl.textContent = "Enter the admin password"; return; }
+        btn.disabled = true; btn.textContent = "Signing in…";
+        try {
+          const res = await fetch(`${API}/admin/login`, {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ password: pw })
+          });
+          const result = await res.json();
+          if (!res.ok) { errEl.textContent = result.error || "Incorrect password"; return; }
+          setToken(result.token);
+          document.getElementById("pwInput").value = "";
+          showDashboard();
+        } catch(e) {
+          errEl.textContent = "Could not reach the server";
+        } finally {
+          btn.disabled = false; btn.textContent = "Sign in";
+        }
+      }
+
+      document.getElementById("loginBtn").addEventListener("click", handleLogin);
+      document.getElementById("pwInput").addEventListener("keydown", e => { if (e.key === "Enter") handleLogin(); });
+      document.getElementById("logoutBtn").addEventListener("click", () => { clearToken(); showLogin(); });
+
+      // Init
+      if (getToken()) showDashboard(); else showLogin();
+      </script>
+</body>
+</html>

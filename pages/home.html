@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LightWatch — Home</title>
+  <link rel="icon" href="../images/dev-logo.png" type="image/x-icon">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/home.css" />
+  <link rel="stylesheet" href="../css/styles.css">
+  <style>
+    /* ---- Hero greeting banner ---- */
+    .hero-banner {
+      background: linear-gradient(135deg, rgb(3,3,55) 0%, rgb(17,17,80) 60%, rgb(31,77,71) 100%);
+      border-radius: var(--radius-lg);
+      padding: 28px 28px 24px;
+      margin-bottom: 20px;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--border-soft);
+    }
+    .hero-banner::before {
+      content: "";
+      position: absolute;
+      right: -40px; top: -40px;
+      width: 200px; height: 200px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(61,217,194,0.18), transparent 70%);
+    }
+    .hero-banner__eyebrow {
+      font-size: 0.72rem;
+      color: var(--teal);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 6px;
+    }
+    .hero-banner__greeting {
+      font-family: var(--font-display);
+      font-size: 1.55rem;
+      font-weight: 700;
+      color: white;
+      line-height: 1.2;
+      margin-bottom: 6px;
+    }
+    .hero-banner__sub {
+      font-size: 0.88rem;
+      color: rgba(255,255,255,0.6);
+      margin-bottom: 16px;
+    }
+    .hero-banner__stats {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .hero-stat {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .hero-stat__value {
+      font-family: var(--font-display);
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: white;
+    }
+    .hero-stat__label {
+      font-size: 0.7rem;
+      color: rgba(255,255,255,0.5);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .hero-banner__location {
+      position: absolute;
+      top: 20px; right: 24px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 999px;
+      padding: 6px 14px;
+      font-size: 0.8rem;
+      color: rgba(255,255,255,0.85);
+    }
+
+    /* ---- Status card improvements ---- */
+    .status-hero {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 18px 0;
+      border-bottom: 1px solid var(--border-soft);
+      margin-bottom: 16px;
+    }
+    .status-hero__icon {
+      width: 52px;
+      height: 52px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      flex-shrink: 0;
+      transition: background 0.3s;
+    }
+    .status-hero__icon--on  { background: rgba(61,217,194,0.15); }
+    .status-hero__icon--off { background: rgba(229,72,77,0.15); }
+    .status-hero__icon--unknown { background: rgba(242,179,61,0.15); }
+    .status-hero__text { flex: 1; }
+    .status-hero__title {
+      font-family: var(--font-display);
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text-bright);
+      margin-bottom: 2px;
+    }
+    .status-hero__sub { font-size: 0.82rem; color: var(--text-faint); }
+
+    /* ---- Chat improvements ---- */
+    .chat-thread {
+      /* Smaller message bubbles, more messages visible */
+      font-size: 0.84rem;
+    }
+    .chat-message {
+      padding: 7px 10px;
+      margin-bottom: 6px;
+      border-radius: var(--radius-md);
+      background: var(--bg-deep);
+      border: 1px solid var(--border-soft);
+      max-width: 88%;
+    }
+    .chat-message--own {
+      margin-left: auto;
+      background: rgba(17,17,80,0.3);
+      border-color: rgba(61,217,194,0.2);
+    }
+    .chat-message__author {
+      font-size: 0.72rem;
+      color: var(--teal);
+      font-weight: 600;
+      display: block;
+      margin-bottom: 2px;
+    }
+    .chat-message__text {
+      font-size: 0.83rem;
+      color: var(--text-bright);
+      line-height: 1.4;
+      word-break: break-word;
+    }
+    .chat-message--own .chat-message__text { color: var(--text-bright); }
+    .chat-message__time {
+      font-size: 0.68rem;
+      color: var(--text-faint);
+      display: block;
+      margin-top: 3px;
+    }
+
+    /* ---- Notification toast ---- */
+    #lw-toast {
+      position: fixed;
+      bottom: 90px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: rgb(3,3,55);
+      color: white;
+      padding: 11px 20px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      border: 1px solid var(--teal);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      z-index: 9998;
+      opacity: 0;
+      transition: opacity 0.3s, transform 0.3s;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    #lw-toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* Mobile chat: bigger panel */
+    @media (max-width: 720px) {
+      .chat-card--mobile-open {
+        height: 70vh !important;
+      }
+      .chat-thread {
+        max-height: calc(70vh - 130px) !important;
+      }
+    }
+    @media (max-width: 480px) {
+      .hero-banner__location {
+        top: 12px; right: 12px;
+        padding: 5px 10px;
+        font-size: 0.6rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Notification toast -->
+  <div id="lw-toast"></div>
+
+  <header class="topbar">
+    <div class="topbar__inner">
+      <div class="brand">
+        <span class="brand__mark">LW</span>
+        <span>LightWatch</span>
+      </div>
+      <input type="checkbox" id="nav-toggle" class="nav-toggle" />
+      <label for="nav-toggle" class="nav-toggle-label" aria-label="Toggle navigation">
+        <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+      </label>
+      <nav class="nav" id="primaryNav">
+        <a href="./home.html" class="nav__link nav__link--active" data-nav="home">Home</a>
+        <a href="./reports.html" class="nav__link" data-nav="reports">Reports</a>
+        <a href="./account.html" class="nav__link" data-nav="account">Account</a>
+      </nav>
+      <button type="button" id="profileMenuButton" class="topbar__user" aria-expanded="false" aria-controls="userSidebarPanel">
+        <span class="avatar-name" id="topbarUserName">Guest</span>
+        <span class="avatar" id="topbarAvatar">?</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="page">
+
+    <!-- Hero banner: greeting + quick stats -->
+    <div class="hero-banner">
+      <div class="hero-banner__location">
+        <span class="pulse pulse--on" style="width:8px;height:8px;"></span>
+        <span id="locationName">Your location</span>
+      </div>
+      <div class="hero-banner__eyebrow">LightWatch · Live status</div>
+      <div class="hero-banner__greeting" id="pageGreeting">Welcome back</div>
+      <div class="hero-banner__sub" id="locationSubtitle">Real-time power reporting for your area.</div>
+      <div class="hero-banner__stats">
+        <div class="hero-stat">
+          <span class="hero-stat__value" id="heroContributors">12</span>
+          <span class="hero-stat__label">Contributors</span>
+        </div>
+        <div class="hero-stat">
+          <span class="hero-stat__value" id="heroChecks">28</span>
+          <span class="hero-stat__label">Total checks</span>
+        </div>
+        <div class="hero-stat">
+          <span class="hero-stat__value" id="heroUptime">97%</span>
+          <span class="hero-stat__label">Uptime this week</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="location-page-grid">
+      <section class="location-primary">
+
+        <!-- Main status card -->
+        <div class="card location-card">
+          <div class="card__head">
+            <div>
+              <span class="card__title" id="locationNameCard">Your chosen location</span>
+              <p class="card__meta" id="locationMeta">Location set by you</p>
+            </div>
+            <span class="badge badge--on" id="statusBadge">Light on</span>
+          </div>
+
+          <!-- Status hero row -->
+          <div class="status-hero">
+            <div class="status-hero__icon status-hero__icon--on" id="statusIcon">💡</div>
+            <div class="status-hero__text">
+              <div class="status-hero__title" id="statusPillText">Light is on now</div>
+              <div class="status-hero__sub">
+                Last verified: <strong id="lastVerified">—</strong>
+                &nbsp;·&nbsp;
+                <span class="pulse pulse--on" id="statusPulse" style="display:inline-block;width:8px;height:8px;vertical-align:middle;"></span>
+                Live
+              </div>
+            </div>
+          </div>
+
+          <div class="location-card__top">
+            <div class="location-card__info">
+              <div class="location-card__row">
+                <span class="location-card__label">Average outage length</span>
+                <strong id="avgOutage">—</strong>
+              </div>
+              <div class="location-card__row">
+                <span class="location-card__label">Outage frequency</span>
+                <strong id="outageFreq">—</strong>
+              </div>
+              <div class="location-card__row">
+                <span class="location-card__label">Source confidence</span>
+                <strong>92%</strong>
+              </div>
+            </div>
+            <div class="location-card__meta-panel">
+              <div class="meta-pill meta-pill--accent" id="heroContributorsPill">12 contributors</div>
+              <div class="meta-pill meta-pill--muted">28 total checks</div>
+            </div>
+          </div>
+
+          <!-- Light toggle -->
+          <div class="light-toggle-row">
+            <div class="light-toggle-row__label">
+              <span class="light-toggle-row__title">Report current status</span>
+              <span class="light-toggle-row__sub">Flip this only if you can actually see the area right now</span>
+            </div>
+            <button type="button" class="light-switch light-switch--on" id="lightSwitch" role="switch" aria-checked="true" aria-label="Toggle light status">
+              <span class="light-switch__track">
+                <span class="light-switch__thumb"></span>
+              </span>
+              <span class="light-switch__state" id="lightSwitchState">ON</span>
+            </button>
+          </div>
+
+          <!-- SVG map: Kumasi with light glow effect -->
+          <div class="map-panel">
+            <div class="map-panel__label" id="locationMapLabel">Location map</div>
+            <div class="map-panel__canvas" style="position:relative; border-radius: var(--radius-md); overflow:hidden;">
+              <iframe
+                id="locationMap"
+                title="Location map"
+                src="https://maps.google.com/maps?q=Kumasi%2C+Ghana&t=&z=13&ie=UTF8&iwloc=&output=embed"
+                width="100%"
+                height="280"
+                style="border:0; display:block;"
+                loading="lazy"
+                referrerpolicy="no-referrer-when-downgrade">
+              </iframe>
+              <!-- Light status overlay on map -->
+              <div id="mapStatusOverlay" style="
+                position:absolute; bottom:12px; left:12px;
+                background:rgba(3,3,55,0.88);
+                border:1px solid var(--teal);
+                border-radius:999px;
+                padding:6px 14px;
+                font-size:0.78rem;
+                color:white;
+                display:flex;
+                align-items:center;
+                gap:8px;
+                backdrop-filter:blur(4px);
+              ">
+                <span class="pulse pulse--on" id="mapPulse" style="width:8px;height:8px;"></span>
+                <span id="mapStatusText">Light on in this area</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="location-card__footer">
+            <div class="meta-summary">
+              <div><span class="meta-summary__label">Confirmed sources</span><strong id="confirmedSources">12 contributors</strong></div>
+              <div><span class="meta-summary__label">Light on</span><strong id="lightOnCount">23 of 28 checks</strong></div>
+              <div><span class="meta-summary__label">Outage length</span><strong id="lastOutageLength">—</strong></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Community chat -->
+        <div class="card chat-card">
+          <div class="card__head chat-card__head">
+            <div>
+              <span class="card__title">Community chat</span>
+              <span class="card__meta">Posting as <strong id="chatHandle">anon-glow-291</strong></span>
+            </div>
+            <button type="button" id="mobileChatClose" class="chat-close-btn" aria-label="Close chat">✕</button>
+          </div>
+          <div class="chat-thread" id="chatThread"></div>
+          <form class="chat-form" id="chatForm" action="javascript:void(0)">
+            <input type="text" class="chat-form__input" id="chatInput" placeholder="Share an update about this location..." maxlength="240" />
+            <button type="submit" class="btn btn--primary">Send</button>
+          </form>
+        </div>
+
+      </section>
+
+      <aside class="location-sidebar">
+
+        <div class="card profile-card">
+          <div class="card__head">
+            <span class="card__title">Logged in as</span>
+            <span class="card__meta" id="profileLastLogin">—</span>
+          </div>
+          <div class="profile-card__avatar">
+            <span class="avatar avatar--large" id="profileAvatar">?</span>
+          </div>
+          <div class="profile-card__info">
+            <div class="profile-card__name" id="profileName">Not signed in</div>
+          </div>
+          <div class="profile-card__details">
+            <div><span>Contact</span><strong id="profileContact">—</strong></div>
+            <div><span>Location</span><strong id="profileRegion">—</strong></div>
+          </div>
+          <a href="../index.html"><button type="button" class="btn btn--ghost" id="profileSignOutBtn">Log out</button></a>
+        </div>
+
+        <div class="card add-location-card">
+          <div class="card__head">
+            <span class="card__title">Add a location</span>
+            <span class="card__meta">Quick capture</span>
+          </div>
+          <p class="add-location-card__note">
+            LightWatch is starting in Kumasi. Suggestions are limited to this area while we grow coverage.
+          </p>
+          <form class="location-form" id="addLocationForm" action="javascript:void(0)">
+            <label class="form-field">
+              <span>Location name</span>
+              <input type="text" placeholder="e.g. Bantama Market" id="newLocationName" />
+            </label>
+            <label class="form-field autocomplete-field">
+              <span>Address or area</span>
+              <input type="text" placeholder="Start typing a place in Kumasi..." id="newLocationAddress" autocomplete="off" />
+              <ul class="autocomplete-list" id="autocompleteList" hidden></ul>
+            </label>
+            <button type="submit" class="btn btn--primary btn--block">Save location</button>
+          </form>
+        </div>
+
+      </aside>
+    </div>
+
+    <p class="footnote">LightWatch — meter &amp; grid status monitoring</p>
+  </main>
+
+  <!-- Sidebar overlay + panel -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+  <aside class="user-sidebar-panel" id="userSidebarPanel" aria-hidden="true">
+    <button type="button" class="user-sidebar__close" id="userSidebarClose" aria-label="Close profile panel">×</button>
+    <div class="card profile-card profile-card--sidebar">
+      <div class="card__head">
+        <span class="card__title">Logged in as</span>
+        <span class="card__meta">User profile</span>
+      </div>
+      <div class="profile-card__avatar">
+        <span class="avatar avatar--large" id="sidebarAvatar">?</span>
+      </div>
+      <div class="profile-card__info">
+        <div class="profile-card__name" id="sidebarName">Not signed in</div>
+      </div>
+      <div class="profile-card__details">
+        <div><span>Contact</span><strong id="sidebarContact">—</strong></div>
+        <div><span>Location</span><strong id="sidebarRegion">—</strong></div>
+        <div><span>Last login</span><strong id="sidebarLastLogin">—</strong></div>
+      </div>
+      <button type="button" class="btn btn--primary btn--block" onclick="window.location.href='./account.html'">Manage account</button>
+      <a href="../index.html"><button type="button" class="btn btn--ghost btn--block" id="sidebarSignOutBtn">Log out</button></a>
+    </div>
+  </aside>
+
+  <button type="button" id="mobileChatToggle" class="mobile-chat-toggle" aria-label="Open chat">
+    <span class="mobile-chat-toggle__icon">💬</span>
+    <span class="mobile-chat-toggle__label">Chat</span>
+  </button>
+
+  <div id="bottom_nav_wrapper">
+    <div class="bottom-icons-container">
+      <a href="./home.html" class="bottom-nav-link bottom-nav-link--active" data-nav="home" aria-label="Home">
+        <span class="bottom-nav-icon">⌂</span>
+        <span class="bottom-nav-label">Home</span>
+      </a>
+      <a href="./reports.html" class="bottom-nav-link" data-nav="reports" aria-label="Reports">
+        <span class="bottom-nav-icon">▤</span>
+        <span class="bottom-nav-label">Reports</span>
+      </a>
+      <button type="button" class="bottom-nav-link bottom-nav-link--button" id="bottomNavUserBtn" data-nav="account" aria-label="User profile">
+        <span class="bottom-nav-icon">◐</span>
+        <span class="bottom-nav-label">You</span>
+      </button>
+    </div>
+  </div>
+
+  <script src="../js/config.js"></script>
+  <script src="../js/profile.js"></script>
+  <script src="../js/chat.js"></script>
+  <script src="../js/home.js"></script>
+  <script src="../js/nav.js"></script>
+  <script>
+    // ---- Keep map overlay in sync with light status ----
+    // profile.js calls setLightStatus() — we hook the map overlay here
+    const _origSetLS = window.setLightStatus;
+    window.setLightStatus = function(status) {
+      if (typeof _origSetLS === 'function') _origSetLS(status);
+      const mapPulse = document.getElementById('mapPulse');
+      const mapText  = document.getElementById('mapStatusText');
+      const statusIcon = document.getElementById('statusIcon');
+      if (status === 'on') {
+        if (mapPulse) { mapPulse.className = 'pulse pulse--on'; mapPulse.style.width='8px'; mapPulse.style.height='8px'; }
+        if (mapText)  mapText.textContent = 'Light on in this area';
+        if (statusIcon) { statusIcon.textContent = '💡'; statusIcon.className = 'status-hero__icon status-hero__icon--on'; }
+      } else if (status === 'off') {
+        if (mapPulse) { mapPulse.className = 'pulse pulse--off'; mapPulse.style.width='8px'; mapPulse.style.height='8px'; }
+        if (mapText)  mapText.textContent = 'Light is off in this area';
+        if (statusIcon) { statusIcon.textContent = '🌑'; statusIcon.className = 'status-hero__icon status-hero__icon--off'; }
+      } else {
+        if (mapPulse) { mapPulse.className = 'pulse pulse--low'; mapPulse.style.width='8px'; mapPulse.style.height='8px'; }
+        if (mapText)  mapText.textContent = 'Status unconfirmed';
+        if (statusIcon) { statusIcon.textContent = '❓'; statusIcon.className = 'status-hero__icon status-hero__icon--unknown'; }
+      }
+    };
+
+    // ---- Toast notification system ----
+    // Other pages/features call window.lwToast("message") to show a toast
+    window.lwToast = function(msg, duration) {
+      const el = document.getElementById('lw-toast');
+      if (!el) return;
+      el.textContent = msg;
+      el.classList.add('show');
+      setTimeout(() => el.classList.remove('show'), duration || 3500);
+    };
+  </script>
+</body>
+</html>

@@ -1,0 +1,196 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center; /* left-right */
+    align-items: center;     /* top-bottom */
+    padding: .9rem;
+}
+
+section {
+    padding: 0rem;
+    width: 100%;
+    max-width: 700px;
+    background-image: url(../images/ChatGPT\ Image\ Jun\ 18\,\ 2026\,\ 02_54_18\ AM.png);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+
+#dev-logo-cont {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    margin-bottom: .1rem;
+}
+
+#main-content_wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1.5rem;
+}
+
+.submit-info-section {
+    display: flex;
+    flex: 2;
+    min-width: 240px;
+    justify-content: center; 
+    flex-direction: column;
+}
+
+img {
+    width: 40px;
+    height: 40px;
+}
+
+.submit-info-section button {
+    padding: 16px;
+    border-radius: 10px;
+    border: none;
+    background-color: rgba(44, 74, 109, 0.1);
+    margin-bottom: 1rem;
+    cursor: pointer;
+}
+
+.submit-info-section img {
+    height: 40px;
+    width: 40px;
+}
+
+.submit-info-section h3 {
+    font-size: 1.9rem;
+    line-height: 1.2;
+    margin-bottom: .7rem;
+}
+
+#input-field-section {
+    flex: 3;
+    min-width: 260px;
+    background-color: white;
+    padding: 2rem 1.3rem;
+    border-radius: 10px;
+}
+
+.user-icon-container h3 {
+    margin: 0;
+}
+
+.user-icon-container p {
+    font-size: .7rem;
+}
+
+.user-profile-btn {
+    background-color: rgb(213, 218, 238);
+    border: none;
+    border-radius: 26px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    cursor: pointer;
+}
+
+.user-profile-btn img {
+    height: 24px;
+    width: 24px;
+}
+
+.user-icon-container {
+    margin-bottom: 1.4rem;
+}
+
+.prompt-inputs{
+    padding: 14px 10px;
+    width: 100%;
+    border: 1px solid rgb(211, 211, 211);
+    border-radius: 6px;
+    margin: .3rem 0;
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
+    font-size: .8rem;
+}
+
+#email_phone-error {
+    font-size: .7rem;
+    color: rgb(224, 75, 75);
+}
+
+.prompt-inputs:focus {
+    outline: none;
+    border-color: rgb(52, 52, 197);
+    box-shadow: 0 0 0 3px rgba(52, 52, 197, 0.15);
+}
+
+.prompt-input-tabs {
+    margin-top: 1.4rem;
+}
+
+.prompt-input-tabs p {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.notify-checkbox {
+    height: 30px;
+    width: 15px;
+    margin: 0;
+    flex-shrink: 0;
+}
+
+.submit-btn {
+    background-color: rgb(52, 52, 197);
+    color: white;
+    font-size: .9rem;
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+.submit-btn:hover {
+    background-color: rgb(40, 40, 160);
+}
+
+.submit-btn:active {
+    transform: scale(0.99);
+}
+
+footer {
+    text-align: center;
+    font-size: .7rem;
+    margin-top: 1.2rem;
+}
+
+/* ===== Responsiveness ===== */
+@media (max-width: 700px) {
+    #main-content_wrapper {
+        flex-direction: column;
+    }
+
+    .submit-info-section {
+        display: none;
+        text-align: center;
+        align-items: center;
+    }
+
+    .submit-info-section button {
+        margin: 0 auto 1rem auto;
+    }
+}
+
+@media (max-width: 480px) {
+
+
+    #input-field-section {
+        padding: 1.2rem 1rem;
+    }
+
+    .submit-info-section h3 {
+        font-size: 1.5rem;
+    }
+}

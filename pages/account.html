@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Account — LightWatch</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/home.css" />
+  <link rel="stylesheet" href="../css/styles.css">
+  <style>
+    .account-grid {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+
+    /* ---- Profile card ---- */
+    .profile-hero {
+      text-align: center;
+      padding: 28px 20px 20px;
+    }
+
+    .profile-hero__avatar {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--teal), var(--teal-dim));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      color: white;
+      font-weight: 700;
+      margin: 0 auto 14px;
+      border: 3px solid var(--border-soft);
+    }
+
+    .profile-hero__name {
+      font-family: var(--font-display);
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--text-bright);
+      margin-bottom: 4px;
+    }
+
+    .profile-hero__handle {
+      font-size: 0.82rem;
+      color: var(--text-faint);
+      margin-bottom: 16px;
+    }
+
+    .profile-hero__badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: 999px;
+      background: var(--teal-dim);
+      color: var(--teal);
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    /* ---- Detail rows ---- */
+    .detail-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      margin-top: 4px;
+    }
+
+    .detail-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 13px 0;
+      border-bottom: 1px solid var(--border-soft);
+      gap: 12px;
+    }
+
+    .detail-row:last-child { border-bottom: none; }
+
+    .detail-row__label {
+      font-size: 0.82rem;
+      color: var(--text-faint);
+      flex-shrink: 0;
+    }
+
+    .detail-row__value {
+      font-size: 0.88rem;
+      color: var(--text-bright);
+      font-weight: 500;
+      text-align: right;
+    }
+
+    /* ---- Stats row ---- */
+    .account-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .account-stat {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      text-align: center;
+    }
+
+    .account-stat__value {
+      font-family: var(--font-display);
+      font-size: 1.4rem;
+      font-weight: 600;
+      color: var(--text-bright);
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .account-stat__label {
+      font-size: 0.72rem;
+      color: var(--text-faint);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* ---- Section headings inside right column ---- */
+    .section-label {
+      font-size: 0.72rem;
+      color: var(--text-faint);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 10px;
+      margin-top: 4px;
+    }
+
+    /* ---- Preference toggles ---- */
+    .pref-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 13px 0;
+      border-bottom: 1px solid var(--border-soft);
+      gap: 16px;
+    }
+
+    .pref-row:last-child { border-bottom: none; }
+
+    .pref-row__info { flex: 1; }
+
+    .pref-row__title {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--text-bright);
+      margin-bottom: 2px;
+    }
+
+    .pref-row__sub {
+      font-size: 0.78rem;
+      color: var(--text-faint);
+    }
+
+    /* Toggle switch */
+    .toggle {
+      position: relative;
+      width: 42px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+
+    .toggle input { opacity: 0; width: 0; height: 0; }
+
+    .toggle__track {
+      position: absolute;
+      inset: 0;
+      border-radius: 999px;
+      background: var(--border-strong);
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .toggle__track::after {
+      content: "";
+      position: absolute;
+      left: 3px;
+      top: 3px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: white;
+      transition: transform 0.2s ease;
+    }
+
+    .toggle input:checked + .toggle__track {
+      background: var(--teal);
+    }
+
+    .toggle input:checked + .toggle__track::after {
+      transform: translateX(18px);
+    }
+
+    /* ---- Danger zone ---- */
+    .danger-zone {
+      border: 1px solid var(--red-dim);
+      border-radius: var(--radius-lg);
+      padding: 18px 20px;
+      margin-top: 20px;
+    }
+
+    .danger-zone__title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--red);
+      margin-bottom: 4px;
+    }
+
+    .danger-zone__sub {
+      font-size: 0.8rem;
+      color: var(--text-faint);
+      margin-bottom: 14px;
+    }
+
+    @media (max-width: 720px) {
+      .account-grid {
+        grid-template-columns: 1fr;
+      }
+      .account-stats {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .account-stats {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar__inner">
+      <div class="brand">
+        <span class="brand__mark">LW</span>
+        <span>LightWatch</span>
+      </div>
+      <input type="checkbox" id="nav-toggle" class="nav-toggle" />
+      <label for="nav-toggle" class="nav-toggle-label" aria-label="Toggle navigation">
+        <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+      </label>
+      <nav class="nav" id="primaryNav">
+        <a href="./home.html" class="nav__link" data-nav="home">Home</a>
+        <a href="./reports.html" class="nav__link" data-nav="reports">Reports</a>
+        <a href="./account.html" class="nav__link nav__link--active" data-nav="account">Account</a>
+      </nav>
+      <button type="button" id="profileMenuButton" class="topbar__user" aria-expanded="false" aria-controls="userSidebarPanel">
+        <span class="avatar-name" id="topbarUserName">Guest</span>
+        <span class="avatar" id="topbarAvatar">?</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="page">
+
+    <div class="page__header">
+      <div>
+        <div class="page__eyebrow">Your account</div>
+        <h1 class="page__title" id="pageGreeting">Account</h1>
+        <p class="page__subtitle">Manage your profile, preferences, and locations.</p>
+      </div>
+    </div>
+
+    <!-- Stats row -->
+    <div class="account-stats">
+      <div class="account-stat">
+        <div class="account-stat__value" id="statReports">—</div>
+        <div class="account-stat__label">Reports made</div>
+      </div>
+      <div class="account-stat">
+        <div class="account-stat__value" id="statChats">—</div>
+        <div class="account-stat__label">Chat messages</div>
+      </div>
+      <div class="account-stat">
+        <div class="account-stat__value" id="statDays">—</div>
+        <div class="account-stat__label">Days on LightWatch</div>
+      </div>
+    </div>
+
+    <div class="account-grid">
+
+      <!-- Left: profile card -->
+      <div>
+        <div class="card" style="padding: 0; overflow: hidden;">
+          <div class="profile-hero">
+            <div class="profile-hero__avatar" id="profileAvatar">?</div>
+            <div class="profile-hero__name" id="profileName">Not signed in</div>
+            <div class="profile-hero__handle" id="profileHandle">—</div>
+            <span class="profile-hero__badge">
+              <span class="pulse pulse--on" style="width:8px;height:8px;"></span>
+              Active contributor
+            </span>
+          </div>
+
+          <div style="padding: 0 20px 20px;">
+            <div class="section-label">Account details</div>
+            <div class="detail-list">
+              <div class="detail-row">
+                <span class="detail-row__label">Contact</span>
+                <span class="detail-row__value" id="profileContact">—</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-row__label">Region</span>
+                <span class="detail-row__value" id="profileRegion">—</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-row__label">City</span>
+                <span class="detail-row__value" id="profileCity">—</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-row__label">Chat handle</span>
+                <span class="detail-row__value" id="profileChatHandle">—</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-row__label">Member since</span>
+                <span class="detail-row__value" id="profileLastLogin">—</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="danger-zone" style="margin-top: 16px;">
+          <div class="danger-zone__title">Sign out</div>
+          <div class="danger-zone__sub">You'll need to verify your contact to sign back in.</div>
+          <button type="button" class="btn btn--ghost" id="profileSignOutBtn" style="border-color: var(--red); color: var(--red); width:100%;">
+            Log out of LightWatch
+          </button>
+        </div>
+      </div>
+
+      <!-- Right: settings & preferences -->
+      <div style="display: flex; flex-direction: column; gap: 16px;">
+
+        <div class="card">
+          <div class="card__head">
+            <span class="card__title">Notifications</span>
+            <span class="card__meta">What to alert you about</span>
+          </div>
+          <div class="pref-row">
+            <div class="pref-row__info">
+              <div class="pref-row__title">Outage alerts in my area</div>
+              <div class="pref-row__sub">Get notified when light goes off at your location</div>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" checked id="prefOutageAlerts">
+              <span class="toggle__track"></span>
+            </label>
+          </div>
+          <div class="pref-row">
+            <div class="pref-row__info">
+              <div class="pref-row__title">Power restored alerts</div>
+              <div class="pref-row__sub">Know the moment power comes back on</div>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" checked id="prefRestoredAlerts">
+              <span class="toggle__track"></span>
+            </label>
+          </div>
+          <div class="pref-row">
+            <div class="pref-row__info">
+              <div class="pref-row__title">Community chat mentions</div>
+              <div class="pref-row__sub">When someone replies to a message in your location</div>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="prefChatMentions">
+              <span class="toggle__track"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card__head">
+            <span class="card__title">My locations</span>
+            <span class="card__meta">Areas you're monitoring</span>
+          </div>
+          <div id="myLocationsList" style="margin-bottom: 14px;">
+            <div style="color: var(--text-faint); font-size: 0.85rem; padding: 8px 0;">Loading your locations…</div>
+          </div>
+          <button type="button" class="btn btn--ghost btn--block" onclick="window.location.href='./home.html'">
+            + Go to home to add locations
+          </button>
+        </div>
+
+        <div class="card">
+          <div class="card__head">
+            <span class="card__title">Display</span>
+            <span class="card__meta">Visual preferences</span>
+          </div>
+          <div class="pref-row">
+            <div class="pref-row__info">
+              <div class="pref-row__title">Compact chat bubbles</div>
+              <div class="pref-row__sub">Show smaller message cards in community chat</div>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="prefCompactChat">
+              <span class="toggle__track"></span>
+            </label>
+          </div>
+          <div class="pref-row">
+            <div class="pref-row__info">
+              <div class="pref-row__title">Show outage stats on home</div>
+              <div class="pref-row__sub">Display average outage length and frequency</div>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" checked id="prefShowStats">
+              <span class="toggle__track"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card__head">
+            <span class="card__title">Recent chat activity</span>
+            <span class="card__meta">Your last messages</span>
+          </div>
+          <div id="recentChatList">
+            <div style="color: var(--text-faint); font-size: 0.85rem; padding: 8px 0;">Loading activity…</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <p class="footnote">LightWatch — meter &amp; grid status monitoring</p>
+  </main>
+
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+  <aside class="user-sidebar-panel" id="userSidebarPanel" aria-hidden="true">
+    <button type="button" class="user-sidebar__close" id="userSidebarClose" aria-label="Close profile panel">×</button>
+    <div class="card profile-card profile-card--sidebar">
+      <div class="card__head">
+        <span class="card__title">Logged in as</span>
+        <span class="card__meta">User profile</span>
+      </div>
+      <div class="profile-card__avatar">
+        <span class="avatar avatar--large" id="sidebarAvatar">?</span>
+      </div>
+      <div class="profile-card__info">
+        <div class="profile-card__name" id="sidebarName">Not signed in</div>
+      </div>
+      <div class="profile-card__details">
+        <div><span>Contact</span><strong id="sidebarContact">—</strong></div>
+        <div><span>Location</span><strong id="sidebarRegion">—</strong></div>
+        <div><span>Last login</span><strong id="sidebarLastLogin">—</strong></div>
+      </div>
+      <button type="button" class="btn btn--primary btn--block" onclick="window.location.href='account.html'">Manage account</button>
+      <a href="../index.html"><button type="button" class="btn btn--ghost btn--block" id="sidebarSignOutBtn">Log out</button></a>
+    </div>
+  </aside>
+
+  <div id="bottom_nav_wrapper">
+    <div class="bottom-icons-container">
+      <a href="./home.html" class="bottom-nav-link" data-nav="home" aria-label="Home">
+        <span class="bottom-nav-icon">⌂</span>
+        <span class="bottom-nav-label">Home</span>
+      </a>
+      <a href="./reports.html" class="bottom-nav-link" data-nav="reports" aria-label="Reports">
+        <span class="bottom-nav-icon">▤</span>
+        <span class="bottom-nav-label">Reports</span>
+      </a>
+      <button type="button" class="bottom-nav-link bottom-nav-link--button" id="bottomNavUserBtn" data-nav="account" aria-label="User profile">
+        <span class="bottom-nav-icon">◐</span>
+        <span class="bottom-nav-label">You</span>
+      </button>
+    </div>
+  </div>
+
+  <script src="../js/profile.js"></script>
+  <script src="../js/nav.js"></script>
+  <script>
+    // Account-page extras: load user's chat history + fill extra fields
+    const API_URL = "https://lightwatch-backend.onrender.com";
+
+    async function loadAccountExtras() {
+      const userId = localStorage.getItem("currentUserId");
+      if (!userId) return;
+
+      // Fill extra profile fields not covered by profile.js
+      try {
+        const res = await fetch(`${API_URL}/user/${userId}`);
+        if (res.ok) {
+          const user = await res.json();
+          const el = id => document.getElementById(id);
+
+          if (el("profileCity")) el("profileCity").textContent = user.city || "—";
+          if (el("profileChatHandle")) el("profileChatHandle").textContent = user.chatHandle || "—";
+          if (el("profileHandle")) el("profileHandle").textContent = user.chatHandle || "";
+
+          // Days on LightWatch
+          if (user.createdAt && el("statDays")) {
+            const days = Math.max(1, Math.floor((Date.now() - new Date(user.createdAt).getTime()) / (1000 * 60 * 60 * 24)));
+            el("statDays").textContent = days;
+          }
+
+          // Member since
+          if (user.createdAt && el("profileLastLogin")) {
+            el("profileLastLogin").textContent = new Date(user.createdAt).toLocaleDateString([], { year: "numeric", month: "short", day: "numeric" });
+          }
+
+          // Page greeting
+          const hour = new Date().getHours();
+          const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+          const firstName = (user.name || "").trim().split(/\s+/)[0] || "there";
+          const greetEl = document.getElementById("pageGreeting");
+          if (greetEl) greetEl.textContent = `${greeting}, ${firstName}`;
+
+          // My locations (from localStorage for now)
+          const locListEl = document.getElementById("myLocationsList");
+          if (locListEl) {
+            const loc = user.city ? `${user.city}, ${user.region}` : user.region || null;
+            if (loc) {
+              locListEl.innerHTML = `
+                <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border-soft);">
+                  <span class="pulse pulse--on" style="width:8px;height:8px;flex-shrink:0;"></span>
+                  <span style="font-size:0.88rem;color:var(--text-bright);font-weight:500;">${loc}</span>
+                  <span style="font-size:0.75rem;color:var(--text-faint);margin-left:auto;">Primary</span>
+                </div>`;
+            } else {
+              locListEl.innerHTML = `<div style="color:var(--text-faint);font-size:0.85rem;padding:8px 0;">No locations set yet.</div>`;
+            }
+          }
+        }
+      } catch(e) { /* silent */ }
+
+      // Load recent chat messages by this user
+      try {
+        const userObj = JSON.parse(localStorage.getItem("currentUserData") || "{}");
+        const loc = userObj.city ? `${userObj.city}, ${userObj.region}` : userObj.region;
+        if (loc) {
+          const res = await fetch(`${API_URL}/chats?location=${encodeURIComponent(loc)}`);
+          if (res.ok) {
+            const chats = await res.json();
+            const mine = chats.filter(c => (c.userId?._id || c.userId) === userId).slice(0, 5);
+            const el = document.getElementById("recentChatList");
+            if (el) {
+              if (mine.length === 0) {
+                el.innerHTML = `<div style="color:var(--text-faint);font-size:0.85rem;padding:8px 0;">No chat messages yet.</div>`;
+              } else {
+                el.innerHTML = mine.map(c => `
+                  <div style="padding:10px 0;border-bottom:1px solid var(--border-soft);">
+                    <div style="font-size:0.84rem;color:var(--text-bright);">"${c.text}"</div>
+                    <div style="font-size:0.74rem;color:var(--text-faint);margin-top:3px;">${c.location} · ${new Date(c.createdAt).toLocaleString([], {dateStyle:"short",timeStyle:"short"})}</div>
+                  </div>`).join("") + (chats.filter(c=>(c.userId?._id||c.userId)===userId).length > 5 ? `<div style="font-size:0.78rem;color:var(--text-faint);padding-top:8px;">Showing 5 most recent</div>` : "");
+                document.getElementById("statChats").textContent = chats.filter(c=>(c.userId?._id||c.userId)===userId).length;
+              }
+            }
+          }
+        }
+      } catch(e) { /* silent */ }
+
+      // Placeholder stats
+      const statReports = document.getElementById("statReports");
+      if (statReports && statReports.textContent === "—") statReports.textContent = "0";
+    }
+
+    loadAccountExtras();
+  </script>
+</body>
+</html>

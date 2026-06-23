@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign in — LightWatch</title>
+  <link rel="icon" href="./images/dev-logo.png" type="image/x-icon">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./css/login.css" />
+  <link rel="stylesheet" href="./css/styles.css">
+</head>
+<body>
+
+  <div class="login-shell">
+
+    <!-- Visual / context side -->
+    <section class="login-visual">
+      <div class="login-visual__content">
+        <div class="brand" style="margin-bottom: 56px;">
+          <span class="brand__mark">LW</span>
+          <span>LightWatch</span>
+        </div>
+        <h1>See every meter. Every location. The moment power changes.</h1>
+        <p>Track postpaid and prepaid consumption, and know which sites still have light, from one screen.</p>
+      </div>
+
+      <div class="login-visual__grid">
+        <div class="mini-stat">
+          <div class="mini-stat__label">Meters online</div>
+          <div class="mini-stat__value tabular">128</div>
+        </div>
+        <div class="mini-stat">
+          <div class="mini-stat__label">Locations out</div>
+          <div class="mini-stat__value tabular">5</div>
+        </div>
+        <div class="mini-stat">
+          <div class="mini-stat__label">Avg uptime</div>
+          <div class="mini-stat__value tabular">97%</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Form side -->
+    <section class="login-form-side">
+      <div class="login-box">
+
+        <div class="login-box__brand">
+          <span class="brand__mark">LW</span>
+          <span class="brand" style="font-size: 1.05rem;">LightWatch</span>
+        </div>
+
+        <h2>Welcome back</h2>
+        <p class="login-box__subtitle">Sign in to monitor your locations.</p>
+
+        <form action="#" method="post">
+
+          <div class="field">
+            <label class="field__label" for="email">Email address or Phone Number</label>
+            <div class="field__input-wrap">
+              <input class="field__input" type="email" id="user-input" name="email" placeholder="Enter Email or Phone Number" autocomplete="email" required />
+              <p id="error-msg" style="color:red; font-size: .7rem;"></p>
+            </div>
+          </div>
+
+          <input type="checkbox" id="rememberMe">
+          <label for="rememberMe">Remember me</label>
+          <button type="submit" class="btn btn--primary btn--block" id="sendCodebtn">Send code</button>
+
+          <div class="divider">or</div>
+
+          <a href="./pages/signup.html"><button type="button" class="btn btn--ghost btn--block">Create an account</button></a>
+
+        </form>
+
+        <p class="signup-prompt">
+          Don't have an account? <a href="./pages/signup.html" class="link">Request access</a>
+        </p>
+
+      </div>
+    </section>
+
+  </div>
+
+  <script src="../js/config.js"></script>
+  <script src="./Js/login.js"></script>
+</body>
+</html>
