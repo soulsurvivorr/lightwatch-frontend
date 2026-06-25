@@ -155,7 +155,7 @@
   margin-bottom: 20px;
   font-size: 0.85rem;
 }
-
+/*
 .checkbox-row {
   display: flex;
   align-items: center;
@@ -167,6 +167,62 @@
   accent-color: var(--teal);
   width: 16px;
   height: 16px;
+}
+*/
+
+/* Remember Me toggle — matches your existing design system */
+.remember-me-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 0.86rem;
+  color: var(--text-muted);
+  user-select: none;
+}
+
+.remember-me-label input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.remember-me-track {
+  position: relative;
+  width: 38px;
+  height: 22px;
+  background: var(--border-strong);
+  border-radius: 999px;
+  transition: background 0.2s ease;
+  flex-shrink: 0;
+}
+
+.remember-me-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.2s ease;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+}
+
+/* Checked state */
+.remember-me-label input:checked ~ .remember-me-track {
+  background: var(--teal);
+}
+
+.remember-me-label input:checked ~ .remember-me-track .remember-me-thumb {
+  transform: translateX(16px);
+}
+
+/* Focus ring */
+.remember-me-label input:focus-visible ~ .remember-me-track {
+  outline: 2px solid var(--teal);
+  outline-offset: 2px;
 }
 
 .divider {
