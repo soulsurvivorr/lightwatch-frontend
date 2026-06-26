@@ -405,6 +405,15 @@ function signOut(event) {
     localStorage.removeItem("currentUserData");
     localStorage.removeItem("signupUser");
     localStorage.removeItem("chatHandle");
+
+    // ── Clear Remember Me session so auto sign-in doesn't trigger ──
+    localStorage.removeItem("app_auth_token");
+    localStorage.removeItem("app_user");
+    localStorage.removeItem("app_remember");
+    sessionStorage.removeItem("app_auth_token");
+    sessionStorage.removeItem("app_user");
+    // ───────────────────────────────────────────────────────────────
+
     window.location.href = "../index.html";
 }
 
