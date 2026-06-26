@@ -158,3 +158,29 @@ userInput.addEventListener('keydown', (event) => {
 document.addEventListener('DOMContentLoaded', () => {
     checkAutoSignIn();
 });
+
+
+// ============================================================
+//  SIGN OUT
+//  Clears session so app opens to login page next time
+// ============================================================
+function signOut() {
+    clearSession();
+    // Also clear any other app data
+    localStorage.removeItem("currentUserId");
+    localStorage.removeItem("currentUserData");
+    localStorage.removeItem("chatHandle");
+    localStorage.removeItem("maskedContact");
+    localStorage.removeItem("signupUser");
+    window.location.href = "../index.html"; // ← your login page path
+}
+
+// Wire sign out button — place this in whatever page has the button,
+// OR keep here if login.js is loaded globally across all pages
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('[data-action="signout"]')
+        .forEach(btn => btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            signOut();
+        }));
+});
