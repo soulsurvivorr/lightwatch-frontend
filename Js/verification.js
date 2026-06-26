@@ -1,4 +1,18 @@
 // verification.js
+
+// ── Session helpers (mirrors login.js) ───────────────────────
+function saveSession(user, token, rememberMe) {
+    if (rememberMe) {
+        localStorage.setItem('app_auth_token', token);
+        localStorage.setItem('app_user',       JSON.stringify(user));
+        localStorage.setItem('app_remember',   'true');
+    } else {
+        sessionStorage.setItem('app_auth_token', token);
+        sessionStorage.setItem('app_user',       JSON.stringify(user));
+        localStorage.removeItem('app_remember');
+    }
+}
+// ─────────────────────────────────────────────────────────────
 // Now sends the code to the server. If 5687 is correct,
 // the server FINALLY saves the user to users.json.
 
@@ -70,6 +84,18 @@ async function checkOTP() {
         }
 
         localStorage.removeItem("userIdentifier");
+
+        // ── Remember Me: save session so PWA auto signs in next time ──
+        const rememberMe = localStorage.getItem("rememberMePending") === "true";
+        const user = {
+            id:         result.userId,
+            chatHandle: result.chatHandle,
+            name:       result.chatHandle,
+            initials:   (result.chatHandle || "U").slice(0, 2).toUpperCase()
+        };
+        saveSession(user, result.userId, rememberMe);
+        localStorage.removeItem("rememberMePending");
+        // ─────────────────────────────────────────────────────────────
 
         window.location.href = '../pages/home.html';
 
