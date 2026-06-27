@@ -12,6 +12,8 @@
 // navigation, click-to-select — stays exactly the same, since
 // it just expects an array of strings back.
 
+requireAuth(); // redirects to login if no session — defined in auth.js
+
 const addressInput = document.getElementById('newLocationAddress');
 const autocompleteList = document.getElementById('autocompleteList');
 const addLocationForm = document.getElementById('addLocationForm');

@@ -1,118 +1,79 @@
-// verification.js
+// ============================================================
+//  VERIFICATION.JS
+//  Requires: auth.js loaded BEFORE this script
+// ============================================================
 
-// ── Session helpers (mirrors login.js) ───────────────────────
-function saveSession(user, token, rememberMe) {
-    if (rememberMe) {
-        localStorage.setItem('app_auth_token', token);
-        localStorage.setItem('app_user',       JSON.stringify(user));
-        localStorage.setItem('app_remember',   'true');
-    } else {
-        sessionStorage.setItem('app_auth_token', token);
-        sessionStorage.setItem('app_user',       JSON.stringify(user));
-        localStorage.removeItem('app_remember');
-    }
-}
-// ─────────────────────────────────────────────────────────────
-// Now sends the code to the server. If 5687 is correct,
-// the server FINALLY saves the user to users.json.
+const userValue     = sessionStorage.getItem('userIdentifier');
+const maskedContact = sessionStorage.getItem('maskedContact');
 
-const userValue = localStorage.getItem("userIdentifier");
-const maskedContact = localStorage.getItem("maskedContact");
-const displayValue = maskedContact || maskValue(userValue);
-
-document.getElementById("code-text").textContent =
-    `Enter the code we sent to ${displayValue}`;
+document.getElementById('code-text').textContent =
+    `Enter the code we sent to ${maskedContact || maskValue(userValue)}`;
 
 function maskValue(value) {
-    if (!value) return "";
-    if (value.includes("@")) {
-        const [name, domain] = value.split("@");
-        return name[0] + "*****@" + domain;
+    if (!value) return '';
+    if (value.includes('@')) {
+        const [name, domain] = value.split('@');
+        return name[0] + '*****@' + domain;
     }
-    return value[0] + "*******" + value[value.length - 1];
+    return value[0] + '*******' + value[value.length - 1];
 }
 
 const continueBtn = document.getElementById('continueBtn');
-const errorMsg = document.getElementById('error-msg');
-const otpInput = document.getElementById('otp-input');
+const errorMsg    = document.getElementById('error-msg');
+const otpInput    = document.getElementById('otp-input');
 
 async function checkOTP() {
-    const otpValue = otpInput.value.trim();
-    const emailPhone = localStorage.getItem("userIdentifier");
+    const otpValue  = otpInput.value.trim();
+    const emailPhone = sessionStorage.getItem('userIdentifier');
 
-    errorMsg.textContent = "";
+    errorMsg.textContent = '';
 
     if (!otpValue) {
-        errorMsg.textContent = "Please enter the code";
+        errorMsg.textContent = 'Please enter the code';
         return;
     }
 
+    continueBtn.disabled = true;
+
     try {
         const response = await fetch(`${API_URL}/verify`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                emailPhone: emailPhone,
-                code: otpValue
-            })
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ emailPhone, code: otpValue })
         });
 
         const result = await response.json();
 
         if (!response.ok) {
-            errorMsg.textContent = result.error || "Incorrect code";
+            errorMsg.textContent = result.error || 'Incorrect code';
             return;
         }
 
-        // Code correct — user is now saved in the database!
-        localStorage.setItem("currentUserId", result.userId);
-        localStorage.setItem("maskedContact", result.maskedContact);
-
-        if (result.chatHandle) {
-            localStorage.setItem("chatHandle", result.chatHandle);
-        }
-
-        const signupUser = localStorage.getItem("signupUser");
-        if (signupUser) {
-            const userData = JSON.parse(signupUser);
-            if (result.chatHandle) {
-                userData.chatHandle = result.chatHandle;
-            }
-            localStorage.setItem("currentUserData", JSON.stringify(userData));
-        }
-
-        localStorage.removeItem("userIdentifier");
-
-        // ── Remember Me: save session so PWA auto signs in next time ──
-        const rememberMe = localStorage.getItem("rememberMePending") === "true";
+        // Build user object and save session
+        const rememberMe = sessionStorage.getItem('rememberMePending') === 'true';
         const user = {
-            id:         result.userId,
+            id:       result.userId,
             chatHandle: result.chatHandle,
-            name:       result.chatHandle,
-            initials:   (result.chatHandle || "U").slice(0, 2).toUpperCase()
+            name:     result.chatHandle,
+            initials: (result.chatHandle || 'U').slice(0, 2).toUpperCase()
         };
-        saveSession(user, result.userId, rememberMe);
-        localStorage.removeItem("rememberMePending");
-        // ─────────────────────────────────────────────────────────────
 
-        window.location.href = '../pages/home.html';
+        saveSession(user, result.userId, rememberMe); // from auth.js
 
-    } catch (error) {
-        console.error("Verification failed:", error);
-        errorMsg.textContent = "Server error. Please try again.";
+        // Clean up all temporary sign-in data
+        ['userIdentifier', 'maskedContact', 'pendingUserId',
+         'rememberMePending', 'chatHandle', 'signupUser'
+        ].forEach(k => sessionStorage.removeItem(k));
+
+        window.location.replace('../pages/home.html');
+
+    } catch (err) {
+        console.error('Verification failed:', err);
+        errorMsg.textContent = 'Server error. Please try again.';
+    } finally {
+        continueBtn.disabled = false;
     }
 }
 
-continueBtn.addEventListener('click', (event) => {
-    event.preventDefault();
-    checkOTP();
-});
-
-otpInput.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter') {
-        event.preventDefault();
-        checkOTP();
-    }
-});
+continueBtn.addEventListener('click', e => { e.preventDefault(); checkOTP(); });
+otpInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); checkOTP(); } });
