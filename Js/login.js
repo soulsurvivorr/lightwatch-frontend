@@ -8,12 +8,12 @@ const sendCodeBtn = document.getElementById('sendCodebtn');
 const errorMsg    = document.getElementById('error-msg');
 
 // ── Auto sign-in: if already logged in, skip to app ──────────
-document.addEventListener('DOMContentLoaded', () => {
+/*document.addEventListener('DOMContentLoaded', () => {
     const session = getSession(); // from auth.js
     if (session) {
         window.location.replace('./pages/home.html');
     }
-});
+});*/
 
 // ── Send OTP code ─────────────────────────────────────────────
 async function handleSubmit() {
@@ -62,7 +62,7 @@ async function handleSubmit() {
             sessionStorage.setItem('chatHandle', result.chatHandle);
         }
 
-        window.location.href = './pages/verification.html';
+        window.location.replace('./pages/verification.html');
 
     } catch (err) {
         console.error(err);

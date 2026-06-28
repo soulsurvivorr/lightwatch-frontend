@@ -63,7 +63,7 @@ async function handleSignup() {
 
         console.log("Signup initiated. Use code:", result.code);
 
-        window.location.href = "../pages/verification.html";
+        window.location.replace("../pages/verification.html");
 
     } catch (error) {
         console.error("Signup failed:", error);

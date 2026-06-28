@@ -58,6 +58,10 @@ function renderUserEverywhere(user) {
     const maskedContact = maskContactDisplay(user.emailPhone);
     const displayCity = user.city || user.location || user.region || "—";
 
+    // --- chat handle display ---
+    const chatHandleEl = document.getElementById("chatHandle");
+    if (chatHandleEl) chatHandleEl.textContent = user.chatHandle || "anon";
+
     // --- topbar ---
     const topbarUserName = document.getElementById("topbarUserName");
     const topbarAvatar = document.getElementById("topbarAvatar");
@@ -225,7 +229,7 @@ function renderLocationPage(user) {
             const currentState = lightSwitch.getAttribute("aria-checked") === "true" ? "on" : "off";
             const nextStatus = currentState === "on" ? "off" : "on";
             showLightConfirmPopup(nextStatus, () => {
-                const userId = localStorage.getItem("currentUserId");
+                const userId = getSession()?.user?.id || localStorage.getItem("currentUserId");
                 // Save to backend so ALL users see the update
                 fetch(`${API_URL}/lightstatus`, {
                     method: "POST",
@@ -246,8 +250,8 @@ function renderLocationPage(user) {
                         }, 10000);
                     }
                     // Send a chat notification to the room
-                    const myId = localStorage.getItem("currentUserId");
-                    const myHandle = localStorage.getItem("chatHandle") || "someone";
+                    const myId = getSession()?.user?.id || localStorage.getItem("currentUserId");
+                    const myHandle = getSession()?.user?.chatHandle || localStorage.getItem("chatHandle") || "someone";
                     if (myId) {
                         fetch(`${API_URL}/chats`, {
                             method: "POST",
@@ -347,8 +351,10 @@ function renderSignedOutEverywhere() {
 // -----------------------------------------------------
 async function loadCurrentUserProfile() {
 
-    const userId = localStorage.getItem("currentUserId");
-    const fallbackUser = JSON.parse(localStorage.getItem("currentUserData") || localStorage.getItem("signupUser") || "null");
+    // ── Get user ID from the active session (set by auth.js) ──
+    const session = getSession(); // defined in auth.js
+    const userId = session?.user?.id || localStorage.getItem("currentUserId");
+    const fallbackUser = session?.user || JSON.parse(localStorage.getItem("currentUserData") || localStorage.getItem("signupUser") || "null");
 
     if (!userId) {
         if (fallbackUser) {
@@ -394,28 +400,8 @@ async function loadCurrentUserProfile() {
 // Clears everything this app stored locally and sends
 // the user back to the sign-in page.
 // -----------------------------------------------------
-function signOut(event) {
-    if (event?.preventDefault) {
-        event.preventDefault();
-    }
-    localStorage.removeItem("currentUserId");
-    localStorage.removeItem("maskedContact");
-    localStorage.removeItem("rememberMe");
-    localStorage.removeItem("userIdentifier");
-    localStorage.removeItem("currentUserData");
-    localStorage.removeItem("signupUser");
-    localStorage.removeItem("chatHandle");
-
-    // ── Clear Remember Me session so auto sign-in doesn't trigger ──
-    localStorage.removeItem("app_auth_token");
-    localStorage.removeItem("app_user");
-    localStorage.removeItem("app_remember");
-    sessionStorage.removeItem("app_auth_token");
-    sessionStorage.removeItem("app_user");
-    // ───────────────────────────────────────────────────────────────
-
-    window.location.href = "../index.html";
-}
+// signOut is defined in auth.js — no duplicate needed here.
+// The buttons below just call it directly.
 
 document.getElementById("profileSignOutBtn")?.addEventListener("click", signOut);
 document.getElementById("sidebarSignOutBtn")?.addEventListener("click", signOut);
@@ -458,7 +444,7 @@ profileButton?.addEventListener('click', () => {
 // sidebar panel, so profile access works identically on
 // desktop and mobile without duplicating the panel markup
 bottomNavUserBtn?.addEventListener('click', () => {
-    window.location.href = '../pages/account.html';
+    window.location.replace('../pages/account.html');
 });
 
 sidebarOverlay?.addEventListener('click', closeSidebar);
