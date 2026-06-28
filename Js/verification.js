@@ -49,16 +49,25 @@ async function checkOTP() {
             return;
         }
 
-        // Build user object and save session
+
         const rememberMe = sessionStorage.getItem('rememberMePending') === 'true';
+        const userResponse = await fetch (`${API_URL}/user/${result.userId}`);
+        const fullUser = await userResponse.json();
         const user = {
-            id:       result.userId,
-            chatHandle: result.chatHandle,
-            name:     result.chatHandle,
-            initials: (result.chatHandle || 'U').slice(0, 2).toUpperCase()
+            id: fullUser._id,
+            name: fullUser.name,
+            city: fullUser.city,
+            region: fullUser.region,
+            chatHandle: fullUser.chatHandle,
+            initials: (fullUser.name || 'U')
+                .split(' ')
+                .map(word => word[0])
+                .join('')
+                .slice(0, 2)
+                .toUpperCase()
         };
 
-        saveSession(user, result.userId, rememberMe); // from auth.js
+        saveSession(user, result.userId, rememberMe);
 
         // Clean up all temporary sign-in data
         ['userIdentifier', 'maskedContact', 'pendingUserId',

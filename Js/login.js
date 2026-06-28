@@ -7,14 +7,11 @@ const userInput   = document.getElementById('user-input');
 const sendCodeBtn = document.getElementById('sendCodebtn');
 const errorMsg    = document.getElementById('error-msg');
 
-// ── Auto sign-in: if already logged in, skip to app ──────────
-document.addEventListener('DOMContentLoaded', () => {
-    const session = getSession(); // from auth.js
-    if (session) {
-        window.location.replace('./pages/home.html');
-    }
-});
+const existingSession = getSession();
 
+if (existingSession) {
+    window.location.replace('./pages/home.html');
+}
 // ── Send OTP code ─────────────────────────────────────────────
 async function handleSubmit() {
     const loginInput = userInput.value.trim();
