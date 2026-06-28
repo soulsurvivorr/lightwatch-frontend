@@ -195,6 +195,18 @@ function renderLocationPage(user) {
     window.currentChatLocation = location;
     window.dispatchEvent(new CustomEvent('locationReady', { detail: { location } }));
 
+    // ── Human-readable time since last report ──────────────────
+    function timeAgo(dateStr) {
+        const diffMs = Date.now() - new Date(dateStr).getTime();
+        const mins   = Math.floor(diffMs / 60000);
+        const hours  = Math.floor(diffMs / 3600000);
+        const days   = Math.floor(diffMs / 86400000);
+        if (mins  <  1) return "Just now";
+        if (mins  < 60) return mins  === 1 ? "1 minute ago"  : `${mins} minutes ago`;
+        if (hours < 24) return hours === 1 ? "1 hour ago"    : `${hours} hours ago`;
+        return days === 1 ? "Yesterday" : `${days} days ago`;
+    }
+
     // Load shared light status from backend so all users see the same state
     fetch(`${API_URL}/lightstatus?location=${encodeURIComponent(location)}`)
         .then(r => r.json())
@@ -202,8 +214,8 @@ function renderLocationPage(user) {
             setLightStatus(data.status || "unknown");
             const lastVerifiedEl = document.getElementById("lastVerified");
             if (lastVerifiedEl && data.reportedAt) {
-                const diff = Math.floor((Date.now() - new Date(data.reportedAt).getTime()) / 60000);
-                lastVerifiedEl.textContent = diff < 1 ? "Just now" : diff === 1 ? "1 minute ago" : `${diff} minutes ago`;
+                
+                lastVerifiedEl.textContent = timeAgo(data.reportedAt);
             }
         })
         .catch(() => setLightStatus("unknown"));
@@ -216,8 +228,8 @@ function renderLocationPage(user) {
                 setLightStatus(data.status || "unknown");
                 const lastVerifiedEl = document.getElementById("lastVerified");
                 if (lastVerifiedEl && data.reportedAt) {
-                    const diff = Math.floor((Date.now() - new Date(data.reportedAt).getTime()) / 60000);
-                    lastVerifiedEl.textContent = diff < 1 ? "Just now" : diff === 1 ? "1 minute ago" : `${diff} minutes ago`;
+                    
+                lastVerifiedEl.textContent = timeAgo(data.reportedAt);
                 }
             })
             .catch(() => {});
@@ -245,7 +257,8 @@ function renderLocationPage(user) {
                         let mins = 0;
                         const ticker = setInterval(() => {
                             mins++;
-                            if (mins >= 60) { clearInterval(ticker); lastVerifiedEl.textContent = "Over an hour ago"; }
+                            if (mins >= 1440) { clearInterval(ticker); lastVerifiedEl.textContent = "Over a day ago"; }
+                            else if (mins >= 60) lastVerifiedEl.textContent = mins >= 120 ? `${Math.floor(mins/60)} hours ago` : "1 hour ago";
                             else lastVerifiedEl.textContent = mins === 1 ? "1 minute ago" : `${mins} minutes ago`;
                         }, 10000);
                     }
