@@ -9,58 +9,14 @@ const REMEMBER_KEY = 'app_remember';
 
 // ── Read session from whichever storage was used ─────────────
 function getSession() {
-
-    // First check remembered login
-    const remembered =
-        localStorage.getItem(REMEMBER_KEY) === 'true';
-
-    let token;
-    let userRaw;
-
-    if (remembered) {
-        token = localStorage.getItem(AUTH_KEY);
-        userRaw = localStorage.getItem(USER_KEY);
-    } else {
-        token = sessionStorage.getItem(AUTH_KEY);
-        userRaw = sessionStorage.getItem(USER_KEY);
-    }
-
-    // Fallback protection
-    if (!token || !userRaw) {
-
-        // Maybe sessionStorage was cleared but localStorage still exists
-        const backupToken = localStorage.getItem(AUTH_KEY);
-        const backupUser = localStorage.getItem(USER_KEY);
-
-        if (backupToken && backupUser) {
-            try {
-                return {
-                    token: backupToken,
-                    user: JSON.parse(backupUser),
-                    remembered: true
-                };
-            } catch {
-                clearSession();
-                return null;
-            }
-        }
-
-        return null;
-    }
-
-    try {
-        return {
-            token,
-            user: JSON.parse(userRaw),
-            remembered
-        };
-    }
-    catch {
-
-        clearSession();
-        return null;
-    }
+    const remembered = localStorage.getItem(REMEMBER_KEY) === 'true';
+    const token   = remembered ? localStorage.getItem(AUTH_KEY)  : sessionStorage.getItem(AUTH_KEY);
+    const userRaw = remembered ? localStorage.getItem(USER_KEY)  : sessionStorage.getItem(USER_KEY);
+    if (!token || !userRaw) return null;
+    try { return { token, user: JSON.parse(userRaw), remembered }; }
+    catch { return null; }
 }
+
 // ── Save session after successful verification ────────────────
 function saveSession(user, token, rememberMe) {
     if (rememberMe) {
