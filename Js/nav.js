@@ -44,13 +44,13 @@ window.addEventListener('resize', applyNavVisibility);
 // -----------------------------------------------------
 function highlightActiveNav() {
 
-    const currentFile = window.location.pathname.split('/').pop() || './home.html';
+    const currentFile = window.location.pathname.split('/').pop() || 'home.html';
 
     const pageToSection = {
-        './pages/locations.html': 'home',
-        './pages/reports.html': 'reports',
-        './pages/alerts.html': 'alerts',
-        './pages/account.html': 'account'
+        'home.html': 'home',
+        'reports.html': 'reports',
+        'alerts.html': 'alerts',
+        'account.html': 'account'
     };
 
     const currentSection = pageToSection[currentFile] || 'home';

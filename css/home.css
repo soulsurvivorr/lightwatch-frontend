@@ -356,7 +356,8 @@
 }
 
 .page {
-  animation: fadeInUp 0.4s ease both;
+  animation: fadeInUp 0.24s ease both;
+  will-change: transform, opacity;
 }
 
 .report-list {
@@ -1086,6 +1087,7 @@
   .page {
     padding: 20px 16px 54px;
     min-height: calc(100vh - 132px);
+    animation-duration: 0.18s;
   }
 
   .page__header {
@@ -1170,7 +1172,7 @@
   .chat-card {
     position: fixed;
     inset: auto 10px 102px;
-    width: calc(100% - 20px);
+    width: min(calc(100% - 20px), 420px);
     max-width: 420px;
     max-height: 70vh;
     border-radius: 20px;
