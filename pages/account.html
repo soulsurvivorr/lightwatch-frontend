@@ -476,7 +476,7 @@
         <span class="bottom-nav-label">Reports</span>
       </a>
       <button type="button" class="bottom-nav-link bottom-nav-link--button" id="bottomNavUserBtn" data-nav="account" aria-label="User profile">
-        <span class="bottom-nav-icon">◐</span>
+        <span class="bottom-nav-icon bottom-nav-icon--user"><img src="../icons/user.png" alt="You"></span>
         <span class="bottom-nav-label">You</span>
       </button>
     </div>
@@ -502,8 +502,10 @@
           const el = id => document.getElementById(id);
 
           if (el("profileCity")) el("profileCity").textContent = user.city || "—";
-          if (el("profileChatHandle")) el("profileChatHandle").textContent = user.chatHandle || "—";
-          if (el("profileHandle")) el("profileHandle").textContent = user.chatHandle || "";
+          if (el("profileRegion")) el("profileRegion").textContent = user.region || "—";
+          const chatHandleValue = user.chatHandle || localStorage.getItem("chatHandle") || "—";
+          if (el("profileChatHandle")) el("profileChatHandle").textContent = chatHandleValue;
+          if (el("profileHandle")) el("profileHandle").textContent = user.chatHandle || localStorage.getItem("chatHandle") || "";
 
           // Days on LightWatch
           if (user.createdAt && el("statDays")) {
@@ -514,6 +516,14 @@
           // Member since
           if (user.createdAt && el("profileLastLogin")) {
             el("profileLastLogin").textContent = new Date(user.createdAt).toLocaleDateString([], { year: "numeric", month: "short", day: "numeric" });
+          }
+
+          // Real report/chat counts from backend user data
+          if (el("statReports")) {
+            el("statReports").textContent = String(user.reportCount ?? 0);
+          }
+          if (el("statChats")) {
+            el("statChats").textContent = String(user.chatCount ?? 0);
           }
 
           // Page greeting
@@ -544,7 +554,7 @@
       // Load recent chat messages by this user
       try {
         const userObj = JSON.parse(localStorage.getItem("currentUserData") || "{}");
-        const loc = userObj.city ? `${userObj.city}, ${userObj.region}` : userObj.region;
+        const loc = userObj.city ? `${userObj.city}, ${userObj.region}` : userObj.region || userObj.location;
         if (loc) {
           const res = await fetch(`${API_URL}/chats?location=${encodeURIComponent(loc)}`);
           if (res.ok) {
@@ -559,8 +569,10 @@
                   <div style="padding:10px 0;border-bottom:1px solid var(--border-soft);">
                     <div style="font-size:0.84rem;color:var(--text-bright);">"${c.text}"</div>
                     <div style="font-size:0.74rem;color:var(--text-faint);margin-top:3px;">${c.location} · ${new Date(c.createdAt).toLocaleString([], {dateStyle:"short",timeStyle:"short"})}</div>
-                  </div>`).join("") + (chats.filter(c=>(c.userId?._id||c.userId)===userId).length > 5 ? `<div style="font-size:0.78rem;color:var(--text-faint);padding-top:8px;">Showing 5 most recent</div>` : "");
-                document.getElementById("statChats").textContent = chats.filter(c=>(c.userId?._id||c.userId)===userId).length;
+                  </div>`).join("") + (chats.filter(c => (c.userId?._id || c.userId) === userId).length > 5 ? `<div style="font-size:0.78rem;color:var(--text-faint);padding-top:8px;">Showing 5 most recent</div>` : "");
+                const chatCount = chats.filter(c => (c.userId?._id || c.userId) === userId).length;
+                const statChatsEl = document.getElementById("statChats");
+                if (statChatsEl) statChatsEl.textContent = chatCount;
               }
             }
           }

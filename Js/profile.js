@@ -55,12 +55,12 @@ function maskContactDisplay(value) {
 function renderUserEverywhere(user) {
 
     const initials = getInitials(user.name);
-    const maskedContact = maskContactDisplay(user.emailPhone);
-    const displayCity = user.city || user.location || user.region || "—";
+    const contactValue = user.emailPhone || user.email || "—";
+    const displayLocation = [user.city, user.region].filter(Boolean).join(", ") || user.location || "—";
 
     // --- chat handle display ---
     const chatHandleEl = document.getElementById("chatHandle");
-    if (chatHandleEl) chatHandleEl.textContent = user.chatHandle || "anon";
+    if (chatHandleEl) chatHandleEl.textContent = user.chatHandle || localStorage.getItem("chatHandle") || "anon";
 
     // --- topbar ---
     const topbarUserName = document.getElementById("topbarUserName");
@@ -73,12 +73,14 @@ function renderUserEverywhere(user) {
     const profileAvatar = document.getElementById("profileAvatar");
     const profileContact = document.getElementById("profileContact");
     const profileRegion = document.getElementById("profileRegion");
+    const profileCity = document.getElementById("profileCity");
     const profileLastLogin = document.getElementById("profileLastLogin");
 
     if (profileName) profileName.textContent = user.name || "Not signed in";
     if (profileAvatar) profileAvatar.textContent = initials;
-    if (profileContact) profileContact.textContent = maskedContact;
-    if (profileRegion) profileRegion.textContent = displayCity;
+    if (profileContact) profileContact.textContent = contactValue;
+    if (profileRegion) profileRegion.textContent = displayLocation;
+    if (profileCity) profileCity.textContent = user.city || "—";
     if (profileLastLogin) profileLastLogin.textContent = "Logged in";
 
     // --- slide-out sidebar panel ---
@@ -90,8 +92,8 @@ function renderUserEverywhere(user) {
 
     if (sidebarName) sidebarName.textContent = user.name || "Not signed in";
     if (sidebarAvatar) sidebarAvatar.textContent = initials;
-    if (sidebarContact) sidebarContact.textContent = maskedContact;
-    if (sidebarRegion) sidebarRegion.textContent = displayCity;
+    if (sidebarContact) sidebarContact.textContent = contactValue;
+    if (sidebarRegion) sidebarRegion.textContent = displayLocation;
     if (sidebarLastLogin) {
         sidebarLastLogin.textContent = new Date().toLocaleString([], {
             hour: "2-digit",

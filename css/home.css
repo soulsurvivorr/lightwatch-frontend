@@ -1119,6 +1119,16 @@
 .bottom-nav-icon {
   font-size: 1.3rem;
   line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bottom-nav-icon img {
+  display: block;
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
 }
 
 .bottom-nav-link--active {
