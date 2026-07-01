@@ -18,6 +18,7 @@ function formatRelativeTime(dateStr) {
 function renderReports(reports) {
     const reportList = document.querySelector('.report-list');
     if (!reportList) return;
+    reportList.classList.remove('loading');
 
     if (!reports || reports.length === 0) {
         reportList.innerHTML = '<article class="report-item report-item--info"><div><strong>No recent reports yet</strong><p class="report-item__text">Once users start sharing light updates, they will appear here.</p></div><span class="report-item__time">—</span></article>';
@@ -38,7 +39,19 @@ function renderReports(reports) {
     }).join('');
 }
 
+function showReportLoading() {
+    const reportList = document.querySelector('.report-list');
+    if (!reportList) return;
+    reportList.classList.add('loading');
+    reportList.innerHTML = Array.from({ length: 4 }).map(() => `
+        <article class="report-item report-skeleton">
+          <div style="height: 60px;"></div>
+        </article>
+    `).join('');
+}
+
 function loadReports() {
+    showReportLoading();
     fetch(`${API_URL}/reports?limit=30`)
         .then(r => r.json())
         .then(data => {

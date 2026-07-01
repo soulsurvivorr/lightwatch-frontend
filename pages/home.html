@@ -14,44 +14,49 @@
     .hero-banner {
       background: linear-gradient(135deg, rgb(3,3,55) 0%, rgb(17,17,80) 60%, rgb(31,77,71) 100%);
       border-radius: var(--radius-lg);
-      padding: 28px 28px 24px;
-      margin-bottom: 20px;
+      padding: 16px 18px 14px;
+      margin-bottom: 14px;
       position: relative;
       overflow: hidden;
       border: 1px solid var(--border-soft);
+      animation: fadeInUp 0.5s ease both;
     }
     .hero-banner::before {
       content: "";
       position: absolute;
-      right: -40px; top: -40px;
-      width: 200px; height: 200px;
+      right: -36px; top: -36px;
+      width: 180px; height: 180px;
       border-radius: 50%;
       background: radial-gradient(circle, rgba(61,217,194,0.18), transparent 70%);
     }
     .hero-banner__eyebrow {
-      font-size: 0.72rem;
+      font-size: 0.7rem;
       color: var(--teal);
       text-transform: uppercase;
       letter-spacing: 0.1em;
-      margin-bottom: 6px;
+      margin-bottom: 4px;
     }
     .hero-banner__greeting {
       font-family: var(--font-display);
-      font-size: 1.55rem;
+      font-size: 1.25rem;
       font-weight: 700;
       color: white;
       line-height: 1.2;
-      margin-bottom: 6px;
+      margin-bottom: 5px;
     }
     .hero-banner__sub {
-      font-size: 0.88rem;
-      color: rgba(255,255,255,0.6);
-      margin-bottom: 16px;
+      font-size: 0.82rem;
+      color: rgba(255,255,255,0.65);
+      margin-bottom: 14px;
+      max-width: 580px;
     }
     .hero-banner__stats {
-      display: flex;
-      gap: 20px;
-      flex-wrap: wrap;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .hero-stat__value {
+      font-size: 1.05rem;
     }
     .hero-stat {
       display: flex;
@@ -314,47 +319,47 @@
             </button>
           </div>
 
-          <!-- SVG map: Kumasi with light glow effect -->
-          <div class="map-panel">
-            <div class="map-panel__label" id="locationMapLabel">Location map</div>
-            <div class="map-panel__canvas" style="position:relative; border-radius: var(--radius-md); overflow:hidden;">
-              <iframe
-                id="locationMap"
-                title="Location map"
-                src="https://maps.google.com/maps?q=Kumasi%2C+Ghana&t=&z=13&ie=UTF8&iwloc=&output=embed"
-                width="100%"
-                height="280"
-                style="border:0; display:block;"
-                loading="lazy"
-                referrerpolicy="no-referrer-when-downgrade">
-              </iframe>
-              <!-- Light status overlay on map -->
-              <div id="mapStatusOverlay" style="
-                position:absolute; bottom:12px; left:12px;
-                background:rgba(3,3,55,0.88);
-                border:1px solid var(--teal);
-                border-radius:999px;
-                padding:6px 14px;
-                font-size:0.78rem;
-                color:white;
-                display:flex;
-                align-items:center;
-                gap:8px;
-                backdrop-filter:blur(4px);
-              ">
-                <span class="pulse pulse--on" id="mapPulse" style="width:8px;height:8px;"></span>
-                <span id="mapStatusText">Light on in this area</span>
+                <!-- Status insight panel -->
+          <div class="status-insight-panel">
+            <div class="status-insight__header">
+              <div>
+                <span class="status-insight__title">Local grid snapshot</span>
+                <p class="status-insight__sub">A compact view of recent status checks for your area.</p>
+              </div>
+              <span class="badge badge--low">Live</span>
+            </div>
+            <div class="status-insight__body">
+              <div class="status-insight__graphic" aria-hidden="true">
+                <svg viewBox="0 0 120 120" width="120" height="120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+                      <stop offset="0%" stop-color="#3DD9C2" stop-opacity="0.55"/>
+                      <stop offset="100%" stop-color="#3DD9C2" stop-opacity="0"/>
+                    </radialGradient>
+                  </defs>
+                  <circle cx="60" cy="60" r="42" fill="url(#glow)" />
+                  <circle cx="60" cy="60" r="34" fill="#0B1A2C" stroke="#3DD9C2" stroke-width="2" />
+                  <path d="M58 34v26l16 9" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                  <circle cx="60" cy="60" r="4" fill="#FFFFFF" />
+                </svg>
+              </div>
+              <div class="status-insight__stats">
+                <div>
+                  <span class="status-insight__label">Confirmed sources</span>
+                  <strong id="confirmedSources">12</strong>
+                </div>
+                <div>
+                  <span class="status-insight__label">Light on checks</span>
+                  <strong id="lightOnCount">23 of 28</strong>
+                </div>
+                <div>
+                  <span class="status-insight__label">Recent outage</span>
+                  <strong id="lastOutageLength">—</strong>
+                </div>
               </div>
             </div>
           </div>
 
-          <div class="location-card__footer">
-            <div class="meta-summary">
-              <div><span class="meta-summary__label">Confirmed sources</span><strong id="confirmedSources">12 contributors</strong></div>
-              <div><span class="meta-summary__label">Light on</span><strong id="lightOnCount">23 of 28 checks</strong></div>
-              <div><span class="meta-summary__label">Outage length</span><strong id="lastOutageLength">—</strong></div>
-            </div>
-          </div>
         </div>
 
         <!-- Community chat -->
@@ -478,29 +483,6 @@
   <script src="../js/home.js"></script>
   <script src="../js/nav.js"></script>
   <script>
-    // ---- Keep map overlay in sync with light status ----
-    // profile.js calls setLightStatus() — we hook the map overlay here
-    const _origSetLS = window.setLightStatus;
-    window.setLightStatus = function(status) {
-      if (typeof _origSetLS === 'function') _origSetLS(status);
-      const mapPulse = document.getElementById('mapPulse');
-      const mapText  = document.getElementById('mapStatusText');
-      const statusIcon = document.getElementById('statusIcon');
-      if (status === 'on') {
-        if (mapPulse) { mapPulse.className = 'pulse pulse--on'; mapPulse.style.width='8px'; mapPulse.style.height='8px'; }
-        if (mapText)  mapText.textContent = 'Light on in this area';
-        if (statusIcon) { statusIcon.textContent = '💡'; statusIcon.className = 'status-hero__icon status-hero__icon--on'; }
-      } else if (status === 'off') {
-        if (mapPulse) { mapPulse.className = 'pulse pulse--off'; mapPulse.style.width='8px'; mapPulse.style.height='8px'; }
-        if (mapText)  mapText.textContent = 'Light is off in this area';
-        if (statusIcon) { statusIcon.textContent = '🌑'; statusIcon.className = 'status-hero__icon status-hero__icon--off'; }
-      } else {
-        if (mapPulse) { mapPulse.className = 'pulse pulse--low'; mapPulse.style.width='8px'; mapPulse.style.height='8px'; }
-        if (mapText)  mapText.textContent = 'Status unconfirmed';
-        if (statusIcon) { statusIcon.textContent = '❓'; statusIcon.className = 'status-hero__icon status-hero__icon--unknown'; }
-      }
-    };
-
     // ---- Toast notification system ----
     // Other pages/features call window.lwToast("message") to show a toast
     window.lwToast = function(msg, duration) {

@@ -284,30 +284,115 @@
   color: var(--text-muted);
 }
 
-.map-panel {
+.status-insight-panel {
+  padding: 18px;
+  border-radius: 22px;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-panel-raised);
+  box-shadow: 0 18px 45px rgba(15, 28, 65, 0.08);
+  animation: fadeInUp 0.35s ease both;
+}
+
+.status-insight__header {
   display: flex;
-  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
   gap: 14px;
+  margin-bottom: 16px;
 }
 
-.map-panel__label {
-  color: var(--text-faint);
-  font-size: 0.84rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
-.map-panel__canvas {
-  border-radius: 20px;
-  overflow: hidden;
-  box-shadow: 0 20px 50px rgba(10, 20, 60, 0.08);
-  background: white;
-}
-
-.map-panel__canvas svg {
+.status-insight__title {
   display: block;
-  width: 100%;
-  height: auto;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text-bright);
+  margin-bottom: 4px;
+}
+
+.status-insight__sub {
+  font-size: 0.78rem;
+  color: var(--text-faint);
+}
+
+.status-insight__body {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 14px;
+  align-items: center;
+}
+
+.status-insight__graphic {
+  width: 120px;
+  min-width: 120px;
+  display: grid;
+  place-items: center;
+}
+
+.status-insight__stats {
+  display: grid;
+  gap: 10px;
+}
+
+.status-insight__stats div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+}
+
+.status-insight__label {
+  color: var(--text-faint);
+  font-size: 0.78rem;
+}
+
+.status-insight__stats strong {
+  font-size: 0.92rem;
+  color: var(--text-bright);
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.page {
+  animation: fadeInUp 0.4s ease both;
+}
+
+.report-list {
+  display: grid;
+  gap: 12px;
+}
+
+.report-item {
+  transition: transform 0.18s ease, opacity 0.22s ease;
+}
+
+.report-item:hover {
+  transform: translateY(-2px);
+}
+
+.report-list.loading .report-item {
+  opacity: 0.5;
+}
+
+.report-skeleton {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(90deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.05) 100%);
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.2s linear infinite;
+}
+
+.report-skeleton::before {
+  content: "";
+  display: block;
+  padding-top: 14px;
+}
+
+@keyframes skeletonShimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }
 
 .location-card__footer {
@@ -1054,10 +1139,6 @@
 
   .light-toggle-row {
     padding: 12px 14px;
-  }
-
-  .map-panel__canvas iframe {
-    height: 210px;
   }
 
   .chat-thread {
