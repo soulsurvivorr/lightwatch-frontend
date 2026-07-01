@@ -267,18 +267,18 @@
               <span class="card__title" id="locationNameCard">Your chosen location</span>
               <p class="card__meta" id="locationMeta">Location set by you</p>
             </div>
-            <span class="badge badge--on" id="statusBadge">Light on</span>
+            <span class="badge badge--low" id="statusBadge">Checking status</span>
           </div>
 
           <!-- Status hero row -->
           <div class="status-hero">
-            <div class="status-hero__icon status-hero__icon--on" id="statusIcon">💡</div>
+            <div class="status-hero__icon status-hero__icon--unknown" id="statusIcon">❔</div>
             <div class="status-hero__text">
-              <div class="status-hero__title" id="statusPillText">Light is on now</div>
+              <div class="status-hero__title" id="statusPillText">Checking live status</div>
               <div class="status-hero__sub">
                 Last verified: <strong id="lastVerified">—</strong>
                 &nbsp;·&nbsp;
-                <span class="pulse pulse--on" id="statusPulse" style="display:inline-block;width:8px;height:8px;vertical-align:middle;"></span>
+                <span class="pulse pulse--low" id="statusPulse" style="display:inline-block;width:8px;height:8px;vertical-align:middle;"></span>
                 Live
               </div>
             </div>
@@ -311,11 +311,11 @@
               <span class="light-toggle-row__title">Report current status</span>
               <span class="light-toggle-row__sub">Flip this only if you can actually see the area right now</span>
             </div>
-            <button type="button" class="light-switch light-switch--on" id="lightSwitch" role="switch" aria-checked="true" aria-label="Toggle light status">
+            <button type="button" class="light-switch" id="lightSwitch" role="switch" aria-checked="false" aria-label="Toggle light status">
               <span class="light-switch__track">
                 <span class="light-switch__thumb"></span>
               </span>
-              <span class="light-switch__state" id="lightSwitchState">ON</span>
+              <span class="light-switch__state" id="lightSwitchState">CHECK</span>
             </button>
           </div>
 

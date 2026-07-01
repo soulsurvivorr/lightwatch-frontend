@@ -122,15 +122,17 @@ function setLightStatus(status) {
     const statusBadge = document.getElementById("statusBadge");
     const statusPulse = document.getElementById("statusPulse");
     const statusPillText = document.getElementById("statusPillText");
+    const statusIcon = document.getElementById("statusIcon");
     const lightSwitch = document.getElementById("lightSwitch");
     const lightSwitchState = document.getElementById("lightSwitchState");
 
-    if (!statusBadge || !statusPulse || !statusPillText || !lightSwitch || !lightSwitchState) {
+    if (!statusBadge || !statusPulse || !statusPillText || !statusIcon || !lightSwitch || !lightSwitchState) {
         return;
     }
 
     statusBadge.className = "badge";
     statusPulse.className = "pulse";
+    statusIcon.className = "status-hero__icon";
 
     if (status === "on") {
         statusBadge.classList.add("badge--on");
@@ -274,6 +276,7 @@ function renderLocationPage(user) {
             });
     }
 
+    setLightStatus('unknown');
     loadLocationStats();
 
     // Poll light status every 30s so all users stay in sync
