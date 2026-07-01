@@ -44,7 +44,7 @@
 html, body {
   margin: 0;
   padding: 0;
-  overscroll-behavior: none;
+  /*overscroll-behavior: none;*/
   touch-action: pan-y;
   max-width: 100%;
   overflow-x: hidden;
