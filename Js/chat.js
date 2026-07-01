@@ -47,7 +47,9 @@ loadUserChatHandle();
 // HELPERS
 // -------------------------------------------------------
 function getCurrentUserId() {
-    return localStorage.getItem("currentUserId");
+    const session = typeof getSession === 'function' ? getSession() : null;
+    if (session?.user?.id) return session.user.id;
+    return localStorage.getItem("currentUserId") || sessionStorage.getItem("currentUserId");
 }
 
 function getCurrentChatLocation() {
