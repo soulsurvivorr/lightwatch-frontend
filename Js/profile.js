@@ -207,30 +207,86 @@ function renderLocationPage(user) {
         return days === 1 ? "Yesterday" : `${days} days ago`;
     }
 
-    // Load shared light status from backend so all users see the same state
-    fetch(`${API_URL}/lightstatus?location=${encodeURIComponent(location)}`)
-        .then(r => r.json())
-        .then(data => {
-            setLightStatus(data.status || "unknown");
-            const lastVerifiedEl = document.getElementById("lastVerified");
-            if (lastVerifiedEl && data.reportedAt) {
-                
-                lastVerifiedEl.textContent = timeAgo(data.reportedAt);
-            }
-        })
-        .catch(() => setLightStatus("unknown"));
+    function formatDuration(ms) {
+        if (ms == null) return '—';
+        const totalMinutes = Math.round(ms / 60000);
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
+        if (hours === 0) return `${minutes}m`;
+        return `${hours}h ${minutes}m`;
+    }
+
+    function renderLightStats(stats) {
+        const heroContributors = document.getElementById('heroContributors');
+        const heroChecks = document.getElementById('heroChecks');
+        const heroUptime = document.getElementById('heroUptime');
+        const heroContributorsPill = document.getElementById('heroContributorsPill');
+        const heroChecksPill = document.getElementById('heroChecksPill');
+        const sourceConfidence = document.getElementById('sourceConfidence');
+        const confirmedSources = document.getElementById('confirmedSources');
+        const lightOnCount = document.getElementById('lightOnCount');
+        const avgOutageEl = document.getElementById('avgOutage');
+        const outageFreqEl = document.getElementById('outageFreq');
+        const lastOutageLengthEl = document.getElementById('lastOutageLength');
+
+        if (!stats) {
+            if (heroContributors) heroContributors.textContent = '—';
+            if (heroChecks) heroChecks.textContent = '—';
+            if (heroUptime) heroUptime.textContent = '—';
+            if (heroContributorsPill) heroContributorsPill.textContent = '— contributors';
+            if (heroChecksPill) heroChecksPill.textContent = '— total checks';
+            if (sourceConfidence) sourceConfidence.textContent = '—';
+            if (confirmedSources) confirmedSources.textContent = '—';
+            if (lightOnCount) lightOnCount.textContent = '—';
+            if (avgOutageEl) avgOutageEl.textContent = '—';
+            if (outageFreqEl) outageFreqEl.textContent = '—';
+            if (lastOutageLengthEl) lastOutageLengthEl.textContent = '—';
+            return;
+        }
+
+        if (heroContributors) heroContributors.textContent = stats.uniqueContributors.toString();
+        if (heroChecks) heroChecks.textContent = stats.totalChecks.toString();
+        if (heroUptime) heroUptime.textContent = stats.uptimePercent != null ? `${stats.uptimePercent}%` : '—';
+        if (heroContributorsPill) heroContributorsPill.textContent = `${stats.uniqueContributors} contributors`;
+        if (heroChecksPill) heroChecksPill.textContent = `${stats.totalChecks} total checks`;
+        if (sourceConfidence) sourceConfidence.textContent = `${stats.sourceConfidence}%`;
+        if (confirmedSources) confirmedSources.textContent = `${stats.uniqueContributors} contributors`;
+        if (lightOnCount) lightOnCount.textContent = `${stats.onChecksThisWeek} of ${stats.checksThisWeek} checks`;
+        if (avgOutageEl) avgOutageEl.textContent = formatDuration(stats.avgOutageMs);
+        if (outageFreqEl) outageFreqEl.textContent = `${stats.outageFreq} this week`;
+        if (lastOutageLengthEl) lastOutageLengthEl.textContent = formatDuration(stats.lastOutageMs);
+    }
+
+    function loadLocationStats() {
+        fetch(`${API_URL}/lightstatus?location=${encodeURIComponent(location)}`)
+            .then(r => r.json())
+            .then(data => {
+                setLightStatus(data.status || 'unknown');
+                const lastVerifiedEl = document.getElementById('lastVerified');
+                if (lastVerifiedEl && data.reportedAt) {
+                    lastVerifiedEl.textContent = timeAgo(data.reportedAt);
+                }
+                renderLightStats(data.stats);
+            })
+            .catch(() => {
+                setLightStatus('unknown');
+                renderLightStats(null);
+            });
+    }
+
+    loadLocationStats();
 
     // Poll light status every 30s so all users stay in sync
     const lightPoll = setInterval(() => {
         fetch(`${API_URL}/lightstatus?location=${encodeURIComponent(location)}`)
             .then(r => r.json())
             .then(data => {
-                setLightStatus(data.status || "unknown");
-                const lastVerifiedEl = document.getElementById("lastVerified");
+                setLightStatus(data.status || 'unknown');
+                const lastVerifiedEl = document.getElementById('lastVerified');
                 if (lastVerifiedEl && data.reportedAt) {
-                    
-                lastVerifiedEl.textContent = timeAgo(data.reportedAt);
+                    lastVerifiedEl.textContent = timeAgo(data.reportedAt);
                 }
+                renderLightStats(data.stats);
             })
             .catch(() => {});
     }, 10000);
@@ -251,6 +307,7 @@ function renderLocationPage(user) {
                 .then(r => r.json())
                 .then(() => {
                     setLightStatus(nextStatus);
+                    loadLocationStats();
                     const lastVerifiedEl = document.getElementById("lastVerified");
                     if (lastVerifiedEl) {
                         lastVerifiedEl.textContent = "Just now";
