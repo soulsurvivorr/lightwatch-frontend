@@ -138,6 +138,7 @@ function setLightStatus(status) {
         statusBadge.classList.add("badge--on");
         statusBadge.textContent = "Light on";
         statusPulse.classList.add("pulse--on");
+        statusIcon.classList.add("status-hero__icon--on");
         statusPillText.textContent = "Light is on now";
         lightSwitch.classList.add("light-switch--on");
         lightSwitch.classList.remove("light-switch--off");
@@ -147,15 +148,26 @@ function setLightStatus(status) {
         statusBadge.classList.add("badge--off");
         statusBadge.textContent = "Light off";
         statusPulse.classList.add("pulse--off");
+        statusIcon.classList.add("status-hero__icon--off");
         statusPillText.textContent = "Light is off now";
         lightSwitch.classList.remove("light-switch--on");
         lightSwitch.classList.add("light-switch--off");
         lightSwitchState.textContent = "OFF";
         lightSwitch.setAttribute("aria-checked", "false");
+    } else if (status === "loading") {
+        statusBadge.classList.add("badge--low");
+        statusBadge.textContent = "Checking status";
+        statusPulse.classList.add("pulse--low");
+        statusIcon.classList.add("status-hero__icon--unknown");
+        statusPillText.textContent = "Checking live status";
+        lightSwitch.classList.remove("light-switch--on", "light-switch--off");
+        lightSwitchState.textContent = "CHECK";
+        lightSwitch.setAttribute("aria-checked", "false");
     } else {
         statusBadge.classList.add("badge--low");
         statusBadge.textContent = "Unconfirmed";
         statusPulse.classList.add("pulse--low");
+        statusIcon.classList.add("status-hero__icon--unknown");
         statusPillText.textContent = "Flip if you can see the area";
         lightSwitch.classList.remove("light-switch--on", "light-switch--off");
         lightSwitchState.textContent = "CHECK";
@@ -276,7 +288,7 @@ function renderLocationPage(user) {
             });
     }
 
-    setLightStatus('unknown');
+    setLightStatus('loading');
     loadLocationStats();
 
     // Poll light status every 30s so all users stay in sync
