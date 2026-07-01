@@ -31,10 +31,10 @@ self.addEventListener('push', event => {
 
     const options = {
         body: data.body,
-        icon: '/images/dev-logo.png',
-        badge: '/images/dev-logo.png',
-        tag: 'light-status',        // replaces previous notification instead of stacking
-        renotify: true,             // vibrate/sound even when replacing
+        icon: data.icon || '/images/dev-logo.png',
+        badge: data.badge || '/images/dev-logo.png',
+        tag: data.tag || 'light-status',
+        renotify: true,
         data: { url: data.url || '/pages/home.html' }
     };
 
