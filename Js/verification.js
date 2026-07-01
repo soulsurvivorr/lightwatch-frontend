@@ -28,7 +28,7 @@ const otpInput    = document.getElementById('otp-input');
 
 async function checkOTP() {
     const otpValue  = otpInput.value.trim();
-    const emailPhone = sessionStorage.getItem('userIdentifier');
+    const emailPhone = getVerificationValue('userIdentifier');
 
     errorMsg.textContent = '';
 
