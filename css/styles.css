@@ -46,6 +46,8 @@ html, body {
   padding: 0;
   overscroll-behavior: none;
   touch-action: pan-y;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 body {

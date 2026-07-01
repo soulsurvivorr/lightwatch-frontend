@@ -236,7 +236,7 @@
 .location-card__info {
   display: grid;
   gap: 14px;
-  min-width: 240px;
+  min-width: 0;
 }
 
 .location-card__row {
@@ -427,6 +427,7 @@
 .page {
   animation: fadeInUp 0.24s ease both;
   will-change: transform, opacity;
+  overflow-x: hidden;
 }
 
 .report-list {
@@ -629,13 +630,16 @@
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
-  font-size: 1.8rem;
-  line-height: 1;
-  position: absolute;
-  top: 18px;
-  right: 18px;
-  cursor: pointer;
-}
+  }
+
+  .user-sidebar__close {
+    font-size: 1.8rem;
+    line-height: 1;
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    cursor: pointer;
+  }
 
 .profile-card--sidebar {
   padding-top: 16px;
