@@ -20,13 +20,27 @@ function getSession() {
 // ── Save session after successful verification ────────────────
 function saveSession(user, token, rememberMe) {
     if (rememberMe) {
-        localStorage.setItem(AUTH_KEY,     token);
-        localStorage.setItem(USER_KEY,     JSON.stringify(user));
-        localStorage.setItem(REMEMBER_KEY, 'true');
+        localStorage.setItem(AUTH_KEY,        token);
+        localStorage.setItem(USER_KEY,        JSON.stringify(user));
+        localStorage.setItem(REMEMBER_KEY,    'true');
+        localStorage.setItem('currentUserId', user.id);
+        localStorage.setItem('currentUserData', JSON.stringify(user));
+
+        sessionStorage.removeItem(AUTH_KEY);
+        sessionStorage.removeItem(USER_KEY);
+        sessionStorage.removeItem('currentUserId');
+        sessionStorage.removeItem('currentUserData');
     } else {
-        sessionStorage.setItem(AUTH_KEY, token);
-        sessionStorage.setItem(USER_KEY, JSON.stringify(user));
+        sessionStorage.setItem(AUTH_KEY,        token);
+        sessionStorage.setItem(USER_KEY,        JSON.stringify(user));
+        sessionStorage.setItem('currentUserId', user.id);
+        sessionStorage.setItem('currentUserData', JSON.stringify(user));
+
         localStorage.removeItem(REMEMBER_KEY);
+        localStorage.removeItem(AUTH_KEY);
+        localStorage.removeItem(USER_KEY);
+        localStorage.removeItem('currentUserId');
+        localStorage.removeItem('currentUserData');
     }
 }
 
