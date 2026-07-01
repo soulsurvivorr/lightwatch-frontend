@@ -218,6 +218,21 @@ document.getElementById('mobileChatClose')?.addEventListener('click', () => {
     document.body.classList.remove('mobile-chat-open');
 });
 
+// Safety net: the mobile chat popup + its scroll-lock are only meant to
+// exist below the 720px breakpoint. If the popup gets opened and the
+// window is then resized past that point (dev tools, laptop window
+// resizing, etc.), force both off immediately rather than trusting CSS
+// alone to sort it out.
+function closeMobileChatPopup() {
+    document.querySelector('.chat-card')?.classList.remove('chat-card--mobile-open');
+    document.body.classList.remove('mobile-chat-open');
+}
+const desktopBreakpoint = window.matchMedia('(min-width: 721px)');
+desktopBreakpoint.addEventListener('change', (e) => {
+    if (e.matches) closeMobileChatPopup();
+});
+if (desktopBreakpoint.matches) closeMobileChatPopup();
+
 // -------------------------------------------------------
 // SEND A MESSAGE
 // No optimistic temp IDs. We POST to the server, get back
