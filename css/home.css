@@ -620,15 +620,18 @@
   background: rgba(0, 0, 0, 0.4);
   opacity: 0;
   visibility: hidden;
-    pointer-events: none;
-    transition: opacity 0.25s ease, visibility 0.25s ease;
-    z-index: 30;
-  }
+  pointer-events: none;
+  transition: opacity 0.25s ease, visibility 0.25s ease;
+  z-index: 30;
+}
 
-  .sidebar-overlay--visible {
-    opacity: 1;
-    visibility: visible;
-    pointer-events: auto;
+.sidebar-overlay--visible {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.user-sidebar__close {
   font-size: 1.8rem;
   line-height: 1;
   position: absolute;

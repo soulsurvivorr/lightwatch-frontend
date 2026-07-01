@@ -50,6 +50,17 @@ html, body {
   overflow-x: hidden;
 }
 
+@media (min-width: 721px) {
+  /* Hard guarantee: vertical scrolling must always work at desktop
+     widths. This overrides anything else in the cascade (short of an
+     inline style set by JS) so it can't be silently defeated by a
+     stray rule elsewhere. */
+  html, body {
+    overflow-y: auto !important;
+    height: auto !important;
+  }
+}
+
 body {
   background-color: var(--bg-deep);
   background-image:
