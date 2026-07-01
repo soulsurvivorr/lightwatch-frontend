@@ -608,10 +608,12 @@
   z-index: 40;
   padding: 28px 24px;
   overflow-y: auto;
+  pointer-events: none;
 }
 
 .user-sidebar-panel--open {
   right: 0;
+  pointer-events: auto;
 }
 
 .sidebar-overlay {
