@@ -3,8 +3,12 @@
 //  Requires: auth.js loaded BEFORE this script
 // ============================================================
 
-const userValue     = sessionStorage.getItem('userIdentifier');
-const maskedContact = sessionStorage.getItem('maskedContact');
+function getVerificationValue(key) {
+    return sessionStorage.getItem(key) || localStorage.getItem(key);
+}
+
+const userValue     = getVerificationValue('userIdentifier');
+const maskedContact = getVerificationValue('maskedContact');
 
 document.getElementById('code-text').textContent =
     `Enter the code we sent to ${maskedContact || maskValue(userValue)}`;
@@ -50,7 +54,7 @@ async function checkOTP() {
         }
 
 
-        const rememberMe = sessionStorage.getItem('rememberMePending') === 'true';
+        const rememberMe = getVerificationValue('rememberMePending') === 'true';
         const userResponse = await fetch (`${API_URL}/user/${result.userId}`);
         const fullUser = await userResponse.json();
         const user = {
