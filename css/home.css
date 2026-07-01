@@ -257,28 +257,52 @@
 
 .location-card__meta-panel {
   display: flex;
-  flex-direction: column;
-  gap: 12px;
-    min-width: 0;
-    width: 100%;
-  align-items: center;
+  flex-direction: row;
+  flex-wrap: wrap;
   gap: 10px;
-  padding: 12px 14px;
-  border-radius: 14px;
-  background: var(--bg-panel);
+  min-width: 0;
+  width: 100%;
+}
+
+/* The actual pills — this rule was missing before, which is why the
+   Contributors / Total checks chips had no shape of their own. */
+.meta-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 999px;
   border: 1px solid var(--border-soft);
   color: var(--text-bright);
-  font-size: 0.88rem;
+  font-size: 0.84rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.meta-pill::before {
+  font-size: 0.85rem;
+  line-height: 1;
 }
 
 .meta-pill--accent {
   background: var(--teal-dim);
   color: white;
+  border-color: rgba(61, 217, 194, 0.35);
+  box-shadow: 0 6px 16px rgba(61, 217, 194, 0.15);
+}
+
+.meta-pill--accent::before {
+  content: "👥";
 }
 
 .meta-pill--muted {
   background: var(--bg-panel-raised);
   color: var(--text-muted);
+}
+
+.meta-pill--muted::before {
+  content: "✓";
+  color: var(--teal);
 }
 
 .status-insight-panel {
@@ -321,8 +345,56 @@
 .status-insight__graphic {
   width: 120px;
   min-width: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Local grid snapshot — a small mosaic of the recent status checks
+   instead of a generic clock icon. Teal = light on, amber = light off. */
+.status-grid {
   display: grid;
-  place-items: center;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  width: 100%;
+}
+
+.status-grid__cell {
+  aspect-ratio: 1 / 1;
+  border-radius: 3px;
+  background: var(--teal);
+  opacity: 0.9;
+}
+
+.status-grid__cell--off {
+  background: var(--amber);
+}
+
+.status-grid__legend {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.68rem;
+  color: var(--text-faint);
+}
+
+.status-grid__legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.status-grid__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  display: inline-block;
+  background: var(--teal);
+}
+
+.status-grid__dot--off {
+  background: var(--amber);
 }
 
 .status-insight__stats {
@@ -543,11 +615,11 @@
 }
 
 .sidebar-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.4);
-    opacity: 0;
-    visibility: hidden;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  visibility: hidden;
     pointer-events: none;
     transition: opacity 0.25s ease, visibility 0.25s ease;
     z-index: 30;
@@ -557,16 +629,13 @@
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
-  }
-
-  .user-sidebar__close {
-    font-size: 1.8rem;
-    line-height: 1;
-    position: absolute;
-    top: 18px;
-    right: 18px;
-    cursor: pointer;
-  }
+  font-size: 1.8rem;
+  line-height: 1;
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  cursor: pointer;
+}
 
 .profile-card--sidebar {
   padding-top: 16px;
@@ -1170,7 +1239,6 @@
     inset: auto 10px 102px;
     width: min(calc(100% - 20px), 420px);
     max-width: 420px;
-    max-height: 70vh;
     border-radius: 20px;
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.18);
     background: var(--bg-panel);
@@ -1185,6 +1253,19 @@
   .chat-card--mobile-open {
     display: flex;
     transform: translateY(0);
+  }
+
+  /* Header and form stay fixed height; the thread fills whatever
+     space is left between them, based on the card's actual anchored
+     top/bottom position rather than a guessed vh value. */
+  .chat-card--mobile-open .chat-card__head,
+  .chat-card--mobile-open .chat-form {
+    flex-shrink: 0;
+  }
+
+  .chat-card--mobile-open .chat-thread {
+    flex: 1 1 auto;
+    max-height: none;
   }
 
   .chat-card__head {
@@ -1246,6 +1327,23 @@
 
   body.mobile-chat-open {
     overflow: hidden;
+  }
+}
+
+@media (max-width: 400px) {
+  .status-insight__body {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+  }
+
+  .status-insight__graphic {
+    width: 160px;
+  }
+
+  .status-insight__stats div {
+    justify-content: space-between;
+    text-align: left;
   }
 }
 
