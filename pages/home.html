@@ -9,6 +9,11 @@
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/home.css" />
   <link rel="stylesheet" href="../css/styles.css">
+  <!-- Warms the cache for the pages reachable from the bottom/top nav so
+       tapping Home, Reports, or Account feels instant instead of doing a
+       full fresh load each time. -->
+  <link rel="prefetch" href="./reports.html">
+  <link rel="prefetch" href="./account.html">
   <style>
     /* ---- Hero greeting banner ---- */
     .hero-banner {
@@ -185,21 +190,28 @@
       transform: translateX(-50%) translateY(0);
     }
 
-    /* Mobile chat: bigger panel */
-    @media (max-width: 720px) {
-      .chat-card--mobile-open {
-        height: 70vh !important;
-      }
-      .chat-thread {
-        max-height: calc(70vh - 130px) !important;
-      }
-    }
+    /* Mobile chat sizing/positioning now lives entirely in home.css
+       (.chat-card--mobile-open) to avoid two files fighting over the
+       same properties. */
     @media (max-width: 480px) {
       .hero-banner__location {
         top: 12px; right: 12px;
         padding: 5px 10px;
         font-size: 0.6rem;
+        max-width: 46%;
       }
+      .hero-banner__location span:last-child {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+    }
+    @media (max-width: 400px) {
+      .hero-banner { padding: 14px 14px 12px; }
+      .hero-banner__greeting { font-size: 1.1rem; }
+      .hero-banner__stats { gap: 8px; }
+      .hero-stat__value { font-size: 1rem; }
+      .hero-stat__label { font-size: 0.62rem; }
     }
   </style>
 </head>
@@ -330,18 +342,43 @@
             </div>
             <div class="status-insight__body">
               <div class="status-insight__graphic" aria-hidden="true">
-                <svg viewBox="0 0 120 120" width="120" height="120" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <defs>
-                    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
-                      <stop offset="0%" stop-color="#3DD9C2" stop-opacity="0.55"/>
-                      <stop offset="100%" stop-color="#3DD9C2" stop-opacity="0"/>
-                    </radialGradient>
-                  </defs>
-                  <circle cx="60" cy="60" r="42" fill="url(#glow)" />
-                  <circle cx="60" cy="60" r="34" fill="#0B1A2C" stroke="#3DD9C2" stroke-width="2" />
-                  <path d="M58 34v26l16 9" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-                  <circle cx="60" cy="60" r="4" fill="#FFFFFF" />
-                </svg>
+                <div class="status-grid" id="statusGrid">
+                  <!-- Each cell = one status check. Teal = light on, amber = light off.
+                       Static pattern matching the "23 of 28" summary below; wire this
+                       up to real per-check data later by toggling .status-grid__cell--off. -->
+                  <span class="status-grid__cell status-grid__cell--on"></span>
+                  <span class="status-grid__cell status-grid__cell--on"></span>
+                  <span class="status-grid__cell status-grid__cell--on"></span>
+                  <span class="status-grid__cell status-grid__cell--off"></span>
+                  <span class="status-grid__cell status-grid__cell--on"></span>
+                  <span class="status-grid__cell status-grid__cell--on"></span>
+                  <span class="status-grid__cell status-grid__cell--on"></span>
+                  <span class="status-grid__cell status-grid__cell--on"></span>
+                  <span class="status-grid__cell status-grid__cell--on"></span>
+                  <span class="status-grid__cell status-grid__cell--off"></span>
+                  <span class="status-grid__cell status-grid__cell--on"></span>
+                  <span class="status-grid__cell status-grid__cell--on"></span>
+                  <span class="status-grid__cell status-grid__cell--on"></span>
+                  <span class="status-grid__cell status-grid__cell--on"></span>
+                  <span class="status-grid__cell status-grid__cell--on"></span>
+                  <span class="status-grid__cell status-grid__cell--on"></span>
+                  <span class="status-grid__cell status-grid__cell--off"></span>
+                  <span class="status-grid__cell status-grid__cell--on"></span>
+                  <span class="status-grid__cell status-grid__cell--on"></span>
+                  <span class="status-grid__cell status-grid__cell--on"></span>
+                  <span class="status-grid__cell status-grid__cell--on"></span>
+                  <span class="status-grid__cell status-grid__cell--off"></span>
+                  <span class="status-grid__cell status-grid__cell--on"></span>
+                  <span class="status-grid__cell status-grid__cell--on"></span>
+                  <span class="status-grid__cell status-grid__cell--on"></span>
+                  <span class="status-grid__cell status-grid__cell--on"></span>
+                  <span class="status-grid__cell status-grid__cell--off"></span>
+                  <span class="status-grid__cell status-grid__cell--on"></span>
+                </div>
+                <div class="status-grid__legend">
+                  <span><i class="status-grid__dot status-grid__dot--on"></i>On</span>
+                  <span><i class="status-grid__dot status-grid__dot--off"></i>Off</span>
+                </div>
               </div>
               <div class="status-insight__stats">
                 <div>
@@ -475,14 +512,14 @@
     </div>
   </div>
   
-  <script src="../js/config.js"></script>
-  <script src="../js/auth.js"></script>
-  <script src="../js/profile.js"></script>
-  <script src="../Js/notification.js"></script>
-  <script src="../js/chat.js"></script>
-  <script src="../js/home.js"></script>
-  <script src="../js/nav.js"></script>
-  <script>
+  <script src="../js/config.js" defer></script>
+  <script src="../js/auth.js" defer></script>
+  <script src="../js/profile.js" defer></script>
+  <script src="../Js/notification.js" defer></script>
+  <script src="../js/chat.js" defer></script>
+  <script src="../js/home.js" defer></script>
+  <script src="../js/nav.js" defer></script>
+  <script defer>
     // ---- Toast notification system ----
     // Other pages/features call window.lwToast("message") to show a toast
     window.lwToast = function(msg, duration) {

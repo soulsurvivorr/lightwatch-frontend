@@ -608,12 +608,10 @@
   z-index: 40;
   padding: 28px 24px;
   overflow-y: auto;
-  pointer-events: none;
 }
 
 .user-sidebar-panel--open {
   right: 0;
-  pointer-events: auto;
 }
 
 .sidebar-overlay {
@@ -1254,6 +1252,10 @@
 
   .chat-card--mobile-open {
     display: flex;
+    top: 72px;
+    bottom: 102px;
+    height: calc(100vh - 174px);
+    height: calc(100dvh - 174px);
     transform: translateY(0);
   }
 
