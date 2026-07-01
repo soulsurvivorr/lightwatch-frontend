@@ -46,7 +46,6 @@ html, body {
   padding: 0;
   overscroll-behavior: none;
   touch-action: pan-y;
-  overflow-x: hidden;
 }
 
 body {
