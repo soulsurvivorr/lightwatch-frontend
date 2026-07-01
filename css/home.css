@@ -1344,6 +1344,17 @@
   }
 }
 
+@media (min-width: 721px) {
+  /* Failsafe: the "chat open" scroll-lock is only meant for the narrow
+     mobile popup. If the browser window gets resized wider while the
+     chat is open (e.g. testing breakpoints in dev tools), this makes
+     sure the lock can never leave the page unscrollable at desktop
+     widths, regardless of what class got left on <body>. */
+  body.mobile-chat-open {
+    overflow: auto;
+  }
+}
+
 @media (max-width: 400px) {
   .status-insight__body {
     grid-template-columns: 1fr;
