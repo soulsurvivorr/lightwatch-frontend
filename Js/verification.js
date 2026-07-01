@@ -88,5 +88,15 @@ async function checkOTP() {
     }
 }
 
+// Update button color base on input
+function updateButtonState() {
+    if (otpInput.value.trim().length > 0) {
+        continueBtn.classList.add('active');
+    } else {
+        continueBtn.classList.remove('active');
+    }
+}
+
+otpInput.addEventListener('input', updateButtonState);
 continueBtn.addEventListener('click', e => { e.preventDefault(); checkOTP(); });
 otpInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); checkOTP(); } });

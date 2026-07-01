@@ -139,6 +139,14 @@
             background-color: rgb(90, 96, 155);
         }
 
+        button.active {
+            background-color: #007bff
+        }
+
+        button.active:hover {
+            background-color: #0056b3;
+        }
+
         @media (max-width: 480px) {
             header {
                 padding: .5rem 1rem;

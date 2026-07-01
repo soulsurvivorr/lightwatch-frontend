@@ -81,7 +81,15 @@ function renderUserEverywhere(user) {
     if (profileContact) profileContact.textContent = contactValue;
     if (profileRegion) profileRegion.textContent = displayLocation;
     if (profileCity) profileCity.textContent = user.city || "—";
-    if (profileLastLogin) profileLastLogin.textContent = "Logged in";
+    if (profileLastLogin) {
+        if (user.createdAt) {
+            const date = new Date(user.createdAt);
+            const monthYear = date.toLocaleString('en-Us', { month: 'long', year: 'numeric' });
+            profileLastLogin.textContent = monthYear;
+        } else {
+            profileLastLogin.textContent = "—";
+        }
+    }
 
     // --- slide-out sidebar panel ---
     const sidebarName = document.getElementById("sidebarName");
