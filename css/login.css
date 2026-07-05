@@ -85,7 +85,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 48px 32px;
+  padding: 25px 32px 48px 32px;
   background-color: white;
 }
 
@@ -95,10 +95,12 @@
 }
 
 .login-box__brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 36px;
+  display: flex; 
+  justify-content: center; 
+  align-items: center; 
+  gap: 8px; 
+  margin-bottom: 16px; 
+  margin-bottom: 3em;
 }
 
 .login-box h2 {
@@ -108,7 +110,7 @@
 
 .login-box__subtitle {
   color: var(--text-muted);
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   margin-bottom: 28px;
 }
 
