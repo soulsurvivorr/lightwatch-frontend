@@ -124,6 +124,14 @@ button, a {
   clip: rect(0 0 0 0);
 }
 
+.login-form-side {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 25px 32px 48px 32px;
+  background-color: white;
+}
+
 /* ============================================================
    Status pulse — signature element
    Used for grid/meter status across all pages
