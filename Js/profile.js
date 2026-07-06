@@ -441,27 +441,112 @@ function renderSignedOutEverywhere() {
 
 
 // -----------------------------------------------------
+// PROFILE LOADING OVERLAY (colorful bubble loader)
+// Covers the topbar user button + any profile card on the
+// page with a small bouncing-bubble animation while we wait
+// on the /user/:id request. It only turns visible if that
+// wait crosses `delay` ms, so a normal fast load never shows
+// it at all — it's meant for slow/flaky network conditions,
+// not every page load.
+// -----------------------------------------------------
+const PROFILE_LOADER_HOST_SELECTORS = ['#profileMenuButton', '.profile-card'];
+let profileLoaderShowTimer = null;
+let profileLoaderOverlays = [];
+
+function injectProfileLoaderStyles() {
+    if (document.getElementById('lw-profile-loader-styles')) return;
+    const style = document.createElement('style');
+    style.id = 'lw-profile-loader-styles';
+    style.textContent = `
+        [data-lw-loader-host] { position: relative; }
+        .lw-profile-loader {
+            position: absolute; inset: 0; z-index: 5;
+            display: flex; align-items: center; justify-content: center;
+            gap: 5px; border-radius: inherit;
+            background: rgba(8, 10, 26, 0.6);
+            backdrop-filter: blur(3px);
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+        .lw-profile-loader--show { opacity: 1; }
+        .lw-profile-loader__bubble {
+            width: 8px; height: 8px; border-radius: 50%;
+            animation: lw-bubble-bounce 0.9s ease-in-out infinite;
+        }
+        .lw-profile-loader__bubble:nth-child(1) { background: #3DD9C2; animation-delay: 0s; }
+        .lw-profile-loader__bubble:nth-child(2) { background: #F2B33D; animation-delay: 0.15s; }
+        .lw-profile-loader__bubble:nth-child(3) { background: #E5484D; animation-delay: 0.3s; }
+        .lw-profile-loader__bubble:nth-child(4) { background: #6C8CFF; animation-delay: 0.45s; }
+        @keyframes lw-bubble-bounce {
+            0%, 100% { transform: translateY(0); opacity: 0.6; }
+            50% { transform: translateY(-6px); opacity: 1; }
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+function attachProfileLoaders() {
+    injectProfileLoaderStyles();
+    profileLoaderOverlays = [];
+
+    PROFILE_LOADER_HOST_SELECTORS.forEach(selector => {
+        document.querySelectorAll(selector).forEach(host => {
+            if (host.querySelector(':scope > .lw-profile-loader')) return; // already attached
+            host.setAttribute('data-lw-loader-host', '');
+            const overlay = document.createElement('div');
+            overlay.className = 'lw-profile-loader';
+            overlay.innerHTML = `
+                <span class="lw-profile-loader__bubble"></span>
+                <span class="lw-profile-loader__bubble"></span>
+                <span class="lw-profile-loader__bubble"></span>
+                <span class="lw-profile-loader__bubble"></span>
+            `;
+            host.appendChild(overlay);
+            profileLoaderOverlays.push(overlay);
+        });
+    });
+}
+
+// Only reveals the bubbles if the wait crosses `delay` ms —
+// avoids any flash of the loader on a normal fast load.
+function showProfileLoader(delay = 180) {
+    if (!profileLoaderOverlays.length) attachProfileLoaders();
+    clearTimeout(profileLoaderShowTimer);
+    profileLoaderShowTimer = setTimeout(() => {
+        profileLoaderOverlays.forEach(el => el.classList.add('lw-profile-loader--show'));
+    }, delay);
+}
+
+function hideProfileLoader() {
+    clearTimeout(profileLoaderShowTimer);
+    profileLoaderOverlays.forEach(el => el.classList.remove('lw-profile-loader--show'));
+}
+
+
+// -----------------------------------------------------
 // MAIN: load the current user from the backend and render
 // them everywhere on the page.
 // -----------------------------------------------------
 async function loadCurrentUserProfile() {
+
+    showProfileLoader();
 
     // ── Get user ID from the active session (set by auth.js) ──
     const session = getSession(); // defined in auth.js
     const userId = session?.user?.id || localStorage.getItem("currentUserId");
     const fallbackUser = session?.user || JSON.parse(localStorage.getItem("currentUserData") || localStorage.getItem("signupUser") || "null");
 
-    if (!userId) {
-        if (fallbackUser) {
-            renderUserEverywhere(fallbackUser);
-            renderLocationPage(fallbackUser);
+    try {
+        if (!userId) {
+            if (fallbackUser) {
+                renderUserEverywhere(fallbackUser);
+                renderLocationPage(fallbackUser);
+                return;
+            }
+            renderSignedOutEverywhere();
             return;
         }
-        renderSignedOutEverywhere();
-        return;
-    }
 
-    try {
         const response = await fetch(`${API_URL}/user/${userId}`);
 
         if (!response.ok) {
@@ -486,6 +571,8 @@ async function loadCurrentUserProfile() {
         }
         const profileContact = document.getElementById("profileContact");
         if (profileContact) profileContact.textContent = "Could not reach server";
+    } finally {
+        hideProfileLoader();
     }
 }
 

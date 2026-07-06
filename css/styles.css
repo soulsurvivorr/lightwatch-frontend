@@ -126,6 +126,7 @@ button, a {
 
 .login-form-side {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 25px 32px 48px 32px;
