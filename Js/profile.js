@@ -467,7 +467,7 @@ function injectProfileLoaderStyles() {
             position: fixed; inset: 0; z-index: 9999;
             display: flex; align-items: center; justify-content: center;
             gap: 10px;
-            background: #070a1c;
+            background: rgba(7, 10, 28, 0.72);
             opacity: 0; pointer-events: none;
             transition: opacity 0.2s ease;
         }
