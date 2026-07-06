@@ -24,16 +24,75 @@ function maskValue(value) {
 
 const continueBtn = document.getElementById('continueBtn');
 const errorMsg    = document.getElementById('error-msg');
-const otpInput    = document.getElementById('otp-input');
+const otpBoxes    = Array.from(document.querySelectorAll('.otp-box'));
+
+// -----------------------------------------------------
+// Combine the 4 boxes into one code string
+// -----------------------------------------------------
+function getOtpValue() {
+    return otpBoxes.map(box => box.value).join('');
+}
+
+// -----------------------------------------------------
+// Enable + turn the button blue only once every box has
+// a digit in it — matches the old single-input behavior,
+// just checking all 4 boxes instead of one field.
+// -----------------------------------------------------
+function updateButtonState() {
+    const isFull = getOtpValue().length === otpBoxes.length;
+    continueBtn.disabled = !isFull;
+    continueBtn.classList.toggle('active', isFull);
+}
+
+// -----------------------------------------------------
+// Wire up each box: digits only, auto-advance to the next
+// box when filled, jump back on backspace when empty, and
+// support pasting the whole code at once.
+// -----------------------------------------------------
+otpBoxes.forEach((box, index) => {
+    box.addEventListener('input', () => {
+        box.value = box.value.replace(/[^0-9]/g, '').slice(0, 1);
+
+        if (box.value && index < otpBoxes.length - 1) {
+            otpBoxes[index + 1].focus();
+        }
+
+        updateButtonState();
+    });
+
+    box.addEventListener('keydown', (e) => {
+        if (e.key === 'Backspace' && !box.value && index > 0) {
+            otpBoxes[index - 1].focus();
+        }
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            checkOTP();
+        }
+    });
+
+    box.addEventListener('paste', (e) => {
+        e.preventDefault();
+        const digits = (e.clipboardData.getData('text') || '').replace(/[^0-9]/g, '').split('');
+        otpBoxes.forEach((b, i) => { b.value = digits[i] || ''; });
+        const nextEmpty = otpBoxes.find(b => !b.value) || otpBoxes[otpBoxes.length - 1];
+        nextEmpty.focus();
+        updateButtonState();
+    });
+});
+
+// -----------------------------------------------------
+// MAIN: verify the OTP code entered across the 4 boxes
+// -----------------------------------------------------
+otpBoxes[0]?.focus();
 
 async function checkOTP() {
-    const otpValue  = otpInput.value.trim();
+    const otpValue  = getOtpValue();
     const emailPhone = getVerificationValue('userIdentifier');
 
     errorMsg.textContent = '';
 
-    if (!otpValue) {
-        errorMsg.textContent = 'Please enter the code';
+    if (otpValue.length < otpBoxes.length) {
+        errorMsg.textContent = 'Please enter the full code';
         return;
     }
 
@@ -88,15 +147,4 @@ async function checkOTP() {
     }
 }
 
-// Update button color base on input
-function updateButtonState() {
-    if (otpInput.value.trim().length > 0) {
-        continueBtn.classList.add('active');
-    } else {
-        continueBtn.classList.remove('active');
-    }
-}
-
-otpInput.addEventListener('input', updateButtonState);
 continueBtn.addEventListener('click', e => { e.preventDefault(); checkOTP(); });
-otpInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); checkOTP(); } });
