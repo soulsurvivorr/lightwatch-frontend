@@ -84,7 +84,7 @@
 .login-form-side {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: left;
   padding: 25px 32px 48px 32px;
   background-color: white;
 }
@@ -96,7 +96,6 @@
 
 .login-box__brand {
   display: flex; 
-  justify-content: center; 
   align-items: center; 
   gap: 8px; 
   margin-bottom: 16px; 
