@@ -282,7 +282,7 @@ function renderLocationPage(user) {
     }
 
     function loadLocationStats() {
-        fetch(`${API_URL}/lightstatus?location=${encodeURIComponent(location)}`)
+        return fetch(`${API_URL}/lightstatus?location=${encodeURIComponent(location)}`)
             .then(r => r.json())
             .then(data => {
                 setLightStatus(data.status || 'unknown');
@@ -299,7 +299,7 @@ function renderLocationPage(user) {
     }
 
     setLightStatus('loading');
-    loadLocationStats();
+    const initialStatsLoad = loadLocationStats();
 
     // Poll light status every 30s so all users stay in sync
     const lightPoll = setInterval(() => {
@@ -366,6 +366,11 @@ function renderLocationPage(user) {
             });
         });
     }
+
+    // So the caller (loadCurrentUserProfile) can await this and only
+    // hide the loading overlay once the FIRST light-status/stats load
+    // has actually landed too — not just the user profile fetch.
+    return initialStatsLoad;
 }
 
 // -------------------------------------------------------
@@ -545,7 +550,7 @@ async function loadCurrentUserProfile() {
         if (!userId) {
             if (fallbackUser) {
                 renderUserEverywhere(fallbackUser);
-                renderLocationPage(fallbackUser);
+                await renderLocationPage(fallbackUser);
                 return;
             }
             renderSignedOutEverywhere();
@@ -565,13 +570,13 @@ async function loadCurrentUserProfile() {
 
         const user = await response.json();
         renderUserEverywhere(user);
-        renderLocationPage(user);
+        await renderLocationPage(user);
 
     } catch (error) {
         console.error("Could not load profile:", error);
         if (fallbackUser) {
             renderUserEverywhere(fallbackUser);
-            renderLocationPage(fallbackUser);
+            await renderLocationPage(fallbackUser);
             return;
         }
         const profileContact = document.getElementById("profileContact");
