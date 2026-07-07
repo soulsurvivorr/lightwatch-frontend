@@ -120,8 +120,8 @@ img {
 
 .prompt-inputs:focus {
     outline: none;
-    border-color: var(--brand-dim);
-    box-shadow: 0 0 0 3px rgba(224, 75, 75, 0.15);
+    border-color: var(--brand, #F0AC3D);
+    box-shadow: 0 0 0 3px rgba(240, 172, 61, 0.15);
 }
 
 .prompt-input-tabs {
@@ -141,7 +141,7 @@ img {
 }
 
 .submit-btn {
-    background: var(--brand-dim);
+    background-color: var(--brand, #F0AC3D);
     color: white;
     font-size: .9rem;
     width: 100%;
@@ -149,11 +149,11 @@ img {
     border: none;
     border-radius: 6px;
     cursor: pointer;
-    transition: opacity 0.2s ease-in-out, transform 0.1s ease-in-out;
+    transition: background-color 0.15s ease, transform 0.1s ease;
 }
 
 .submit-btn:hover {
-  opacity: .9;
+    background-color: var(--brand-dim, #C98A1F);
 }
 
 .submit-btn:active {
@@ -192,5 +192,28 @@ footer {
 
     .submit-info-section h3 {
         font-size: 1.5rem;
+    }
+}
+
+@media (max-width: 400px) {
+    .prompt-input-tabs p {
+        font-size: 13px;
+    }
+
+    .prompt-inputs {
+        font-size: .76rem;
+        padding: 12px 10px;
+    }
+
+    .submit-btn {
+        font-size: .84rem;
+    }
+
+    .user-icon-container h3 {
+        font-size: 1rem;
+    }
+
+    footer {
+        font-size: .65rem;
     }
 }

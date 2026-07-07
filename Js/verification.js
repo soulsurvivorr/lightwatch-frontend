@@ -25,6 +25,7 @@ function maskValue(value) {
 const continueBtn = document.getElementById('continueBtn');
 const errorMsg    = document.getElementById('error-msg');
 const otpBoxes    = Array.from(document.querySelectorAll('.otp-box'));
+const resendLink  = document.getElementById('resendCodeLink');
 
 // -----------------------------------------------------
 // Combine the 4 boxes into one code string
@@ -34,11 +35,12 @@ function getOtpValue() {
 }
 
 // -----------------------------------------------------
-// Enable + turn the button blue only once every box has
-// a digit in it — matches the old single-input behavior,
-// just checking all 4 boxes instead of one field.
+// Enable + turn the button gold only once every box has
+// a digit in it. Also toggles a "filled" class per box
+// (used purely for the underline color change in CSS).
 // -----------------------------------------------------
 function updateButtonState() {
+    otpBoxes.forEach(box => box.classList.toggle('filled', box.value !== ''));
     const isFull = getOtpValue().length === otpBoxes.length;
     continueBtn.disabled = !isFull;
     continueBtn.classList.toggle('active', isFull);
@@ -132,10 +134,9 @@ async function checkOTP() {
 
         saveSession(user, result.userId, rememberMe);
 
-        // Clean up all temporary sign-in/signup data. Cleared from BOTH
-        // storages — sign-in stashes these in sessionStorage, signup
-        // stashes them in localStorage, so clearing only one left a
-        // stray "rememberMePending" behind after signup specifically.
+        // Clean up all temporary sign-in/signup data from BOTH storages —
+        // sign-in stashes these in sessionStorage, signup stashes them in
+        // localStorage.
         ['userIdentifier', 'maskedContact', 'pendingUserId',
          'rememberMePending', 'chatHandle', 'signupUser'
         ].forEach(k => {
@@ -154,3 +155,40 @@ async function checkOTP() {
 }
 
 continueBtn.addEventListener('click', e => { e.preventDefault(); checkOTP(); });
+
+// -----------------------------------------------------
+// RESEND CODE — wires up the "Get a new code" link to the
+// backend's /resend route (this was sitting unwired before).
+// -----------------------------------------------------
+resendLink?.addEventListener('click', async () => {
+    const emailPhone = getVerificationValue('userIdentifier');
+    if (!emailPhone) return;
+
+    const originalText = resendLink.textContent;
+    resendLink.textContent = 'Sending…';
+    errorMsg.textContent = '';
+
+    try {
+        const response = await fetch(`${API_URL}/resend`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ emailPhone })
+        });
+        const result = await response.json();
+
+        if (!response.ok) {
+            errorMsg.textContent = result.error || 'Could not resend code';
+            return;
+        }
+
+        otpBoxes.forEach(box => { box.value = ''; box.classList.remove('filled'); });
+        updateButtonState();
+        otpBoxes[0]?.focus();
+
+    } catch (err) {
+        console.error('Resend failed:', err);
+        errorMsg.textContent = 'Server error. Please try again.';
+    } finally {
+        resendLink.textContent = originalText;
+    }
+});

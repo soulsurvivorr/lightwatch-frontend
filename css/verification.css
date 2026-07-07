@@ -1,196 +1,221 @@
 * {
-            box-sizing: border-box;
-        }
+    box-sizing: border-box;
+}
 
-        html, body {
-            min-height: 100%;
-        }
+html, body {
+    min-height: 100%;
+}
 
-        body { 
-            margin: 0; 
-            display: flex; 
-            gap: 2em; 
-            flex-direction: column; 
-            min-height: 100vh;
-            background-color: #f7f9fc;
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; 
-        } 
- 
-        header { 
-            display: flex; 
-            align-items: center; 
-            padding: .6rem 1.2rem; 
-            gap: 10px; 
-            position: sticky; 
-            top: 0; 
-            left: 0; 
-            right: 0; 
-            z-index: 100; 
-            background-color: #ffffff;
-            box-shadow: 0 0 10px rgba(0,0,0,0.2); 
-        } 
- 
-        header h3 { 
-            color: rgb(61, 61, 148); 
-            font-weight: 600; 
-            margin: 0;
-        } 
- 
-        header img { 
-            height: 40px; 
-            width: 40px; 
-        } 
- 
-        main { 
-            display: flex; 
-            flex: 1; 
-            justify-content: center; 
-            align-items: center; 
-            margin: .5em 0; 
-            padding: 0 1.2rem;
-            z-index: 1; 
-        } 
- 
-        main h2, main p { 
-            margin: 0; 
-        } 
- 
-        main p { 
-            font-size: 1rem; 
-            color: #333;
-        } 
- 
-        main div.verify-card { 
-            display: flex; 
-            flex-direction: column; 
-            gap: 1rem; 
-            width: 100%;
-            max-width: 420px;
-            background-color: #ffffff;
-            padding: 2rem;
-            border-radius: 16px;
-            box-shadow: 0 4px 18px rgba(0,0,0,0.08);
-        } 
- 
-        main img { 
-            height: auto; 
-            width: 100%;
-            max-width: 320px;
-            margin: 0 auto;
-        } 
- 
-        main input { 
-            padding: 1.2rem; 
-            border: 1px solid rgb(218, 218, 218); 
-            border-radius: 8px; 
-            font-size: 1rem; 
-            font-weight: 500; 
-            width: 100%;
-            letter-spacing: 2px;
-        } 
+body {
+    margin: 0;
+    display: flex;
+    gap: 2em;
+    flex-direction: column;
+    min-height: 100vh;
+    background-color: #f7f9fc;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+}
 
-        main input:focus {
-            outline: none;
-            border-color: rgb(107, 113, 172);
-            box-shadow: 0 0 0 3px rgba(107, 113, 172, 0.15);
-        }
+header {
+    display: flex;
+    align-items: center;
+    padding: .6rem 1.2rem;
+    gap: 10px;
+    position: sticky;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background-color: #ffffff;
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+}
 
-        .otp-boxes {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-        }
+header h3 {
+    color: #F0AC3D;
+    font-weight: 600;
+    margin: 0;
+}
 
-        .otp-box {
-            width: 56px;
-            height: 60px;
-            padding: 0;
-            text-align: center;
-            font-size: 1.6rem;
-            font-weight: 700;
-            letter-spacing: 0;
-            flex: 0 1 56px;
-        }
+header img {
+    height: 40px;
+    width: 40px;
+}
 
-        .resend-row {
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-            gap: 8px;
-        }
+main {
+    display: flex;
+    flex: 1;
+    justify-content: center;
+    align-items: center;
+    margin: .5em 0;
+    padding: 0 1.2rem;
+    z-index: 1;
+}
 
-        .resend-row img {
-            height: 16px;
-            width: 16px;
-            flex-shrink: 0;
-        }
+main h2, main p {
+    margin: 0;
+}
 
-        .resend-row p {
-            font-size: .85rem;
-            color: #666;
-        }
- 
-        span { 
-            color: blue; 
-            font-weight: 600; 
-            cursor: pointer;
-        } 
+main p {
+    font-size: 1rem;
+    color: #333;
+}
 
-        span:hover {
-            text-decoration: underline;
-        }
- 
-        button { 
-            padding: 14px; 
-            background-color: rgb(107, 113, 172); 
-            color: white; 
-            border-radius: 26px; 
-            border: none; 
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background-color 0.15s ease;
-        } 
+main div.verify-card {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    width: 100%;
+    max-width: 420px;
+    background-color: #ffffff;
+    padding: 2rem;
+    border-radius: 16px;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+}
 
-        button:hover {
-            background-color: rgb(90, 96, 155);
-        }
+main img {
+    height: auto;
+    width: 100%;
+    max-width: 320px;
+    margin: 0 auto;
+}
 
-        button.active {
-            background-color: #007bff
-        }
+/* ---- OTP boxes: underline style only, no full border box ---- */
+.otp-boxes {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    margin: .4rem 0;
+}
 
-        button.active:hover {
-            background-color: #0056b3;
-        }
+.otp-box {
+    width: 44px;
+    padding: 0 0 8px;
+    text-align: center;
+    font-size: 1.6rem;
+    font-weight: 700;
+    letter-spacing: 0;
+    border: none;
+    border-bottom: 2px solid rgb(210, 210, 210);
+    border-radius: 0;
+    background: transparent;
+    color: #222;
+    transition: border-color 0.15s ease;
+}
 
-        button:disabled {
-            background-color: rgb(210, 210, 220);
-            cursor: not-allowed;
-        }
+.otp-box:focus {
+    outline: none;
+    border-bottom-color: #4A90D9;
+}
 
-        button:disabled:hover {
-            background-color: rgb(210, 210, 220);
-        }
+.otp-box.filled {
+    border-bottom-color: #F0AC3D;
+}
 
-        @media (max-width: 480px) {
-            header {
-                padding: .5rem 1rem;
-            }
+.resend-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+}
 
-            header h3 {
-                font-size: .95rem;
-            }
+.resend-row img {
+    height: 16px;
+    width: 16px;
+    flex-shrink: 0;
+}
 
-            main div.verify-card {
-                padding: 1.5rem;
-                border-radius: 12px;
-                box-shadow: none;
-            }
+.resend-row p {
+    font-size: .85rem;
+    color: #666;
+}
 
-            .otp-box {
-                width: 48px;
-                height: 54px;
-                font-size: 1.4rem;
-            }
-        }
+span {
+    color: #4A90D9;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+span:hover {
+    text-decoration: underline;
+}
+
+button {
+    padding: 14px;
+    background-color: #C7CBD1;
+    color: white;
+    border-radius: 26px;
+    border: none;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+button:hover {
+    background-color: #B3B8C0;
+}
+
+button.active {
+    background-color: #F0AC3D;
+}
+
+button.active:hover {
+    background-color: #C98A1F;
+}
+
+button:disabled {
+    background-color: rgb(224, 219, 211);
+    cursor: not-allowed;
+}
+
+button:disabled:hover {
+    background-color: rgb(224, 219, 211);
+}
+
+@media (max-width: 480px) {
+    header {
+        padding: .5rem 1rem;
+    }
+
+    header h3 {
+        font-size: .95rem;
+    }
+
+    main div.verify-card {
+        padding: 1.5rem;
+        border-radius: 12px;
+        box-shadow: none;
+    }
+
+    .otp-box {
+        width: 38px;
+        font-size: 1.4rem;
+    }
+}
+
+@media (max-width: 400px) {
+    header h3 {
+        font-size: .88rem;
+    }
+
+    main h2 {
+        font-size: 1.15rem;
+    }
+
+    main p {
+        font-size: .88rem;
+    }
+
+    .otp-boxes {
+        gap: 12px;
+    }
+
+    .otp-box {
+        width: 34px;
+        font-size: 1.25rem;
+    }
+
+    .resend-row p {
+        font-size: .78rem;
+    }
+}

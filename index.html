@@ -3,114 +3,349 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Sign in — LightWatch</title>
-  <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#2A1418">
-  <link rel="apple-touch-icon" sizes="180x180" href="/images/dev-logo.png">
-  <link rel="icon" href="./images/dev-logo.png" type="image/x-icon">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>LightWatch — Home</title>
+  <link rel="icon" href="../images/dev-logo.png" type="image/x-icon">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./css/login.css" />
-  <link rel="stylesheet" href="./css/styles.css">
-  <style>body{visibility:hidden;}</style>
+  <link rel="stylesheet" href="../css/home.css" />
+  <link rel="stylesheet" href="../css/styles.css">
+  <!-- Warms the cache for the pages reachable from the bottom/top nav so
+       tapping Home, Reports, or Account feels instant instead of doing a
+       full fresh load each time. -->
+  <link rel="prefetch" href="./reports.html">
+  <link rel="prefetch" href="./account.html">
+  <style>
+    body { visibility: hidden; }
+  </style>
 </head>
 <body>
 
-  <div class="login-shell">
-
-    <!-- Visual / context side -->
-    <section class="login-visual">
-      <div class="login-visual__content">
-        <div class="brand" style="margin-bottom: 56px;">
-          <img src="./images/dev-logo.png" alt="LightWatch Logo" width="32" height="32">
-          <span>LightWatch</span>
-        </div>
-        <h1>See every meter. Every location. The moment power changes.</h1>
-        <p>Track postpaid and prepaid consumption, and know which sites still have light, from one screen.</p>
-      </div>
-
-      <div class="login-visual__grid">
-        <div class="mini-stat">
-          <div class="mini-stat__label">Registered users</div>
-          <div class="mini-stat__value tabular" id="statUserCount">—</div>
-        </div>
-        <div class="mini-stat">
-          <div class="mini-stat__label">Areas covered</div>
-          <div class="mini-stat__value tabular">20+</div>
-        </div>
-        <div class="mini-stat">
-          <div class="mini-stat__label">Avg uptime</div>
-          <div class="mini-stat__value tabular">97%</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Form side -->
-    <section class="login-form-side">
-      <div class="login-box">
-
-        <!--<div class="login-box__brand">
-          <span class="brand__mark">LW</span>
-          <span class="brand" style="font-size: 1.05rem;">LightWatch</span>
-        </div>-->
-
-        <div class="login-box__brand">
-          <img src="./images/dev-logo.png" alt="LightWatch Logo" width="40" height="40">
-          <p style="font-size: 1rem; font-weight: 600;">LightWatch GH</p>
-        </div>
-
-        <h2>Welcome back</h2>
-        <p class="login-box__subtitle">Community-Powered Electricity Alerts</p>
-
-        <form action="#" method="post">
-
-          <div class="field">
-            <label class="field__label" for="email">Email address or Phone Number</label>
-            <div class="field__input-wrap">
-              <input class="field__input" type="email" id="user-input" name="email" placeholder="Enter Email or Phone Number" autocomplete="email" required />
-              <p id="error-msg" style="color:red; font-size: .7rem;"></p>
-            </div>
-          </div>
-
-         <!-- <input type="checkbox" id="rememberMe">
-          <label for="rememberMe">Remember me</label>-->
-          <!-- Remember Me checkbox -->
-        <label class="remember-me-label" for="rememberMe">
-          <input type="checkbox" id="rememberMe" name="rememberMe" />
-          <span class="remember-me-track">
-            <span class="remember-me-thumb"></span>
-          </span>
-          Remember me
-        </label>
-        <button type="submit" class="btn btn--primary btn--block" id="sendCodebtn">Send code</button>
-
-          <div class="divider">or</div>
-
-          <a href="./pages/signup.html"><button type="button" class="btn btn--ghost btn--block">Create an account</button></a>
-
-        </form>
-
-        <p class="signup-prompt">
-          Don't have an account? <a href="./pages/signup.html" class="link">Request access</a>
-        </p>
-
-      </div>
-    </section>
-
-  </div>
-
+  <!-- These two load blocking (no defer) on purpose, and run BEFORE
+       anything below is allowed to paint — this is what stops the app
+       from ever flashing a blank/unauthenticated home.html. If there's
+       no session, we leave immediately; if there is, we reveal the
+       page. Everything else on this page stays deferred as before. -->
   <script src="../js/config.js"></script>
   <script src="../js/auth.js"></script>
   <script>
     const session = typeof getSession === 'function' ? getSession() : null;
-    if (session) {
-      window.location.replace('./pages/home.html');
+    if (!session) {
+      window.location.replace('../index.html');
     } else {
       document.body.style.visibility = 'visible';
     }
   </script>
-  <script src="../js/login.js"></script>
+
+  <!-- Notification toast -->
+  <div id="lw-toast"></div>
+
+  <header class="topbar">
+    <div class="topbar__inner">
+       <div class="topbar__brand">
+          <img src="../images/dev-logo.png" alt="LightWatch Logo" width="32" height="32">
+          <p>LightWatch GH</p>
+        </div>
+      <input type="checkbox" id="nav-toggle" class="nav-toggle" />
+      <label for="nav-toggle" class="nav-toggle-label" aria-label="Toggle navigation">
+        <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+      </label>
+      <nav class="nav" id="primaryNav">
+        <a href="./home.html" class="nav__link nav__link--active" data-nav="home">Home</a>
+        <a href="./reports.html" class="nav__link" data-nav="reports">Reports</a>
+        <a href="./account.html" class="nav__link" data-nav="account">Account</a>
+      </nav>
+      <button type="button" id="profileMenuButton" class="topbar__user" aria-expanded="false" aria-controls="userSidebarPanel">
+        <span class="avatar-name" id="topbarUserName">Guest</span>
+        <span class="avatar" id="topbarAvatar">?</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="page">
+
+    <!-- Hero banner: greeting + quick stats -->
+    <div class="hero-banner">
+      <div class="hero-banner__location">
+        <span class="pulse pulse--on" style="width:8px;height:8px;"></span>
+        <span id="locationName">Your location</span>
+      </div>
+      <div class="hero-banner__eyebrow">LightWatch · Live status</div>
+      <div class="hero-banner__greeting" id="pageGreeting">Welcome back</div>
+      <div class="hero-banner__sub" id="locationSubtitle">Real-time power reporting for your area.</div>
+      <div class="hero-banner__stats">
+        <div class="hero-stat">
+          <span class="hero-stat__value" id="heroContributors">12</span>
+          <span class="hero-stat__label">Contributors</span>
+        </div>
+        <div class="hero-stat">
+          <span class="hero-stat__value" id="heroChecks">28</span>
+          <span class="hero-stat__label">Total checks</span>
+        </div>
+        <div class="hero-stat">
+          <span class="hero-stat__value" id="heroUptime">97%</span>
+          <span class="hero-stat__label">Uptime this week</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="location-page-grid">
+      <section class="location-primary">
+
+        <!-- Main status card -->
+        <div class="card location-card">
+          <div class="card__head">
+            <div>
+              <span class="card__title" id="locationNameCard">Your chosen location</span>
+              <p class="card__meta" id="locationMeta">Location set by you</p>
+            </div>
+            <span class="badge badge--low" id="statusBadge">Checking status</span>
+          </div>
+
+          <!-- Status hero row -->
+          <div class="status-hero">
+            <div class="status-hero__icon status-hero__icon--unknown" id="statusIcon">❔</div>
+            <div class="status-hero__text">
+              <div class="status-hero__title" id="statusPillText">Checking live status</div>
+              <div class="status-hero__sub">
+                Last verified: <strong id="lastVerified">—</strong>
+                &nbsp;·&nbsp;
+                <span class="pulse pulse--low" id="statusPulse" style="display:inline-block;width:8px;height:8px;vertical-align:middle;"></span>
+                Live
+              </div>
+            </div>
+          </div>
+
+          <div class="location-card__top">
+            <div class="location-card__info">
+              <div class="location-card__row">
+                <span class="location-card__label">Average outage length</span>
+                <strong id="avgOutage">—</strong>
+              </div>
+              <div class="location-card__row">
+                <span class="location-card__label">Outage frequency</span>
+                <strong id="outageFreq">—</strong>
+              </div>
+              <div class="location-card__row">
+                <span class="location-card__label">Source confidence</span>
+                <strong id="sourceConfidence">92%</strong>
+              </div>
+            </div>
+            <div class="location-card__meta-panel">
+              <div class="meta-pill meta-pill--accent" id="heroContributorsPill">12 contributors</div>
+              <div class="meta-pill meta-pill--muted" id="heroChecksPill">28 total checks</div>
+            </div>
+          </div>
+
+          <!-- Light toggle -->
+          <div class="light-toggle-row">
+            <div class="light-toggle-row__label">
+              <span class="light-toggle-row__title">Report current status</span>
+              <span class="light-toggle-row__sub">Flip this only if you can actually see the area right now</span>
+            </div>
+            <button type="button" class="light-switch" id="lightSwitch" role="switch" aria-checked="false" aria-label="Toggle light status">
+              <span class="light-switch__track">
+                <span class="light-switch__thumb"></span>
+              </span>
+              <span class="light-switch__state" id="lightSwitchState">CHECK</span>
+            </button>
+          </div>
+
+                <!-- Status insight panel -->
+          <div class="status-insight-panel">
+            <div class="status-insight__header">
+              <div>
+                <span class="status-insight__title">Local grid snapshot</span>
+                <p class="status-insight__sub">A compact view of recent status checks for your area.</p>
+              </div>
+              <span class="badge badge--low">Live</span>
+            </div>
+            <div class="status-insight__body">
+              <div class="status-insight__graphic" aria-hidden="true">
+                <div class="status-grid" id="statusGrid">
+                  <!-- Each cell = one status check. Teal = light on, amber = light off.
+                       Static pattern matching the "23 of 28" summary below; wire this
+                       up to real per-check data later by toggling .status-grid__cell--off. -->
+                  <span class="status-grid__cell status-grid__cell--on"></span>
+                  <span class="status-grid__cell status-grid__cell--on"></span>
+                  <span class="status-grid__cell status-grid__cell--on"></span>
+                  <span class="status-grid__cell status-grid__cell--off"></span>
+                  <span class="status-grid__cell status-grid__cell--on"></span>
+                  <span class="status-grid__cell status-grid__cell--on"></span>
+                  <span class="status-grid__cell status-grid__cell--on"></span>
+                  <span class="status-grid__cell status-grid__cell--on"></span>
+                  <span class="status-grid__cell status-grid__cell--on"></span>
+                  <span class="status-grid__cell status-grid__cell--off"></span>
+                  <span class="status-grid__cell status-grid__cell--on"></span>
+                  <span class="status-grid__cell status-grid__cell--on"></span>
+                  <span class="status-grid__cell status-grid__cell--on"></span>
+                  <span class="status-grid__cell status-grid__cell--on"></span>
+                  <span class="status-grid__cell status-grid__cell--on"></span>
+                  <span class="status-grid__cell status-grid__cell--on"></span>
+                  <span class="status-grid__cell status-grid__cell--off"></span>
+                  <span class="status-grid__cell status-grid__cell--on"></span>
+                  <span class="status-grid__cell status-grid__cell--on"></span>
+                  <span class="status-grid__cell status-grid__cell--on"></span>
+                  <span class="status-grid__cell status-grid__cell--on"></span>
+                  <span class="status-grid__cell status-grid__cell--off"></span>
+                  <span class="status-grid__cell status-grid__cell--on"></span>
+                  <span class="status-grid__cell status-grid__cell--on"></span>
+                  <span class="status-grid__cell status-grid__cell--on"></span>
+                  <span class="status-grid__cell status-grid__cell--on"></span>
+                  <span class="status-grid__cell status-grid__cell--off"></span>
+                  <span class="status-grid__cell status-grid__cell--on"></span>
+                </div>
+                <div class="status-grid__legend">
+                  <span><i class="status-grid__dot status-grid__dot--on"></i>On</span>
+                  <span><i class="status-grid__dot status-grid__dot--off"></i>Off</span>
+                </div>
+              </div>
+              <div class="status-insight__stats">
+                <div>
+                  <span class="status-insight__label">Confirmed sources</span>
+                  <strong id="confirmedSources">12</strong>
+                </div>
+                <div>
+                  <span class="status-insight__label">Light on checks</span>
+                  <strong id="lightOnCount">23 of 28</strong>
+                </div>
+                <div>
+                  <span class="status-insight__label">Recent outage</span>
+                  <strong id="lastOutageLength">—</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Community chat -->
+        <div class="card chat-card">
+          <div class="card__head chat-card__head">
+            <div>
+              <span class="card__title">Community chat</span>
+              <span class="card__meta">Posting as <strong id="chatHandle">anon-glow-291</strong></span>
+            </div>
+            <button type="button" id="mobileChatClose" class="chat-close-btn" aria-label="Close chat">✕</button>
+          </div>
+          <div class="chat-thread" id="chatThread"></div>
+          <form class="chat-form" id="chatForm" action="javascript:void(0)">
+            <input type="text" class="chat-form__input" id="chatInput" placeholder="Share an update about this location..." maxlength="240" />
+            <button type="submit" class="btn btn--primary">Send</button>
+          </form>
+        </div>
+
+      </section>
+
+      <aside class="location-sidebar">
+
+        <div class="card profile-card">
+          <div class="card__head">
+            <span class="card__title">Logged in as</span>
+            <span class="card__meta" id="profileLastLogin">—</span>
+          </div>
+          <div class="profile-card__avatar">
+            <span class="avatar avatar--large" id="profileAvatar">?</span>
+          </div>
+          <div class="profile-card__info">
+            <div class="profile-card__name" id="profileName">Not signed in</div>
+          </div>
+          <div class="profile-card__details">
+            <div><span>Contact</span><strong id="profileContact">—</strong></div>
+            <div><span>Location</span><strong id="profileRegion">—</strong></div>
+          </div>
+          <a href="../index.html"><button type="button" class="btn btn--ghost" id="profileSignOutBtn">Log out</button></a>
+        </div>
+
+        <div class="card add-location-card">
+          <div class="card__head">
+            <span class="card__title">Add a location</span>
+            <span class="card__meta">Quick capture</span>
+          </div>
+          <p class="add-location-card__note">
+            LightWatch is starting in Kumasi. Suggestions are limited to this area while we grow coverage.
+          </p>
+          <form class="location-form" id="addLocationForm" action="javascript:void(0)">
+            <label class="form-field">
+              <span>Location name</span>
+              <input type="text" placeholder="e.g. Bantama Market" id="newLocationName" />
+            </label>
+            <label class="form-field autocomplete-field">
+              <span>Address or area</span>
+              <input type="text" placeholder="Start typing a place in Kumasi..." id="newLocationAddress" autocomplete="off" />
+              <ul class="autocomplete-list" id="autocompleteList" hidden></ul>
+            </label>
+            <button type="submit" class="btn btn--primary btn--block">Save location</button>
+          </form>
+        </div>
+
+      </aside>
+    </div>
+
+    <p class="footnote">LightWatch — meter &amp; grid status monitoring</p>
+  </main>
+
+  <!-- Sidebar overlay + panel -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+  <aside class="user-sidebar-panel" id="userSidebarPanel" aria-hidden="true">
+    <button type="button" class="user-sidebar__close" id="userSidebarClose" aria-label="Close profile panel">×</button>
+    <div class="card profile-card profile-card--sidebar">
+      <div class="card__head">
+        <span class="card__title">Logged in as</span>
+        <span class="card__meta">User profile</span>
+      </div>
+      <div class="profile-card__avatar">
+        <span class="avatar avatar--large" id="sidebarAvatar">?</span>
+      </div>
+      <div class="profile-card__info">
+        <div class="profile-card__name" id="sidebarName">Not signed in</div>
+      </div>
+      <div class="profile-card__details">
+        <div><span>Contact</span><strong id="sidebarContact">—</strong></div>
+        <div><span>Location</span><strong id="sidebarRegion">—</strong></div>
+        <div><span>Last login</span><strong id="sidebarLastLogin">—</strong></div>
+      </div>
+      <button type="button" class="btn btn--primary btn--block" onclick="window.location.href='./account.html'">Manage account</button>
+      <a href="../index.html"><button type="button" class="btn btn--ghost btn--block" id="sidebarSignOutBtn">Log out</button></a>
+    </div>
+  </aside>
+
+  <button type="button" id="mobileChatToggle" class="mobile-chat-toggle" aria-label="Open chat">
+    <span class="mobile-chat-toggle__icon">💬</span>
+    <span class="mobile-chat-toggle__label">Chat</span>
+  </button>
+
+  <div id="bottom_nav_wrapper">
+    <div class="bottom-icons-container">
+      <a href="./home.html" class="bottom-nav-link bottom-nav-link--active" data-nav="home" aria-label="Home">
+        <span class="bottom-nav-icon bottom-nav-icon--user"><img src="../icons/home.png" alt="Home"></span>
+        <span class="bottom-nav-label">Home</span>
+      </a>
+      <a href="./reports.html" class="bottom-nav-link" data-nav="reports" aria-label="Reports">
+        <span class="bottom-nav-icon bottom-nav-icon--user"><img src="../icons/report_2.png" alt="reports"></span>
+        <span class="bottom-nav-label">Reports</span>
+      </a>
+      <button type="button" class="bottom-nav-link bottom-nav-link--button" id="bottomNavUserBtn" data-nav="account" aria-label="User profile">
+        <span class="bottom-nav-icon bottom-nav-icon--user"><img src="../icons/user.png" alt="You"></span>
+        <span class="bottom-nav-label">You</span>
+      </button>
+    </div>
+  </div>
+  
+  <script src="../js/profile.js" defer></script>
+  <script src="../Js/notification.js" defer></script>
+  <script src="../js/chat.js" defer></script>
+  <script src="../js/home.js" defer></script>
+  <script src="../js/nav.js" defer></script>
+  <script defer>
+    // ---- Toast notification system ----
+    // Other pages/features call window.lwToast("message") to show a toast
+    window.lwToast = function(msg, duration) {
+      const el = document.getElementById('lw-toast');
+      if (!el) return;
+      el.textContent = msg;
+      el.classList.add('show');
+      setTimeout(() => el.classList.remove('show'), duration || 3500);
+    };
+  </script>
 </body>
 </html>

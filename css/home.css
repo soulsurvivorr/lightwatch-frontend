@@ -1,6 +1,6 @@
- /* ---- Hero greeting banner ---- */
+/* ---- Hero greeting banner ---- */
     .hero-banner {
-      background: linear-gradient(135deg, rgb(10, 10, 23) 0%, rgb(17,17,80) 60%, rgb(31,77,71) 100%);
+      background: linear-gradient(135deg, #1C1F26 0%, #2A2E38 55%, #123D36 100%);
       border-radius: var(--radius-lg);
       padding: 16px 18px 14px;
       margin-bottom: 14px;
@@ -155,7 +155,7 @@
       bottom: 90px;
       left: 50%;
       transform: translateX(-50%) translateY(20px);
-      background: rgb(3,3,55);
+      background: var(--dark-bg);
       color: white;
       padding: 11px 20px;
       border-radius: 999px;
@@ -1610,4 +1610,289 @@
     padding: 7px 10px;
   }
 
+}
+/* ============================================================
+   Moved here from styles.css — these are dashboard/home-specific,
+   not truly universal across every page (login/signup/verification
+   never use them), so they belong here instead. account.html and
+   reports.html also link this file, so they keep working exactly
+   the same as before.
+   ============================================================ */
+
+/* ---- Summary stat grid (dashboard top row) ----
+   Note: not currently used in home.html's markup as of this pass —
+   leaving it here rather than deleting it, in case it's meant for
+   something still in progress. ---- */
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
+}
+
+.stat-card::after {
+  content: "";
+  position: absolute;
+  right: -20px;
+  top: -20px;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(61, 217, 194, 0.12), transparent 70%);
+}
+
+.stat-card__label {
+  font-size: 0.78rem;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 10px;
+}
+
+.stat-card__value {
+  font-family: var(--font-display);
+  font-size: 1.9rem;
+  font-weight: 600;
+  color: var(--text-bright);
+  line-height: 1;
+}
+
+.stat-card__unit {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-weight: 400;
+  margin-left: 4px;
+}
+
+.stat-card__delta {
+  margin-top: 10px;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stat-card__delta--up {
+  color: var(--red);
+}
+
+.stat-card__delta--down {
+  color: var(--teal);
+}
+
+/* ---- Dashboard layout ---- */
+
+.dash-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+/* ---- Locations / filtering ---- */
+
+.filter-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-panel);
+  font-size: 0.84rem;
+  color: var(--text-muted);
+}
+
+.chip--active {
+  border-color: var(--teal);
+  color: var(--teal);
+  background: var(--teal-dim);
+}
+
+.location-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Location-row base styles live in locations.css (used by alerts.html);
+   home.html's own location-row responsive overrides are below. */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge--on {
+  background: var(--teal-dim);
+  color: var(--teal);
+}
+
+.badge--off {
+  background: var(--red-dim);
+  color: var(--red);
+}
+
+.badge--low {
+  background: var(--amber-dim);
+  color: var(--amber);
+}
+
+/* ---- Responsive (home-specific pieces only) ---- */
+
+@media (max-width: 980px) {
+  .stat-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .dash-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .location-row {
+    grid-template-columns: auto 1fr 1fr;
+    grid-template-areas:
+      "status name   name"
+      ".      source badge"
+      ".      coords coords"
+      "report report report";
+    row-gap: 8px;
+  }
+
+  .location-row__coords {
+    text-align: left;
+  }
+}
+
+@media (max-width: 720px) {
+  .stat-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .stat-card__label {
+    font-size: .6rem;
+  }
+
+  .stat-card__value {
+    font-size: 1rem;
+  }
+
+  .chip {
+    font-size: .6rem;
+    padding: 10px;
+  }
+
+  .location-row {
+    grid-template-columns: auto 1fr;
+    grid-template-areas:
+      "status name"
+      ".      source"
+      ".      badge"
+      ".      coords"
+      "report report";
+    gap: 0 14px;
+    align-items: start;
+    margin: 0;
+    padding: 0;
+  }
+
+  .location-row__coords {
+    text-align: left;
+  }
+
+  .location-row__source-block {
+    margin-top: 1rem;
+  }
+
+  .crowdsource {
+    color: var(--brand);
+    font-weight: 800;
+    text-decoration: wavy;
+    margin: 1.5rem 0 .4rem 0;
+  }
+
+  .light-status-wrapper {
+    margin-top: 1rem;
+    padding-top: 1rem;
+  }
+
+  .filter-row {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 4px;
+  }
+
+  .locations-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+@media (max-width: 480px) {
+  .stat-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .trend {
+    height: 110px;
+  }
+
+  .location-row {
+    grid-template-columns: auto 1fr;
+    grid-template-areas:
+      "status name"
+      ".      source"
+      ".      badge"
+      ".      coords"
+      "report report";
+    gap: 8px 14px;
+    padding: 14px 16px;
+  }
+
+  .location-row__report {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 400px) {
+  .stat-card {
+    padding: 12px 14px;
+  }
+
+  .stat-card__value {
+    font-size: 1.5rem;
+  }
+
+  .stat-card__label {
+    font-size: 0.68rem;
+  }
+
+  .dash-grid {
+    gap: 12px;
+  }
 }

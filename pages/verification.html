@@ -3,7 +3,7 @@
 <head> 
     <meta charset="UTF-8"> 
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LightWatch GHq</title> 
+    <title>LightWatch GH</title> 
     <link rel="icon" href="../images/dev-logo.png" type="image/x-icon">
     <link rel="stylesheet" href="../css/verification.css">
 </head> 
@@ -18,19 +18,23 @@
             <h2>Check your phone</h2> 
             <p id="code-text"></p>
             <img src="../images/fb_prompt_code_img.png" alt="Verification code prompt" loading="lazy" width="320" height="240">
-            <input type="text" name="" id="otp-input" placeholder="Code"> 
+            <div class="otp-boxes" id="otpBoxes">
+                <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-box" aria-label="Digit 1">
+                <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-box" aria-label="Digit 2">
+                <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-box" aria-label="Digit 3">
+                <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-box" aria-label="Digit 4">
+            </div>
             <p id="error-msg" style="color: red; font-size: .8rem;"></p>
             <div class="resend-row"> 
                 <img src="../icons/refresh.png" alt="refresh for new code" width="16" height="16">
-                <p>It may take a few minutes for you to get this code. <span>Get a new code</span></p> 
+                <p>It may take a few minutes for you to get this code. <span id="resendCodeLink">Get a new code</span></p> 
             </div> 
-            <button id="continueBtn">Continue</button> 
+            <button id="continueBtn" disabled>Continue</button> 
         </div> 
     </main> 
 
     <script src="../js/config.js"></script>
     <script src="../js/auth.js"></script>
-    <script src="../js/verification.js">
-    </script>
+    <script src="../js/verification.js"></script>
 </body> 
 </html>
