@@ -29,9 +29,11 @@
   <script src="../js/auth.js"></script>
   <script>
     const session = typeof getSession === 'function' ? getSession() : null;
-    if (!session) {
-      window.location.replace('../index.html');
+    if (session) {
+      // Already signed-in: navigate to the app home
+      window.location.replace('./pages/home.html');
     } else {
+      // Not signed-in: reveal this page (landing / login)
       document.body.style.visibility = 'visible';
     }
   </script>
