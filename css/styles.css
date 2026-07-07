@@ -5,34 +5,22 @@
 
 :root {
   /* Color */
-  --bg-deep: rgb(240, 236, 228);
-  --bg-panel: rgb(255, 255, 255);
-  --bg-panel-raised: rgb(233, 226, 214);
-  --border-soft: rgb(228, 220, 206);
-  --border-strong: #3A3026;
+  --bg-deep: /*#0B1220;*/ rgb(238, 237, 241);
+  --bg-panel: /*#121B2E;*/ rgb(255, 255, 255);
+  --bg-panel-raised: /* #16213A;*/ rgb(202, 201, 216);
+  --border-soft: /*#1E2A42;*/ rgb(227, 225, 235);
+  --border-strong: /*#2A3A5C;*/ rgb(23, 25, 60);
 
   --teal: #3DD9C2;
-  --teal-dim: #123D36;
+  --teal-dim: /*#1F4D47*/ rgb(17, 17, 80);;
   --amber: #F2B33D;
   --amber-dim: #4D3D1B;
   --red: #E5484D;
   --red-dim: #4D1F22;
 
-  /* Brand accent — warm terracotta, used for primary buttons/links.
-     Kept separate from the status colors above (teal/amber/red)
-     so "on/off/low" meaning never gets mixed up with "this is a
-     clickable action" meaning. */
-  --brand: #C9682D;
-  --brand-dim: #A8531F;
-
-  /* Warm structural dark — replaces the old navy-blue backgrounds
-     (topbar, mobile nav, toasts, login visual panel) */
-  --warm-dark: #241A12;
-  --warm-dark-mid: #3A2A1E;
-
-  --text-bright: black;
-  --text-muted: black;
-  --text-faint: black;
+  --text-bright:/* #EAF0FA;*/ black;
+  --text-muted: /*#AEB9CC;*/ black;
+  --text-faint: /*#6B7A99*/ black;
 
   /* Type */
   --font-display: "Space Grotesk", "Segoe UI", sans-serif;
@@ -345,7 +333,7 @@ button, a {
 
 .topbar {
   border-bottom: 1px solid var(--border-soft);
-  background: linear-gradient(160deg, var(--warm-dark), var(--warm-dark-mid) 140%);
+  background: rgb(3, 3, 55);
   backdrop-filter: blur(6px);
   position: sticky;
   top: 0;
@@ -395,17 +383,16 @@ button, a {
 }
 
 .nav__link {
-  padding: 8px 16px;
-  border-radius: 999px;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
   font-size: 0.92rem;
   color: white;
-  transition: background 0.18s ease, color 0.18s ease, transform 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
 .nav__link:hover {
   background: var(--bg-panel-raised);
   color: var(--text-bright);
-  transform: translateY(-1px);
 }
 
 .nav__link--active {
@@ -454,31 +441,13 @@ button, a {
   color: white;
 }
 
-.nav-toggle-label:hover {
-  border-color: var(--brand);
-}
-
 .nav-toggle-label .bar {
   display: block;
   width: 20px;
   height: 2px;
-  background: rgb(206, 207, 206);
+  background: /*var(--text-bright)*/ rgb(206, 207, 206);
   margin: 4px 0;
   border-radius: 2px;
-  transition: transform 0.22s ease, opacity 0.18s ease;
-  transform-origin: center;
-}
-
-.nav-toggle:checked ~ .nav-toggle-label .bar:nth-child(1) {
-  transform: translateY(6px) rotate(45deg);
-}
-
-.nav-toggle:checked ~ .nav-toggle-label .bar:nth-child(2) {
-  opacity: 0;
-}
-
-.nav-toggle:checked ~ .nav-toggle-label .bar:nth-child(3) {
-  transform: translateY(-6px) rotate(-45deg);
 }
 
 /* ============================================================
@@ -895,13 +864,12 @@ button, a {
 }
 
 .btn--primary {
-  background: var(--brand);
-  color: white;
+  background: rgb(202, 201, 216);
+  color: black;
 }
 
 .btn--primary:hover {
-  background: var(--brand-dim);
-  opacity: 1;
+  opacity: 0.92;
 }
 
 .btn--ghost {
@@ -1003,7 +971,7 @@ button, a {
 
   .nav-toggle:checked ~ .nav {
     display: flex;
-    background-color: var(--warm-dark);
+    background-color: #0B1220;
   }
 
   .nav-toggle-label {
@@ -1068,7 +1036,7 @@ button, a {
   }
 
   .crowdsource {
-    color: var(--brand);
+    color: rgb(56, 146, 176);
     font-weight: 800;
     text-decoration:wavy;
     margin: 1.5rem 0 .4rem o;
@@ -1119,60 +1087,5 @@ button, a {
 
   .location-row__report {
     flex-wrap: wrap;
-  }
-}
-
-/* ============================================================
-   Narrow phones (Galaxy S8 ~360px, iPhone 12 ~390px)
-   Text at the 480px tier is still sized for larger phones —
-   this tightens things up specifically for the ~360-400px
-   range so nothing feels oversized on smaller screens.
-   ============================================================ */
-
-@media (max-width: 400px) {
-  body {
-    font-size: 15px;
-  }
-
-  .page__title {
-    font-size: 1.22rem;
-  }
-
-  .page__subtitle {
-    font-size: 0.85rem;
-  }
-
-  .stat-card__value {
-    font-size: 1.6rem;
-  }
-
-  .stat-card__label {
-    font-size: 0.68rem;
-  }
-
-  .card__title {
-    font-size: 0.92rem;
-  }
-
-  .card__meta {
-    font-size: 0.72rem;
-  }
-
-  .btn {
-    font-size: 0.86rem;
-    padding: 10px 16px;
-  }
-
-  .nav__link {
-    font-size: 0.85rem;
-    padding: 7px 12px;
-  }
-
-  .bottom-nav-label {
-    font-size: 0.7rem;
-  }
-
-  .profile-card__name {
-    font-size: 0.95rem;
   }
 }

@@ -9,7 +9,7 @@
 }
 
 .login-visual {
-  background: linear-gradient(160deg, #2A1F17, #1C140F 60%);
+  background: linear-gradient(160deg, #0E1A2E, #0B1220 60%);
   border-right: 1px solid var(--border-soft);
   position: relative;
   display: flex;
@@ -248,32 +248,4 @@
   margin-top: 22px;
   font-size: 0.88rem;
   color: var(--text-muted);
-}
-
-@media (max-width: 400px) {
-  .login-box h2 {
-    font-size: 1.3rem;
-  }
-
-  .login-box__subtitle {
-    font-size: 0.76rem;
-    margin-bottom: 22px;
-  }
-
-  .field__label {
-    font-size: 0.78rem;
-  }
-
-  .field__input {
-    font-size: 0.88rem;
-    padding: 11px 13px;
-  }
-
-  .remember-me-label {
-    font-size: 0.8rem;
-  }
-
-  .signup-prompt {
-    font-size: 0.82rem;
-  }
 }

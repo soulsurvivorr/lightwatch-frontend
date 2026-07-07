@@ -31,7 +31,7 @@
         } 
  
         header h3 { 
-            color: #C9682D; 
+            color: rgb(61, 61, 148); 
             font-weight: 600; 
             margin: 0;
         } 
@@ -91,8 +91,8 @@
 
         main input:focus {
             outline: none;
-            border-color: #9C8770;
-            box-shadow: 0 0 0 3px rgba(156, 135, 112, 0.15);
+            border-color: rgb(107, 113, 172);
+            box-shadow: 0 0 0 3px rgba(107, 113, 172, 0.15);
         }
 
         .otp-boxes {
@@ -142,7 +142,7 @@
  
         button { 
             padding: 14px; 
-            background-color: #9C8770; 
+            background-color: rgb(107, 113, 172); 
             color: white; 
             border-radius: 26px; 
             border: none; 
@@ -153,24 +153,24 @@
         } 
 
         button:hover {
-            background-color: #84705A;
+            background-color: rgb(90, 96, 155);
         }
 
         button.active {
-            background-color: #C9682D;
+            background-color: #007bff
         }
 
         button.active:hover {
-            background-color: #A8531F;
+            background-color: #0056b3;
         }
 
         button:disabled {
-            background-color: rgb(224, 219, 211);
+            background-color: rgb(210, 210, 220);
             cursor: not-allowed;
         }
 
         button:disabled:hover {
-            background-color: rgb(224, 219, 211);
+            background-color: rgb(210, 210, 220);
         }
 
         @media (max-width: 480px) {
@@ -192,29 +192,5 @@
                 width: 48px;
                 height: 54px;
                 font-size: 1.4rem;
-            }
-        }
-
-        @media (max-width: 400px) {
-            header h3 {
-                font-size: .88rem;
-            }
-
-            main h2 {
-                font-size: 1.15rem;
-            }
-
-            main p {
-                font-size: .88rem;
-            }
-
-            .otp-box {
-                width: 42px;
-                height: 48px;
-                font-size: 1.25rem;
-            }
-
-            .resend-row p {
-                font-size: .78rem;
             }
         }
