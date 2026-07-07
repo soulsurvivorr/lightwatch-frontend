@@ -71,6 +71,12 @@ function signOut() {
 //  Call this at the top of any protected page
 function requireAuth() {
     if (!getSession()) {
+        const path = window.location.pathname.toLowerCase();
+        // Avoid redirecting index -> index forever when this guard is
+        // accidentally loaded on the public login/landing page.
+        if (path.endsWith('/index.html') || path === '/' || path === '') {
+            return;
+        }
         const depth = window.location.pathname.split('/').filter(Boolean).length;
         const prefix = depth > 1 ? '../'.repeat(depth - 1) : './';
         window.location.replace(prefix + 'index.html');
