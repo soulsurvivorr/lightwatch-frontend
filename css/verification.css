@@ -31,7 +31,7 @@
         } 
  
         header h3 { 
-            color: rgb(61, 61, 148); 
+            color: #C9682D; 
             font-weight: 600; 
             margin: 0;
         } 
@@ -46,7 +46,7 @@
             flex: 1; 
             justify-content: center; 
             align-items: center; 
-            margin: 1em 0; 
+            margin: .5em 0; 
             padding: 0 1.2rem;
             z-index: 1; 
         } 
@@ -91,8 +91,8 @@
 
         main input:focus {
             outline: none;
-            border-color: rgb(107, 113, 172);
-            box-shadow: 0 0 0 3px rgba(107, 113, 172, 0.15);
+            border-color: #9C8770;
+            box-shadow: 0 0 0 3px rgba(156, 135, 112, 0.15);
         }
 
         .otp-boxes {
@@ -142,7 +142,7 @@
  
         button { 
             padding: 14px; 
-            background-color: rgb(107, 113, 172); 
+            background-color: #9C8770; 
             color: white; 
             border-radius: 26px; 
             border: none; 
@@ -153,24 +153,24 @@
         } 
 
         button:hover {
-            background-color: rgb(90, 96, 155);
+            background-color: #84705A;
         }
 
         button.active {
-            background-color: #007bff
+            background-color: #C9682D;
         }
 
         button.active:hover {
-            background-color: #0056b3;
+            background-color: #A8531F;
         }
 
         button:disabled {
-            background-color: rgb(210, 210, 220);
+            background-color: rgb(224, 219, 211);
             cursor: not-allowed;
         }
 
         button:disabled:hover {
-            background-color: rgb(210, 210, 220);
+            background-color: rgb(224, 219, 211);
         }
 
         @media (max-width: 480px) {
@@ -192,5 +192,29 @@
                 width: 48px;
                 height: 54px;
                 font-size: 1.4rem;
+            }
+        }
+
+        @media (max-width: 400px) {
+            header h3 {
+                font-size: .88rem;
+            }
+
+            main h2 {
+                font-size: 1.15rem;
+            }
+
+            main p {
+                font-size: .88rem;
+            }
+
+            .otp-box {
+                width: 42px;
+                height: 48px;
+                font-size: 1.25rem;
+            }
+
+            .resend-row p {
+                font-size: .78rem;
             }
         }
