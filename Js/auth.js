@@ -6,14 +6,39 @@
 const AUTH_KEY     = 'app_auth_token';
 const USER_KEY     = 'app_user';
 const REMEMBER_KEY = 'app_remember';
+const TEMP_AUTH_KEY = 'app_temp_auth_token';
+const TEMP_USER_KEY = 'app_temp_user';
+const TEMP_EXPIRES_KEY = 'app_temp_expires_at';
 
 // ── Read session from whichever storage was used ─────────────
 function getSession() {
     const remembered = localStorage.getItem(REMEMBER_KEY) === 'true';
     const token   = remembered ? localStorage.getItem(AUTH_KEY)  : sessionStorage.getItem(AUTH_KEY);
     const userRaw = remembered ? localStorage.getItem(USER_KEY)  : sessionStorage.getItem(USER_KEY);
-    if (!token || !userRaw) return null;
-    try { return { token, user: JSON.parse(userRaw), remembered }; }
+    if (token && userRaw) {
+        try { return { token, user: JSON.parse(userRaw), remembered }; }
+        catch { return null; }
+    }
+
+    // Fallback for signup users who chose not to be remembered forever:
+    // keep them signed in for 24h across browser restarts.
+    const tempToken = localStorage.getItem(TEMP_AUTH_KEY);
+    const tempUserRaw = localStorage.getItem(TEMP_USER_KEY);
+    const tempExpiresAt = Number(localStorage.getItem(TEMP_EXPIRES_KEY) || '0');
+    if (!tempToken || !tempUserRaw || !tempExpiresAt) return null;
+    if (Date.now() > tempExpiresAt) {
+        localStorage.removeItem(TEMP_AUTH_KEY);
+        localStorage.removeItem(TEMP_USER_KEY);
+        localStorage.removeItem(TEMP_EXPIRES_KEY);
+        return null;
+    }
+
+    try {
+        const tempUser = JSON.parse(tempUserRaw);
+        sessionStorage.setItem(AUTH_KEY, tempToken);
+        sessionStorage.setItem(USER_KEY, JSON.stringify(tempUser));
+        return { token: tempToken, user: tempUser, remembered: false };
+    }
     catch { return null; }
 }
 
@@ -47,6 +72,7 @@ function saveSession(user, token, rememberMe) {
 // ── Wipe everything cleanly ───────────────────────────────────
 function clearSession() {
     [AUTH_KEY, USER_KEY, REMEMBER_KEY,
+     TEMP_AUTH_KEY, TEMP_USER_KEY, TEMP_EXPIRES_KEY,
      'currentUserId', 'currentUserData', 'chatHandle',
      'maskedContact', 'signupUser', 'userIdentifier',
      'pendingUserId', 'rememberMePending'

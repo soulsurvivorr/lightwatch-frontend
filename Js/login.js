@@ -7,13 +7,13 @@ const userInput   = document.getElementById('user-input');
 const sendCodeBtn = document.getElementById('sendCodebtn');
 const errorMsg    = document.getElementById('error-msg');
 
-// ── Auto sign-in: if already logged in, skip to app ──────────
-/*document.addEventListener('DOMContentLoaded', () => {
+// ── Auto sign-in: remembered users or valid 24h signup session ─
+document.addEventListener('DOMContentLoaded', () => {
     const session = getSession(); // from auth.js
     if (session) {
         window.location.replace('./pages/home.html');
     }
-});*/
+});
 
 // ── Registered user count for the "Registered users" stat ────
 // Public, no-auth endpoint — just a headline number. If it fails

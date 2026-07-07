@@ -9,6 +9,7 @@
 // =========================================================
 
 const MOBILE_BREAKPOINT = 720;
+const ACTIVE_NAV_KEY = 'lw_active_nav';
 
 function applyNavVisibility() {
 
@@ -53,14 +54,30 @@ function highlightActiveNav() {
         'account.html': 'account'
     };
 
-    const currentSection = pageToSection[currentFile] || 'home';
+    const currentSection = pageToSection[currentFile] || sessionStorage.getItem(ACTIVE_NAV_KEY) || 'home';
 
-    document.querySelectorAll('#primaryNav .nav__link').forEach(link => {
-        link.classList.toggle('nav__link--active', link.dataset.nav === currentSection);
-    });
+    function applyActive(section) {
+        document.querySelectorAll('#primaryNav .nav__link').forEach(link => {
+            link.classList.toggle('nav__link--active', link.dataset.nav === section);
+        });
 
-    document.querySelectorAll('.bottom-nav-link[data-nav]').forEach(link => {
-        link.classList.toggle('bottom-nav-link--active', link.dataset.nav === currentSection);
+        document.querySelectorAll('.bottom-nav-link[data-nav]').forEach(link => {
+            link.classList.toggle('bottom-nav-link--active', link.dataset.nav === section);
+        });
+    }
+
+    applyActive(currentSection);
+
+    // Instant visual feedback on click, even before navigation completes.
+    document.querySelectorAll('#primaryNav .nav__link, .bottom-nav-link[data-nav]').forEach(link => {
+        if (link.dataset.navBound === '1') return;
+        link.dataset.navBound = '1';
+        link.addEventListener('click', () => {
+            const nextSection = link.dataset.nav;
+            if (!nextSection) return;
+            sessionStorage.setItem(ACTIVE_NAV_KEY, nextSection);
+            applyActive(nextSection);
+        });
     });
 }
 

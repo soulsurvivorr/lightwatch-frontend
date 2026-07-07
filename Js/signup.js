@@ -61,13 +61,14 @@ async function handleSignup() {
         localStorage.setItem("maskedContact", result.maskedContact);
         localStorage.setItem("signupUser", JSON.stringify(userData));
 
-        // There's no "remember me" checkbox on the signup form itself —
-        // someone completing signup is setting the app up on their own
-        // device, so we default this to "on" automatically. verification.js
-        // reads this same key for the sign-in flow too, so this is what
-        // makes a freshly-signed-up user stay logged in after closing
-        // and reopening the browser/PWA.
-        localStorage.setItem("rememberMePending", "true");
+        // Ask whether this browser should stay signed in permanently.
+        // If user declines, verification flow keeps a 24h temporary session.
+        const rememberChoice = window.confirm(
+            "Save your sign-in on this device for next time?\n\n" +
+            "OK = stay signed in on this browser\n" +
+            "Cancel = sign in normally each time (temporary 24h keep-after-signup)"
+        );
+        localStorage.setItem("rememberMePending", rememberChoice ? "true" : "false");
 
         window.location.replace("../pages/verification.html");
 

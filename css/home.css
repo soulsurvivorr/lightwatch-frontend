@@ -1896,3 +1896,83 @@
     gap: 12px;
   }
 }
+
+/* Extra-compact phone tuning (Samsung S8, iPhone 12 width range) */
+@media (max-width: 430px) {
+  .page {
+    padding: 14px 12px 46px;
+  }
+
+  .page__title {
+    font-size: 1.24rem;
+  }
+
+  .page__subtitle,
+  .page__greeting,
+  .hero-banner__sub {
+    font-size: 0.78rem;
+  }
+
+  .hero-banner {
+    padding: 14px;
+    border-radius: 16px;
+  }
+
+  .hero-banner__greeting {
+    font-size: 1.1rem;
+  }
+
+  .hero-stat__value {
+    font-size: 1rem;
+  }
+
+  .card,
+  .location-card,
+  .report-card,
+  .chat-card,
+  .add-location-card,
+  .profile-card {
+    padding: 12px;
+    border-radius: 14px;
+  }
+
+  .card__title {
+    font-size: 0.9rem;
+  }
+
+  .card__meta,
+  .location-card__label,
+  .meta-pill,
+  .bottom-nav-label {
+    font-size: 0.72rem;
+  }
+
+  .status-hero__title {
+    font-size: 0.95rem;
+  }
+
+  .status-hero__sub,
+  .light-toggle-row__sub,
+  .status-insight__sub {
+    font-size: 0.72rem;
+  }
+
+  .location-card__row strong,
+  .status-insight__stats strong {
+    font-size: 0.86rem;
+  }
+
+  .chat-thread {
+    max-height: 200px;
+  }
+
+  .chat-message__text,
+  .chat-form__input {
+    font-size: 0.78rem;
+  }
+
+  .bottom-icons-container {
+    gap: 8px;
+    padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+  }
+}

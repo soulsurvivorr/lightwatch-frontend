@@ -116,6 +116,7 @@ async function checkOTP() {
 
 
         const rememberMe = getVerificationValue('rememberMePending') === 'true';
+        const isSignupFlow = !!getVerificationValue('signupUser');
         const userResponse = await fetch (`${API_URL}/user/${result.userId}`);
         const fullUser = await userResponse.json();
         const user = {
@@ -133,6 +134,15 @@ async function checkOTP() {
         };
 
         saveSession(user, result.userId, rememberMe);
+
+        // Signup without permanent remember: keep a temporary browser session
+        // for 24h, then require sign-in again.
+        if (!rememberMe && isSignupFlow) {
+            const oneDayMs = 24 * 60 * 60 * 1000;
+            localStorage.setItem('app_temp_auth_token', result.userId);
+            localStorage.setItem('app_temp_user', JSON.stringify(user));
+            localStorage.setItem('app_temp_expires_at', String(Date.now() + oneDayMs));
+        }
 
         // Clean up all temporary sign-in/signup data from BOTH storages —
         // sign-in stashes these in sessionStorage, signup stashes them in

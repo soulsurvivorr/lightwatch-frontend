@@ -446,7 +446,7 @@ function renderSignedOutEverywhere() {
 
 
 // -----------------------------------------------------
-// PROFILE LOADING OVERLAY (colorful bubble loader)
+// PROFILE LOADING OVERLAY (cross-line logo loader)
 // A single full-page overlay (not tied to any one element),
 // so it behaves identically on every page regardless of which
 // profile elements that page happens to have. It only turns
@@ -465,8 +465,7 @@ function injectProfileLoaderStyles() {
     style.textContent = `
         .lw-profile-loader {
             position: fixed; inset: 0; z-index: 9999;
-            display: flex; align-items: center; justify-content: center;
-            gap: 10px;
+            display: grid; place-items: center;
             background: rgba(7, 10, 28, 0.72);
             opacity: 0; pointer-events: none;
             transition: opacity 0.2s ease;
@@ -475,17 +474,59 @@ function injectProfileLoaderStyles() {
            underneath must stay usable even while this is visible,
            so a slow/cold backend can never make the app feel frozen. */
         .lw-profile-loader--show { opacity: 1; }
-        .lw-profile-loader__bubble {
-            width: 16px; height: 16px; border-radius: 50%;
-            animation: lw-bubble-bounce 0.9s ease-in-out infinite;
+        .lw-loader-orbit {
+            position: relative;
+            width: 110px;
+            height: 110px;
+            display: grid;
+            place-items: center;
         }
-        .lw-profile-loader__bubble:nth-child(1) { background: #3DD9C2; animation-delay: 0s; }
-        .lw-profile-loader__bubble:nth-child(2) { background: #F2B33D; animation-delay: 0.15s; }
-        .lw-profile-loader__bubble:nth-child(3) { background: #E5484D; animation-delay: 0.3s; }
-        .lw-profile-loader__bubble:nth-child(4) { background: #6C8CFF; animation-delay: 0.45s; }
-        @keyframes lw-bubble-bounce {
-            0%, 100% { transform: translateY(0); opacity: 0.6; }
-            50% { transform: translateY(-14px); opacity: 1; }
+        .lw-loader-rings {
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            border: 2px solid rgba(61, 217, 194, 0.22);
+            animation: lw-spin-a 1.8s linear infinite;
+        }
+        .lw-loader-rings::before,
+        .lw-loader-rings::after {
+            content: "";
+            position: absolute;
+            inset: 10px;
+            border-radius: 50%;
+            border: 2px solid rgba(242, 179, 61, 0.32);
+            animation: lw-spin-b 1.4s linear infinite;
+        }
+        .lw-loader-rings::after {
+            inset: 22px;
+            border-color: rgba(61, 217, 194, 0.55);
+            animation-duration: 1.05s;
+            animation-direction: reverse;
+        }
+        .lw-loader-core {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #3DD9C2, #F2B33D);
+            display: grid;
+            place-items: center;
+            box-shadow: 0 10px 22px rgba(0, 0, 0, 0.28);
+            animation: lw-core-pulse 1.2s ease-in-out infinite;
+        }
+        .lw-loader-core svg {
+            width: 24px;
+            height: 24px;
+            display: block;
+        }
+        @keyframes lw-spin-a {
+            to { transform: rotate(360deg); }
+        }
+        @keyframes lw-spin-b {
+            to { transform: rotate(-360deg); }
+        }
+        @keyframes lw-core-pulse {
+            0%, 100% { transform: scale(0.95); }
+            50% { transform: scale(1.03); }
         }
     `;
     document.head.appendChild(style);
@@ -499,10 +540,16 @@ function attachProfileLoader() {
     profileLoaderOverlayEl.className = 'lw-profile-loader';
     profileLoaderOverlayEl.id = 'lw-profile-loader';
     profileLoaderOverlayEl.innerHTML = `
-        <span class="lw-profile-loader__bubble"></span>
-        <span class="lw-profile-loader__bubble"></span>
-        <span class="lw-profile-loader__bubble"></span>
-        <span class="lw-profile-loader__bubble"></span>
+        <div class="lw-loader-orbit" role="status" aria-live="polite" aria-label="Loading profile">
+            <div class="lw-loader-rings"></div>
+            <div class="lw-loader-core">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M4 6.5H10.5L12 4L13.5 6.5H20" stroke="#06241f" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M4 12H20" stroke="#06241f" stroke-width="1.8" stroke-linecap="round"/>
+                    <path d="M4 17.5H10L12 20L14 17.5H20" stroke="#06241f" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+        </div>
     `;
     document.body.appendChild(profileLoaderOverlayEl);
 }
