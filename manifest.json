@@ -8,14 +8,16 @@
     "orientation": "portrait",
     "icons": [
         {
-            "src": "/images/dev-logo.png",
+            "src": "/images/dev-logo.png?v=20260707",
             "sizes": "192x192",
-            "type": "image/png"
+            "type": "image/png",
+            "purpose": "any maskable"
         },
         {
-            "src": "/images/dev-logo.png",
+            "src": "/images/dev-logo.png?v=20260707",
             "sizes": "512x512",
-            "type": "image/png"
+            "type": "image/png",
+            "purpose": "any maskable"
         }
     ]
 }

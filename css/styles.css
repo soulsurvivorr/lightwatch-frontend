@@ -13,8 +13,8 @@
 
   --teal: #3DD9C2;
   --teal-dim: #123D36;
-  --amber: #F2B33D;
-  --amber-dim: #4D3D1B;
+  --amber: #D6A24A;
+  --amber-dim: #4A3A1F;
   --red: #E5484D;
   --red-dim: #4D1F22;
 
@@ -22,8 +22,8 @@
      blue arc. Used app-wide now: gold is the primary action color
      (Send code, Submit, active tab), blue is the secondary accent
      (ghost-button hover, links, focus rings). */
-  --brand: #F0AC3D;
-  --brand-dim: #C98A1F;
+  --brand: #D6A24A;
+  --brand-dim: #A57B2F;
   --brand2: #4A90D9;
   --brand2-dim: #3574B0;
 

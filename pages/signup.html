@@ -5,8 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#1C1F26">
-     <link rel="apple-touch-icon" sizes="180x180" href="/images/dev-logo.png">
-  <link rel="apple-touch-icon" sizes="192x192" href="/images/dev-logo.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/dev-logo.png?v=20260707">
+    <link rel="apple-touch-icon" sizes="192x192" href="/images/dev-logo.png?v=20260707">
+    <link rel="preload" as="image" href="/images/dev-logo.png?v=20260707">
+    <link rel="preload" as="image" href="/icons/encrypted.png">
+    <link rel="preload" as="image" href="/icons/user.png">
     <title>Document</title>
     <link rel="icon" href="../images/dev-logo.png" type="image/x-icon">
     <link rel="stylesheet" href="../css/styles.css">
@@ -16,14 +19,14 @@
    <section>
       <div style="padding: 1rem;">
         <div id="dev-logo-cont">
-            <img src="../images/dev-logo.png" alt="Site Logo" width="48" height="48">
+            <img src="/images/dev-logo.png?v=20260707" alt="Site Logo" width="48" height="48" loading="eager" fetchpriority="high" decoding="async">
             <p>LightWatch GH</p>
         </div>
         <div id="main-content_wrapper">
             <div class="submit-info-section">
                 <div>
                     <button>
-                        <img src="../icons/encrypted.png" alt="Encrypted" width="32" height="32" loading="lazy">
+                        <img src="/icons/encrypted.png" alt="Encrypted" width="32" height="32" loading="eager" fetchpriority="high" decoding="async">
                     </button>
                     <h3>Let's Complete your profile</h3>
                     <p>This helps us personlize your experience and keep you updated about power status in your area.</p>
@@ -32,7 +35,7 @@
             <div id="input-field-section">
                 <div class="user-icon-container" style="text-align: center;">
                     <button class="user-profile-btn">
-                        <img src="../icons/user.png" alt="User Icon">
+                        <img src="/icons/user.png" alt="User Icon" loading="eager" fetchpriority="high" decoding="async">
                     </button>
                     <h3>Almost there!</h3>
                     <p>Kindly provide a few details to get started.</p>

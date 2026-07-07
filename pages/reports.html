@@ -4,14 +4,31 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#1C1F26">
+  <meta name="theme-color" content="#1C1F26">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/dev-logo.png?v=20260707">
+  <link rel="apple-touch-icon" sizes="192x192" href="/images/dev-logo.png?v=20260707">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="LightWatch">
   <title>Reports — LightWatch</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/home.css" />
   <link rel="stylesheet" href="../css/styles.css">
 </head>
-<body>
+<body class="app-loading">
+
+  <div class="lw-boot-loader" id="lwBootLoader" aria-hidden="true">
+    <div class="lw-loader-orbit">
+      <div class="lw-loader-rings"></div>
+      <div class="lw-loader-core">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M4 6.5H10.5L12 4L13.5 6.5H20" stroke="#06241f" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M4 12H20" stroke="#06241f" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M4 17.5H10L12 20L14 17.5H20" stroke="#06241f" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+    </div>
+  </div>
 
   <header class="topbar">
     <div class="topbar__inner">

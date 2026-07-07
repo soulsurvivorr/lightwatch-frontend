@@ -90,21 +90,22 @@
 .login-form-side {
   display: flex;
   align-items: center;
-  justify-content: left;
-  padding: 25px 32px 48px 32px;
+  justify-content: center;
+  padding: 56px 32px 48px;
   background-color: white;
 }
 
 .login-box {
   width: 100%;
   max-width: 380px;
+  margin-top: 8px;
 }
 
 .login-box__brand {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 3em;
+  margin-bottom: 1.4rem;
 }
 
 .login-box h2 {
@@ -115,14 +116,14 @@
 .login-box__subtitle {
   color: var(--text-muted);
   font-size: 0.8rem;
-  margin-bottom: 28px;
+  margin-bottom: 18px;
 }
 
 .field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin-bottom: 18px;
+  gap: 5px;
+  margin-bottom: 14px;
 }
 
 .field__label {
@@ -161,7 +162,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
   font-size: 0.85rem;
 }
 
@@ -222,7 +223,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  margin: 22px 0;
+  margin: 14px 0;
   color: var(--text-faint);
   font-size: 0.78rem;
 }
@@ -237,7 +238,7 @@
 
 .signup-prompt {
   text-align: center;
-  margin-top: 22px;
+  margin-top: 12px;
   font-size: 0.88rem;
   color: var(--text-muted);
 }
@@ -285,7 +286,7 @@
   }
 
   .divider {
-    margin: 16px 0;
+    margin: 12px 0;
   }
 
   .signup-prompt {

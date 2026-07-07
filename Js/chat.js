@@ -8,6 +8,10 @@ const chatThread = document.getElementById('chatThread');
 const chatForm   = document.getElementById('chatForm');
 const chatInput  = document.getElementById('chatInput');
 const chatHandleDisplay = document.getElementById('chatHandle');
+const chatReplyPreview = document.getElementById('chatReplyPreview');
+const chatReplyHandle = document.getElementById('chatReplyHandle');
+const chatReplyText = document.getElementById('chatReplyText');
+const chatReplyCancel = document.getElementById('chatReplyCancel');
 
 const HANDLE_WORDS = [
     "fern","river","glow","cedar","amber","quartz",
@@ -104,15 +108,58 @@ function buildMessageEl(chat, isOwn) {
     body.className   = "chat-message__text";
     body.textContent = chat.text;
 
+    const reply = chat.replyTo;
+    if (reply && (reply.handle || reply.text)) {
+        const replyEl = document.createElement('div');
+        replyEl.className = 'chat-message__reply';
+
+        const replyHandleEl = document.createElement('span');
+        replyHandleEl.className = 'chat-message__reply-handle';
+        replyHandleEl.textContent = `Reply to ${reply.handle || 'someone'}`;
+
+        const replyTextEl = document.createElement('span');
+        replyTextEl.className = 'chat-message__reply-text';
+        replyTextEl.textContent = (reply.text || '').slice(0, 120);
+
+        replyEl.appendChild(replyHandleEl);
+        replyEl.appendChild(replyTextEl);
+        el.appendChild(replyEl);
+    }
+
     const time = document.createElement('span');
     time.className   = "chat-message__time";
     time.textContent = formatRelativeTime(chat.createdAt);
 
+    const actions = document.createElement('div');
+    actions.className = 'chat-message__actions';
+    const replyBtn = document.createElement('button');
+    replyBtn.type = 'button';
+    replyBtn.className = 'chat-message__reply-btn';
+    replyBtn.textContent = 'Reply';
+    replyBtn.addEventListener('click', () => {
+        replyTarget = {
+            chatId: chat._id || chat.id || '',
+            handle: chat.handle || 'someone',
+            text: chat.text || ''
+        };
+        if (chatReplyHandle) chatReplyHandle.textContent = replyTarget.handle;
+        if (chatReplyText) chatReplyText.textContent = replyTarget.text;
+        if (chatReplyPreview) chatReplyPreview.hidden = false;
+        chatInput?.focus();
+    });
+    actions.appendChild(replyBtn);
+
     el.appendChild(author);
     el.appendChild(body);
     el.appendChild(time);
+    el.appendChild(actions);
     return el;
 }
+
+chatReplyCancel?.addEventListener('click', () => {
+    replyTarget = null;
+    if (chatReplyPreview) chatReplyPreview.hidden = true;
+});
 
 // -------------------------------------------------------
 // THREAD STATE
@@ -123,6 +170,7 @@ const knownIds  = new Set();
 let pollInterval  = null;
 let chatLocation  = null; // set once on load, reused by poll
 let isNearBottom  = true;
+let replyTarget = null;
 
 chatThread?.addEventListener('scroll', () => {
     if (!chatThread) return;
@@ -257,7 +305,13 @@ chatForm?.addEventListener('submit', async (e) => {
         const res = await fetch(`${API_URL}/chats`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ userId: myId, handle: myHandle, text, location: loc })
+            body: JSON.stringify({
+                userId: myId,
+                handle: myHandle,
+                text,
+                location: loc,
+                replyTo: replyTarget || undefined
+            })
         });
 
         if (!res.ok) {
@@ -273,6 +327,9 @@ chatForm?.addEventListener('submit', async (e) => {
             knownIds.add(realId);           // tell poll: skip this one
             addToThread(saved, true, true); // show it now, scroll to it
         }
+
+        replyTarget = null;
+        if (chatReplyPreview) chatReplyPreview.hidden = true;
     } catch(err) {
         console.error("Failed to send:", err);
         chatInput.value = text; // restore on failure

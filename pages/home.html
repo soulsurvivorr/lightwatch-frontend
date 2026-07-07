@@ -3,6 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#1C1F26">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/dev-logo.png?v=20260707">
+  <link rel="apple-touch-icon" sizes="192x192" href="/images/dev-logo.png?v=20260707">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="LightWatch">
   <title>LightWatch — Home</title>
   <link rel="icon" href="../images/dev-logo.png" type="image/x-icon">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -14,11 +20,21 @@
        full fresh load each time. -->
   <link rel="prefetch" href="./reports.html">
   <link rel="prefetch" href="./account.html">
-  <style>
-    body { visibility: hidden; }
-  </style>
 </head>
-<body>
+<body class="app-loading">
+
+  <div class="lw-boot-loader" id="lwBootLoader" aria-hidden="true">
+    <div class="lw-loader-orbit">
+      <div class="lw-loader-rings"></div>
+      <div class="lw-loader-core">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M4 6.5H10.5L12 4L13.5 6.5H20" stroke="#06241f" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M4 12H20" stroke="#06241f" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M4 17.5H10L12 20L14 17.5H20" stroke="#06241f" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+    </div>
+  </div>
 
   <!-- These two load blocking (no defer) on purpose, and run BEFORE
        anything below is allowed to paint — this is what stops the app
@@ -31,8 +47,6 @@
     const session = typeof getSession === 'function' ? getSession() : null;
     if (!session) {
       window.location.replace('../index.html');
-    } else {
-      document.body.style.visibility = 'visible';
     }
   </script>
 
@@ -229,6 +243,11 @@
           </div>
           <div class="chat-thread" id="chatThread"></div>
           <form class="chat-form" id="chatForm" action="javascript:void(0)">
+            <div class="chat-reply-preview" id="chatReplyPreview" hidden>
+              <span class="chat-reply-preview__label">Replying to <strong id="chatReplyHandle">someone</strong></span>
+              <p class="chat-reply-preview__text" id="chatReplyText"></p>
+              <button type="button" class="chat-reply-preview__cancel" id="chatReplyCancel" aria-label="Cancel reply">×</button>
+            </div>
             <input type="text" class="chat-form__input" id="chatInput" placeholder="Share an update about this location..." maxlength="240" />
             <button type="submit" class="btn btn--primary">Send</button>
           </form>

@@ -231,6 +231,22 @@ function renderLocationPage(user) {
         return days === 1 ? "Yesterday" : `${days} days ago`;
     }
 
+    const lastVerifiedEl = document.getElementById('lastVerified');
+    let lastReportedAtMs = null;
+
+    function refreshLastVerifiedLabel() {
+        if (!lastVerifiedEl) return;
+        if (!lastReportedAtMs) {
+            lastVerifiedEl.textContent = '—';
+            return;
+        }
+        lastVerifiedEl.textContent = timeAgo(new Date(lastReportedAtMs).toISOString());
+    }
+
+    // Keep relative timestamp accurate based on absolute report time.
+    refreshLastVerifiedLabel();
+    setInterval(refreshLastVerifiedLabel, 15000);
+
     function formatDuration(ms) {
         if (ms == null) return '—';
         const totalMinutes = Math.round(ms / 60000);
@@ -286,9 +302,9 @@ function renderLocationPage(user) {
             .then(r => r.json())
             .then(data => {
                 setLightStatus(data.status || 'unknown');
-                const lastVerifiedEl = document.getElementById('lastVerified');
-                if (lastVerifiedEl && data.reportedAt) {
-                    lastVerifiedEl.textContent = timeAgo(data.reportedAt);
+                if (data.reportedAt) {
+                    lastReportedAtMs = new Date(data.reportedAt).getTime();
+                    refreshLastVerifiedLabel();
                 }
                 renderLightStats(data.stats);
             })
@@ -307,9 +323,9 @@ function renderLocationPage(user) {
             .then(r => r.json())
             .then(data => {
                 setLightStatus(data.status || 'unknown');
-                const lastVerifiedEl = document.getElementById('lastVerified');
-                if (lastVerifiedEl && data.reportedAt) {
-                    lastVerifiedEl.textContent = timeAgo(data.reportedAt);
+                if (data.reportedAt) {
+                    lastReportedAtMs = new Date(data.reportedAt).getTime();
+                    refreshLastVerifiedLabel();
                 }
                 renderLightStats(data.stats);
             })
@@ -332,18 +348,9 @@ function renderLocationPage(user) {
                 .then(r => r.json())
                 .then(() => {
                     setLightStatus(nextStatus);
+                    lastReportedAtMs = Date.now();
+                    refreshLastVerifiedLabel();
                     loadLocationStats();
-                    const lastVerifiedEl = document.getElementById("lastVerified");
-                    if (lastVerifiedEl) {
-                        lastVerifiedEl.textContent = "Just now";
-                        let mins = 0;
-                        const ticker = setInterval(() => {
-                            mins++;
-                            if (mins >= 1440) { clearInterval(ticker); lastVerifiedEl.textContent = "Over a day ago"; }
-                            else if (mins >= 60) lastVerifiedEl.textContent = mins >= 120 ? `${Math.floor(mins/60)} hours ago` : "1 hour ago";
-                            else lastVerifiedEl.textContent = mins === 1 ? "1 minute ago" : `${mins} minutes ago`;
-                        }, 10000);
-                    }
                     // Send a chat notification to the room
                     const myId = getSession()?.user?.id || localStorage.getItem("currentUserId");
                     const myHandle = getSession()?.user?.chatHandle || localStorage.getItem("chatHandle") || "someone";
@@ -560,6 +567,7 @@ function attachProfileLoader() {
 // can NEVER stay stuck on screen, even if a request hangs
 // indefinitely (e.g. a cold backend that never responds).
 function showProfileLoader(delay = 180, maxDuration = 8000) {
+    document.body?.classList.add('app-loading');
     if (!profileLoaderOverlayEl) attachProfileLoader();
     clearTimeout(profileLoaderShowTimer);
     clearTimeout(profileLoaderSafetyTimer);
@@ -577,6 +585,8 @@ function hideProfileLoader() {
     clearTimeout(profileLoaderShowTimer);
     clearTimeout(profileLoaderSafetyTimer);
     profileLoaderOverlayEl?.classList.remove('lw-profile-loader--show');
+    document.body?.classList.remove('app-loading');
+    document.getElementById('lwBootLoader')?.remove();
 }
 
 
@@ -586,7 +596,7 @@ function hideProfileLoader() {
 // -----------------------------------------------------
 async function loadCurrentUserProfile() {
 
-    showProfileLoader();
+    showProfileLoader(0);
 
     // ── Get user ID from the active session (set by auth.js) ──
     const session = getSession(); // defined in auth.js
