@@ -28,12 +28,22 @@
   <script src="../js/config.js"></script>
   <script src="../js/auth.js"></script>
   <script>
-    const session = typeof getSession === 'function' ? getSession() : null;
-    if (!session) {
-      window.location.replace('../index.html');
-    } else {
-      document.body.style.visibility = 'visible';
-    }
+    (function(){
+      const session = typeof getSession === 'function' ? getSession() : null;
+      try {
+        const log = JSON.parse(localStorage.getItem('lw_debug_redirects') || '[]');
+        log.push({when: Date.now(), file: 'pages/home.html', session: !!session, stack: (new Error()).stack});
+        localStorage.setItem('lw_debug_redirects', JSON.stringify(log.slice(-50)));
+      } catch(e) {}
+
+      if (!session) {
+        // record then redirect to login
+        try { navigator?.sendBeacon?.('/__client-redirect', JSON.stringify({from:'pages/home.html', when:Date.now()})); } catch(e) {}
+        window.location.replace('../index.html');
+      } else {
+        document.body.style.visibility = 'visible';
+      }
+    })();
   </script>
 
   <!-- Notification toast -->

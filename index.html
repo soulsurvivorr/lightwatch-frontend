@@ -28,14 +28,22 @@
   <script src="../js/config.js"></script>
   <script src="../js/auth.js"></script>
   <script>
-    const session = typeof getSession === 'function' ? getSession() : null;
-    if (session) {
-      // Already signed-in: navigate to the app home
-      window.location.replace('./pages/home.html');
-    } else {
-      // Not signed-in: reveal this page (landing / login)
-      document.body.style.visibility = 'visible';
-    }
+    (function(){
+      const session = typeof getSession === 'function' ? getSession() : null;
+      try {
+        const log = JSON.parse(localStorage.getItem('lw_debug_redirects') || '[]');
+        log.push({when: Date.now(), file: 'index.html', session: !!session, stack: (new Error()).stack});
+        localStorage.setItem('lw_debug_redirects', JSON.stringify(log.slice(-50)));
+      } catch(e) {}
+
+      if (session) {
+        // Already signed-in: navigate to the app home
+        window.location.replace('./pages/home.html');
+      } else {
+        // Not signed-in: reveal this page (landing / login)
+        document.body.style.visibility = 'visible';
+      }
+    })();
   </script>
 
   <!-- Notification toast -->
