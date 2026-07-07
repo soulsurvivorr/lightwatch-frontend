@@ -132,10 +132,16 @@ async function checkOTP() {
 
         saveSession(user, result.userId, rememberMe);
 
-        // Clean up all temporary sign-in data
+        // Clean up all temporary sign-in/signup data. Cleared from BOTH
+        // storages — sign-in stashes these in sessionStorage, signup
+        // stashes them in localStorage, so clearing only one left a
+        // stray "rememberMePending" behind after signup specifically.
         ['userIdentifier', 'maskedContact', 'pendingUserId',
          'rememberMePending', 'chatHandle', 'signupUser'
-        ].forEach(k => sessionStorage.removeItem(k));
+        ].forEach(k => {
+            sessionStorage.removeItem(k);
+            localStorage.removeItem(k);
+        });
 
         window.location.replace('../pages/home.html');
 

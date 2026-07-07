@@ -1,3 +1,202 @@
+ /* ---- Hero greeting banner ---- */
+    .hero-banner {
+      background: linear-gradient(135deg, rgb(10, 10, 23) 0%, rgb(17,17,80) 60%, rgb(31,77,71) 100%);
+      border-radius: var(--radius-lg);
+      padding: 16px 18px 14px;
+      margin-bottom: 14px;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--border-soft);
+      animation: fadeInUp 0.5s ease both;
+    }
+    .hero-banner::before {
+      content: "";
+      position: absolute;
+      right: -36px; top: -36px;
+      width: 180px; height: 180px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(61,217,194,0.18), transparent 70%);
+    }
+    .hero-banner__eyebrow {
+      font-size: 0.7rem;
+      color: var(--teal);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 4px;
+    }
+    .hero-banner__greeting {
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: white;
+      line-height: 1.2;
+      margin-bottom: 5px;
+    }
+    .hero-banner__sub {
+      font-size: 0.82rem;
+      color: rgba(255,255,255,0.65);
+      margin-bottom: 14px;
+      max-width: 580px;
+    }
+    .hero-banner__stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .hero-stat__value {
+      font-size: 1.05rem;
+    }
+    .hero-stat {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .hero-stat__value {
+      font-family: var(--font-display);
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: white;
+    }
+    .hero-stat__label {
+      font-size: 0.7rem;
+      color: rgba(255,255,255,0.5);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .hero-banner__location {
+      position: absolute;
+      top: 20px; right: 24px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 999px;
+      padding: 6px 14px;
+      font-size: 0.8rem;
+      color: rgba(255,255,255,0.85);
+    }
+
+    /* ---- Status card improvements ---- */
+    .status-hero {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 18px 0;
+      border-bottom: 1px solid var(--border-soft);
+      margin-bottom: 16px;
+    }
+    .status-hero__icon {
+      width: 52px;
+      height: 52px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      flex-shrink: 0;
+      transition: background 0.3s;
+    }
+    .status-hero__icon--on  { background: rgba(61,217,194,0.15); }
+    .status-hero__icon--off { background: rgba(229,72,77,0.15); }
+    .status-hero__icon--unknown { background: rgba(242,179,61,0.15); }
+    .status-hero__text { flex: 1; }
+    .status-hero__title {
+      font-family: var(--font-display);
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text-bright);
+      margin-bottom: 2px;
+    }
+    .status-hero__sub { font-size: 0.82rem; color: var(--text-faint); }
+
+    /* ---- Chat improvements ---- */
+    .chat-thread {
+      /* Smaller message bubbles, more messages visible */
+      font-size: 0.84rem;
+    }
+    .chat-message {
+      padding: 7px 10px;
+      margin-bottom: 6px;
+      border-radius: var(--radius-md);
+      background: var(--bg-deep);
+      border: 1px solid var(--border-soft);
+      max-width: 88%;
+    }
+    .chat-message--own {
+      margin-left: auto;
+      background: rgba(17,17,80,0.3);
+      border-color: rgba(61,217,194,0.2);
+    }
+    .chat-message__author {
+      font-size: 0.72rem;
+      color: var(--teal);
+      font-weight: 600;
+      display: block;
+      margin-bottom: 2px;
+    }
+    .chat-message__text {
+      font-size: 0.83rem;
+      color: var(--text-bright);
+      line-height: 1.4;
+      word-break: break-word;
+    }
+    .chat-message--own .chat-message__text { color: var(--text-bright); }
+    .chat-message__time {
+      font-size: 0.68rem;
+      color: var(--text-faint);
+      display: block;
+      margin-top: 3px;
+    }
+
+    /* ---- Notification toast ---- */
+    #lw-toast {
+      position: fixed;
+      bottom: 90px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: rgb(3,3,55);
+      color: white;
+      padding: 11px 20px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      border: 1px solid var(--teal);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      z-index: 9998;
+      opacity: 0;
+      transition: opacity 0.3s, transform 0.3s;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    #lw-toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* Mobile chat sizing/positioning now lives entirely in home.css
+       (.chat-card--mobile-open) to avoid two files fighting over the
+       same properties. */
+    @media (max-width: 480px) {
+      .hero-banner__location {
+        top: 12px; right: 12px;
+        padding: 5px 10px;
+        font-size: 0.6rem;
+        max-width: 46%;
+      }
+      .hero-banner__location span:last-child {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+    }
+    @media (max-width: 400px) {
+      .hero-banner { padding: 14px 14px 12px; }
+      .hero-banner__greeting { font-size: 1.1rem; }
+      .hero-banner__stats { gap: 8px; }
+      .hero-stat__value { font-size: 1rem; }
+      .hero-stat__label { font-size: 0.62rem; }
+    }
+
 /* ============================================================
    Locations page
    ============================================================ */
@@ -1368,6 +1567,7 @@
 }
 
 @media (max-width: 400px) {
+
   .status-insight__body {
     grid-template-columns: 1fr;
     justify-items: center;

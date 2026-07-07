@@ -120,8 +120,8 @@ img {
 
 .prompt-inputs:focus {
     outline: none;
-    border-color: rgb(52, 52, 197);
-    box-shadow: 0 0 0 3px rgba(52, 52, 197, 0.15);
+    border-color: var(--brand-dim);
+    box-shadow: 0 0 0 3px rgba(224, 75, 75, 0.15);
 }
 
 .prompt-input-tabs {
@@ -141,7 +141,7 @@ img {
 }
 
 .submit-btn {
-    background-color: rgb(52, 52, 197);
+    background: var(--brand-dim);
     color: white;
     font-size: .9rem;
     width: 100%;
@@ -149,11 +149,11 @@ img {
     border: none;
     border-radius: 6px;
     cursor: pointer;
-    transition: background-color 0.15s ease, transform 0.1s ease;
+    transition: opacity 0.2s ease-in-out, transform 0.1s ease-in-out;
 }
 
 .submit-btn:hover {
-    background-color: rgb(40, 40, 160);
+  opacity: .9;
 }
 
 .submit-btn:active {

@@ -61,7 +61,13 @@ async function handleSignup() {
         localStorage.setItem("maskedContact", result.maskedContact);
         localStorage.setItem("signupUser", JSON.stringify(userData));
 
-        console.log("Signup initiated. Use code:", result.code);
+        // There's no "remember me" checkbox on the signup form itself —
+        // someone completing signup is setting the app up on their own
+        // device, so we default this to "on" automatically. verification.js
+        // reads this same key for the sign-in flow too, so this is what
+        // makes a freshly-signed-up user stay logged in after closing
+        // and reopening the browser/PWA.
+        localStorage.setItem("rememberMePending", "true");
 
         window.location.replace("../pages/verification.html");
 

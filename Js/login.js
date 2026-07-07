@@ -15,6 +15,27 @@ const errorMsg    = document.getElementById('error-msg');
     }
 });*/
 
+// ── Registered user count for the "Registered users" stat ────
+// Public, no-auth endpoint — just a headline number. If it fails
+// for any reason (offline, cold backend, etc.) we just leave the
+// "—" placeholder rather than showing an error on the sign-in page.
+async function loadUserCountStat() {
+    const el = document.getElementById('statUserCount');
+    if (!el) return;
+
+    try {
+        const response = await fetch(`${API_URL}/stats`);
+        if (!response.ok) return;
+        const data = await response.json();
+        if (typeof data.userCount === 'number') {
+            el.textContent = `${data.userCount}+`;
+        }
+    } catch (err) {
+        console.error('Could not load user count:', err);
+    }
+}
+loadUserCountStat();
+
 // ── Send OTP code ─────────────────────────────────────────────
 async function handleSubmit() {
     const loginInput = userInput.value.trim();
