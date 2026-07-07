@@ -20,6 +20,33 @@
 </head>
 <body>
 
+  <script>
+    // DEBUG: temporarily block programmatic navigations to stop reload loops
+    (function(){
+      function safeIdbLog(entry){
+        try{
+          const req = indexedDB.open('lw_debug_db');
+          req.onsuccess = e => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains('logs')) { try{ db.close(); }catch{}; return; }
+            const tx = db.transaction('logs','readwrite');
+            tx.objectStore('logs').put(Object.assign({ts:Date.now()}, entry));
+            tx.oncomplete = ()=>db.close();
+          };
+        }catch(e){}
+      }
+
+      const block = function(name){
+        try { window.location[name] = function(url){
+            console.warn('Blocked location.'+name, url);
+            safeIdbLog({file:'pages/home.html', action:name, url:url});
+          };
+        } catch(e) {}
+      };
+      block('replace'); block('assign'); block('reload');
+    })();
+  </script>
+
   <!-- These two load blocking (no defer) on purpose, and run BEFORE
        anything below is allowed to paint — this is what stops the app
        from ever flashing a blank/unauthenticated home.html. If there's
