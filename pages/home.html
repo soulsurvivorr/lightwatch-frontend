@@ -31,19 +31,38 @@
     (function(){
       const session = typeof getSession === 'function' ? getSession() : null;
 
-      // IndexedDB logging that survives localStorage wipes
+      // Robust IndexedDB logger (handles missing store / upgrades)
       (function idbLog(entry) {
         try {
+          function writeToStore(db) {
+            try {
+              const tx = db.transaction('logs', 'readwrite');
+              tx.objectStore('logs').put(Object.assign({ ts: Date.now() }, entry));
+              tx.oncomplete = () => db.close();
+            } catch (e) {
+              try { db.close(); } catch(_) {}
+            }
+          }
+
           const req = indexedDB.open('lw_debug_db', 1);
-          req.onupgradeneeded = e => { e.target.result.createObjectStore('logs', { keyPath: 'ts' }); };
+          req.onupgradeneeded = e => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains('logs')) db.createObjectStore('logs', { keyPath: 'ts' });
+          };
           req.onsuccess = e => {
             const db = e.target.result;
-            const tx = db.transaction('logs', 'readwrite');
-            const store = tx.objectStore('logs');
-            try { store.put(Object.assign({ ts: Date.now() }, entry)); } catch(_) {}
-            tx.oncomplete = () => db.close();
+            if (!db.objectStoreNames.contains('logs')) {
+              // upgrade DB to create the store
+              const upgradeReq = indexedDB.open('lw_debug_db', db.version + 1);
+              upgradeReq.onupgradeneeded = ev => { ev.target.result.createObjectStore('logs', { keyPath: 'ts' }); };
+              upgradeReq.onsuccess = ev2 => { writeToStore(ev2.target.result); };
+              upgradeReq.onerror = () => { try { db.close(); } catch(_) {} };
+              return;
+            }
+            writeToStore(db);
           };
-        } catch(_) {}
+          req.onerror = () => {};
+        } catch (_) {}
       })({ file: 'pages/home.html', session: !!session, stack: (new Error()).stack });
 
       if (!session) {
