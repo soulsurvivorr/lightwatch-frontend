@@ -466,7 +466,8 @@ function injectProfileLoaderStyles() {
         .lw-profile-loader {
             position: fixed; inset: 0; z-index: 9999;
             display: flex; align-items: center; justify-content: center;
-            background: rgba(20, 15, 10, 0.72);
+            gap: 10px;
+            background: rgba(7, 10, 28, 0.72);
             opacity: 0; pointer-events: none;
             transition: opacity 0.2s ease;
         }
@@ -474,35 +475,17 @@ function injectProfileLoaderStyles() {
            underneath must stay usable even while this is visible,
            so a slow/cold backend can never make the app feel frozen. */
         .lw-profile-loader--show { opacity: 1; }
-        .lw-profile-loader__glow {
-            width: 84px; height: 84px;
-            overflow: visible;
+        .lw-profile-loader__bubble {
+            width: 16px; height: 16px; border-radius: 50%;
+            animation: lw-bubble-bounce 0.9s ease-in-out infinite;
         }
-        .lw-glow-ring {
-            fill: none;
-            stroke-width: 3px;
-            transform-origin: 60px 60px;
-            animation: lw-ripple 2s ease-out infinite;
-        }
-        .lw-glow-ring:nth-child(1) { stroke: #F2B33D; animation-delay: 0s; }
-        .lw-glow-ring:nth-child(2) { stroke: #C9682D; animation-delay: 0.65s; }
-        .lw-glow-ring:nth-child(3) { stroke: #3DD9C2; animation-delay: 1.3s; }
-        .lw-glow-core {
-            fill: #F2B33D;
-            filter: drop-shadow(0 0 10px rgba(242, 179, 61, 0.75));
-            transform-origin: 60px 60px;
-            animation: lw-core-pulse 2s ease-in-out infinite;
-        }
-        @keyframes lw-ripple {
-            0%   { transform: scale(0.35); opacity: 0.85; }
-            100% { transform: scale(2.4);  opacity: 0; }
-        }
-        @keyframes lw-core-pulse {
-            0%, 100% { transform: scale(0.88); opacity: 0.85; }
-            50%      { transform: scale(1.08); opacity: 1; }
-        }
-        @media (prefers-reduced-motion: reduce) {
-            .lw-glow-ring, .lw-glow-core { animation: none; opacity: 0.85; }
+        .lw-profile-loader__bubble:nth-child(1) { background: #3DD9C2; animation-delay: 0s; }
+        .lw-profile-loader__bubble:nth-child(2) { background: #F2B33D; animation-delay: 0.15s; }
+        .lw-profile-loader__bubble:nth-child(3) { background: #E5484D; animation-delay: 0.3s; }
+        .lw-profile-loader__bubble:nth-child(4) { background: #6C8CFF; animation-delay: 0.45s; }
+        @keyframes lw-bubble-bounce {
+            0%, 100% { transform: translateY(0); opacity: 0.6; }
+            50% { transform: translateY(-14px); opacity: 1; }
         }
     `;
     document.head.appendChild(style);
@@ -516,12 +499,10 @@ function attachProfileLoader() {
     profileLoaderOverlayEl.className = 'lw-profile-loader';
     profileLoaderOverlayEl.id = 'lw-profile-loader';
     profileLoaderOverlayEl.innerHTML = `
-        <svg class="lw-profile-loader__glow" viewBox="0 0 120 120" aria-hidden="true">
-            <circle class="lw-glow-ring" cx="60" cy="60" r="16"></circle>
-            <circle class="lw-glow-ring" cx="60" cy="60" r="16"></circle>
-            <circle class="lw-glow-ring" cx="60" cy="60" r="16"></circle>
-            <circle class="lw-glow-core" cx="60" cy="60" r="11"></circle>
-        </svg>
+        <span class="lw-profile-loader__bubble"></span>
+        <span class="lw-profile-loader__bubble"></span>
+        <span class="lw-profile-loader__bubble"></span>
+        <span class="lw-profile-loader__bubble"></span>
     `;
     document.body.appendChild(profileLoaderOverlayEl);
 }
