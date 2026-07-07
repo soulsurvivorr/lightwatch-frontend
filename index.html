@@ -4,105 +4,36 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>LightWatch — Home</title>
-  <link rel="icon" href="../images/dev-logo.png" type="image/x-icon">
+  <link rel="icon" href="./images/dev-logo.png" type="image/x-icon">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../css/home.css" />
-  <link rel="stylesheet" href="../css/styles.css">
+  <link rel="stylesheet" href="./css/home.css" />
+  <link rel="stylesheet" href="./css/styles.css">
   <!-- Warms the cache for the pages reachable from the bottom/top nav so
        tapping Home, Reports, or Account feels instant instead of doing a
        full fresh load each time. -->
-  <link rel="prefetch" href="./reports.html">
-  <link rel="prefetch" href="./account.html">
+  <link rel="prefetch" href="./pages/reports.html">
+  <link rel="prefetch" href="./pages/account.html">
   <style>
     body { visibility: hidden; }
   </style>
 </head>
 <body>
 
-  <script>
-    // DEBUG: temporarily block programmatic navigations to stop reload loops
-    (function(){
-      function safeIdbLog(entry){
-        try{
-          const req = indexedDB.open('lw_debug_db');
-          req.onsuccess = e => {
-            const db = e.target.result;
-            if (!db.objectStoreNames.contains('logs')) { try{ db.close(); }catch{}; return; }
-            const tx = db.transaction('logs','readwrite');
-            tx.objectStore('logs').put(Object.assign({ts:Date.now()}, entry));
-            tx.oncomplete = ()=>db.close();
-          };
-        }catch(e){}
-      }
-
-      const origReplace = history.replaceState || null;
-      const block = function(name, fn){
-        const orig = window.location[name];
-        try { window.location[name] = function(url){
-            console.warn('Blocked location.'+name, url);
-            safeIdbLog({file:'index.html', action:name, url:url});
-          };
-        } catch(e) {}
-      };
-      // block replace, assign, reload
-      block('replace'); block('assign'); block('reload');
-    })();
-  </script>
-
   <!-- These two load blocking (no defer) on purpose, and run BEFORE
        anything below is allowed to paint — this is what stops the app
        from ever flashing a blank/unauthenticated home.html. If there's
        no session, we leave immediately; if there is, we reveal the
        page. Everything else on this page stays deferred as before. -->
-  <script src="../js/config.js"></script>
-  <script src="../js/auth.js"></script>
+  <script src="./Js/config.js"></script>
+  <script src="./Js/auth.js"></script>
   <script>
-    (function(){
-      const session = typeof getSession === 'function' ? getSession() : null;
-
-      // Robust IndexedDB logger (handles missing store / upgrades)
-      (function idbLog(entry) {
-        try {
-          function writeToStore(db) {
-            try {
-              const tx = db.transaction('logs', 'readwrite');
-              tx.objectStore('logs').put(Object.assign({ ts: Date.now() }, entry));
-              tx.oncomplete = () => db.close();
-            } catch (e) {
-              try { db.close(); } catch(_) {}
-            }
-          }
-
-          const req = indexedDB.open('lw_debug_db', 1);
-          req.onupgradeneeded = e => {
-            const db = e.target.result;
-            if (!db.objectStoreNames.contains('logs')) db.createObjectStore('logs', { keyPath: 'ts' });
-          };
-          req.onsuccess = e => {
-            const db = e.target.result;
-            if (!db.objectStoreNames.contains('logs')) {
-              // upgrade DB to create the store
-              const upgradeReq = indexedDB.open('lw_debug_db', db.version + 1);
-              upgradeReq.onupgradeneeded = ev => { ev.target.result.createObjectStore('logs', { keyPath: 'ts' }); };
-              upgradeReq.onsuccess = ev2 => { writeToStore(ev2.target.result); };
-              upgradeReq.onerror = () => { try { db.close(); } catch(_) {} };
-              return;
-            }
-            writeToStore(db);
-          };
-          req.onerror = () => {};
-        } catch (_) {}
-      })({ file: 'index.html', session: !!session, stack: (new Error()).stack });
-
-      if (session) {
-        // Already signed-in: navigate to the app home
-        window.location.replace('./pages/home.html');
-      } else {
-        // Not signed-in: reveal this page (landing / login)
-        document.body.style.visibility = 'visible';
-      }
-    })();
+    const session = typeof getSession === 'function' ? getSession() : null;
+    if (session) {
+      window.location.replace('./pages/home.html');
+    } else {
+      document.body.style.visibility = 'visible';
+    }
   </script>
 
   <!-- Notification toast -->
@@ -111,7 +42,7 @@
   <header class="topbar">
     <div class="topbar__inner">
        <div class="topbar__brand">
-          <img src="../images/dev-logo.png" alt="LightWatch Logo" width="32" height="32">
+          <img src="./images/dev-logo.png" alt="LightWatch Logo" width="32" height="32">
           <p>LightWatch GH</p>
         </div>
       <input type="checkbox" id="nav-toggle" class="nav-toggle" />
@@ -119,9 +50,9 @@
         <span class="bar"></span><span class="bar"></span><span class="bar"></span>
       </label>
       <nav class="nav" id="primaryNav">
-        <a href="./home.html" class="nav__link nav__link--active" data-nav="home">Home</a>
-        <a href="./reports.html" class="nav__link" data-nav="reports">Reports</a>
-        <a href="./account.html" class="nav__link" data-nav="account">Account</a>
+        <a href="./pages/home.html" class="nav__link nav__link--active" data-nav="home">Home</a>
+        <a href="./pages/reports.html" class="nav__link" data-nav="reports">Reports</a>
+        <a href="./pages/account.html" class="nav__link" data-nav="account">Account</a>
       </nav>
       <button type="button" id="profileMenuButton" class="topbar__user" aria-expanded="false" aria-controls="userSidebarPanel">
         <span class="avatar-name" id="topbarUserName">Guest</span>
@@ -373,7 +304,7 @@
         <div><span>Location</span><strong id="sidebarRegion">—</strong></div>
         <div><span>Last login</span><strong id="sidebarLastLogin">—</strong></div>
       </div>
-      <button type="button" class="btn btn--primary btn--block" onclick="window.location.href='./account.html'">Manage account</button>
+      <button type="button" class="btn btn--primary btn--block" onclick="window.location.href='./pages/account.html'">Manage account</button>
       <a href="../index.html"><button type="button" class="btn btn--ghost btn--block" id="sidebarSignOutBtn">Log out</button></a>
     </div>
   </aside>
@@ -385,26 +316,26 @@
 
   <div id="bottom_nav_wrapper">
     <div class="bottom-icons-container">
-      <a href="./home.html" class="bottom-nav-link bottom-nav-link--active" data-nav="home" aria-label="Home">
-        <span class="bottom-nav-icon bottom-nav-icon--user"><img src="../icons/home.png" alt="Home"></span>
+      <a href="./pages/home.html" class="bottom-nav-link bottom-nav-link--active" data-nav="home" aria-label="Home">
+        <span class="bottom-nav-icon bottom-nav-icon--user"><img src="./icons/home.png" alt="Home"></span>
         <span class="bottom-nav-label">Home</span>
       </a>
-      <a href="./reports.html" class="bottom-nav-link" data-nav="reports" aria-label="Reports">
-        <span class="bottom-nav-icon bottom-nav-icon--user"><img src="../icons/report_2.png" alt="reports"></span>
+      <a href="./pages/reports.html" class="bottom-nav-link" data-nav="reports" aria-label="Reports">
+        <span class="bottom-nav-icon bottom-nav-icon--user"><img src="./icons/report_2.png" alt="reports"></span>
         <span class="bottom-nav-label">Reports</span>
       </a>
       <button type="button" class="bottom-nav-link bottom-nav-link--button" id="bottomNavUserBtn" data-nav="account" aria-label="User profile">
-        <span class="bottom-nav-icon bottom-nav-icon--user"><img src="../icons/user.png" alt="You"></span>
+        <span class="bottom-nav-icon bottom-nav-icon--user"><img src="./icons/user.png" alt="You"></span>
         <span class="bottom-nav-label">You</span>
       </button>
     </div>
   </div>
   
-  <script src="../js/profile.js" defer></script>
-  <script src="../Js/notification.js" defer></script>
-  <script src="../js/chat.js" defer></script>
-  <script src="../js/home.js" defer></script>
-  <script src="../js/nav.js" defer></script>
+  <script src="./Js/profile.js" defer></script>
+  <script src="./Js/notification.js" defer></script>
+  <script src="./Js/chat.js" defer></script>
+  <script src="./Js/home.js" defer></script>
+  <script src="./Js/nav.js" defer></script>
   <script defer>
     // ---- Toast notification system ----
     // Other pages/features call window.lwToast("message") to show a toast

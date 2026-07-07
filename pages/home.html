@@ -20,88 +20,20 @@
 </head>
 <body>
 
-  <script>
-    // DEBUG: temporarily block programmatic navigations to stop reload loops
-    (function(){
-      function safeIdbLog(entry){
-        try{
-          const req = indexedDB.open('lw_debug_db');
-          req.onsuccess = e => {
-            const db = e.target.result;
-            if (!db.objectStoreNames.contains('logs')) { try{ db.close(); }catch{}; return; }
-            const tx = db.transaction('logs','readwrite');
-            tx.objectStore('logs').put(Object.assign({ts:Date.now()}, entry));
-            tx.oncomplete = ()=>db.close();
-          };
-        }catch(e){}
-      }
-
-      const block = function(name){
-        try { window.location[name] = function(url){
-            console.warn('Blocked location.'+name, url);
-            safeIdbLog({file:'pages/home.html', action:name, url:url});
-          };
-        } catch(e) {}
-      };
-      block('replace'); block('assign'); block('reload');
-    })();
-  </script>
-
   <!-- These two load blocking (no defer) on purpose, and run BEFORE
        anything below is allowed to paint — this is what stops the app
        from ever flashing a blank/unauthenticated home.html. If there's
        no session, we leave immediately; if there is, we reveal the
        page. Everything else on this page stays deferred as before. -->
-  <script src="../js/config.js"></script>
-  <script src="../js/auth.js"></script>
+  <script src="../Js/config.js"></script>
+  <script src="../Js/auth.js"></script>
   <script>
-    (function(){
-      const session = typeof getSession === 'function' ? getSession() : null;
-
-      // Robust IndexedDB logger (handles missing store / upgrades)
-      (function idbLog(entry) {
-        try {
-          function writeToStore(db) {
-            try {
-              const tx = db.transaction('logs', 'readwrite');
-              tx.objectStore('logs').put(Object.assign({ ts: Date.now() }, entry));
-              tx.oncomplete = () => db.close();
-            } catch (e) {
-              try { db.close(); } catch(_) {}
-            }
-          }
-
-          const req = indexedDB.open('lw_debug_db', 1);
-          req.onupgradeneeded = e => {
-            const db = e.target.result;
-            if (!db.objectStoreNames.contains('logs')) db.createObjectStore('logs', { keyPath: 'ts' });
-          };
-          req.onsuccess = e => {
-            const db = e.target.result;
-            if (!db.objectStoreNames.contains('logs')) {
-              // upgrade DB to create the store
-              const upgradeReq = indexedDB.open('lw_debug_db', db.version + 1);
-              upgradeReq.onupgradeneeded = ev => { ev.target.result.createObjectStore('logs', { keyPath: 'ts' }); };
-              upgradeReq.onsuccess = ev2 => { writeToStore(ev2.target.result); };
-              upgradeReq.onerror = () => { try { db.close(); } catch(_) {} };
-              return;
-            }
-            writeToStore(db);
-          };
-          req.onerror = () => {};
-        } catch (_) {}
-      })({ file: 'pages/home.html', session: !!session, stack: (new Error()).stack });
-
-      if (!session) {
-        // DEBUG CHANGE: do NOT redirect away — reveal the page instead.
-        // This prevents redirect loops while we diagnose what is clearing
-        // session data. The regular sign-out/guard flow is handled elsewhere.
-        console.warn('No session detected; not redirecting (debug mode)');
-        document.body.style.visibility = 'visible';
-      } else {
-        document.body.style.visibility = 'visible';
-      }
-    })();
+    const session = typeof getSession === 'function' ? getSession() : null;
+    if (!session) {
+      window.location.replace('../index.html');
+    } else {
+      document.body.style.visibility = 'visible';
+    }
   </script>
 
   <!-- Notification toast -->
@@ -399,11 +331,11 @@
     </div>
   </div>
   
-  <script src="../js/profile.js" defer></script>
+  <script src="../Js/profile.js" defer></script>
   <script src="../Js/notification.js" defer></script>
-  <script src="../js/chat.js" defer></script>
-  <script src="../js/home.js" defer></script>
-  <script src="../js/nav.js" defer></script>
+  <script src="../Js/chat.js" defer></script>
+  <script src="../Js/home.js" defer></script>
+  <script src="../Js/nav.js" defer></script>
   <script defer>
     // ---- Toast notification system ----
     // Other pages/features call window.lwToast("message") to show a toast
