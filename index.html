@@ -30,11 +30,21 @@
   <script>
     (function(){
       const session = typeof getSession === 'function' ? getSession() : null;
-      try {
-        const log = JSON.parse(localStorage.getItem('lw_debug_redirects') || '[]');
-        log.push({when: Date.now(), file: 'index.html', session: !!session, stack: (new Error()).stack});
-        localStorage.setItem('lw_debug_redirects', JSON.stringify(log.slice(-50)));
-      } catch(e) {}
+
+      // IndexedDB logging that survives localStorage wipes
+      (function idbLog(entry) {
+        try {
+          const req = indexedDB.open('lw_debug_db', 1);
+          req.onupgradeneeded = e => { e.target.result.createObjectStore('logs', { keyPath: 'ts' }); };
+          req.onsuccess = e => {
+            const db = e.target.result;
+            const tx = db.transaction('logs', 'readwrite');
+            const store = tx.objectStore('logs');
+            try { store.put(Object.assign({ ts: Date.now() }, entry)); } catch(_) {}
+            tx.oncomplete = () => db.close();
+          };
+        } catch(_) {}
+      })({ file: 'index.html', session: !!session, stack: (new Error()).stack });
 
       if (session) {
         // Already signed-in: navigate to the app home
