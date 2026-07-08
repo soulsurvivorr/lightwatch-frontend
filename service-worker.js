@@ -4,7 +4,7 @@
 // ============================================================
 
 const CACHE_NAME = 'lightwatch-v1';
-const APP_ICON = '/images/dev-logo.png';
+const APP_ICON = new URL('/images/dev-logo.png', self.location.origin).href;
 
 // ── Install: cache core shell ─────────────────────────────────
 self.addEventListener('install', event => {

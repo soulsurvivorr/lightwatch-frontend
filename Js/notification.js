@@ -5,8 +5,10 @@
 // ============================================================
 
 const VAPID_PUBLIC_KEY = 'BMEgZthyyCz4BER4r4Qbi7MuQrvG24AVNma_PEfFG47plgkaLumI25-UbfbIxShGExhUfw4k8GCas2JFuNh-ExI';
-const APP_ICON = '/images/dev-logo.png';
+const APP_ICON_PATH = '/images/dev-logo.png';
+const APP_ICON = new URL(APP_ICON_PATH, window.location.origin).href;
 const PUSH_WELCOME_KEY = 'lw_push_welcome_shown';
+let pushInitPromise = null;
 
 // Convert VAPID public key from base64 to Uint8Array (required by browser API)
 function urlBase64ToUint8Array(base64String) {
@@ -18,35 +20,29 @@ function urlBase64ToUint8Array(base64String) {
 
 // ── Main: register SW, request permission, subscribe ─────────
 async function initPushNotifications() {
-    // Check browser support
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
         console.log('Push notifications not supported on this browser.');
         return;
     }
 
     try {
-        // Register the service worker
         const registration = await navigator.serviceWorker.register('/service-worker.js');
         await registration.update();
         await navigator.serviceWorker.ready;
 
-        // Check if already subscribed
         const existing = await registration.pushManager.getSubscription();
         if (existing) {
-            // Already subscribed — make sure server has it
             await sendSubscriptionToServer(existing);
             await maybeShowPushWelcome(registration);
             return;
         }
 
-        // Ask user for permission (browser shows its own prompt)
         const permission = await Notification.requestPermission();
         if (permission !== 'granted') {
             console.log('Push permission denied.');
             return;
         }
 
-        // Subscribe to push
         const subscription = await registration.pushManager.subscribe({
             userVisibleOnly: true,
             applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
@@ -61,13 +57,19 @@ async function initPushNotifications() {
     }
 }
 
+function ensurePushNotificationsInitialized() {
+    if (!pushInitPromise) {
+        pushInitPromise = initPushNotifications();
+    }
+    return pushInitPromise;
+}
+
 // ── Send subscription + user location to backend ─────────────
 async function sendSubscriptionToServer(subscription) {
     const session = getSession(); // from auth.js
-    const userId  = session?.user?.id || localStorage.getItem('currentUserId');
+    const userId = session?.user?.id || localStorage.getItem('currentUserId');
     if (!userId) return;
 
-    // Get user's location from the page (set by profile.js)
     const location = window.currentChatLocation || null;
 
     try {
@@ -81,15 +83,30 @@ async function sendSubscriptionToServer(subscription) {
     }
 }
 
-// ── Run after profile.js has set window.currentChatLocation ──
-// We wait for the locationReady event fired by profile.js
+async function syncSubscriptionWithCurrentLocation() {
+    if (!('serviceWorker' in navigator)) return;
+
+    try {
+        const registration = await navigator.serviceWorker.ready;
+        const existing = await registration.pushManager.getSubscription();
+        if (existing) {
+            await sendSubscriptionToServer(existing);
+        }
+    } catch (err) {
+        console.error('Could not sync existing subscription:', err);
+    }
+}
+
+// Start immediately so mobile does not wait on location/profile calls.
+ensurePushNotificationsInitialized();
+
+// Update backend with location as soon as profile data becomes ready.
 window.addEventListener('locationReady', () => {
-    initPushNotifications();
+    syncSubscriptionWithCurrentLocation();
 });
 
-// Fallback: if locationReady already fired before this script ran
 if (window.currentChatLocation) {
-    initPushNotifications();
+    syncSubscriptionWithCurrentLocation();
 }
 
 async function maybeShowPushWelcome(registration) {
