@@ -5,9 +5,8 @@
 // ============================================================
 
 const VAPID_PUBLIC_KEY = 'BMEgZthyyCz4BER4r4Qbi7MuQrvG24AVNma_PEfFG47plgkaLumI25-UbfbIxShGExhUfw4k8GCas2JFuNh-ExI';
-const APP_ICON_PATH = '/images/dev-logo.png';
+const APP_ICON_PATH = '/images/dev-logo.png?v=20260708';
 const APP_ICON = new URL(APP_ICON_PATH, window.location.origin).href;
-const BADGE_ICON = new URL('/icons/notify-badge.svg', window.location.origin).href;
 const PUSH_WELCOME_KEY = 'lw_push_welcome_shown';
 let pushInitPromise = null;
 
@@ -118,7 +117,6 @@ async function maybeShowPushWelcome(registration) {
         await registration.showNotification('LightWatch notifications are on', {
             body: 'You will receive power updates for your area.',
             icon: APP_ICON,
-            badge: BADGE_ICON,
             tag: 'lw-notifications-on',
             renotify: false,
             data: { url: '/pages/home.html' }

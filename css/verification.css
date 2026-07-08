@@ -12,9 +12,12 @@ body {
     gap: 2em;
     flex-direction: column;
     min-height: 100vh;
-    background-color: var(--bg-deep);
+        background-color: var(--bg-deep);
+        background-image:
+            radial-gradient(circle at 10% 0%, rgba(214, 162, 74, 0.1), transparent 42%),
+            radial-gradient(circle at 100% 100%, rgba(74, 144, 217, 0.08), transparent 48%);
     color: var(--text-bright);
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        font-family: var(--font-body);
 }
 
 header {
@@ -27,12 +30,13 @@ header {
     left: 0;
     right: 0;
     z-index: 100;
-    background-color: var(--bg-panel);
+    background-color: color-mix(in srgb, var(--bg-panel) 92%, transparent);
+    border-bottom: 1px solid var(--border-soft);
     box-shadow: 0 0 10px rgba(0,0,0,0.2);
 }
 
 header h3 {
-    color: #F0AC3D;
+    color: var(--brand);
     font-weight: 600;
     margin: 0;
 }
@@ -67,17 +71,21 @@ main div.verify-card {
     gap: 1rem;
     width: 100%;
     max-width: 420px;
-    background-color: var(--bg-panel);
+    background-color: color-mix(in srgb, var(--bg-panel) 94%, transparent);
+    border: 1px solid var(--border-soft);
+    backdrop-filter: blur(4px);
     padding: 2rem;
     border-radius: 16px;
     box-shadow: 0 4px 18px rgba(0,0,0,0.08);
 }
 
-main img {
+.verify-hero {
     height: auto;
     width: 100%;
     max-width: 320px;
     margin: 0 auto;
+    border-radius: 12px;
+    border: 1px solid var(--border-soft);
 }
 
 /* ---- OTP boxes: underline style only, no full border box ---- */
@@ -96,20 +104,20 @@ main img {
     font-weight: 700;
     letter-spacing: 0;
     border: none;
-    border-bottom: 2px solid rgb(210, 210, 210);
+    border-bottom: 2px solid var(--border-strong);
     border-radius: 0;
     background: transparent;
-    color: #222;
+    color: var(--text-bright);
     transition: border-color 0.15s ease;
 }
 
 .otp-box:focus {
     outline: none;
-    border-bottom-color: #4A90D9;
+    border-bottom-color: var(--brand2);
 }
 
 .otp-box.filled {
-    border-bottom-color: #F0AC3D;
+    border-bottom-color: var(--brand);
 }
 
 .resend-row {
@@ -127,11 +135,11 @@ main img {
 
 .resend-row p {
     font-size: .85rem;
-    color: #666;
+    color: var(--text-muted);
 }
 
 span {
-    color: #4A90D9;
+    color: var(--brand2);
     font-weight: 600;
     cursor: pointer;
 }
@@ -142,7 +150,7 @@ span:hover {
 
 button {
     padding: 14px;
-    background-color: #C7CBD1;
+    background-color: #c5cbd3;
     color: white;
     border-radius: 26px;
     border: none;
@@ -157,11 +165,24 @@ button:hover {
 }
 
 button.active {
-    background-color: #F0AC3D;
+    background-color: var(--brand);
 }
 
 button.active:hover {
-    background-color: #C98A1F;
+    background-color: var(--brand-dim);
+}
+
+:root[data-theme="dark"] main div.verify-card {
+    background-color: color-mix(in srgb, var(--bg-panel) 88%, transparent);
+    border-color: #2a3240;
+}
+
+:root[data-theme="dark"] .verify-hero {
+    border-color: #2a3240;
+}
+
+:root[data-theme="dark"] .otp-box {
+    border-bottom-color: #3c4b62;
 }
 
 button:disabled {

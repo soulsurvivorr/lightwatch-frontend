@@ -8,7 +8,7 @@ body {
     display: flex;
     justify-content: center; /* left-right */
     align-items: center;     /* top-bottom */
-    padding: .9rem;
+        padding: .9rem;
     background: var(--bg-deep);
     color: var(--text-bright);
 }
@@ -17,10 +17,16 @@ section {
     padding: 0rem;
     width: 100%;
     max-width: 700px;
-    background-image: url(../images/ChatGPT\ Image\ Jun\ 18\,\ 2026\,\ 02_54_18\ AM.png);
+        background-image:
+            linear-gradient(140deg, rgba(214, 162, 74, 0.16), rgba(74, 144, 217, 0.08) 60%, rgba(14, 19, 29, 0.12)),
+            url("../images/ChatGPT Image Jun 18, 2026, 02_54_18 AM.png");
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
+        border-radius: 16px;
+        border: 1px solid var(--border-soft);
+        overflow: hidden;
+        box-shadow: 0 16px 36px rgba(0, 0, 0, 0.14);
 }
 
 
@@ -28,7 +34,11 @@ section {
     display: flex;
     align-items: center;
     gap: .5rem;
-    margin-bottom: .1rem;
+    margin-bottom: .7rem;
+}
+
+#dev-logo-cont p {
+    font-weight: 700;
 }
 
 #main-content_wrapper {
@@ -55,7 +65,8 @@ img {
     padding: 16px;
     border-radius: 10px;
     border: none;
-    background-color: rgba(44, 74, 109, 0.1);
+    background-color: color-mix(in srgb, var(--bg-panel) 70%, transparent);
+    border: 1px solid var(--border-soft);
     margin-bottom: 1rem;
     cursor: pointer;
 }
@@ -69,12 +80,19 @@ img {
     font-size: 1.9rem;
     line-height: 1.2;
     margin-bottom: .7rem;
+    color: var(--text-bright);
+}
+
+.submit-info-section p {
+    color: var(--text-muted);
 }
 
 #input-field-section {
     flex: 3;
     min-width: 260px;
-    background-color: var(--bg-panel);
+    background-color: color-mix(in srgb, var(--bg-panel) 94%, transparent);
+    border: 1px solid var(--border-soft);
+    backdrop-filter: blur(3px);
     padding: 2rem 1.3rem;
     border-radius: 10px;
 }
@@ -84,11 +102,12 @@ img {
 }
 
 .user-icon-container p {
-    font-size: .7rem;
+    font-size: .76rem;
+    color: var(--text-muted);
 }
 
 .user-profile-btn {
-    background-color: rgb(213, 218, 238);
+    background-color: color-mix(in srgb, var(--brand2) 26%, var(--bg-panel));
     border: none;
     border-radius: 26px;
     padding: 12px 14px;
@@ -108,10 +127,12 @@ img {
 .prompt-inputs{
     padding: 14px 10px;
     width: 100%;
-    border: 1px solid rgb(211, 211, 211);
+    border: 1px solid var(--border-soft);
     border-radius: 6px;
     margin: .3rem 0;
-    box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
+    box-shadow: none;
+    background: var(--bg-panel);
+    color: var(--text-bright);
     font-size: .8rem;
 }
 
@@ -133,6 +154,7 @@ img {
 .prompt-input-tabs p {
     font-weight: 600;
     font-size: 14px;
+    color: var(--text-muted);
 }
 
 .notify-checkbox {
@@ -176,6 +198,7 @@ img {
 .notify-toggle-text {
     font-size: .8rem;
     line-height: 1.35;
+    color: var(--text-muted);
 }
 
 .notify-checkbox:checked + .notify-toggle-track {
@@ -193,7 +216,7 @@ img {
 
 .submit-btn {
     background-color: var(--brand, #F0AC3D);
-    color: white;
+    color: #fff;
     font-size: .9rem;
     width: 100%;
     padding: 14px;
@@ -215,6 +238,27 @@ footer {
     text-align: center;
     font-size: .7rem;
     margin-top: 1.2rem;
+    color: var(--text-faint);
+}
+
+:root[data-theme="dark"] section {
+    background-image:
+      linear-gradient(140deg, rgba(214, 162, 74, 0.18), rgba(74, 144, 217, 0.18) 60%, rgba(5, 8, 13, 0.65)),
+      url("../images/ChatGPT Image Jun 18, 2026, 02_54_18 AM.png");
+}
+
+:root[data-theme="dark"] #input-field-section {
+    background-color: color-mix(in srgb, var(--bg-panel) 88%, transparent);
+}
+
+:root[data-theme="dark"] .prompt-inputs {
+    background: #121821;
+    border-color: #2a3240;
+    color: var(--text-bright);
+}
+
+:root[data-theme="dark"] .prompt-inputs::placeholder {
+    color: var(--text-faint);
 }
 
 /* ===== Responsiveness ===== */
@@ -227,6 +271,12 @@ footer {
         display: none;
         text-align: center;
         align-items: center;
+    }
+
+    section {
+        background-image: none;
+        box-shadow: none;
+        border: none;
     }
 
     .submit-info-section button {

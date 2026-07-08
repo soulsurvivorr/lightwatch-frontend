@@ -1,8 +1,25 @@
-<!DOCTYPE html> 
-<html lang="en"> 
-<head> 
-    <meta charset="UTF-8"> 
+<!DOCTYPE html>
+<html lang="en" class="auth-check">
+<head>
+        <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+        <script>
+            (function () {
+                const key = 'lw_theme_pref';
+                const isLaptop = window.matchMedia('(min-width: 1024px)').matches;
+                const stored = localStorage.getItem(key);
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                const theme = isLaptop ? ((stored === 'dark' || stored === 'light') ? stored : (prefersDark ? 'dark' : 'light')) : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.setProperty('color-scheme', theme);
+                document.documentElement.classList.remove('auth-check');
+            })();
+        </script>
+        <style>
+            html.auth-check body {
+                visibility: hidden;
+            }
+        </style>
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#1C1F26">
     <link rel="apple-touch-icon" sizes="180x180" href="/images/dev-logo.png?v=20260707">
@@ -11,6 +28,7 @@
     <link rel="preload" as="image" href="/images/fb_prompt_code_img.png">
     <title>LightWatch GH</title> 
     <link rel="icon" href="/images/dev-logo.png?v=20260707" type="image/png">
+    <link rel="stylesheet" href="../css/styles.css">
     <link rel="stylesheet" href="../css/verification.css">
 </head> 
 <body> 
@@ -23,7 +41,7 @@
         <div class="verify-card"> 
             <h2>Check your phone</h2> 
             <p id="code-text"></p>
-            <img src="/images/fb_prompt_code_img.png" alt="Verification code prompt" loading="eager" fetchpriority="high" decoding="async" width="320" height="240">
+            <img class="verify-hero" src="/images/fb_prompt_code_img.png" alt="Verification code prompt" loading="eager" fetchpriority="high" decoding="async" width="320" height="240">
             <div class="otp-boxes" id="otpBoxes">
                 <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-box" aria-label="Digit 1">
                 <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-box" aria-label="Digit 2">
