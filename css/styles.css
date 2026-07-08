@@ -261,11 +261,19 @@ button, a {
   cursor: pointer;
   transition: background 0.2s ease, color 0.2s ease, transform 0.18s ease;
   touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
 }
 
 .bottom-nav-link:hover,
 .bottom-nav-link:focus-visible {
   background: rgba(61, 217, 194, 0.14);
+}
+
+.bottom-nav-link:focus,
+.bottom-nav-link:active {
+  outline: none;
+  box-shadow: none;
 }
 
 .bottom-nav-link--active {
@@ -276,6 +284,18 @@ button, a {
 
 .bottom-nav-icon {
   font-size: 1.35rem;
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(28, 31, 38, 0.04);
+  transition: background 0.18s ease, transform 0.18s ease;
+}
+
+.bottom-nav-link--active .bottom-nav-icon {
+  background: rgba(61, 217, 194, 0.14);
 }
 
 .bottom-nav-label {
@@ -618,7 +638,7 @@ button, a {
    Responsive
    ============================================================ */
 
-@media (max-width: 980px) {
+@media (max-width: 768px) {
   .login-shell {
     grid-template-columns: 1fr;
   }

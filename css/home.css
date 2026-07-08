@@ -882,12 +882,12 @@
 
 .app-loading .topbar,
 .app-loading .page,
-.app-loading .sidebar-overlay,
-.app-loading .user-sidebar-panel,
 .app-loading #bottom_nav_wrapper,
 .app-loading .mobile-chat-toggle {
-  visibility: hidden;
-  opacity: 0;
+  opacity: 0.18;
+  filter: blur(2px);
+  pointer-events: none;
+  transition: opacity 0.12s ease;
 }
 
 .lw-boot-loader {
@@ -2032,30 +2032,30 @@
 /* Extra-compact phone tuning (Samsung S8, iPhone 12 width range) */
 @media (max-width: 430px) {
   .page {
-    padding: 10px 10px 42px;
+    padding: 10px 10px 40px;
   }
 
   .page__title {
-    font-size: 1.08rem;
+    font-size: 1.16rem;
   }
 
   .page__subtitle,
   .page__greeting,
   .hero-banner__sub {
-    font-size: 0.78rem;
+    font-size: 0.8rem;
   }
 
   .hero-banner {
-    padding: 11px 11px 10px;
+    padding: 12px 12px 10px;
     border-radius: 14px;
   }
 
   .hero-banner__greeting {
-    font-size: 0.96rem;
+    font-size: 1.04rem;
   }
 
   .hero-stat__value {
-    font-size: 0.9rem;
+    font-size: 1rem;
   }
 
    .hero-banner__stats {
@@ -2068,12 +2068,12 @@
   .chat-card,
   .add-location-card,
   .profile-card {
-    padding: 10px;
+    padding: 14px;
     border-radius: 12px;
   }
 
   .card__title {
-    font-size: 0.82rem;
+    font-size: 0.92rem;
   }
 
   .card__meta,
@@ -2095,7 +2095,7 @@
 
   .location-card__row strong,
   .status-insight__stats strong {
-    font-size: 0.8rem;
+    font-size: 0.88rem;
   }
 
   .chat-thread {
@@ -2104,12 +2104,13 @@
 
   .chat-message__text,
   .chat-form__input {
-    font-size: 0.74rem;
+    font-size: 0.78rem;
   }
 
   .bottom-icons-container {
     gap: 8px;
-    padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+    padding: 8px 9px calc(8px + env(safe-area-inset-bottom));
+    border-radius: 22px;
   }
 
   .bottom-nav-link {

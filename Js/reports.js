@@ -50,8 +50,8 @@ function showReportLoading() {
     `).join('');
 }
 
-function loadReports() {
-    showReportLoading();
+function loadReports(showLoading = false) {
+    if (showLoading) showReportLoading();
     fetch(`${API_URL}/reports?limit=30`)
         .then(r => r.json())
         .then(data => {
@@ -64,8 +64,8 @@ function loadReports() {
 }
 
 function runReportsPage() {
-    loadReports();
-    setInterval(loadReports, 30000);
+    loadReports(true);
+    setInterval(() => loadReports(false), 30000);
 }
 
 runReportsPage();
