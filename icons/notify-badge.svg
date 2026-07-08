@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="LightWatch notification badge">
+  <g fill="#ffffff">
+    <path d="M48 18c-10.5 0-19 8.5-19 19v15.3L22 61v5h52v-5l-7-8.7V37c0-10.5-8.5-19-19-19zm0 6c7.2 0 13 5.8 13 13v17.4l5.3 6.6H29.7l5.3-6.6V37c0-7.2 5.8-13 13-13z"/>
+    <rect x="44" y="12" width="8" height="6" rx="3"/>
+    <path d="M38 70c1.7 6 7 10 13 10s11.3-4 13-10h-6.2c-1.5 2.5-4 4-6.8 4s-5.3-1.5-6.8-4H38z"/>
+  </g>
+</svg>
