@@ -18,7 +18,9 @@
     }
 
     function getResolvedTheme() {
-        return getStoredTheme() || (darkMedia.matches ? 'dark' : 'light');
+        const stored = getStoredTheme();
+        if (!laptopMedia.matches) return 'light';
+        return stored || (darkMedia.matches ? 'dark' : 'light');
     }
 
     function setMetaThemeColor(theme) {
@@ -28,10 +30,11 @@
     }
 
     function applyTheme(theme) {
-        root.setAttribute('data-theme', theme);
-        root.style.setProperty('color-scheme', theme);
-        setMetaThemeColor(theme);
-        syncToggleUI(theme);
+        const constrainedTheme = laptopMedia.matches ? theme : 'light';
+        root.setAttribute('data-theme', constrainedTheme);
+        root.style.setProperty('color-scheme', constrainedTheme);
+        setMetaThemeColor(constrainedTheme);
+        syncToggleUI(constrainedTheme);
     }
 
     function syncToggleUI(theme) {
@@ -91,4 +94,5 @@
     });
 
     laptopMedia.addEventListener('change', ensureToggleButton);
+    laptopMedia.addEventListener('change', () => applyTheme(getResolvedTheme()));
 })();

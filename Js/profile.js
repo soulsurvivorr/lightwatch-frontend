@@ -149,6 +149,7 @@ function setLightStatus(status) {
         statusBadge.textContent = "Light on";
         statusPulse.classList.add("pulse--on");
         statusIcon.classList.add("status-hero__icon--on");
+        statusIcon.textContent = "💡";
         statusPillText.textContent = "Light is on now";
         lightSwitch.classList.add("light-switch--on");
         lightSwitch.classList.remove("light-switch--off");
@@ -159,6 +160,7 @@ function setLightStatus(status) {
         statusBadge.textContent = "Light off";
         statusPulse.classList.add("pulse--off");
         statusIcon.classList.add("status-hero__icon--off");
+        statusIcon.textContent = "🔌";
         statusPillText.textContent = "Light is off now";
         lightSwitch.classList.remove("light-switch--on");
         lightSwitch.classList.add("light-switch--off");
@@ -169,6 +171,7 @@ function setLightStatus(status) {
         statusBadge.textContent = "Checking status";
         statusPulse.classList.add("pulse--low");
         statusIcon.classList.add("status-hero__icon--unknown");
+        statusIcon.textContent = "⏳";
         statusPillText.textContent = "Checking live status";
         lightSwitch.classList.remove("light-switch--on", "light-switch--off");
         lightSwitchState.textContent = "CHECK";
@@ -178,6 +181,7 @@ function setLightStatus(status) {
         statusBadge.textContent = "Unconfirmed";
         statusPulse.classList.add("pulse--low");
         statusIcon.classList.add("status-hero__icon--unknown");
+        statusIcon.textContent = "❔";
         statusPillText.textContent = "Flip if you can see the area";
         lightSwitch.classList.remove("light-switch--on", "light-switch--off");
         lightSwitchState.textContent = "CHECK";
@@ -488,41 +492,33 @@ function hideProfileLoader() {
 // -----------------------------------------------------
 async function loadCurrentUserProfile() {
 
+    showProfileLoader(5000);
+
     // ── Get user ID from the active session (set by auth.js) ──
     const session = getSession(); // defined in auth.js
     const userId = session?.user?.id || localStorage.getItem("currentUserId");
     const fallbackUser = session?.user || JSON.parse(localStorage.getItem("currentUserData") || localStorage.getItem("signupUser") || "null");
 
-    // ── STEP 1: show cached data instantly, no spinner ──────────
-    // If we already have this user's data from last time, render it
-    // immediately — no waiting on the network for something we
-    // already know. This is what kills the "fill in every time you
-    // switch pages" feeling: the page shows real info the moment it
-    // loads, not after a round-trip.
+    // Stage cached profile data under the overlay.
     if (fallbackUser) {
         renderUserEverywhere(fallbackUser);
-        await renderLocationPage(fallbackUser);
     }
 
     if (!userId) {
-        if (!fallbackUser) renderSignedOutEverywhere();
+        if (fallbackUser) {
+            await renderLocationPage(fallbackUser);
+        } else {
+            renderSignedOutEverywhere();
+        }
+        hideProfileLoader();
         return;
     }
-
-    // ── STEP 2: quietly confirm/refresh from the server ─────────
-    // Only show the loading overlay if we had NOTHING cached to
-    // show first (first-ever load, or cache got cleared). If we
-    // already showed cached data above, this happens silently in
-    // the background and just updates the page if anything on the
-    // server actually changed.
-    const isBackgroundRefresh = !!fallbackUser;
-    if (!isBackgroundRefresh) showProfileLoader();
 
     try {
         const response = await fetch(`${API_URL}/user/${userId}`);
 
         if (!response.ok) {
-            if (!isBackgroundRefresh) renderSignedOutEverywhere();
+            if (!fallbackUser) renderSignedOutEverywhere();
             return;
         }
 
@@ -540,16 +536,14 @@ async function loadCurrentUserProfile() {
 
     } catch (error) {
         console.error("Could not load profile:", error);
-        // If we had cached data, it's already on screen from Step 1 —
-        // a failed background refresh just means we keep showing
-        // that, which is the right call. Only show an error state
-        // when there was nothing to fall back on at all.
-        if (!isBackgroundRefresh) {
+        if (fallbackUser) {
+            await renderLocationPage(fallbackUser);
+        } else {
             const profileContact = document.getElementById("profileContact");
             if (profileContact) profileContact.textContent = "Could not reach server";
         }
     } finally {
-        if (!isBackgroundRefresh) hideProfileLoader();
+        hideProfileLoader();
     }
 }
 
