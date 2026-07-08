@@ -5,7 +5,7 @@
 // ============================================================
 
 const VAPID_PUBLIC_KEY = 'BMEgZthyyCz4BER4r4Qbi7MuQrvG24AVNma_PEfFG47plgkaLumI25-UbfbIxShGExhUfw4k8GCas2JFuNh-ExI';
-const APP_ICON = '/images/dev-logo.png?v=20260707';
+const APP_ICON = '/images/dev-logo.png';
 const PUSH_WELCOME_KEY = 'lw_push_welcome_shown';
 
 // Convert VAPID public key from base64 to Uint8Array (required by browser API)
@@ -27,6 +27,7 @@ async function initPushNotifications() {
     try {
         // Register the service worker
         const registration = await navigator.serviceWorker.register('/service-worker.js');
+        await registration.update();
         await navigator.serviceWorker.ready;
 
         // Check if already subscribed
@@ -100,7 +101,6 @@ async function maybeShowPushWelcome(registration) {
             body: 'You will receive power updates for your area.',
             icon: APP_ICON,
             badge: APP_ICON,
-            image: APP_ICON,
             tag: 'lw-notifications-on',
             renotify: false,
             data: { url: '/pages/home.html' }
