@@ -92,7 +92,7 @@
   align-items: center;
   justify-content: center;
   padding: 56px 32px 48px;
-  background-color: white;
+  background-color: var(--bg-panel);
 }
 
 .login-box {

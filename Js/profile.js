@@ -395,7 +395,7 @@ function showLightConfirmPopup(nextStatus, onConfirm) {
     overlay.id = "lw-confirm-overlay";
     overlay.style.cssText = `
         position: fixed; inset: 0; z-index: 9999;
-        background: rgba(0,0,0,0.55); backdrop-filter: blur(4px);
+        background: rgba(0,0,0,0.25); backdrop-filter: blur(1px);
         display: flex; align-items: center; justify-content: center;
         padding: 24px; animation: lw-fade-in 0.15s ease;
     `;
@@ -473,67 +473,68 @@ function injectProfileLoaderStyles() {
         .lw-profile-loader {
             position: fixed; inset: 0; z-index: 9999;
             display: grid; place-items: center;
-            background: rgba(7, 10, 28, 0.72);
+            background: rgba(20, 22, 28, 0.28);
+            backdrop-filter: blur(3px) saturate(120%);
+            -webkit-backdrop-filter: blur(3px) saturate(120%);
             opacity: 0; pointer-events: none;
-            transition: opacity 0.2s ease;
+            transition: opacity 0.25s ease;
         }
         /* Intentionally NOT setting pointer-events here — the page
            underneath must stay usable even while this is visible,
-           so a slow/cold backend can never make the app feel frozen. */
+           so a slow/cold backend can never make the app feel frozen.
+           Kept light/translucent on purpose too — the page should
+           stay visible (just dimmed), not get blacked out. */
         .lw-profile-loader--show { opacity: 1; }
+
         .lw-loader-orbit {
             position: relative;
-            width: 110px;
-            height: 110px;
+            width: 84px;
+            height: 84px;
             display: grid;
             place-items: center;
         }
-        .lw-loader-rings {
+        .lw-loader-halo {
+            position: absolute;
+            inset: -14px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(61, 217, 194, 0.25), transparent 70%);
+            animation: lw-halo-breathe 2.2s ease-in-out infinite;
+        }
+        .lw-loader-ring {
             position: absolute;
             inset: 0;
-            border-radius: 50%;
-            border: 2px solid rgba(61, 217, 194, 0.22);
-            animation: lw-spin-a 1.8s linear infinite;
-        }
-        .lw-loader-rings::before,
-        .lw-loader-rings::after {
-            content: "";
-            position: absolute;
-            inset: 10px;
-            border-radius: 50%;
-            border: 2px solid rgba(242, 179, 61, 0.32);
-            animation: lw-spin-b 1.4s linear infinite;
-        }
-        .lw-loader-rings::after {
-            inset: 22px;
-            border-color: rgba(61, 217, 194, 0.55);
-            animation-duration: 1.05s;
-            animation-direction: reverse;
+            animation: lw-spin 1.1s cubic-bezier(0.6, 0.1, 0.4, 0.9) infinite;
+            filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.12));
         }
         .lw-loader-core {
-            width: 44px;
-            height: 44px;
-            border-radius: 12px;
-            background: linear-gradient(135deg, #3DD9C2, #F2B33D);
+            position: relative;
+            width: 46px;
+            height: 46px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.92);
             display: grid;
             place-items: center;
-            box-shadow: 0 10px 22px rgba(0, 0, 0, 0.28);
-            animation: lw-core-pulse 1.2s ease-in-out infinite;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+            animation: lw-core-pulse 1.1s ease-in-out infinite;
         }
         .lw-loader-core svg {
-            width: 24px;
-            height: 24px;
+            width: 22px;
+            height: 22px;
             display: block;
         }
-        @keyframes lw-spin-a {
+        @keyframes lw-spin {
             to { transform: rotate(360deg); }
         }
-        @keyframes lw-spin-b {
-            to { transform: rotate(-360deg); }
+        @keyframes lw-halo-breathe {
+            0%, 100% { transform: scale(0.92); opacity: 0.7; }
+            50%      { transform: scale(1.08); opacity: 1; }
         }
         @keyframes lw-core-pulse {
-            0%, 100% { transform: scale(0.95); }
-            50% { transform: scale(1.03); }
+            0%, 100% { transform: scale(0.96); }
+            50%      { transform: scale(1.04); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .lw-loader-ring, .lw-loader-halo, .lw-loader-core { animation: none; }
         }
     `;
     document.head.appendChild(style);
@@ -548,12 +549,21 @@ function attachProfileLoader() {
     profileLoaderOverlayEl.id = 'lw-profile-loader';
     profileLoaderOverlayEl.innerHTML = `
         <div class="lw-loader-orbit" role="status" aria-live="polite" aria-label="Loading profile">
-            <div class="lw-loader-rings"></div>
+            <div class="lw-loader-halo"></div>
+            <svg class="lw-loader-ring" viewBox="0 0 84 84" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <defs>
+                    <linearGradient id="lwLoaderRingGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#3DD9C2"/>
+                        <stop offset="100%" stop-color="#F2B33D"/>
+                    </linearGradient>
+                </defs>
+                <circle cx="42" cy="42" r="36" stroke="url(#lwLoaderRingGradient)"
+                        stroke-width="4" stroke-linecap="round"
+                        stroke-dasharray="140 86"/>
+            </svg>
             <div class="lw-loader-core">
                 <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                    <path d="M4 6.5H10.5L12 4L13.5 6.5H20" stroke="#06241f" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M4 12H20" stroke="#06241f" stroke-width="1.8" stroke-linecap="round"/>
-                    <path d="M4 17.5H10L12 20L14 17.5H20" stroke="#06241f" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z" fill="#F2B33D"/>
                 </svg>
             </div>
         </div>

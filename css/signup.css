@@ -9,6 +9,8 @@ body {
     justify-content: center; /* left-right */
     align-items: center;     /* top-bottom */
     padding: .9rem;
+    background: var(--bg-deep);
+    color: var(--text-bright);
 }
 
 section {
@@ -72,7 +74,7 @@ img {
 #input-field-section {
     flex: 3;
     min-width: 260px;
-    background-color: white;
+    background-color: var(--bg-panel);
     padding: 2rem 1.3rem;
     border-radius: 10px;
 }
