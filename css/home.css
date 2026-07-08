@@ -936,31 +936,30 @@
 
 .lw-loader-track {
   stroke: rgba(214, 162, 74, 0.2);
-  stroke-width: 3.1;
+  stroke-width: 1;
 }
 
 .lw-loader-arc {
-  stroke-width: 4;
-  stroke-dasharray: 44 182;
-  animation: lw-arc-chase 0.78s linear infinite;
+  stroke-width: 1;
+  stroke-dasharray: 58 168;
+  animation: lw-arc-orbit 0.78s linear infinite;
+  transform-origin: 42px 42px;
 }
 
 .lw-loader-arc--1 {
-  --arc-start: 0;
   stroke: #f2b33d;
-  animation-delay: 0s;
+  animation-duration: 0.72s;
 }
 
 .lw-loader-arc--2 {
-  --arc-start: -76;
   stroke: #3dd9c2;
-  animation-delay: 0.16s;
+  animation-duration: 0.88s;
+  animation-direction: reverse;
 }
 
 .lw-loader-arc--3 {
-  --arc-start: -152;
   stroke: #d6a24a;
-  animation-delay: 0.32s;
+  animation-duration: 1.04s;
 }
 
 .lw-loader-core {
@@ -981,9 +980,9 @@
   display: block;
 }
 
-@keyframes lw-arc-chase {
-  from { stroke-dashoffset: var(--arc-start); }
-  to   { stroke-dashoffset: calc(var(--arc-start) - 226); }
+@keyframes lw-arc-orbit {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
 }
 
 @keyframes lw-halo-breathe {

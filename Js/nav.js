@@ -46,7 +46,7 @@ function triggerLightningTransition() {
     clearTimeout(navTransitionFailSafe);
     navTransitionFailSafe = setTimeout(() => {
         document.body?.classList.remove('app-loading');
-    }, 1800);
+    }, 900);
 }
 
 window.addEventListener('pageshow', () => {
@@ -74,20 +74,29 @@ function isInternalNavigationHref(rawHref) {
     }
 }
 
+function isSamePageNavigation(rawHref) {
+    if (!rawHref) return false;
+    try {
+        const next = new URL(rawHref, window.location.href);
+        return next.origin === window.location.origin
+            && next.pathname === window.location.pathname
+            && (next.search || '') === (window.location.search || '');
+    } catch {
+        return false;
+    }
+}
+
 function bindNavigationLoader() {
-    // Show loader as early as possible when users press navigation links.
+    // Trigger loader only on confirmed navigation clicks.
     document.querySelectorAll('a[href]').forEach(link => {
         if (link.dataset.loaderBound === '1') return;
         link.dataset.loaderBound = '1';
 
-        link.addEventListener('pointerdown', () => {
-            const href = link.getAttribute('href') || '';
-            if (isInternalNavigationHref(href)) triggerLightningTransition();
-        });
-
         link.addEventListener('click', () => {
             const href = link.getAttribute('href') || '';
-            if (isInternalNavigationHref(href)) triggerLightningTransition();
+            if (!isInternalNavigationHref(href)) return;
+            if (isSamePageNavigation(href)) return;
+            triggerLightningTransition();
         });
     });
 
@@ -99,7 +108,6 @@ function bindNavigationLoader() {
         if (!navigates) return;
 
         btn.dataset.loaderBound = '1';
-        btn.addEventListener('pointerdown', triggerLightningTransition);
         btn.addEventListener('click', triggerLightningTransition);
     });
 }
