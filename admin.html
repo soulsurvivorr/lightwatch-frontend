@@ -91,6 +91,13 @@
   .status-msg { font-size:0.82rem; color:var(--faint); }
   .refresh-btn { background:transparent; border:1px solid var(--border2); color:var(--muted); padding:6px 12px; border-radius:var(--r-md); cursor:pointer; font-size:0.8rem; }
   .refresh-btn:hover { border-color:var(--teal); color:var(--teal); }
+  .delete-btn { background:transparent; border:1px solid var(--border2); color:var(--muted); padding:6px 12px; border-radius:var(--r-md); cursor:pointer; font-size:0.8rem; }
+  .delete-btn:hover { border-color:var(--red); color:var(--red); }
+  .delete-btn:disabled { opacity:0.5; cursor:not-allowed; }
+  .row-del-btn { background:transparent; border:1px solid var(--border2); color:var(--muted); padding:4px 8px; border-radius:var(--r-sm); cursor:pointer; font-size:0.72rem; }
+  .row-del-btn:hover { border-color:var(--red); color:var(--red); }
+  .select-col { width:34px; }
+  .select-checkbox { width:16px; height:16px; accent-color: var(--teal); cursor:pointer; }
   .search-input { background:var(--panel2); border:1px solid var(--border); border-radius:var(--r-md); padding:7px 12px; color:var(--txt); font-size:0.82rem; width:200px; }
   .search-input:focus { outline:none; border-color:var(--teal); }
 
@@ -185,14 +192,18 @@
     <!-- Users panel -->
     <div class="panel" id="usersPanel">
       <div class="toolbar">
-        <span class="status-msg" id="usersStatus">Loading users…</span>
+        <div class="toolbar__left">
+          <span class="status-msg" id="usersStatus">Loading users…</span>
+          <button class="delete-btn" id="deleteUsersBtn" type="button" disabled>Delete selected users</button>
+        </div>
         <input class="search-input" type="text" id="userSearch" placeholder="Search by name or contact…" />
       </div>
       <table id="usersTable" style="display:none;">
         <thead>
           <tr>
+            <th class="select-col"><input type="checkbox" id="usersSelectAll" class="select-checkbox" aria-label="Select all users" /></th>
             <th>Name</th><th>Email / Phone</th><th>Region</th><th>City</th>
-            <th>Chat handle</th><th>Joined</th>
+            <th>Chat handle</th><th>Joined</th><th>Actions</th>
           </tr>
         </thead>
         <tbody id="usersTbody"></tbody>
@@ -203,13 +214,17 @@
     <!-- Chats panel -->
     <div class="panel" id="chatsPanel">
       <div class="toolbar">
-        <span class="status-msg" id="chatsStatus">Loading messages…</span>
+        <div class="toolbar__left">
+          <span class="status-msg" id="chatsStatus">Loading messages…</span>
+          <button class="delete-btn" id="deleteChatsBtn" type="button" disabled>Delete selected messages</button>
+        </div>
         <input class="search-input" type="text" id="chatSearch" placeholder="Search messages or location…" />
       </div>
       <table id="chatsTable" style="display:none;">
         <thead>
           <tr>
-            <th>Handle</th><th>Message</th><th>Location</th><th>Sent</th>
+            <th class="select-col"><input type="checkbox" id="chatsSelectAll" class="select-checkbox" aria-label="Select all chats" /></th>
+            <th>Handle</th><th>Message</th><th>Location</th><th>Sent</th><th>Actions</th>
           </tr>
         </thead>
         <tbody id="chatsTbody"></tbody>
@@ -261,6 +276,23 @@
         return res.json();
       }
 
+      async function apiDelete(path, ids) {
+        const res = await fetch(`${API}${path}`, {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${getToken()}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ ids })
+        });
+        if (res.status === 401 || res.status === 403) {
+          clearToken(); showLogin("Session expired."); throw new Error("auth");
+        }
+        const payload = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(payload.error || "Delete request failed");
+        return payload;
+      }
+
       function showLogin(msg) {
         document.getElementById("loginScreen").style.display = "flex";
         document.getElementById("dashboard").style.display = "none";
@@ -275,6 +307,25 @@
       }
 
       let allUsers = [], allChats = [];
+      const selectedUserIds = new Set();
+      const selectedChatIds = new Set();
+
+      function syncDeleteButtons() {
+        const delUsersBtn = document.getElementById("deleteUsersBtn");
+        const delChatsBtn = document.getElementById("deleteChatsBtn");
+
+        if (delUsersBtn) {
+          const count = selectedUserIds.size;
+          delUsersBtn.disabled = count === 0;
+          delUsersBtn.textContent = count > 0 ? `Delete selected users (${count})` : "Delete selected users";
+        }
+
+        if (delChatsBtn) {
+          const count = selectedChatIds.size;
+          delChatsBtn.disabled = count === 0;
+          delChatsBtn.textContent = count > 0 ? `Delete selected messages (${count})` : "Delete selected messages";
+        }
+      }
 
       async function loadAll() {
         loadSummary();
@@ -351,8 +402,11 @@
       async function loadUsers() {
         try {
           allUsers = await apiFetch("/admin/users");
+          const validIds = new Set(allUsers.map(u => String(u._id)));
+          [...selectedUserIds].forEach(id => { if (!validIds.has(id)) selectedUserIds.delete(id); });
           renderUsers(allUsers);
           document.getElementById("usersStatus").textContent = `${allUsers.length} registered user${allUsers.length !== 1 ? "s" : ""}`;
+          syncDeleteButtons();
         } catch(e) {
           if (e.message !== "auth") document.getElementById("usersStatus").textContent = "Could not load users.";
         }
@@ -362,25 +416,59 @@
         const tbody = document.getElementById("usersTbody");
         const table = document.getElementById("usersTable");
         const empty = document.getElementById("usersEmpty");
-        if (!users.length) { table.style.display = "none"; empty.style.display = "block"; return; }
+        const selectAll = document.getElementById("usersSelectAll");
+        if (!users.length) {
+          table.style.display = "none";
+          empty.style.display = "block";
+          if (selectAll) selectAll.checked = false;
+          return;
+        }
         tbody.innerHTML = users.map(u => `
           <tr>
+            <td data-label="Select"><input type="checkbox" class="select-checkbox user-row-select" data-user-id="${esc(u._id)}" ${selectedUserIds.has(String(u._id)) ? "checked" : ""} /></td>
             <td data-label="Name">${esc(u.name)}</td>
             <td data-label="Contact" class="teal">${esc(u.emailPhone)}</td>
             <td data-label="Region">${esc(u.region)}</td>
             <td data-label="City">${esc(u.city)}</td>
             <td data-label="Handle" class="faint">${esc(u.chatHandle || "—")}</td>
             <td data-label="Joined" class="faint">${fmtDate(u.createdAt)}</td>
+            <td data-label="Actions"><button type="button" class="row-del-btn user-row-delete" data-user-del="${esc(u._id)}">Delete</button></td>
           </tr>`).join("");
         table.style.display = "table";
         empty.style.display = "none";
+
+        tbody.querySelectorAll(".user-row-select").forEach(cb => {
+          cb.addEventListener("change", (e) => {
+            const id = e.target.dataset.userId;
+            if (!id) return;
+            if (e.target.checked) selectedUserIds.add(id);
+            else selectedUserIds.delete(id);
+            syncDeleteButtons();
+          });
+        });
+
+        tbody.querySelectorAll(".user-row-delete").forEach(btn => {
+          btn.addEventListener("click", async (e) => {
+            const id = e.currentTarget.dataset.userDel;
+            if (!id) return;
+            await deleteUsersByIds([id]);
+          });
+        });
+
+        if (selectAll) {
+          const visibleIds = users.map(u => String(u._id));
+          selectAll.checked = visibleIds.length > 0 && visibleIds.every(id => selectedUserIds.has(id));
+        }
       }
 
       async function loadChats() {
         try {
           allChats = await apiFetch("/admin/chats");
+          const validIds = new Set(allChats.map(c => String(c._id)));
+          [...selectedChatIds].forEach(id => { if (!validIds.has(id)) selectedChatIds.delete(id); });
           renderChats(allChats);
           document.getElementById("chatsStatus").textContent = `${allChats.length} message${allChats.length !== 1 ? "s" : ""}`;
+          syncDeleteButtons();
         } catch(e) {
           if (e.message !== "auth") document.getElementById("chatsStatus").textContent = "Could not load messages.";
         }
@@ -390,16 +478,75 @@
         const tbody = document.getElementById("chatsTbody");
         const table = document.getElementById("chatsTable");
         const empty = document.getElementById("chatsEmpty");
-        if (!chats.length) { table.style.display = "none"; empty.style.display = "block"; return; }
+        const selectAll = document.getElementById("chatsSelectAll");
+        if (!chats.length) {
+          table.style.display = "none";
+          empty.style.display = "block";
+          if (selectAll) selectAll.checked = false;
+          return;
+        }
         tbody.innerHTML = chats.map(c => `
           <tr>
+            <td data-label="Select"><input type="checkbox" class="select-checkbox chat-row-select" data-chat-id="${esc(c._id)}" ${selectedChatIds.has(String(c._id)) ? "checked" : ""} /></td>
             <td data-label="Handle" class="teal">${esc(c.handle)}</td>
             <td data-label="Message">${esc(c.text)}</td>
             <td data-label="Location" class="faint">${esc(c.location)}</td>
             <td data-label="Sent" class="faint">${fmtDate(c.createdAt)}</td>
+            <td data-label="Actions"><button type="button" class="row-del-btn chat-row-delete" data-chat-del="${esc(c._id)}">Delete</button></td>
           </tr>`).join("");
         table.style.display = "table";
         empty.style.display = "none";
+
+        tbody.querySelectorAll(".chat-row-select").forEach(cb => {
+          cb.addEventListener("change", (e) => {
+            const id = e.target.dataset.chatId;
+            if (!id) return;
+            if (e.target.checked) selectedChatIds.add(id);
+            else selectedChatIds.delete(id);
+            syncDeleteButtons();
+          });
+        });
+
+        tbody.querySelectorAll(".chat-row-delete").forEach(btn => {
+          btn.addEventListener("click", async (e) => {
+            const id = e.currentTarget.dataset.chatDel;
+            if (!id) return;
+            await deleteChatsByIds([id]);
+          });
+        });
+
+        if (selectAll) {
+          const visibleIds = chats.map(c => String(c._id));
+          selectAll.checked = visibleIds.length > 0 && visibleIds.every(id => selectedChatIds.has(id));
+        }
+      }
+
+      async function deleteChatsByIds(ids) {
+        if (!ids.length) return;
+        try {
+          await apiDelete('/admin/chats', ids);
+          ids.forEach(id => selectedChatIds.delete(String(id)));
+          await Promise.all([loadChats(), loadSummary(), loadActivity()]);
+        } catch (e) {
+          if (e.message !== "auth") alert(e.message || "Could not delete chats.");
+        }
+      }
+
+      async function deleteUsersByIds(ids) {
+        if (!ids.length) return;
+        const count = ids.length;
+        const warning = count === 1
+          ? "Are you sure you want to delete this user? This will also remove their chats and subscriptions."
+          : `Are you sure you want to delete ${count} users? This will also remove their chats and subscriptions.`;
+        if (!window.confirm(warning)) return;
+
+        try {
+          await apiDelete('/admin/users', ids);
+          ids.forEach(id => selectedUserIds.delete(String(id)));
+          await Promise.all([loadUsers(), loadChats(), loadSummary(), loadActivity()]);
+        } catch (e) {
+          if (e.message !== "auth") alert(e.message || "Could not delete users.");
+        }
       }
 
       // Tab switching
@@ -429,6 +576,48 @@
           (c.location||"").toLowerCase().includes(q) ||
           (c.handle||"").toLowerCase().includes(q)
         ));
+      });
+
+      document.getElementById("usersSelectAll")?.addEventListener("change", (e) => {
+        const visible = allUsers.filter(u => {
+          const q = (document.getElementById("userSearch")?.value || "").toLowerCase();
+          return !q ||
+            (u.name||"").toLowerCase().includes(q) ||
+            (u.emailPhone||"").toLowerCase().includes(q) ||
+            (u.city||"").toLowerCase().includes(q);
+        });
+        visible.forEach(u => {
+          const id = String(u._id);
+          if (e.target.checked) selectedUserIds.add(id);
+          else selectedUserIds.delete(id);
+        });
+        renderUsers(visible);
+        syncDeleteButtons();
+      });
+
+      document.getElementById("chatsSelectAll")?.addEventListener("change", (e) => {
+        const visible = allChats.filter(c => {
+          const q = (document.getElementById("chatSearch")?.value || "").toLowerCase();
+          return !q ||
+            (c.text||"").toLowerCase().includes(q) ||
+            (c.location||"").toLowerCase().includes(q) ||
+            (c.handle||"").toLowerCase().includes(q);
+        });
+        visible.forEach(c => {
+          const id = String(c._id);
+          if (e.target.checked) selectedChatIds.add(id);
+          else selectedChatIds.delete(id);
+        });
+        renderChats(visible);
+        syncDeleteButtons();
+      });
+
+      document.getElementById("deleteChatsBtn")?.addEventListener("click", async () => {
+        await deleteChatsByIds([...selectedChatIds]);
+      });
+
+      document.getElementById("deleteUsersBtn")?.addEventListener("click", async () => {
+        await deleteUsersByIds([...selectedUserIds]);
       });
 
       document.getElementById("refreshActivity")?.addEventListener("click", loadActivity);
