@@ -925,8 +925,42 @@
 .lw-loader-ring {
   position: absolute;
   inset: 0;
-  animation: lw-spin 0.72s cubic-bezier(0.6, 0.1, 0.4, 0.9) infinite;
   filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.12));
+}
+
+.lw-loader-track,
+.lw-loader-arc {
+  fill: none;
+  stroke-linecap: round;
+}
+
+.lw-loader-track {
+  stroke: rgba(214, 162, 74, 0.2);
+  stroke-width: 3.1;
+}
+
+.lw-loader-arc {
+  stroke-width: 4;
+  stroke-dasharray: 44 182;
+  animation: lw-arc-chase 0.78s linear infinite;
+}
+
+.lw-loader-arc--1 {
+  --arc-start: 0;
+  stroke: #f2b33d;
+  animation-delay: 0s;
+}
+
+.lw-loader-arc--2 {
+  --arc-start: -76;
+  stroke: #3dd9c2;
+  animation-delay: 0.16s;
+}
+
+.lw-loader-arc--3 {
+  --arc-start: -152;
+  stroke: #d6a24a;
+  animation-delay: 0.32s;
 }
 
 .lw-loader-core {
@@ -947,8 +981,9 @@
   display: block;
 }
 
-@keyframes lw-spin {
-  to { transform: rotate(360deg); }
+@keyframes lw-arc-chase {
+  from { stroke-dashoffset: var(--arc-start); }
+  to   { stroke-dashoffset: calc(var(--arc-start) - 226); }
 }
 
 @keyframes lw-halo-breathe {
@@ -962,7 +997,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .lw-loader-ring,
+  .lw-loader-arc,
   .lw-loader-halo,
   .lw-loader-core {
     animation: none;

@@ -445,11 +445,8 @@ button, a {
 
 :root[data-theme="dark"] .bottom-nav-icon-img--dark {
   display: block;
-  filter: grayscale(0.78) saturate(0.82) brightness(1.42) contrast(1.09) drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
-}
-
-:root[data-theme="dark"] .bottom-nav-icon img {
-  filter: brightness(1.15) contrast(1.18) saturate(1.08) drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+  filter: grayscale(1) brightness(2.05) contrast(1.28) drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+  opacity: 0.95;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -459,11 +456,8 @@ button, a {
 
   :root:not([data-theme]) .bottom-nav-icon-img--dark {
     display: block;
-    filter: grayscale(0.78) saturate(0.82) brightness(1.42) contrast(1.09) drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
-  }
-
-  :root:not([data-theme]) .bottom-nav-icon img {
-    filter: brightness(1.15) contrast(1.18) saturate(1.08) drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+    filter: grayscale(1) brightness(2.05) contrast(1.28) drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+    opacity: 0.95;
   }
 }
 

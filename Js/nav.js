@@ -10,6 +10,7 @@
 
 const MOBILE_BREAKPOINT = 720;
 const ACTIVE_NAV_KEY = 'lw_active_nav';
+let navTransitionFailSafe = null;
 
 function ensureBootLoaderElement() {
     if (document.getElementById('lwBootLoader')) return;
@@ -22,8 +23,10 @@ function ensureBootLoaderElement() {
       <div class="lw-loader-orbit">
         <div class="lw-loader-halo"></div>
         <svg class="lw-loader-ring" viewBox="0 0 84 84" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <circle cx="42" cy="42" r="34" stroke="#D6A24A" stroke-width="5" stroke-opacity="0.26" />
-          <path d="M42 8a34 34 0 0 1 33.2 27" stroke="#D6A24A" stroke-width="5" stroke-linecap="round" />
+                    <circle class="lw-loader-track" cx="42" cy="42" r="36" />
+                    <circle class="lw-loader-arc lw-loader-arc--1" cx="42" cy="42" r="36" />
+                    <circle class="lw-loader-arc lw-loader-arc--2" cx="42" cy="42" r="36" />
+                    <circle class="lw-loader-arc lw-loader-arc--3" cx="42" cy="42" r="36" />
         </svg>
         <div class="lw-loader-core">
           <svg viewBox="0 0 24 24" fill="#D6A24A" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -38,7 +41,24 @@ function ensureBootLoaderElement() {
 function triggerLightningTransition() {
     ensureBootLoaderElement();
     document.body?.classList.add('app-loading');
+
+    // Failsafe: if navigation doesn't happen, release the overlay.
+    clearTimeout(navTransitionFailSafe);
+    navTransitionFailSafe = setTimeout(() => {
+        document.body?.classList.remove('app-loading');
+    }, 1800);
 }
+
+window.addEventListener('pageshow', () => {
+    clearTimeout(navTransitionFailSafe);
+    navTransitionFailSafe = null;
+    document.body?.classList.remove('app-loading');
+});
+
+window.addEventListener('beforeunload', () => {
+    clearTimeout(navTransitionFailSafe);
+    navTransitionFailSafe = null;
+});
 
 function isInternalNavigationHref(rawHref) {
     if (!rawHref) return false;
