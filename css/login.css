@@ -207,7 +207,7 @@
 }
 
 .remember-me-label input:checked ~ .remember-me-track {
-  background: var(--brand2);
+  background: var(--brand);
 }
 
 .remember-me-label input:checked ~ .remember-me-track .remember-me-thumb {
@@ -215,7 +215,7 @@
 }
 
 .remember-me-label input:focus-visible ~ .remember-me-track {
-  outline: 2px solid var(--brand2);
+  outline: 2px solid var(--brand);
   outline-offset: 2px;
 }
 
@@ -230,6 +230,14 @@
 
 .login-create-btn {
   margin-top: 2px;
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
+}
+
+.login-create-btn:hover {
+  background: var(--brand-dim);
+  border-color: var(--brand-dim);
 }
 
 .divider::before,

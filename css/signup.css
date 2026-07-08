@@ -179,7 +179,7 @@ img {
 }
 
 .notify-checkbox:checked + .notify-toggle-track {
-    background: var(--brand2, #4A90D9);
+    background: var(--brand, #F0AC3D);
 }
 
 .notify-checkbox:checked + .notify-toggle-track .notify-toggle-thumb {
@@ -187,7 +187,7 @@ img {
 }
 
 .notify-checkbox:focus-visible + .notify-toggle-track {
-    outline: 2px solid var(--brand2, #4A90D9);
+    outline: 2px solid var(--brand, #F0AC3D);
     outline-offset: 2px;
 }
 

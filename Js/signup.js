@@ -63,14 +63,9 @@ async function handleSignup() {
         localStorage.setItem("maskedContact", result.maskedContact);
         localStorage.setItem("signupUser", JSON.stringify(userData));
 
-        // Ask whether this browser should stay signed in permanently.
-        // If user declines, verification flow keeps a 24h temporary session.
-        const rememberChoice = window.confirm(
-            "Save your sign-in on this device for next time?\n\n" +
-            "OK = stay signed in on this browser\n" +
-            "Cancel = sign in normally each time (temporary 24h keep-after-signup)"
-        );
-        localStorage.setItem("rememberMePending", rememberChoice ? "true" : "false");
+        // Auto-save sign-in on this browser after signup verification.
+        // User can still explicitly sign out at any time.
+        localStorage.setItem("rememberMePending", "true");
 
         window.location.replace("../pages/verification.html");
 

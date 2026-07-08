@@ -5,6 +5,8 @@
 // ============================================================
 
 const VAPID_PUBLIC_KEY = 'BMEgZthyyCz4BER4r4Qbi7MuQrvG24AVNma_PEfFG47plgkaLumI25-UbfbIxShGExhUfw4k8GCas2JFuNh-ExI';
+const APP_ICON = '/images/dev-logo.png?v=20260707';
+const PUSH_WELCOME_KEY = 'lw_push_welcome_shown';
 
 // Convert VAPID public key from base64 to Uint8Array (required by browser API)
 function urlBase64ToUint8Array(base64String) {
@@ -32,6 +34,7 @@ async function initPushNotifications() {
         if (existing) {
             // Already subscribed — make sure server has it
             await sendSubscriptionToServer(existing);
+            await maybeShowPushWelcome(registration);
             return;
         }
 
@@ -49,6 +52,7 @@ async function initPushNotifications() {
         });
 
         await sendSubscriptionToServer(subscription);
+        await maybeShowPushWelcome(registration);
         console.log('Push notifications enabled.');
 
     } catch (err) {
@@ -85,4 +89,24 @@ window.addEventListener('locationReady', () => {
 // Fallback: if locationReady already fired before this script ran
 if (window.currentChatLocation) {
     initPushNotifications();
+}
+
+async function maybeShowPushWelcome(registration) {
+    if (Notification.permission !== 'granted') return;
+    if (localStorage.getItem(PUSH_WELCOME_KEY) === '1') return;
+
+    try {
+        await registration.showNotification('LightWatch notifications are on', {
+            body: 'You will receive power updates for your area.',
+            icon: APP_ICON,
+            badge: APP_ICON,
+            image: APP_ICON,
+            tag: 'lw-notifications-on',
+            renotify: false,
+            data: { url: '/pages/home.html' }
+        });
+        localStorage.setItem(PUSH_WELCOME_KEY, '1');
+    } catch (err) {
+        console.error('Could not show welcome notification:', err);
+    }
 }
