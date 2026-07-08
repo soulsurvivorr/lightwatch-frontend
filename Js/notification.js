@@ -9,6 +9,56 @@ const APP_ICON_PATH = '/images/dev-logo.png?v=20260708';
 const APP_ICON = new URL(APP_ICON_PATH, window.location.origin).href;
 const PUSH_WELCOME_KEY = 'lw_push_welcome_shown';
 let pushInitPromise = null;
+let lwAudioCtx = null;
+let lwAudioReady = false;
+
+function ensureAudioContext() {
+    if (lwAudioCtx) return lwAudioCtx;
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return null;
+    lwAudioCtx = new Ctx();
+    return lwAudioCtx;
+}
+
+function unlockForegroundAudio() {
+    const ctx = ensureAudioContext();
+    if (!ctx) return;
+    const resume = () => {
+        ctx.resume().then(() => {
+            lwAudioReady = true;
+        }).catch(() => {});
+    };
+    resume();
+}
+
+function playDewDropsTone() {
+    const ctx = ensureAudioContext();
+    if (!ctx || (!lwAudioReady && ctx.state !== 'running')) return;
+
+    const now = ctx.currentTime;
+    const notes = [880, 1046, 1174];
+
+    notes.forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+
+        const start = now + (i * 0.12);
+        const end = start + 0.16;
+
+        gain.gain.setValueAtTime(0.0001, start);
+        gain.gain.exponentialRampToValueAtTime(0.12, start + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, end);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(start);
+        osc.stop(end + 0.01);
+    });
+}
 
 // Convert VAPID public key from base64 to Uint8Array (required by browser API)
 function urlBase64ToUint8Array(base64String) {
@@ -99,6 +149,19 @@ async function syncSubscriptionWithCurrentLocation() {
 
 // Start immediately so mobile does not wait on location/profile calls.
 ensurePushNotificationsInitialized();
+
+// Prepare audio playback after first user interaction.
+['click', 'touchstart', 'keydown'].forEach(evt => {
+    window.addEventListener(evt, unlockForegroundAudio, { once: true, passive: true });
+});
+
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', (event) => {
+        if (event?.data?.type === 'LW_PUSH_RECEIVED') {
+            playDewDropsTone();
+        }
+    });
+}
 
 // Update backend with location as soon as profile data becomes ready.
 window.addEventListener('locationReady', () => {

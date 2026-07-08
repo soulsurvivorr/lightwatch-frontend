@@ -48,9 +48,22 @@ self.addEventListener('push', event => {
         options.image = data.image;
     }
 
-    event.waitUntil(
-        self.registration.showNotification(data.title, options)
-    );
+    const notifyPromise = self.registration.showNotification(data.title, options);
+
+    // Notify any open app window so it can play a foreground sound.
+    // Background audio playback is not available in service workers.
+    const broadcastPromise = clients.matchAll({ type: 'window', includeUncontrolled: true })
+        .then(list => {
+            for (const client of list) {
+                client.postMessage({
+                    type: 'LW_PUSH_RECEIVED',
+                    tone: data.tone || 'dew-drops'
+                });
+            }
+        })
+        .catch(() => {});
+
+    event.waitUntil(Promise.all([notifyPromise, broadcastPromise]));
 });
 
 // ── Notification click: open the app ─────────────────────────
