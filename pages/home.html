@@ -25,10 +25,21 @@
 
   <div class="lw-boot-loader" id="lwBootLoader" aria-hidden="true">
     <div class="lw-loader-orbit">
-      <div class="lw-loader-rings"></div>
+      <div class="lw-loader-halo"></div>
+      <svg class="lw-loader-ring" viewBox="0 0 84 84" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <defs>
+          <linearGradient id="lwLoaderRingGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#3DD9C2"/>
+            <stop offset="100%" stop-color="#F2B33D"/>
+          </linearGradient>
+        </defs>
+        <circle cx="42" cy="42" r="36" stroke="url(#lwLoaderRingGradient)"
+                stroke-width="4" stroke-linecap="round"
+                stroke-dasharray="140 86"/>
+      </svg>
       <div class="lw-loader-core">
         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z" fill="#06241f"/>
+          <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z" fill="#F2B33D"/>
         </svg>
       </div>
     </div>
@@ -334,15 +345,24 @@
   <div id="bottom_nav_wrapper">
     <div class="bottom-icons-container">
       <a href="./home.html" class="bottom-nav-link" data-nav="home" aria-label="Home">
-        <span class="bottom-nav-icon bottom-nav-icon--user"><img src="../icons/home.png" alt="Home"></span>
+        <span class="bottom-nav-icon bottom-nav-icon--user">
+          <img src="../icons/home.png" alt="Home" class="bottom-nav-icon-img bottom-nav-icon-img--light">
+          <img src="../icons/home.png" alt="" aria-hidden="true" class="bottom-nav-icon-img bottom-nav-icon-img--dark">
+        </span>
         <span class="bottom-nav-label">Home</span>
       </a>
       <a href="./reports.html" class="bottom-nav-link" data-nav="reports" aria-label="Reports">
-        <span class="bottom-nav-icon bottom-nav-icon--user"><img src="../icons/report_2.png" alt="reports"></span>
+        <span class="bottom-nav-icon bottom-nav-icon--user">
+          <img src="../icons/report_2.png" alt="reports" class="bottom-nav-icon-img bottom-nav-icon-img--light">
+          <img src="../icons/report_2.png" alt="" aria-hidden="true" class="bottom-nav-icon-img bottom-nav-icon-img--dark">
+        </span>
         <span class="bottom-nav-label">Reports</span>
       </a>
       <button type="button" class="bottom-nav-link bottom-nav-link--button" id="bottomNavUserBtn" data-nav="account" aria-label="User profile">
-        <span class="bottom-nav-icon bottom-nav-icon--user"><img src="../icons/user.png" alt="You"></span>
+        <span class="bottom-nav-icon bottom-nav-icon--user">
+          <img src="../icons/user.png" alt="You" class="bottom-nav-icon-img bottom-nav-icon-img--light">
+          <img src="../icons/user.png" alt="" aria-hidden="true" class="bottom-nav-icon-img bottom-nav-icon-img--dark">
+        </span>
         <span class="bottom-nav-label">You</span>
       </button>
     </div>

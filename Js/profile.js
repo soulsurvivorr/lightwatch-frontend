@@ -576,6 +576,11 @@ profileButton?.addEventListener('click', () => {
 // sidebar panel, so profile access works identically on
 // desktop and mobile without duplicating the panel markup
 bottomNavUserBtn?.addEventListener('click', () => {
+    if (typeof triggerLightningTransition === 'function') {
+        triggerLightningTransition();
+    } else {
+        document.body?.classList.add('app-loading');
+    }
     window.location.replace('../pages/account.html');
 });
 

@@ -11,6 +11,79 @@
 const MOBILE_BREAKPOINT = 720;
 const ACTIVE_NAV_KEY = 'lw_active_nav';
 
+function ensureBootLoaderElement() {
+    if (document.getElementById('lwBootLoader')) return;
+
+    const loader = document.createElement('div');
+    loader.className = 'lw-boot-loader';
+    loader.id = 'lwBootLoader';
+    loader.setAttribute('aria-hidden', 'true');
+    loader.innerHTML = `
+      <div class="lw-loader-orbit">
+        <div class="lw-loader-halo"></div>
+        <svg class="lw-loader-ring" viewBox="0 0 84 84" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <circle cx="42" cy="42" r="34" stroke="#D6A24A" stroke-width="5" stroke-opacity="0.26" />
+          <path d="M42 8a34 34 0 0 1 33.2 27" stroke="#D6A24A" stroke-width="5" stroke-linecap="round" />
+        </svg>
+        <div class="lw-loader-core">
+          <svg viewBox="0 0 24 24" fill="#D6A24A" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M13.3 2.7L5.8 13.1a1 1 0 0 0 .8 1.6h4l-.9 6.4a1 1 0 0 0 1.8.7l7.5-10.4a1 1 0 0 0-.8-1.6h-4l.9-6.4a1 1 0 0 0-1.8-.7z" />
+          </svg>
+        </div>
+      </div>`;
+
+    document.body.prepend(loader);
+}
+
+function triggerLightningTransition() {
+    ensureBootLoaderElement();
+    document.body?.classList.add('app-loading');
+}
+
+function isInternalNavigationHref(rawHref) {
+    if (!rawHref) return false;
+    if (rawHref.startsWith('#') || rawHref.startsWith('javascript:') || rawHref.startsWith('mailto:') || rawHref.startsWith('tel:')) {
+        return false;
+    }
+
+    try {
+        const url = new URL(rawHref, window.location.href);
+        return url.origin === window.location.origin;
+    } catch {
+        return false;
+    }
+}
+
+function bindNavigationLoader() {
+    // Show loader as early as possible when users press navigation links.
+    document.querySelectorAll('a[href]').forEach(link => {
+        if (link.dataset.loaderBound === '1') return;
+        link.dataset.loaderBound = '1';
+
+        link.addEventListener('pointerdown', () => {
+            const href = link.getAttribute('href') || '';
+            if (isInternalNavigationHref(href)) triggerLightningTransition();
+        });
+
+        link.addEventListener('click', () => {
+            const href = link.getAttribute('href') || '';
+            if (isInternalNavigationHref(href)) triggerLightningTransition();
+        });
+    });
+
+    // Handle existing inline button navigation like window.location.href='...'.
+    document.querySelectorAll('button[onclick]').forEach(btn => {
+        if (btn.dataset.loaderBound === '1') return;
+        const inlineHandler = btn.getAttribute('onclick') || '';
+        const navigates = /window\.location\.(href|assign|replace)\s*=|window\.location\.(assign|replace)\(/.test(inlineHandler);
+        if (!navigates) return;
+
+        btn.dataset.loaderBound = '1';
+        btn.addEventListener('pointerdown', triggerLightningTransition);
+        btn.addEventListener('click', triggerLightningTransition);
+    });
+}
+
 function applyNavVisibility() {
 
     const isMobile = window.innerWidth <= MOBILE_BREAKPOINT;
@@ -82,3 +155,4 @@ function highlightActiveNav() {
 }
 
 highlightActiveNav();
+bindNavigationLoader();

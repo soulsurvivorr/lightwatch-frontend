@@ -887,7 +887,7 @@
   opacity: 0.18;
   filter: blur(2px);
   pointer-events: none;
-  transition: opacity 0.12s ease;
+  transition: opacity 0.08s ease;
 }
 
 .lw-boot-loader {
@@ -903,72 +903,70 @@
   backdrop-filter: blur(10px);
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.18s ease, visibility 0.18s ease;
+  transition: opacity 0.08s ease, visibility 0.08s ease;
 }
 
 .lw-loader-orbit {
   position: relative;
-  width: 92px;
-  height: 92px;
+  width: 84px;
+  height: 84px;
   display: grid;
   place-items: center;
 }
 
-.lw-loader-rings {
+.lw-loader-halo {
+  position: absolute;
+  inset: -14px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(61, 217, 194, 0.25), transparent 70%);
+  animation: lw-halo-breathe 1.3s ease-in-out infinite;
+}
+
+.lw-loader-ring {
   position: absolute;
   inset: 0;
-  border-radius: 50%;
-  border: 2px solid rgba(61, 217, 194, 0.25);
-  animation: lw-spin-a 1.8s linear infinite;
-}
-
-.lw-loader-rings::before,
-.lw-loader-rings::after {
-  content: "";
-  position: absolute;
-  border-radius: 50%;
-}
-
-.lw-loader-rings::before {
-  inset: 10px;
-  border: 2px solid rgba(214, 162, 74, 0.38);
-  animation: lw-spin-b 1.3s linear infinite reverse;
-}
-
-.lw-loader-rings::after {
-  inset: 22px;
-  border: 2px solid rgba(61, 217, 194, 0.55);
-  animation: lw-spin-a 1.05s linear infinite;
+  animation: lw-spin 0.72s cubic-bezier(0.6, 0.1, 0.4, 0.9) infinite;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.12));
 }
 
 .lw-loader-core {
+  position: relative;
   width: 46px;
   height: 46px;
-  border-radius: 14px;
-  background: linear-gradient(135deg, #3DD9C2, #F2B33D);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
   display: grid;
   place-items: center;
-  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.28);
-  animation: lw-core-pulse 1.15s ease-in-out infinite;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+  animation: lw-core-pulse 0.72s ease-in-out infinite;
 }
 
 .lw-loader-core svg {
-  width: 23px;
-  height: 23px;
+  width: 22px;
+  height: 22px;
   display: block;
 }
 
-@keyframes lw-spin-a {
+@keyframes lw-spin {
   to { transform: rotate(360deg); }
 }
 
-@keyframes lw-spin-b {
-  to { transform: rotate(-360deg); }
+@keyframes lw-halo-breathe {
+  0%, 100% { transform: scale(0.92); opacity: 0.7; }
+  50%      { transform: scale(1.08); opacity: 1; }
 }
 
 @keyframes lw-core-pulse {
-  0%, 100% { transform: scale(0.95); }
-  50% { transform: scale(1.03); }
+  0%, 100% { transform: scale(0.96); }
+  50%      { transform: scale(1.04); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lw-loader-ring,
+  .lw-loader-halo,
+  .lw-loader-core {
+    animation: none;
+  }
 }
 
 .app-loading .lw-boot-loader {
