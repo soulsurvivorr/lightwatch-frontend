@@ -93,6 +93,8 @@
   justify-content: center;
   padding: 56px 32px 48px;
   background-color: var(--bg-panel);
+  position: relative;
+  overflow: hidden;
 }
 
 .login-box {
@@ -230,6 +232,27 @@
 
 .login-create-btn {
   margin-top: 2px;
+  background: var(--brand);
+  color: white;
+  border: 1px solid transparent;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  box-shadow: 0 8px 20px rgba(214, 162, 74, 0.25);
+}
+
+.login-create-btn:hover {
+  background: var(--brand-dim);
+  border-color: transparent;
+  color: white;
+}
+
+.login-create-btn:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+#sendCodebtn {
+  margin-top: 2px;
   background: linear-gradient(180deg, #5e6672 0%, #4a515b 100%);
   border: 1px solid color-mix(in srgb, var(--brand) 72%, #ffffff 28%);
   color: #f8e3b4;
@@ -238,13 +261,13 @@
   box-shadow: 0 6px 18px rgba(74, 81, 91, 0.28);
 }
 
-.login-create-btn:hover {
+#sendCodebtn:hover {
   background: linear-gradient(180deg, #6a737f 0%, #545d68 100%);
   border-color: var(--brand);
   color: #ffe6b0;
 }
 
-.login-create-btn:focus-visible {
+#sendCodebtn:focus-visible {
   outline: 2px solid var(--brand);
   outline-offset: 2px;
 }
@@ -266,8 +289,17 @@
 
 /* Phone layout: render only the form pane. */
 @media (max-width: 768px) {
+  html,
+  body {
+    height: 100svh;
+    overflow: hidden;
+  }
+
   .login-shell {
+    min-height: 100svh;
+    height: 100svh;
     grid-template-columns: 1fr;
+    overflow: hidden;
   }
 
   .login-visual {
@@ -275,8 +307,47 @@
   }
 
   .login-form-side {
-    min-height: 100vh;
+    min-height: 100svh;
+    height: 100svh;
     width: 100%;
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  .login-form-side::before,
+  .login-form-side::after {
+    content: "";
+    position: absolute;
+    border-radius: 999px;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /* Top-right bubble cluster */
+  .login-form-side::before {
+    width: 220px;
+    height: 220px;
+    top: -96px;
+    right: -88px;
+    background:
+      radial-gradient(circle at 30% 35%, rgba(214, 162, 74, 0.34), rgba(214, 162, 74, 0.08) 58%, transparent 70%),
+      radial-gradient(circle at 65% 70%, rgba(74, 144, 217, 0.26), transparent 62%);
+  }
+
+  /* Bottom-left bubble cluster */
+  .login-form-side::after {
+    width: 250px;
+    height: 250px;
+    left: -114px;
+    bottom: -120px;
+    background:
+      radial-gradient(circle at 58% 40%, rgba(74, 144, 217, 0.24), transparent 60%),
+      radial-gradient(circle at 42% 68%, rgba(214, 162, 74, 0.28), rgba(214, 162, 74, 0.06) 62%, transparent 72%);
+  }
+
+  .login-box {
+    position: relative;
+    z-index: 1;
   }
 }
 
