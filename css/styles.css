@@ -89,9 +89,9 @@
   --font-body: "Space Grotesk", "Segoe UI", sans-serif;
 
   /* Higher-contrast nav appearance for dark mode */
-  --bottom-nav-surface: rgba(10, 15, 24, 0.92);
-  --bottom-nav-border: rgba(124, 150, 193, 0.38);
-  --bottom-nav-shadow: 0 14px 34px rgba(0, 0, 0, 0.45);
+  --bottom-nav-surface: linear-gradient(165deg, rgba(46, 55, 69, 0.96), rgba(28, 35, 46, 0.94));
+  --bottom-nav-border: rgba(153, 178, 218, 0.45);
+  --bottom-nav-shadow: 0 16px 36px rgba(0, 0, 0, 0.52);
   --bottom-nav-label: #c2d6f2;
   --bottom-nav-label-active: #6eead7;
   --bottom-nav-active-bg: rgba(84, 219, 199, 0.22);
@@ -114,9 +114,9 @@
     --font-display: "Inter", "Segoe UI", sans-serif;
     --font-body: "Space Grotesk", "Segoe UI", sans-serif;
 
-    --bottom-nav-surface: rgba(10, 15, 24, 0.92);
-    --bottom-nav-border: rgba(124, 150, 193, 0.38);
-    --bottom-nav-shadow: 0 14px 34px rgba(0, 0, 0, 0.45);
+    --bottom-nav-surface: linear-gradient(165deg, rgba(46, 55, 69, 0.96), rgba(28, 35, 46, 0.94));
+    --bottom-nav-border: rgba(153, 178, 218, 0.45);
+    --bottom-nav-shadow: 0 16px 36px rgba(0, 0, 0, 0.52);
     --bottom-nav-label: #c2d6f2;
     --bottom-nav-label-active: #6eead7;
     --bottom-nav-active-bg: rgba(84, 219, 199, 0.22);
@@ -354,6 +354,24 @@ button, a {
   -webkit-backdrop-filter: blur(12px) saturate(160%);
 }
 
+:root[data-theme="dark"] .bottom-icons-container {
+  background: linear-gradient(165deg, rgba(46, 55, 69, 0.96), rgba(28, 35, 46, 0.94));
+  border-color: rgba(153, 178, 218, 0.45);
+  box-shadow:
+    0 16px 36px rgba(0, 0, 0, 0.52),
+    inset 0 1px 0 rgba(230, 241, 255, 0.09);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .bottom-icons-container {
+    background: linear-gradient(165deg, rgba(46, 55, 69, 0.96), rgba(28, 35, 46, 0.94));
+    border-color: rgba(153, 178, 218, 0.45);
+    box-shadow:
+      0 16px 36px rgba(0, 0, 0, 0.52),
+      inset 0 1px 0 rgba(230, 241, 255, 0.09);
+  }
+}
+
 .bottom-nav-icons {
   height: 30px;
   width: 30px;
@@ -415,6 +433,16 @@ button, a {
   width: 20px;
   height: 20px;
   object-fit: contain;
+}
+
+:root[data-theme="dark"] .bottom-nav-icon img {
+  filter: brightness(1.15) contrast(1.18) saturate(1.08) drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .bottom-nav-icon img {
+    filter: brightness(1.15) contrast(1.18) saturate(1.08) drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+  }
 }
 
 .bottom-nav-link--active .bottom-nav-icon {
