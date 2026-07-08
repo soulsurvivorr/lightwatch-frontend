@@ -31,11 +31,15 @@ self.addEventListener('push', event => {
         badge: data.badge || APP_BADGE,
         tag: data.tag || 'light-status',
         renotify: true,
-        // Vibration pattern improves the chance of Android showing
-        // this as an interruptive notification when user settings allow it.
         vibrate: Array.isArray(data.vibrate) ? data.vibrate : [200, 100, 200],
-        // Keep visible until user dismisses unless explicitly disabled.
         requireInteraction: data.requireInteraction !== false,
+        silent: false,
+        actions: [
+            {
+                action: "open",
+                title: "Open"
+            }
+        ],
         timestamp: Date.now(),
         data: { url: data.url || '/pages/home.html' }
     };
