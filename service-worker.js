@@ -34,7 +34,9 @@ self.addEventListener('push', event => {
         // Vibration pattern improves the chance of Android showing
         // this as an interruptive notification when user settings allow it.
         vibrate: Array.isArray(data.vibrate) ? data.vibrate : [200, 100, 200],
-        requireInteraction: Boolean(data.requireInteraction),
+        // Keep visible until user dismisses unless explicitly disabled.
+        requireInteraction: data.requireInteraction !== false,
+        timestamp: Date.now(),
         data: { url: data.url || '/pages/home.html' }
     };
 
