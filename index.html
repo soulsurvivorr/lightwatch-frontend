@@ -1,8 +1,55 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="auth-check">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <style>
+    html.auth-check body {
+      visibility: hidden;
+    }
+  </style>
+  <script>
+    (function () {
+      try {
+        const AUTH_KEY = 'app_auth_token';
+        const USER_KEY = 'app_user';
+        const REMEMBER_KEY = 'app_remember';
+        const TEMP_AUTH_KEY = 'app_temp_auth_token';
+        const TEMP_USER_KEY = 'app_temp_user';
+        const TEMP_EXPIRES_KEY = 'app_temp_expires_at';
+
+        const safeParse = (value) => {
+          try {
+            return value ? JSON.parse(value) : null;
+          } catch {
+            return null;
+          }
+        };
+
+        const remembered = localStorage.getItem(REMEMBER_KEY) === 'true';
+        const token = remembered ? localStorage.getItem(AUTH_KEY) : sessionStorage.getItem(AUTH_KEY);
+        const user = remembered ? safeParse(localStorage.getItem(USER_KEY)) : safeParse(sessionStorage.getItem(USER_KEY));
+
+        let hasSession = Boolean(token && user);
+
+        if (!hasSession) {
+          const tempToken = localStorage.getItem(TEMP_AUTH_KEY);
+          const tempUser = safeParse(localStorage.getItem(TEMP_USER_KEY));
+          const tempExpiresAt = Number(localStorage.getItem(TEMP_EXPIRES_KEY) || '0');
+          hasSession = Boolean(tempToken && tempUser && tempExpiresAt && Date.now() <= tempExpiresAt);
+        }
+
+        if (hasSession) {
+          window.location.replace('./pages/home.html');
+          return;
+        }
+      } catch {
+        // If storage is blocked, fall back to normal sign-in rendering.
+      }
+
+      document.documentElement.classList.remove('auth-check');
+    })();
+  </script>
   <link rel="manifest" href="/manifest.json" />
   <meta name="theme-color" content="#1C1F26" />
   <link rel="apple-touch-icon" sizes="180x180" href="/images/dev-logo.png?v=20260707" />

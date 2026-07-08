@@ -934,13 +934,13 @@
 .sidebar-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(10, 12, 20, 0.52);
+  background: rgba(10, 12, 20, 0.28);
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
   transition: opacity 0.25s ease, visibility 0.25s ease;
   z-index: 30;
-  backdrop-filter: blur(5px);
+  backdrop-filter: blur(2px);
 }
 
 .sidebar-overlay--visible {
