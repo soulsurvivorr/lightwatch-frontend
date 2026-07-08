@@ -5,6 +5,7 @@
 
 const CACHE_NAME = 'lightwatch-v1';
 const APP_ICON = new URL('/images/dev-logo.png?v=20260708', self.location.origin).href;
+const APP_BADGE = new URL('/images/notification-badge.png?v=20260708', self.location.origin).href;
 
 // ── Install: cache core shell ─────────────────────────────────
 self.addEventListener('install', event => {
@@ -24,13 +25,14 @@ self.addEventListener('push', event => {
         catch { data.body = event.data.text(); }
     }
 
-    const options = {
-        body: data.body,
-        icon: data.icon || APP_ICON,
-        tag: data.tag || 'light-status',
-        renotify: true,
-        data: { url: data.url || '/pages/home.html' }
-    };
+        const options = {
+            body: data.body,
+            icon: data.icon || APP_ICON,
+            badge: data.badge || APP_BADGE,
+            tag: data.tag || 'light-status',
+            renotify: true,
+            data: { url: data.url || '/pages/home.html' }
+        };
 
     if (data.badge) {
         options.badge = data.badge;
