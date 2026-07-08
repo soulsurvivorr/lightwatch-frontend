@@ -13,6 +13,14 @@ const chatReplyHandle = document.getElementById('chatReplyHandle');
 const chatReplyText = document.getElementById('chatReplyText');
 const chatReplyCancel = document.getElementById('chatReplyCancel');
 
+window.__lwChatReady = false;
+
+function markChatReady() {
+    if (window.__lwChatReady) return;
+    window.__lwChatReady = true;
+    window.dispatchEvent(new CustomEvent('lw-chat-ready'));
+}
+
 const HANDLE_WORDS = [
     "fern","river","glow","cedar","amber","quartz",
     "willow","ember","harbor","maple","drift","stone"
@@ -188,7 +196,10 @@ function addToThread(chat, isOwn, scrollDown) {
 // -------------------------------------------------------
 function loadChatHistory() {
     const loc = window.currentChatLocation || getCurrentChatLocation();
-    if (!loc || !chatThread) return;
+    if (!loc || !chatThread) {
+        markChatReady();
+        return;
+    }
 
     chatLocation = loc; // save for poll to reuse — same string, guaranteed consistent
     chatThread.innerHTML = "";
@@ -205,9 +216,13 @@ function loadChatHistory() {
                 addToThread(chat, resolveUserId(chat) === myId, false);
             });
             chatThread.scrollTop = chatThread.scrollHeight;
+            markChatReady();
             startPolling();
         })
-        .catch(err => console.error("Could not load chat history:", err));
+        .catch(err => {
+            console.error("Could not load chat history:", err);
+            markChatReady();
+        });
 }
 
 // -------------------------------------------------------

@@ -1392,8 +1392,8 @@
 .chat-thread {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  max-height: 180px;
+  gap: 6px;
+  max-height: 260px;
   overflow-y: auto;
   padding-right: 4px;
 }
@@ -1402,27 +1402,39 @@
   background: var(--bg-panel-raised);
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-md);
-  padding: 8px 10px;
+  padding: 6px 8px;
   display: grid;
-  gap: 3px;
-  font-size: 0.9rem;
+  gap: 2px;
+  font-size: 0.82rem;
+  animation: chat-message-in 0.22s ease both;
 }
 
 .chat-message__author {
-  font-size: 0.78rem;
+  font-size: 0.68rem;
   font-weight: 700;
   color: var(--teal);
 }
 
 .chat-message__text {
-  font-size: 0.88rem;
+  font-size: 0.79rem;
   color: var(--text-bright);
-  line-height: 1.45;
+  line-height: 1.3;
 }
 
 .chat-message__time {
-  font-size: 0.72rem;
+  font-size: 0.63rem;
   color: var(--text-faint);
+}
+
+@keyframes chat-message-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px) scale(0.995);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .chat-message--own {
@@ -1457,16 +1469,16 @@
 /* Compact chat styles for small screens */
 @media (max-width: 640px) {
   .chat-thread {
-    max-height: 140px;
-    gap: 6px;
+    max-height: 180px;
+    gap: 5px;
   }
   .chat-message {
-    padding: 6px 8px;
+    padding: 5px 7px;
   }
-  .chat-message__author { font-size: 0.72rem; }
-  .chat-message__text { font-size: 0.8rem; line-height: 1.25; }
-  .chat-message__time { font-size: 0.64rem; }
-  .chat-form__input { padding: 8px 10px; font-size: 0.84rem; }
+  .chat-message__author { font-size: 0.64rem; }
+  .chat-message__text { font-size: 0.76rem; line-height: 1.2; }
+  .chat-message__time { font-size: 0.6rem; }
+  .chat-form__input { padding: 7px 9px; font-size: 0.8rem; }
 }
 
 .add-location-card__note {
@@ -1648,7 +1660,7 @@
   }
 
   .chat-thread {
-    max-height: 220px;
+    max-height: 240px;
   }
 
   .chat-card {
@@ -1659,21 +1671,27 @@
     border-radius: 20px;
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.18);
     background: var(--bg-panel);
-    transform: translateY(110%);
-    transition: transform 0.28s ease;
+    transform: translateY(22px) scale(0.98);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: transform 0.34s cubic-bezier(0.2, 0.75, 0.15, 1), opacity 0.24s ease, visibility 0s linear 0.34s;
     z-index: 55;
-    display: none;
+    display: flex;
     overflow: hidden;
     flex-direction: column;
   }
 
   .chat-card--mobile-open {
-    display: flex;
     top: 72px;
     bottom: 102px;
     height: calc(100vh - 174px);
     height: calc(100dvh - 174px);
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
     transform: translateY(0);
+    transition: transform 0.34s cubic-bezier(0.2, 0.75, 0.15, 1), opacity 0.24s ease;
   }
 
   /* Header and form stay fixed height; the thread fills whatever

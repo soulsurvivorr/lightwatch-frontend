@@ -9,6 +9,17 @@
   <link rel="apple-touch-icon" sizes="192x192" href="/images/dev-logo.png?v=20260707">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="LightWatch">
+  <script>
+    (function () {
+      const key = 'lw_theme_pref';
+      const isLaptop = window.matchMedia('(min-width: 1024px)').matches;
+      const stored = localStorage.getItem(key);
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const theme = isLaptop ? ((stored === 'dark' || stored === 'light') ? stored : (prefersDark ? 'dark' : 'light')) : 'light';
+      document.documentElement.setAttribute('data-theme', theme);
+      document.documentElement.style.setProperty('color-scheme', theme);
+    })();
+  </script>
   <title>Reports — LightWatch</title>
   <link rel="icon" href="/images/dev-logo.png?v=20260707" type="image/png">
   <link rel="preconnect" href="https://fonts.googleapis.com">

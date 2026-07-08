@@ -243,6 +243,22 @@
   color: var(--text-muted);
 }
 
+/* Phone layout: render only the form pane. */
+@media (max-width: 768px) {
+  .login-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .login-visual {
+    display: none;
+  }
+
+  .login-form-side {
+    min-height: 100vh;
+    width: 100%;
+  }
+}
+
 /* ============================================================
    Narrow phones (Galaxy S8 ~360px, iPhone 12 ~390px)
    Tighter type + tighter spacing so more of the form is

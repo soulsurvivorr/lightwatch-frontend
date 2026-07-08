@@ -485,6 +485,26 @@ function hideProfileLoader() {
     document.getElementById('lwBootLoader')?.remove();
 }
 
+function waitForChatReady(maxWait = 1400) {
+    if (!document.getElementById('chatThread')) return Promise.resolve();
+    if (window.__lwChatReady) return Promise.resolve();
+
+    return new Promise(resolve => {
+        let done = false;
+        const cleanup = () => {
+            if (done) return;
+            done = true;
+            window.removeEventListener('lw-chat-ready', onReady);
+            clearTimeout(timeout);
+            resolve();
+        };
+
+        const onReady = () => cleanup();
+        const timeout = setTimeout(cleanup, maxWait);
+        window.addEventListener('lw-chat-ready', onReady, { once: true });
+    });
+}
+
 
 // -----------------------------------------------------
 // MAIN: load the current user from the backend and render
@@ -543,6 +563,7 @@ async function loadCurrentUserProfile() {
             if (profileContact) profileContact.textContent = "Could not reach server";
         }
     } finally {
+        await waitForChatReady();
         hideProfileLoader();
     }
 }
