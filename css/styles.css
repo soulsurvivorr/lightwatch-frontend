@@ -435,29 +435,37 @@ button, a {
   object-fit: contain;
 }
 
-.bottom-nav-icon-img--dark {
-  display: none;
+.bottom-nav-icon .bottom-nav-icon-img--light {
+  display: block !important;
 }
 
-:root[data-theme="dark"] .bottom-nav-icon-img--light {
-  display: none;
+.bottom-nav-icon .bottom-nav-icon-img--dark {
+  display: none !important;
 }
 
-:root[data-theme="dark"] .bottom-nav-icon-img--dark {
-  display: block;
-  filter: grayscale(1) brightness(2.05) contrast(1.28) drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
-  opacity: 0.95;
+:root[data-theme="light"] .bottom-nav-icon .bottom-nav-icon-img--light {
+  display: block !important;
+}
+
+:root[data-theme="light"] .bottom-nav-icon .bottom-nav-icon-img--dark {
+  display: none !important;
+}
+
+:root[data-theme="dark"] .bottom-nav-icon .bottom-nav-icon-img--light {
+  display: none !important;
+}
+
+:root[data-theme="dark"] .bottom-nav-icon .bottom-nav-icon-img--dark {
+  display: block !important;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme]) .bottom-nav-icon-img--light {
-    display: none;
+  :root:not([data-theme]) .bottom-nav-icon .bottom-nav-icon-img--light {
+    display: none !important;
   }
 
-  :root:not([data-theme]) .bottom-nav-icon-img--dark {
-    display: block;
-    filter: grayscale(1) brightness(2.05) contrast(1.28) drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
-    opacity: 0.95;
+  :root:not([data-theme]) .bottom-nav-icon .bottom-nav-icon-img--dark {
+    display: block !important;
   }
 }
 

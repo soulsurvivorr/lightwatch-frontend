@@ -185,7 +185,16 @@ function setLightStatus(status) {
     }
 }
 
+// Tracks the two intervals renderLocationPage() creates, so calling it
+// again (e.g. once with cached data, then again with fresh data) clears
+// the previous timers instead of stacking up duplicate pollers.
+let lightStatusPollInterval = null;
+let lastVerifiedRefreshInterval = null;
+
 function renderLocationPage(user) {
+    clearInterval(lightStatusPollInterval);
+    clearInterval(lastVerifiedRefreshInterval);
+
     const pageGreeting = document.getElementById("pageGreeting");
     const locationName = document.getElementById("locationName");
     const locationNameCard = document.getElementById("locationNameCard");
@@ -245,7 +254,7 @@ function renderLocationPage(user) {
 
     // Keep relative timestamp accurate based on absolute report time.
     refreshLastVerifiedLabel();
-    setInterval(refreshLastVerifiedLabel, 15000);
+    lastVerifiedRefreshInterval = setInterval(refreshLastVerifiedLabel, 15000);
 
     function formatDuration(ms) {
         if (ms == null) return '—';
@@ -318,7 +327,7 @@ function renderLocationPage(user) {
     const initialStatsLoad = loadLocationStats();
 
     // Poll light status every 30s so all users stay in sync
-    const lightPoll = setInterval(() => {
+    lightStatusPollInterval = setInterval(() => {
         fetch(`${API_URL}/lightstatus?location=${encodeURIComponent(location)}`)
             .then(r => r.json())
             .then(data => {
@@ -479,50 +488,68 @@ function hideProfileLoader() {
 // -----------------------------------------------------
 async function loadCurrentUserProfile() {
 
-    showProfileLoader();
-
     // ── Get user ID from the active session (set by auth.js) ──
     const session = getSession(); // defined in auth.js
     const userId = session?.user?.id || localStorage.getItem("currentUserId");
     const fallbackUser = session?.user || JSON.parse(localStorage.getItem("currentUserData") || localStorage.getItem("signupUser") || "null");
 
-    try {
-        if (!userId) {
-            if (fallbackUser) {
-                renderUserEverywhere(fallbackUser);
-                await renderLocationPage(fallbackUser);
-                return;
-            }
-            renderSignedOutEverywhere();
-            return;
-        }
+    // ── STEP 1: show cached data instantly, no spinner ──────────
+    // If we already have this user's data from last time, render it
+    // immediately — no waiting on the network for something we
+    // already know. This is what kills the "fill in every time you
+    // switch pages" feeling: the page shows real info the moment it
+    // loads, not after a round-trip.
+    if (fallbackUser) {
+        renderUserEverywhere(fallbackUser);
+        await renderLocationPage(fallbackUser);
+    }
 
+    if (!userId) {
+        if (!fallbackUser) renderSignedOutEverywhere();
+        return;
+    }
+
+    // ── STEP 2: quietly confirm/refresh from the server ─────────
+    // Only show the loading overlay if we had NOTHING cached to
+    // show first (first-ever load, or cache got cleared). If we
+    // already showed cached data above, this happens silently in
+    // the background and just updates the page if anything on the
+    // server actually changed.
+    const isBackgroundRefresh = !!fallbackUser;
+    if (!isBackgroundRefresh) showProfileLoader();
+
+    try {
         const response = await fetch(`${API_URL}/user/${userId}`);
 
         if (!response.ok) {
-            if (fallbackUser) {
-                renderUserEverywhere(fallbackUser);
-                return;
-            }
-            renderSignedOutEverywhere();
+            if (!isBackgroundRefresh) renderSignedOutEverywhere();
             return;
         }
 
         const user = await response.json();
+
+        // Keep the cache fresh for next time too — written to whichever
+        // storage this session actually uses, so a non-"remember me"
+        // session still correctly disappears when the browser closes
+        // instead of accidentally becoming persistent.
+        const cacheStorage = session?.remembered ? localStorage : sessionStorage;
+        cacheStorage.setItem("currentUserData", JSON.stringify(user));
+
         renderUserEverywhere(user);
         await renderLocationPage(user);
 
     } catch (error) {
         console.error("Could not load profile:", error);
-        if (fallbackUser) {
-            renderUserEverywhere(fallbackUser);
-            await renderLocationPage(fallbackUser);
-            return;
+        // If we had cached data, it's already on screen from Step 1 —
+        // a failed background refresh just means we keep showing
+        // that, which is the right call. Only show an error state
+        // when there was nothing to fall back on at all.
+        if (!isBackgroundRefresh) {
+            const profileContact = document.getElementById("profileContact");
+            if (profileContact) profileContact.textContent = "Could not reach server";
         }
-        const profileContact = document.getElementById("profileContact");
-        if (profileContact) profileContact.textContent = "Could not reach server";
     } finally {
-        hideProfileLoader();
+        if (!isBackgroundRefresh) hideProfileLoader();
     }
 }
 
