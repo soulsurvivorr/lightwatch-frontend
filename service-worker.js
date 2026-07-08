@@ -25,18 +25,18 @@ self.addEventListener('push', event => {
         catch { data.body = event.data.text(); }
     }
 
-        const options = {
-            body: data.body,
-            icon: data.icon || APP_ICON,
-            badge: data.badge || APP_BADGE,
-            tag: data.tag || 'light-status',
-            renotify: true,
-            data: { url: data.url || '/pages/home.html' }
-        };
-
-    if (data.badge) {
-        options.badge = data.badge;
-    }
+    const options = {
+        body: data.body,
+        icon: data.icon || APP_ICON,
+        badge: data.badge || APP_BADGE,
+        tag: data.tag || 'light-status',
+        renotify: true,
+        // Vibration pattern improves the chance of Android showing
+        // this as an interruptive notification when user settings allow it.
+        vibrate: Array.isArray(data.vibrate) ? data.vibrate : [200, 100, 200],
+        requireInteraction: Boolean(data.requireInteraction),
+        data: { url: data.url || '/pages/home.html' }
+    };
 
     if (data.image) {
         options.image = data.image;
