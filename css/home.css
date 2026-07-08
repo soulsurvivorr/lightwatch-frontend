@@ -1445,42 +1445,9 @@
    Bottom nav links (mobile <=768px) — Home / Reports / You only
    ============================================================ */
 
-.bottom-nav-link {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  color: var(--text-faint);
-  font-size: 0.68rem;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  padding: 4px 10px;
-  font-family: var(--font-body);
-}
-
-.bottom-nav-icon {
-  font-size: 1.3rem;
-  line-height: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.bottom-nav-icon img {
-  display: block;
-  width: 20px;
-  height: 20px;
-  object-fit: contain;
-}
-
-.bottom-nav-link--active {
-  color: var(--teal);
-}
-
-/*.bottom-nav-link--button {
-  -webkit-appearance: none;
-}*/
+/* Bottom nav styling lives in styles.css now — it was previously
+   duplicated here with different values, which fought with the
+   styles.css version instead of cleanly overriding it. */
 
 /* ============================================================
    Responsive — 768px tier (requested breakpoint)
@@ -2026,6 +1993,14 @@
 
   .dash-grid {
     gap: 12px;
+  }
+
+  .location-card {
+    gap: 16px;
+  }
+
+  .chat-card {
+    gap: 10px;
   }
 }
 

@@ -473,11 +473,21 @@ function injectProfileLoaderStyles() {
         .lw-profile-loader {
             position: fixed; inset: 0; z-index: 9999;
             display: grid; place-items: center;
-            background: rgba(20, 22, 28, 0.28);
-            backdrop-filter: blur(3px) saturate(120%);
-            -webkit-backdrop-filter: blur(3px) saturate(120%);
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(2px) saturate(120%);
+            -webkit-backdrop-filter: blur(2px) saturate(120%);
             opacity: 0; pointer-events: none;
-            transition: opacity 0.25s ease;
+            transition: opacity 0.25s ease, background 0.2s ease;
+        }
+        /* Dark mode: still light-touch, just a dark tint instead of white,
+           so it doesn't wash out an already-dark page. */
+        [data-theme="dark"] .lw-profile-loader {
+            background: rgba(10, 12, 16, 0.32);
+        }
+        @media (prefers-color-scheme: dark) {
+            :root:not([data-theme]) .lw-profile-loader {
+                background: rgba(10, 12, 16, 0.32);
+            }
         }
         /* Intentionally NOT setting pointer-events here — the page
            underneath must stay usable even while this is visible,
