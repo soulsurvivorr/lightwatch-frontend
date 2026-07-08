@@ -3,6 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+        <script>
+            (function () {
+                const key = 'lw_theme_pref';
+                const isLaptop = window.matchMedia('(min-width: 1024px)').matches;
+                const stored = localStorage.getItem(key);
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                const theme = isLaptop ? ((stored === 'dark' || stored === 'light') ? stored : (prefersDark ? 'dark' : 'light')) : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.setProperty('color-scheme', theme);
+            })();
+        </script>
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#1C1F26">
     <link rel="apple-touch-icon" sizes="180x180" href="/images/dev-logo.png?v=20260707">
@@ -79,10 +90,11 @@
                 </div>
                 <div class="notify-wrapper" style="margin-top: 1.3rem">
                     <p style="font-weight: 600; font-size: .9rem;">Stay Updated</p>
-                    <div style="display: flex; align-items: center; margin: .1rem 0 1rem 0; gap: 10px; ">
-                        <input class="notify-checkbox" type="checkbox" name="" id="">
-                        <p  style="font-size: .8rem">Receive outage alerts and updates in my area</p>
-                    </div>
+                    <label class="notify-toggle" for="notifyUpdates">
+                        <input class="notify-checkbox" type="checkbox" name="notifyUpdates" id="notifyUpdates" checked>
+                        <span class="notify-toggle-track" aria-hidden="true"><span class="notify-toggle-thumb"></span></span>
+                        <span class="notify-toggle-text">Receive outage alerts and updates in my area</span>
+                    </label>
                 </div>
                 <button class="submit-btn" id="signUpBtn" type="submit">Submit & Continue</button>
                 </form>

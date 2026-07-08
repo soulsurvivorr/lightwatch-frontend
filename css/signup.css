@@ -136,10 +136,59 @@ img {
 }
 
 .notify-checkbox {
-    height: 30px;
-    width: 15px;
-    margin: 0;
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.notify-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin: .2rem 0 1rem 0;
+    cursor: pointer;
+    user-select: none;
+}
+
+.notify-toggle-track {
+    position: relative;
+    width: 42px;
+    height: 24px;
+    border-radius: 999px;
+    background: var(--border-strong);
+    transition: background 0.2s ease;
     flex-shrink: 0;
+}
+
+.notify-toggle-thumb {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: white;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.22);
+    transition: transform 0.2s ease;
+}
+
+.notify-toggle-text {
+    font-size: .8rem;
+    line-height: 1.35;
+}
+
+.notify-checkbox:checked + .notify-toggle-track {
+    background: var(--brand2, #4A90D9);
+}
+
+.notify-checkbox:checked + .notify-toggle-track .notify-toggle-thumb {
+    transform: translateX(18px);
+}
+
+.notify-checkbox:focus-visible + .notify-toggle-track {
+    outline: 2px solid var(--brand2, #4A90D9);
+    outline-offset: 2px;
 }
 
 .submit-btn {

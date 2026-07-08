@@ -6,6 +6,7 @@ const nameInput = document.getElementById('name');
 const emailPhoneInput = document.getElementById('email-phone');
 const regionInput = document.getElementById('region');
 const cityInput = document.getElementById('city');
+const notifyUpdatesInput = document.getElementById('notifyUpdates');
 const form = document.getElementById('signupForm');
 
 function isValidEmail(email) {
@@ -21,7 +22,8 @@ async function handleSignup() {
         name: nameInput.value.trim(),
         emailPhone: emailPhoneInput.value.trim(),
         region: regionInput.value,
-        city: cityInput.value.trim()
+        city: cityInput.value.trim(),
+        wantsAlerts: Boolean(notifyUpdatesInput?.checked)
     };
 
     document.getElementById('email_phone-error').textContent = "";
