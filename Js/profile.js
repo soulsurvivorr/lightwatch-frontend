@@ -453,158 +453,21 @@ function renderSignedOutEverywhere() {
 
 
 // -----------------------------------------------------
-// PROFILE LOADING OVERLAY (cross-line logo loader)
-// A single full-page overlay (not tied to any one element),
-// so it behaves identically on every page regardless of which
-// profile elements that page happens to have. It only turns
-// visible if the wait crosses `delay` ms, so a normal fast
-// load never shows it at all — it's meant for slow/flaky
-// network conditions, not every page load.
+// PROFILE LOADING STATE
+// Keep only the page's lightning boot loader (lw-boot-loader).
 // -----------------------------------------------------
-let profileLoaderShowTimer = null;
 let profileLoaderSafetyTimer = null;
-let profileLoaderOverlayEl = null;
 
-function injectProfileLoaderStyles() {
-    if (document.getElementById('lw-profile-loader-styles')) return;
-    const style = document.createElement('style');
-    style.id = 'lw-profile-loader-styles';
-    style.textContent = `
-        .lw-profile-loader {
-            position: fixed; inset: 0; z-index: 9999;
-            display: grid; place-items: center;
-            background: rgba(255, 255, 255, 0.4);
-            backdrop-filter: blur(2px) saturate(120%);
-            -webkit-backdrop-filter: blur(2px) saturate(120%);
-            opacity: 0; pointer-events: none;
-            transition: opacity 0.25s ease, background 0.2s ease;
-        }
-        /* Dark mode: still light-touch, just a dark tint instead of white,
-           so it doesn't wash out an already-dark page. */
-        [data-theme="dark"] .lw-profile-loader {
-            background: rgba(10, 12, 16, 0.32);
-        }
-        @media (prefers-color-scheme: dark) {
-            :root:not([data-theme]) .lw-profile-loader {
-                background: rgba(10, 12, 16, 0.32);
-            }
-        }
-        /* Intentionally NOT setting pointer-events here — the page
-           underneath must stay usable even while this is visible,
-           so a slow/cold backend can never make the app feel frozen.
-           Kept light/translucent on purpose too — the page should
-           stay visible (just dimmed), not get blacked out. */
-        .lw-profile-loader--show { opacity: 1; }
-
-        .lw-loader-orbit {
-            position: relative;
-            width: 84px;
-            height: 84px;
-            display: grid;
-            place-items: center;
-        }
-        .lw-loader-halo {
-            position: absolute;
-            inset: -14px;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(61, 217, 194, 0.25), transparent 70%);
-            animation: lw-halo-breathe 2.2s ease-in-out infinite;
-        }
-        .lw-loader-ring {
-            position: absolute;
-            inset: 0;
-            animation: lw-spin 1.1s cubic-bezier(0.6, 0.1, 0.4, 0.9) infinite;
-            filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.12));
-        }
-        .lw-loader-core {
-            position: relative;
-            width: 46px;
-            height: 46px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.92);
-            display: grid;
-            place-items: center;
-            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
-            animation: lw-core-pulse 1.1s ease-in-out infinite;
-        }
-        .lw-loader-core svg {
-            width: 22px;
-            height: 22px;
-            display: block;
-        }
-        @keyframes lw-spin {
-            to { transform: rotate(360deg); }
-        }
-        @keyframes lw-halo-breathe {
-            0%, 100% { transform: scale(0.92); opacity: 0.7; }
-            50%      { transform: scale(1.08); opacity: 1; }
-        }
-        @keyframes lw-core-pulse {
-            0%, 100% { transform: scale(0.96); }
-            50%      { transform: scale(1.04); }
-        }
-        @media (prefers-reduced-motion: reduce) {
-            .lw-loader-ring, .lw-loader-halo, .lw-loader-core { animation: none; }
-        }
-    `;
-    document.head.appendChild(style);
-}
-
-function attachProfileLoader() {
-    injectProfileLoaderStyles();
-    if (profileLoaderOverlayEl) return;
-
-    profileLoaderOverlayEl = document.createElement('div');
-    profileLoaderOverlayEl.className = 'lw-profile-loader';
-    profileLoaderOverlayEl.id = 'lw-profile-loader';
-    profileLoaderOverlayEl.innerHTML = `
-        <div class="lw-loader-orbit" role="status" aria-live="polite" aria-label="Loading profile">
-            <div class="lw-loader-halo"></div>
-            <svg class="lw-loader-ring" viewBox="0 0 84 84" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <defs>
-                    <linearGradient id="lwLoaderRingGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stop-color="#3DD9C2"/>
-                        <stop offset="100%" stop-color="#F2B33D"/>
-                    </linearGradient>
-                </defs>
-                <circle cx="42" cy="42" r="36" stroke="url(#lwLoaderRingGradient)"
-                        stroke-width="4" stroke-linecap="round"
-                        stroke-dasharray="140 86"/>
-            </svg>
-            <div class="lw-loader-core">
-                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                    <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z" fill="#F2B33D"/>
-                </svg>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(profileLoaderOverlayEl);
-}
-
-// Only reveals the overlay if the wait crosses `delay` ms —
-// avoids any flash of the loader on a normal fast load.
-// Also sets a hard safety cutoff (`maxDuration`) so the overlay
-// can NEVER stay stuck on screen, even if a request hangs
-// indefinitely (e.g. a cold backend that never responds).
-function showProfileLoader(delay = 180, maxDuration = 8000) {
+function showProfileLoader(maxDuration = 8000) {
     document.body?.classList.add('app-loading');
-    if (!profileLoaderOverlayEl) attachProfileLoader();
-    clearTimeout(profileLoaderShowTimer);
     clearTimeout(profileLoaderSafetyTimer);
-
-    profileLoaderShowTimer = setTimeout(() => {
-        profileLoaderOverlayEl.classList.add('lw-profile-loader--show');
-    }, delay);
-
     profileLoaderSafetyTimer = setTimeout(() => {
         hideProfileLoader();
     }, maxDuration);
 }
 
 function hideProfileLoader() {
-    clearTimeout(profileLoaderShowTimer);
     clearTimeout(profileLoaderSafetyTimer);
-    profileLoaderOverlayEl?.classList.remove('lw-profile-loader--show');
     document.body?.classList.remove('app-loading');
     document.getElementById('lwBootLoader')?.remove();
 }
@@ -616,7 +479,7 @@ function hideProfileLoader() {
 // -----------------------------------------------------
 async function loadCurrentUserProfile() {
 
-    showProfileLoader(0);
+    showProfileLoader();
 
     // ── Get user ID from the active session (set by auth.js) ──
     const session = getSession(); // defined in auth.js
