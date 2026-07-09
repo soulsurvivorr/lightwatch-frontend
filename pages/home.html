@@ -61,7 +61,7 @@
   <script src="../Js/auth.js"></script>
   <script>
     const session = typeof getSession === 'function' ? getSession() : null;
-    if (!session) {
+    if (!session && window.location.protocol !== 'file:') {
       window.location.replace('../index.html');
     }
   </script>
@@ -149,7 +149,7 @@
               <span class="card__title" id="locationNameCard">Your chosen location</span>
               <p class="card__meta" id="locationMeta">Location set by you</p>
             </div>
-            <span class="badge badge--low" id="statusBadge">Checking status</span>
+            <span class="badge badge--low" id="statusBadge"></span>
           </div>
 
           <!-- Status hero row -->

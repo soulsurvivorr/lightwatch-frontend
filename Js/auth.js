@@ -99,6 +99,11 @@ function signOut() {
 // ── Guard: redirect to login if no session ────────────────────
 //  Call this at the top of any protected page
 function requireAuth() {
+    // Allow local file preview/editing without forcing a redirect.
+    if (window.location.protocol === 'file:') {
+        return;
+    }
+
     if (!getSession()) {
         const path = window.location.pathname.toLowerCase();
         // Avoid redirecting index -> index forever when this guard is
