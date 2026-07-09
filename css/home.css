@@ -1599,6 +1599,64 @@ body.modal-open {
   border-color: var(--teal);
 }
 
+.chat-scope-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  background: var(--bg-panel-raised);
+}
+
+.chat-scope-label {
+  font-size: 0.82rem;
+  color: var(--text-faint);
+  font-weight: 600;
+}
+
+.chat-scope-select {
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  padding: 6px 10px;
+  background: var(--bg-panel);
+  color: var(--text-bright);
+  font-size: 0.86rem;
+  font-family: var(--font-body);
+}
+
+.chat-scope-select:focus {
+  outline: none;
+  border-color: var(--teal);
+}
+
+.chat-message__author {
+  font-size: 0.82rem;
+}
+
+.chat-message__text {
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.chat-message__time {
+  font-size: 0.74rem;
+}
+
+.chat-form__input {
+  font-size: 0.95rem;
+}
+
+.chat-reply-preview__label {
+  font-size: 0.76rem;
+}
+
+.chat-reply-preview__text {
+  font-size: 0.84rem;
+}
+
 /* ============================================================
    Add-location autocomplete
    ============================================================ */
@@ -1610,12 +1668,12 @@ body.modal-open {
     gap: 4px;
   }
   .chat-message {
-    padding: 5px 7px;
+    padding: 7px 9px;
   }
-  .chat-message__author { font-size: 0.66rem; }
-  .chat-message__text { font-size: 0.76rem; line-height: 1.2; }
-  .chat-message__time { font-size: 0.6rem; }
-  .chat-form__input { padding: 7px 9px; font-size: 0.82rem; }
+  .chat-message__author { font-size: 0.74rem; }
+  .chat-message__text { font-size: 0.88rem; line-height: 1.32; }
+  .chat-message__time { font-size: 0.68rem; }
+  .chat-form__input { padding: 9px 10px; font-size: 0.9rem; }
 }
 
 .add-location-card__note {
@@ -1945,25 +2003,31 @@ body.modal-open {
   }
 
   .chat-message {
-    padding: 5px 7px;
+    padding: 7px 9px;
   }
 
   .chat-message__author {
-    font-size: 0.66rem;
+    font-size: 0.74rem;
   }
 
   .chat-message__text {
-    font-size: 0.74rem;
-    line-height: 1.2;
+    font-size: 0.86rem;
+    line-height: 1.33;
   }
 
   .chat-message__time {
-    font-size: 0.58rem;
+    font-size: 0.66rem;
   }
 
   .chat-form__input {
-    font-size: 0.8rem;
-    padding: 7px 9px;
+    font-size: 0.88rem;
+    padding: 9px 10px;
+  }
+
+  .chat-scope-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
   }
 
 }
@@ -2336,7 +2400,7 @@ body.modal-open {
 
   .chat-message__text,
   .chat-form__input {
-    font-size: 0.68rem;
+    font-size: 0.82rem;
   }
 
   .bottom-icons-container {

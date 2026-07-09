@@ -54,52 +54,67 @@
 
 .area-grid {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
 }
 
-.area-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 11px 2px;
-  border-bottom: 1px solid var(--border-soft);
+.area-card {
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  background: linear-gradient(165deg, color-mix(in srgb, var(--bg-panel) 94%, #ffffff 6%), color-mix(in srgb, var(--bg-panel-raised) 90%, #ffffff 10%));
+  padding: 11px 12px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    "top status"
+    "context context";
+  gap: 8px 10px;
 }
 
-.area-row:last-child {
-  border-bottom: 0;
+.area-card:hover {
+  border-color: color-mix(in srgb, var(--teal) 32%, var(--border-soft));
 }
 
-.area-row__left {
+.area-card__top {
+  grid-area: top;
   display: flex;
   align-items: center;
   gap: 8px;
   min-width: 0;
 }
 
-.area-row__name {
-  font-size: 0.94rem;
+.area-card__name {
+  font-size: 0.92rem;
   color: var(--text-bright);
-  font-weight: 600;
+  font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.area-row__live-tag {
-  font-size: 0.64rem;
-  letter-spacing: 0.05em;
+.area-card__tag {
+  flex-shrink: 0;
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--teal);
-  border: 1px solid color-mix(in srgb, var(--teal) 45%, var(--border-soft));
-  background: var(--teal-dim);
+  color: var(--text-faint);
+  border: 1px solid var(--border-soft);
+  background: var(--bg-panel-raised);
   border-radius: 999px;
   padding: 2px 7px;
 }
 
-.area-row__right {
+.area-card__status {
+  grid-area: status;
   flex-shrink: 0;
+}
+
+.area-card__context {
+  grid-area: context;
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: var(--text-faint);
 }
 
 @media (max-width: 520px) {
@@ -107,11 +122,15 @@
     padding: 10px 12px;
   }
 
-  .area-row {
-    padding: 10px 0;
+  .area-grid {
+    grid-template-columns: 1fr;
   }
 
-  .area-row__name {
+  .area-card {
+    padding: 10px;
+  }
+
+  .area-card__name {
     font-size: 0.9rem;
   }
 }

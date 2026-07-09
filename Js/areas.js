@@ -33,23 +33,30 @@ function apiBase() {
   return '';
 }
 
-function areaRowTemplate({ name, status, live }) {
+function areaCardTemplate({ name, status, live }) {
   const isOn = status === 'on';
   const isUnknown = status === 'unknown' || !status;
   const statusLabel = isUnknown ? 'Checking status' : isOn ? 'Light on' : 'Light off';
   const badgeClass = isUnknown ? 'badge--low' : isOn ? 'badge--on' : 'badge--off';
   const pulseClass = isUnknown ? 'pulse--low' : isOn ? 'pulse--on' : 'pulse--off';
+  const contextLine = isOn
+    ? 'Useful now for charging, study, and business tasks.'
+    : isUnknown
+      ? 'Verify locally before moving or sending others.'
+      : 'Plan alternatives now; outage likely in this area.';
+  const contextTag = live ? 'Live feed' : 'Community signal';
 
   return `
-    <div class="area-row" data-area="${name}" role="listitem">
-      <div class="area-row__left">
+    <div class="area-card" data-area="${name}" role="listitem">
+      <div class="area-card__top">
         <span class="pulse ${pulseClass}"></span>
-        <span class="area-row__name">${name}</span>
-        ${live ? '<span class="area-row__live-tag">Live</span>' : ''}
+        <span class="area-card__name">${name}</span>
+        <span class="area-card__tag">${contextTag}</span>
       </div>
-      <div class="area-row__right">
+      <div class="area-card__status">
         <span class="badge ${badgeClass}">${statusLabel}</span>
       </div>
+      <p class="area-card__context">${contextLine}</p>
     </div>
   `;
 }
@@ -80,7 +87,7 @@ function renderAreas(liveResults) {
     .map(entry => entry.area);
 
   renderSummary(prioritizedAreas);
-  grid.innerHTML = prioritizedAreas.map(areaRowTemplate).join('');
+  grid.innerHTML = prioritizedAreas.map(areaCardTemplate).join('');
 }
 
 async function fetchLiveBantama() {

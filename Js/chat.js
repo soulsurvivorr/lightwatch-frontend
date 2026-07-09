@@ -12,6 +12,11 @@ const chatReplyPreview = document.getElementById('chatReplyPreview');
 const chatReplyHandle = document.getElementById('chatReplyHandle');
 const chatReplyText = document.getElementById('chatReplyText');
 const chatReplyCancel = document.getElementById('chatReplyCancel');
+const chatScopeSelect = document.getElementById('chatScopeSelect');
+
+const CHAT_SCOPE_KEY = 'lw_chat_scope_pref';
+const CHAT_SCOPE_LOCAL = 'local';
+const CHAT_SCOPE_GLOBAL = 'global';
 
 window.__lwChatReady = false;
 
@@ -38,6 +43,12 @@ function getOrCreateHandle() {
 
 let myHandle = getOrCreateHandle();
 if (chatHandleDisplay) chatHandleDisplay.textContent = myHandle;
+
+let chatScope = (() => {
+    const saved = localStorage.getItem(CHAT_SCOPE_KEY);
+    return saved === CHAT_SCOPE_GLOBAL ? CHAT_SCOPE_GLOBAL : CHAT_SCOPE_LOCAL;
+})();
+if (chatScopeSelect) chatScopeSelect.value = chatScope;
 
 async function loadUserChatHandle() {
     const userId = getCurrentUserId();
@@ -180,6 +191,24 @@ let chatLocation  = null; // set once on load, reused by poll
 let isNearBottom  = true;
 let replyTarget = null;
 
+function updateChatPlaceholder() {
+    if (!chatInput) return;
+    chatInput.placeholder = chatScope === CHAT_SCOPE_GLOBAL
+        ? 'Message everyone in LightWatch...'
+        : 'Share an update about this location...';
+}
+
+function buildChatsUrl() {
+    if (chatScope === CHAT_SCOPE_GLOBAL) {
+        return `${API_URL}/chats?scope=global`;
+    }
+    const loc = window.currentChatLocation || getCurrentChatLocation();
+    if (!loc) return null;
+    return `${API_URL}/chats?scope=local&location=${encodeURIComponent(loc)}`;
+}
+
+updateChatPlaceholder();
+
 chatThread?.addEventListener('scroll', () => {
     if (!chatThread) return;
     isNearBottom = (chatThread.scrollHeight - chatThread.scrollTop - chatThread.clientHeight) < 80;
@@ -196,16 +225,27 @@ function addToThread(chat, isOwn, scrollDown) {
 // -------------------------------------------------------
 function loadChatHistory() {
     const loc = window.currentChatLocation || getCurrentChatLocation();
-    if (!loc || !chatThread) {
+    if (!chatThread) {
         markChatReady();
         return;
     }
 
-    chatLocation = loc; // save for poll to reuse — same string, guaranteed consistent
+    if (chatScope === CHAT_SCOPE_LOCAL && !loc) {
+        markChatReady();
+        return;
+    }
+
+    chatLocation = loc; // kept for local-scope send calls
     chatThread.innerHTML = "";
     knownIds.clear();
 
-    fetch(`${API_URL}/chats?location=${encodeURIComponent(loc)}`)
+    const url = buildChatsUrl();
+    if (!url) {
+        markChatReady();
+        return;
+    }
+
+    fetch(url)
         .then(r => r.json())
         .then(chats => {
             const myId = getCurrentUserId();
@@ -233,11 +273,13 @@ function loadChatHistory() {
 // -------------------------------------------------------
 function startPolling() {
     if (pollInterval) clearInterval(pollInterval);
-    if (!chatLocation) return;
+    if (chatScope === CHAT_SCOPE_LOCAL && !chatLocation) return;
 
     pollInterval = setInterval(async () => {
         try {
-            const res = await fetch(`${API_URL}/chats?location=${encodeURIComponent(chatLocation)}`);
+            const url = buildChatsUrl();
+            if (!url) return;
+            const res = await fetch(url);
             if (!res.ok) return;
             const chats = await res.json();
             const myId  = getCurrentUserId();
@@ -268,6 +310,16 @@ document.addEventListener('visibilitychange', () => {
 // -------------------------------------------------------
 window.addEventListener('locationReady', loadChatHistory);
 if (window.currentChatLocation) loadChatHistory();
+
+chatScopeSelect?.addEventListener('change', () => {
+    const picked = chatScopeSelect.value === CHAT_SCOPE_GLOBAL ? CHAT_SCOPE_GLOBAL : CHAT_SCOPE_LOCAL;
+    chatScope = picked;
+    localStorage.setItem(CHAT_SCOPE_KEY, chatScope);
+    updateChatPlaceholder();
+    replyTarget = null;
+    if (chatReplyPreview) chatReplyPreview.hidden = true;
+    loadChatHistory();
+});
 
 // -------------------------------------------------------
 // MOBILE PANEL
@@ -310,7 +362,8 @@ chatForm?.addEventListener('submit', async (e) => {
 
     const myId = getCurrentUserId();
     const loc  = chatLocation || getCurrentChatLocation();
-    if (!myId || !loc) return;
+    if (!myId) return;
+    if (chatScope === CHAT_SCOPE_LOCAL && !loc) return;
 
     // Clear input immediately so it feels fast
     chatInput.value = "";
@@ -324,7 +377,8 @@ chatForm?.addEventListener('submit', async (e) => {
                 userId: myId,
                 handle: myHandle,
                 text,
-                location: loc,
+                scope: chatScope,
+                location: chatScope === CHAT_SCOPE_GLOBAL ? 'All areas' : loc,
                 replyTo: replyTarget || undefined
             })
         });
