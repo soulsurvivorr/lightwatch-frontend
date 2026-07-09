@@ -12,7 +12,8 @@ const chatReplyPreview = document.getElementById('chatReplyPreview');
 const chatReplyHandle = document.getElementById('chatReplyHandle');
 const chatReplyText = document.getElementById('chatReplyText');
 const chatReplyCancel = document.getElementById('chatReplyCancel');
-const chatScopeSelect = document.getElementById('chatScopeSelect');
+const chatScopeLocalBtn = document.getElementById('chatScopeLocalBtn');
+const chatScopeGlobalBtn = document.getElementById('chatScopeGlobalBtn');
 
 const CHAT_SCOPE_KEY = 'lw_chat_scope_pref';
 const CHAT_SCOPE_LOCAL = 'local';
@@ -48,7 +49,25 @@ let chatScope = (() => {
     const saved = localStorage.getItem(CHAT_SCOPE_KEY);
     return saved === CHAT_SCOPE_GLOBAL ? CHAT_SCOPE_GLOBAL : CHAT_SCOPE_LOCAL;
 })();
-if (chatScopeSelect) chatScopeSelect.value = chatScope;
+
+function getLocationNameOnly() {
+    const loc = window.currentChatLocation || getCurrentChatLocation();
+    if (!loc) return 'your location';
+    return String(loc).split(',')[0].trim() || 'your location';
+}
+
+function updateScopeButtons() {
+    const isLocal = chatScope === CHAT_SCOPE_LOCAL;
+    if (chatScopeLocalBtn) {
+        chatScopeLocalBtn.classList.toggle('is-active', isLocal);
+        chatScopeLocalBtn.setAttribute('aria-selected', isLocal ? 'true' : 'false');
+        chatScopeLocalBtn.textContent = `Only ${getLocationNameOnly()}`;
+    }
+    if (chatScopeGlobalBtn) {
+        chatScopeGlobalBtn.classList.toggle('is-active', !isLocal);
+        chatScopeGlobalBtn.setAttribute('aria-selected', !isLocal ? 'true' : 'false');
+    }
+}
 
 async function loadUserChatHandle() {
     const userId = getCurrentUserId();
@@ -208,6 +227,7 @@ function buildChatsUrl() {
 }
 
 updateChatPlaceholder();
+updateScopeButtons();
 
 chatThread?.addEventListener('scroll', () => {
     if (!chatThread) return;
@@ -300,7 +320,7 @@ function startPolling() {
 document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
         clearInterval(pollInterval);
-    } else if (chatLocation) {
+    } else if (chatScope === CHAT_SCOPE_GLOBAL || chatLocation) {
         startPolling();
     }
 });
@@ -311,15 +331,23 @@ document.addEventListener('visibilitychange', () => {
 window.addEventListener('locationReady', loadChatHistory);
 if (window.currentChatLocation) loadChatHistory();
 
-chatScopeSelect?.addEventListener('change', () => {
-    const picked = chatScopeSelect.value === CHAT_SCOPE_GLOBAL ? CHAT_SCOPE_GLOBAL : CHAT_SCOPE_LOCAL;
+window.addEventListener('locationReady', () => {
+    updateScopeButtons();
+});
+
+function setChatScope(nextScope) {
+    const picked = nextScope === CHAT_SCOPE_GLOBAL ? CHAT_SCOPE_GLOBAL : CHAT_SCOPE_LOCAL;
     chatScope = picked;
     localStorage.setItem(CHAT_SCOPE_KEY, chatScope);
     updateChatPlaceholder();
+    updateScopeButtons();
     replyTarget = null;
     if (chatReplyPreview) chatReplyPreview.hidden = true;
     loadChatHistory();
-});
+}
+
+chatScopeLocalBtn?.addEventListener('click', () => setChatScope(CHAT_SCOPE_LOCAL));
+chatScopeGlobalBtn?.addEventListener('click', () => setChatScope(CHAT_SCOPE_GLOBAL));
 
 // -------------------------------------------------------
 // MOBILE PANEL

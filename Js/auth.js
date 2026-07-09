@@ -44,8 +44,7 @@ function getSession() {
 
 // ── Save session after successful verification ────────────────
 function saveSession(user, token, rememberMe) {
-    sessionStorage.setItem('lw_skip_disclaimer_once', '1');
-    sessionStorage.setItem('lw_home_reminder_seen', '1');
+    sessionStorage.removeItem('lw_home_reminder_seen');
 
     if (rememberMe) {
         localStorage.setItem(AUTH_KEY,        token);
@@ -78,7 +77,8 @@ function clearSession() {
      TEMP_AUTH_KEY, TEMP_USER_KEY, TEMP_EXPIRES_KEY,
      'currentUserId', 'currentUserData', 'chatHandle',
      'maskedContact', 'signupUser', 'userIdentifier',
-     'pendingUserId', 'rememberMePending'
+    'pendingUserId', 'rememberMePending',
+    'lw_home_reminder_seen', 'lw_skip_disclaimer_once'
     ].forEach(k => {
         localStorage.removeItem(k);
         sessionStorage.removeItem(k);

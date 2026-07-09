@@ -8,15 +8,15 @@
 // =========================================================
 
 const DEMO_AREAS = [
-  { name: 'Asokwa', status: 'on', live: false },
-  { name: 'Adum', status: 'off', live: false },
-  { name: 'Suame', status: 'on', live: false },
-  { name: 'Ahodwo', status: 'off', live: false },
-  { name: 'Nhyiaeso', status: 'on', live: false },
-  { name: 'Tafo', status: 'unknown', live: false },
-  { name: 'KNUST', status: 'on', live: false },
-  { name: 'Ejisu', status: 'unknown', live: false },
-  { name: 'Kwadaso', status: 'off', live: false }
+  { name: 'Asokwa', status: 'on', updatedAgo: '12 mins ago', live: false },
+  { name: 'Adum', status: 'off', updatedAgo: '4 mins ago', live: false },
+  { name: 'Suame', status: 'on', updatedAgo: '18 mins ago', live: false },
+  { name: 'Ahodwo', status: 'off', updatedAgo: '9 mins ago', live: false },
+  { name: 'Nhyiaeso', status: 'on', updatedAgo: '21 mins ago', live: false },
+  { name: 'Tafo', status: 'unknown', updatedAgo: '7 mins ago', live: false },
+  { name: 'KNUST', status: 'on', updatedAgo: '5 mins ago', live: false },
+  { name: 'Ejisu', status: 'unknown', updatedAgo: '15 mins ago', live: false },
+  { name: 'Kwadaso', status: 'off', updatedAgo: '11 mins ago', live: false }
 ];
 
 // Matches the slower polling cadence used elsewhere on the site
@@ -33,17 +33,18 @@ function apiBase() {
   return '';
 }
 
-function areaCardTemplate({ name, status, live }) {
+function areaCardTemplate({ name, status, live, updatedAgo }) {
   const isOn = status === 'on';
   const isUnknown = status === 'unknown' || !status;
   const statusLabel = isUnknown ? 'Checking status' : isOn ? 'Light on' : 'Light off';
   const badgeClass = isUnknown ? 'badge--low' : isOn ? 'badge--on' : 'badge--off';
   const pulseClass = isUnknown ? 'pulse--low' : isOn ? 'pulse--on' : 'pulse--off';
+  const sinceText = updatedAgo || 'Recently';
   const contextLine = isOn
-    ? 'Useful now for charging, study, and business tasks.'
+    ? `${sinceText} since power on`
     : isUnknown
-      ? 'Verify locally before moving or sending others.'
-      : 'Plan alternatives now; outage likely in this area.';
+      ? `${sinceText} since last status check`
+      : `${sinceText} since power off`;
   const contextTag = live ? 'Live feed' : 'Community signal';
 
   return `
@@ -96,14 +97,18 @@ async function fetchLiveBantama() {
     const res = await fetch(`${apiBase()}/lightstatus?location=${encodeURIComponent(name)}`);
     if (!res.ok) throw new Error(`Bad response for ${name}`);
     const data = await res.json();
+    const reportedAt = data.reportedAt ? new Date(data.reportedAt).getTime() : null;
+    const diffMins = reportedAt ? Math.max(1, Math.round((Date.now() - reportedAt) / 60000)) : null;
+    const updatedAgo = diffMins ? `${diffMins} mins ago` : 'Recently';
     return {
       name,
       status: data.status || 'unknown',
+      updatedAgo,
       live: true
     };
   } catch (err) {
     console.error(`Failed to load live status for ${name}:`, err.message);
-    return { name, status: 'unknown', live: true };
+    return { name, status: 'unknown', updatedAgo: 'Recently', live: true };
   }
 }
 

@@ -495,10 +495,10 @@
 .status-hero {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 18px 0;
+  gap: 12px;
+  padding: 10px 0 8px;
   border-bottom: 1px solid var(--border-soft);
-  margin-bottom: 16px;
+  margin-bottom: 8px;
 }
 
 .status-hero__icon {
@@ -524,12 +524,14 @@
   font-size: 1.1rem;
   font-weight: 600;
   color: var(--text-bright);
-  margin-bottom: 2px;
+  margin-bottom: 0;
+  line-height: 1.25;
 }
 
 .status-hero__sub {
   font-size: 0.82rem;
   color: var(--text-faint);
+  line-height: 1.35;
 }
 
 .location-card__top {
@@ -1617,19 +1619,33 @@ body.modal-open {
   font-weight: 600;
 }
 
-.chat-scope-select {
-  border: 1px solid var(--border-soft);
-  border-radius: 10px;
-  padding: 6px 10px;
-  background: var(--bg-panel);
-  color: var(--text-bright);
-  font-size: 0.86rem;
-  font-family: var(--font-body);
+.chat-scope-options {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.chat-scope-select:focus {
-  outline: none;
-  border-color: var(--teal);
+.chat-scope-option {
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: var(--bg-panel);
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-family: var(--font-body);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.chat-scope-option.is-active {
+  border-color: color-mix(in srgb, var(--teal) 60%, var(--border-soft));
+  background: var(--teal-dim);
+  color: var(--teal);
+}
+
+.chat-scope-option:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 2px;
 }
 
 .chat-message__author {
@@ -2028,6 +2044,15 @@ body.modal-open {
     flex-direction: column;
     align-items: stretch;
     gap: 6px;
+  }
+
+  .chat-scope-options {
+    width: 100%;
+  }
+
+  .chat-scope-option {
+    flex: 1;
+    text-align: center;
   }
 
 }

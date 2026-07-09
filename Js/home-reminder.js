@@ -1,5 +1,4 @@
 const HOME_REMINDER_SEEN_KEY = 'lw_home_reminder_seen';
-const HOME_REMINDER_SKIP_ONCE_KEY = 'lw_skip_disclaimer_once';
 let homeReminderDismissed = false;
 let homeReminderObserver = null;
 let homeReminderFallbackTimer = null;
@@ -17,12 +16,6 @@ function clearPendingReminderOpen() {
 
 function shouldShowHomeReminder() {
   if (typeof getSession === 'function' && !getSession()) return false;
-
-  const skipOnce = sessionStorage.getItem(HOME_REMINDER_SKIP_ONCE_KEY) === '1';
-  if (skipOnce) {
-    sessionStorage.removeItem(HOME_REMINDER_SKIP_ONCE_KEY);
-    return false;
-  }
 
   return sessionStorage.getItem(HOME_REMINDER_SEEN_KEY) !== '1';
 }
