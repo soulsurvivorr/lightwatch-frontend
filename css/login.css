@@ -105,9 +105,73 @@
 
 .login-box__brand {
   display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  margin-bottom: 1.4rem;
+}
+
+.brand-row {
+  display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 1.4rem;
+}
+
+.brand-loop-text {
+  min-height: 1.3em;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  margin: 0;
+  color: var(--text-muted);
+  opacity: 0.92;
+  align-self: flex-start;
+  max-width: 100%;
+}
+
+.brand-loop-text--light {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.brand-loop-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 1.3em;
+  width: 100%;
+}
+
+.brand-loop-line--light {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.brand-loop-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1.05em;
+  border-radius: 999px;
+  background: var(--brand);
+  box-shadow: 0 0 10px rgba(240, 172, 61, 0.45);
+  vertical-align: -0.12em;
+  animation: brand-caret 0.85s steps(1) infinite, brand-cursor-breathe 1.9s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+.brand-loop-cursor--light {
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.35);
+}
+
+@keyframes brand-caret {
+  50% { opacity: 0; }
+}
+
+@keyframes brand-cursor-breathe {
+  0%, 100% {
+    transform: translateY(0) scaleY(1);
+  }
+  50% {
+    transform: translateY(-0.5px) scaleY(1.08);
+  }
 }
 
 .login-box h2 {
@@ -326,28 +390,30 @@
 
   /* Top-right bubble cluster — tucked into the corner only */
   .login-form-side::before {
-    width: 190px;
-    height: 190px;
+    width: 210px;
+    height: 210px;
     top: -84px;
     right: -76px;
     background:
-      radial-gradient(circle at 32% 30%, rgba(255, 255, 255, 0.5), transparent 26%),
-      radial-gradient(circle at 42% 44%, rgba(214, 162, 74, 0.62), rgba(214, 162, 74, 0.22) 46%, transparent 62%),
-      radial-gradient(circle at 68% 70%, rgba(58, 116, 176, 0.5), transparent 55%);
-    animation: bubble-float-a 8.5s ease-in-out infinite;
+      radial-gradient(circle at 34% 32%, rgba(255, 255, 255, 0.28), transparent 22%),
+      radial-gradient(circle at 46% 46%, rgba(214, 162, 74, 0.92), rgba(166, 108, 20, 0.5) 46%, transparent 66%),
+      radial-gradient(circle at 66% 68%, rgba(28, 90, 158, 0.88), transparent 58%);
+    filter: blur(0.5px);
+    animation: bubble-float-a 3.2s ease-in-out infinite;
   }
 
   /* Bottom-left bubble cluster — tucked into the corner only */
   .login-form-side::after {
-    width: 210px;
-    height: 210px;
+    width: 230px;
+    height: 230px;
     left: -96px;
     bottom: -104px;
     background:
-      radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.44), transparent 24%),
-      radial-gradient(circle at 56% 40%, rgba(58, 116, 176, 0.48), transparent 52%),
-      radial-gradient(circle at 42% 68%, rgba(214, 162, 74, 0.56), rgba(214, 162, 74, 0.18) 48%, transparent 62%);
-    animation: bubble-float-b 9.5s ease-in-out infinite;
+      radial-gradient(circle at 32% 30%, rgba(255, 255, 255, 0.24), transparent 20%),
+      radial-gradient(circle at 58% 42%, rgba(28, 90, 158, 0.85), transparent 55%),
+      radial-gradient(circle at 44% 70%, rgba(214, 162, 74, 0.9), rgba(166, 108, 20, 0.45) 48%, transparent 66%);
+    filter: blur(0.5px);
+    animation: bubble-float-b 3.8s ease-in-out infinite;
   }
 
   .login-box {
@@ -357,35 +423,39 @@
 
   @keyframes bubble-float-a {
     0%, 100% {
-      transform: translate3d(0, 0, 0) scale(1);
-      opacity: 0.92;
+      transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+      opacity: 0.95;
     }
     25% {
-      transform: translate3d(-4px, 3px, 0) scale(1.02);
+      transform: translate3d(-14px, 12px, 0) scale(1.14) rotate(8deg);
       opacity: 1;
     }
     50% {
-      transform: translate3d(-8px, 7px, 0) scale(1.04);
-      opacity: 0.88;
+      transform: translate3d(-22px, 20px, 0) scale(0.92) rotate(-6deg);
+      opacity: 0.85;
     }
     75% {
-      transform: translate3d(-3px, 9px, 0) scale(1.01);
-      opacity: 0.96;
+      transform: translate3d(-9px, 24px, 0) scale(1.08) rotate(4deg);
+      opacity: 1;
     }
   }
 
   @keyframes bubble-float-b {
     0%, 100% {
-      transform: translate3d(0, 0, 0) scale(1);
-      opacity: 0.9;
+      transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+      opacity: 0.92;
     }
     30% {
-      transform: translate3d(7px, -5px, 0) scale(1.03);
+      transform: translate3d(20px, -16px, 0) scale(1.16) rotate(-10deg);
       opacity: 1;
     }
     60% {
-      transform: translate3d(11px, -9px, 0) scale(1.05);
-      opacity: 0.86;
+      transform: translate3d(30px, -26px, 0) scale(0.9) rotate(7deg);
+      opacity: 0.82;
+    }
+    85% {
+      transform: translate3d(12px, -10px, 0) scale(1.1) rotate(-4deg);
+      opacity: 1;
     }
   }
 

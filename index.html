@@ -79,8 +79,14 @@
     <section class="login-visual" aria-label="LightWatch overview">
       <div class="login-visual__content">
         <div class="login-box__brand" style="margin-bottom: 2rem;">
-          <img src="./images/dev-logo.png" alt="LightWatch Logo" width="44" height="44" />
-          <p style="font-size: 1rem; font-weight: 600; color: white;">LightWatch GH</p>
+          <div class="brand-row">
+            <img src="./images/dev-logo.png" alt="LightWatch Logo" width="44" height="44" />
+            <p style="font-size: 1rem; font-weight: 600; color: white; margin: 0;">LightWatch GH</p>
+          </div>
+          <div class="brand-loop-line brand-loop-line--light" aria-live="polite">
+            <p class="brand-loop-text brand-loop-text--light" id="brandLoopTextDesktop"></p>
+            <span class="brand-loop-cursor brand-loop-cursor--light" aria-hidden="true"></span>
+          </div>
         </div>
         <h1>Track power status in your area, in real time.</h1>
         <p>Sign in to report outages, see live neighborhood updates, and stay connected to your local grid activity.</p>
@@ -105,8 +111,14 @@
     <section class="login-form-side" aria-label="Sign in form">
       <div class="login-box">
         <div class="login-box__brand">
-          <img src="./images/dev-logo.png" alt="LightWatch Logo" width="40" height="40" />
-          <p style="font-size: 1rem; font-weight: 600; color: var(--text-bright);">LightWatch GH</p>
+          <div class="brand-row">
+            <img src="./images/dev-logo.png" alt="LightWatch Logo" width="40" height="40" />
+            <p style="font-size: 1rem; font-weight: 600; color: var(--text-bright); margin: 0;">LightWatch GH</p>
+          </div>
+          <div class="brand-loop-line" aria-live="polite">
+            <p class="brand-loop-text" id="brandLoopText"></p>
+            <span class="brand-loop-cursor" aria-hidden="true"></span>
+          </div>
         </div>
 
         <h2>Welcome back</h2>

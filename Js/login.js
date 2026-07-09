@@ -6,6 +6,47 @@
 const userInput   = document.getElementById('user-input');
 const sendCodeBtn = document.getElementById('sendCodebtn');
 const errorMsg    = document.getElementById('error-msg');
+const brandLoopTargets = [
+    document.getElementById('brandLoopText'),
+    document.getElementById('brandLoopTextDesktop')
+].filter(Boolean);
+
+const brandLoopTexts = [
+    'Community-powered. Stay ahead of outages',
+    'Know before you go—powered by your community'
+];
+
+function wait(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function typeBrandLoopText(target, text) {
+    target.textContent = '';
+    for (let i = 0; i < text.length; i += 1) {
+        target.textContent = text.slice(0, i + 1);
+        await wait(38);
+    }
+}
+
+async function runBrandLoop() {
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!brandLoopTargets.length) return;
+
+    if (reduceMotion) {
+        brandLoopTargets.forEach((target, index) => {
+            target.textContent = brandLoopTexts[index % brandLoopTexts.length];
+        });
+        return;
+    }
+
+    let index = 0;
+    while (true) {
+        const text = brandLoopTexts[index % brandLoopTexts.length];
+        await Promise.all(brandLoopTargets.map(target => typeBrandLoopText(target, text)));
+        await wait(1400);
+        index += 1;
+    }
+}
 
 // ── Auto sign-in: remembered users or valid 24h signup session ─
 document.addEventListener('DOMContentLoaded', () => {
@@ -35,6 +76,7 @@ async function loadUserCountStat() {
     }
 }
 loadUserCountStat();
+runBrandLoop();
 
 // ── Send OTP code ─────────────────────────────────────────────
 async function handleSubmit() {
