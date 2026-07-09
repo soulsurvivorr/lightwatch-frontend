@@ -283,7 +283,9 @@ footer {
 @media (max-width: 700px) {
     body {
         min-height: 100svh;
-        align-items: stretch;
+        align-items: center;
+        justify-content: center;
+        padding: clamp(10px, 2.5vh, 22px) 10px;
     }
 
     #main-content_wrapper {
@@ -298,12 +300,12 @@ footer {
     }
 
     section {
-        max-width: none;
-        max-height: 100svh;
-        border-radius: 0;
+        max-width: 560px;
+        max-height: calc(100svh - clamp(20px, 5vh, 44px));
+        border-radius: 14px;
         background-image: none;
-        box-shadow: none;
-        border: none;
+        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+        border: 1px solid var(--border-soft);
     }
 
     .submit-info-section button {
@@ -312,6 +314,10 @@ footer {
 }
 
 @media (max-width: 480px) {
+
+    body {
+        padding: clamp(10px, 2.2vh, 18px) 8px;
+    }
 
 
     #input-field-section {
