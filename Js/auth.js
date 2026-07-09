@@ -44,6 +44,9 @@ function getSession() {
 
 // ── Save session after successful verification ────────────────
 function saveSession(user, token, rememberMe) {
+    sessionStorage.setItem('lw_skip_disclaimer_once', '1');
+    sessionStorage.setItem('lw_home_reminder_seen', '1');
+
     if (rememberMe) {
         localStorage.setItem(AUTH_KEY,        token);
         localStorage.setItem(USER_KEY,        JSON.stringify(user));

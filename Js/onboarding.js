@@ -1,15 +1,14 @@
 // =========================================================
 // onboarding.js
-// A one-time, 3-slide walkthrough shown the first time a user
-// reaches the app. Dismissible at any point via Skip, or by
-// finishing the last slide. Once dismissed (either way), it's
-// stored in localStorage so it never shows again on this device.
+// A one-time walkthrough shown the first time a user reaches the
+// app. It advances slide-by-slide and closes after the final step.
+// Once completed, it's stored in localStorage so it never shows
+// again on this device.
 //
 // To reset it for testing: localStorage.removeItem('lw_onboarding_seen')
 // =========================================================
 
 const ONBOARDING_KEY = 'lw_onboarding_seen';
-const ONBOARDING_SLIDE_COUNT = 3;
 let onboardingCurrentSlide = 0;
 
 function hasSeenOnboarding() {
@@ -68,10 +67,9 @@ function initOnboarding() {
     return;
   }
 
-  document.getElementById('onboardingSkipBtn')?.addEventListener('click', closeOnboarding);
-
   document.getElementById('onboardingNextBtn')?.addEventListener('click', () => {
-    if (onboardingCurrentSlide >= ONBOARDING_SLIDE_COUNT - 1) {
+    const totalSlides = document.querySelectorAll('.onboarding-slide').length;
+    if (onboardingCurrentSlide >= totalSlides - 1) {
       closeOnboarding();
     } else {
       setOnboardingSlide(onboardingCurrentSlide + 1);

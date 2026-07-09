@@ -12,8 +12,8 @@
     --teal: #3DD9C2; --teal-dim: #1F4D47;
     --amber: #F2B33D; --red: #E5484D; --red-dim: #4D1F22;
     --txt: #EAF0FA; --muted: #AEB9CC; --faint: #6B7A99;
-    --font: "Inter","Segoe UI",sans-serif;
-    --display: "Space Grotesk","Segoe UI",sans-serif;
+    --font: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --display: "Helvetica Neue", Helvetica, Arial, sans-serif;
     --r-sm: 6px; --r-md: 10px; --r-lg: 16px;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -212,13 +212,15 @@
         <div class="toolbar__left">
           <span class="status-msg" id="reportsStatus">Loading reports…</span>
           <button class="refresh-btn" id="refreshReports" type="button">↻ Refresh</button>
+          <button class="delete-btn" id="deleteReportsBtn" type="button" disabled>Delete selected reports</button>
           <button class="delete-btn delete-btn--danger" id="clearReportsBtnPanel" type="button">Clear all reports</button>
         </div>
       </div>
       <table id="reportsTable" style="display:none;">
         <thead>
           <tr>
-            <th>Type</th><th>Location</th><th>Details</th><th>Reported</th>
+            <th class="select-col"><input type="checkbox" id="reportsSelectAll" class="select-checkbox" aria-label="Select all reports" /></th>
+            <th>Type</th><th>Location</th><th>Details</th><th>Reported</th><th>Actions</th>
           </tr>
         </thead>
         <tbody id="reportsTbody"></tbody>
@@ -361,10 +363,12 @@
       let allUsers = [], allChats = [], allReports = [];
       const selectedUserIds = new Set();
       const selectedChatIds = new Set();
+      const selectedReportIds = new Set();
 
       function syncDeleteButtons() {
         const delUsersBtn = document.getElementById("deleteUsersBtn");
         const delChatsBtn = document.getElementById("deleteChatsBtn");
+        const delReportsBtn = document.getElementById("deleteReportsBtn");
 
         if (delUsersBtn) {
           const count = selectedUserIds.size;
@@ -376,6 +380,12 @@
           const count = selectedChatIds.size;
           delChatsBtn.disabled = count === 0;
           delChatsBtn.textContent = count > 0 ? `Delete selected messages (${count})` : "Delete selected messages";
+        }
+
+        if (delReportsBtn) {
+          const count = selectedReportIds.size;
+          delReportsBtn.disabled = count === 0;
+          delReportsBtn.textContent = count > 0 ? `Delete selected reports (${count})` : "Delete selected reports";
         }
       }
 
@@ -391,34 +401,82 @@
         const table = document.getElementById("reportsTable");
         const empty = document.getElementById("reportsEmpty");
         const status = document.getElementById("reportsStatus");
+        const selectAll = document.getElementById("reportsSelectAll");
         try {
-          const res = await fetch(`${API}/reports?limit=80`);
-          if (!res.ok) throw new Error("Could not load reports");
-          allReports = await res.json();
+          allReports = await apiFetch("/admin/reports?limit=80");
+          const validIds = new Set(allReports.map(report => String(report.id)));
+          [...selectedReportIds].forEach(id => { if (!validIds.has(id)) selectedReportIds.delete(id); });
 
           if (!allReports.length) {
             table.style.display = "none";
             empty.style.display = "block";
             status.textContent = "No reports available.";
+            if (selectAll) selectAll.checked = false;
+            syncDeleteButtons();
             return;
           }
 
           const tbody = document.getElementById("reportsTbody");
           tbody.innerHTML = allReports.map(r => `
             <tr>
+              <td data-label="Select"><input type="checkbox" class="select-checkbox report-row-select" data-report-id="${esc(r.id)}" ${selectedReportIds.has(String(r.id)) ? "checked" : ""} /></td>
               <td data-label="Type" class="${r.type === 'warning' ? 'faint' : 'teal'}">${esc(r.type === 'warning' ? 'Outage' : 'Restored')}</td>
               <td data-label="Location">${esc(r.location || '—')}</td>
               <td data-label="Details">${esc(r.text || r.title || '—')}</td>
               <td data-label="Reported" class="faint">${fmtDate(r.reportedAt)}</td>
+              <td data-label="Actions"><button type="button" class="row-del-btn report-row-delete" data-report-del="${esc(r.id)}">Delete</button></td>
             </tr>
           `).join("");
+
+          tbody.querySelectorAll(".report-row-select").forEach(cb => {
+            cb.addEventListener("change", (e) => {
+              const id = e.target.dataset.reportId;
+              if (!id) return;
+              if (e.target.checked) selectedReportIds.add(id);
+              else selectedReportIds.delete(id);
+              syncDeleteButtons();
+            });
+          });
+
+          tbody.querySelectorAll(".report-row-delete").forEach(btn => {
+            btn.addEventListener("click", async (e) => {
+              const id = e.currentTarget.dataset.reportDel;
+              if (!id) return;
+              await deleteReportsByIds([id]);
+            });
+          });
+
+          if (selectAll) {
+            const visibleIds = allReports.map(report => String(report.id));
+            selectAll.checked = visibleIds.length > 0 && visibleIds.every(id => selectedReportIds.has(id));
+          }
+
           table.style.display = "table";
           empty.style.display = "none";
           status.textContent = `${allReports.length} recent report${allReports.length === 1 ? '' : 's'}`;
+          syncDeleteButtons();
         } catch (e) {
           table.style.display = "none";
           empty.style.display = "block";
           status.textContent = "Could not load reports.";
+          syncDeleteButtons();
+        }
+      }
+
+      async function deleteReportsByIds(ids) {
+        if (!ids.length) return;
+        const count = ids.length;
+        const warning = count === 1
+          ? "Delete this report now? This cannot be undone."
+          : `Delete ${count} reports now? This cannot be undone.`;
+        if (!window.confirm(warning)) return;
+
+        try {
+          await apiDelete('/admin/reports', ids);
+          ids.forEach(id => selectedReportIds.delete(String(id)));
+          await Promise.all([loadSummary(), loadActivity(), loadReportsPanel()]);
+        } catch (e) {
+          if (e.message !== "auth") alert(e.message || "Could not delete reports.");
         }
       }
 
@@ -717,12 +775,25 @@
         syncDeleteButtons();
       });
 
+      document.getElementById("reportsSelectAll")?.addEventListener("change", (e) => {
+        allReports.forEach(report => {
+          const id = String(report.id);
+          if (e.target.checked) selectedReportIds.add(id);
+          else selectedReportIds.delete(id);
+        });
+        loadReportsPanel();
+      });
+
       document.getElementById("deleteChatsBtn")?.addEventListener("click", async () => {
         await deleteChatsByIds([...selectedChatIds]);
       });
 
       document.getElementById("deleteUsersBtn")?.addEventListener("click", async () => {
         await deleteUsersByIds([...selectedUserIds]);
+      });
+
+      document.getElementById("deleteReportsBtn")?.addEventListener("click", async () => {
+        await deleteReportsByIds([...selectedReportIds]);
       });
 
       document.getElementById("clearReportsBtnActivity")?.addEventListener("click", clearAllReports);

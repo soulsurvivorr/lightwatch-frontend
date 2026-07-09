@@ -82,16 +82,14 @@
        once per device (localStorage-gated in onboarding.js). -->
   <div class="onboarding-overlay" id="onboardingOverlay">
     <div class="onboarding-card" role="dialog" aria-modal="true" aria-label="Welcome to LightWatch">
-      <button type="button" class="onboarding-skip" id="onboardingSkipBtn">Skip</button>
-
       <div class="onboarding-slide is-active" data-slide="0">
         <span class="onboarding-slide__icon">
           <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
             <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z"/>
           </svg>
         </span>
-        <h2>Welcome to LightWatch GH</h2>
-        <p>A community-powered way to track electricity status across Kumasi. Every report you or your neighbors send helps build a clearer, real-time picture of where power is on — and where it isn't.</p>
+        <h2>Community-powered electricity updates</h2>
+        <p>LightWatch helps people know where electricity is available in real time. Every report you and your neighbors submit builds a clearer picture of outages across Kumasi, helping families, workers, businesses, and travelers make better decisions before they leave home.</p>
       </div>
 
       <div class="onboarding-slide" data-slide="1">
@@ -101,11 +99,11 @@
             <circle cx="15" cy="12" r="3" fill="currentColor"/>
           </svg>
         </span>
-        <h2>Report in seconds</h2>
-        <p>Flip the light switch on your area's page the moment you notice a change. Reports from two or more residents boost confidence fast, so everyone sees an accurate status sooner.</p>
+        <h2>Your report makes a difference</h2>
+        <p>Only report the electricity status you've personally confirmed. Accurate updates help others avoid unnecessary trips, plan their day, and know what to expect. Over time, community reports can also reveal outage patterns that may help stakeholders better understand where people experience frequent or prolonged power interruptions.</p>
         <ul class="onboarding-slide__points">
-          <li>Check nearby homes or shops before reporting.</li>
-          <li>Update again as soon as power is restored.</li>
+          <li>Confirm the status yourself before posting.</li>
+          <li>Reliable updates make the platform useful for everyone.</li>
         </ul>
       </div>
 
@@ -118,17 +116,30 @@
             <rect x="14" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/>
           </svg>
         </span>
-        <h2>See your whole neighborhood</h2>
-        <p>Once you're in, use the Areas tab anytime to check other Kumasi neighborhoods, not just your own — useful for spotting whether an outage is a local feeder fault or a wider grid interruption.</p>
+        <h2>Together, we build a reliable network</h2>
+        <p>One report is helpful, but many matching reports create confidence. As more people in each neighborhood contribute, LightWatch becomes a trusted source of real-time electricity information for everyone in the community.</p>
         <ul class="onboarding-slide__points">
-          <li>Most reports arrive between 5pm and 10pm — peak demand hours.</li>
-          <li>Matching reports from nearby residents confirm status faster.</li>
+          <li>Matching updates increase confidence in the live status.</li>
+          <li>Neighborhood participation makes coverage stronger over time.</li>
+        </ul>
+      </div>
+
+      <div class="onboarding-slide onboarding-slide--areas" data-slide="3">
+        <span class="onboarding-slide__icon">
+          <img src="./images/areas.png?v=20260710" alt="" aria-hidden="true" width="24" height="24" />
+        </span>
+        <h2>Before you continue</h2>
+        <ul class="onboarding-slide__points onboarding-slide__points--disclaimer">
+          <li><strong>Community-powered information:</strong> LightWatch relies on reports submitted by community members. Electricity status can change quickly, so information may not always reflect the current situation.</li>
+          <li><strong>Report responsibly:</strong> Please submit updates only after personally confirming the electricity status in your area. False or outdated reports reduce the accuracy of the platform for everyone.</li>
+          <li><strong>Independent platform:</strong> LightWatch is an independent community initiative and is not affiliated with or operated by the Electricity Company of Ghana (ECG) or any government agency.</li>
         </ul>
       </div>
 
       <div class="onboarding-footer">
         <div class="onboarding-dots">
           <span class="onboarding-dots__dot is-active"></span>
+          <span class="onboarding-dots__dot"></span>
           <span class="onboarding-dots__dot"></span>
           <span class="onboarding-dots__dot"></span>
         </div>

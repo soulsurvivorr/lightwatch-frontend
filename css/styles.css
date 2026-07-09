@@ -38,8 +38,8 @@
   --text-faint: black;
 
   /* Type */
-  --font-display: "Space Grotesk", "Segoe UI", sans-serif;
-  --font-body: "Inter", "Segoe UI", sans-serif;
+  --font-display: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-body: "Helvetica Neue", Helvetica, Arial, sans-serif;
 
   /* Layout */
   --radius-sm: 6px;
@@ -69,8 +69,8 @@
   --text-bright: #121318;
   --text-muted: #2d3342;
   --text-faint: #4f576b;
-  --font-display: "Space Grotesk", "Segoe UI", sans-serif;
-  --font-body: "Inter", "Segoe UI", sans-serif;
+  --font-display: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-body: "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 
 :root[data-theme="dark"] {
@@ -84,9 +84,8 @@
   --text-bright: #eef3fb;
   --text-muted: #bdc8da;
   --text-faint: #90a0b8;
-  /* Intentionally swap display/body stacks to make theme font changes obvious. */
-  --font-display: "Inter", "Segoe UI", sans-serif;
-  --font-body: "Space Grotesk", "Segoe UI", sans-serif;
+  --font-display: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-body: "Helvetica Neue", Helvetica, Arial, sans-serif;
 
   /* Higher-contrast nav appearance for dark mode */
   --bottom-nav-surface: linear-gradient(165deg, rgba(46, 55, 69, 0.96), rgba(28, 35, 46, 0.94));
@@ -111,8 +110,8 @@
     --text-bright: #eef3fb;
     --text-muted: #bdc8da;
     --text-faint: #90a0b8;
-    --font-display: "Inter", "Segoe UI", sans-serif;
-    --font-body: "Space Grotesk", "Segoe UI", sans-serif;
+    --font-display: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --font-body: "Helvetica Neue", Helvetica, Arial, sans-serif;
 
     --bottom-nav-surface: linear-gradient(165deg, rgba(46, 55, 69, 0.96), rgba(28, 35, 46, 0.94));
     --bottom-nav-border: rgba(153, 178, 218, 0.45);
@@ -566,7 +565,7 @@ button, a {
 }
 
 .profile-feature-tabs p {
-  font-family:'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+  font-family: var(--font-body);
   font-size: .9rem;
 }
 

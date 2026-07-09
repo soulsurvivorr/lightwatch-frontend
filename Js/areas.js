@@ -3,19 +3,19 @@
 // Powers the "Areas" page — a browsable grid of Kumasi
 // neighborhoods and their light status.
 //
-// Areas shown on this page are wired to the real GET /lightstatus
-// endpoint (same source home.js uses). No demo rows are injected.
+// Bantama is wired to the real GET /lightstatus endpoint (same
+// source home.js uses). The rest of the rows are intentionally
+// hardcoded preview/demo entries so the page stays simple.
 // =========================================================
 
-const AREAS = [
-  'Bantama',
-  'Asokwa',
-  'Adum',
-  'Suame',
-  'Ahodwo',
-  'Nhyiaeso',
-  'Tafo',
-  'KNUST'
+const DEMO_AREAS = [
+  { name: 'Asokwa', status: 'on', lastUpdated: '12m ago', reports: 14, live: false },
+  { name: 'Adum', status: 'off', lastUpdated: '6m ago', reports: 9, live: false },
+  { name: 'Suame', status: 'on', lastUpdated: '22m ago', reports: 11, live: false },
+  { name: 'Ahodwo', status: 'off', lastUpdated: '18m ago', reports: 7, live: false },
+  { name: 'Nhyiaeso', status: 'on', lastUpdated: '31m ago', reports: 8, live: false },
+  { name: 'Tafo', status: 'unknown', lastUpdated: 'No fresh demo update', reports: 4, live: false },
+  { name: 'KNUST', status: 'on', lastUpdated: '9m ago', reports: 16, live: false }
 ];
 
 // Matches the slower polling cadence used elsewhere on the site
@@ -44,15 +44,15 @@ function relativeTime(dateInput) {
   return `${days}d ago`;
 }
 
-function areaCardTemplate({ name, status, lastUpdated, contributors, live }) {
+function areaCardTemplate({ name, status, lastUpdated, reports, live }) {
   const isOn = status === 'on';
   const isUnknown = status === 'unknown' || !status;
   const statusLabel = isUnknown ? 'Checking status' : isOn ? 'Light on' : 'Light off';
   const badgeClass = isUnknown ? 'badge--low' : isOn ? 'badge--on' : 'badge--off';
   const pulseClass = isUnknown ? 'pulse--low' : isOn ? 'pulse--on' : 'pulse--off';
-  const contributorLabel = contributors === null || contributors === undefined
+  const reportLabel = reports === null || reports === undefined
     ? '—'
-    : `${contributors} contributor${contributors === 1 ? '' : 's'}`;
+    : `${reports} report${reports === 1 ? '' : 's'}`;
 
   return `
     <div class="area-card" data-area="${name}">
@@ -68,8 +68,8 @@ function areaCardTemplate({ name, status, lastUpdated, contributors, live }) {
       </div>
       <div class="area-card__meta-grid">
         <div class="area-card__meta-item">
-          <span class="area-card__meta-label">Contributors</span>
-          <span class="area-card__meta-value">${contributorLabel}</span>
+          <span class="area-card__meta-label">Reports</span>
+          <span class="area-card__meta-value">${reportLabel}</span>
         </div>
         <div class="area-card__meta-item">
           <span class="area-card__meta-label">Updated</span>
@@ -82,11 +82,11 @@ function areaCardTemplate({ name, status, lastUpdated, contributors, live }) {
 
 function renderSummary(areas) {
   const total = areas.length;
-  const onCount = areas.filter(a => a.status === 'on').length;
-  const offCount = areas.filter(a => a.status === 'off').length;
+  const liveCount = areas.filter(a => a.live).length;
+  const demoCount = total - liveCount;
   const summaryEl = document.getElementById('areasSummaryText');
   if (summaryEl) {
-    summaryEl.textContent = `${onCount} on, ${offCount} off, ${total} tracked areas live`;
+    summaryEl.textContent = `${liveCount} live area and ${demoCount} demo neighborhood previews`;
   }
 }
 
@@ -96,7 +96,7 @@ function renderFeaturedBantama(areas) {
 
   const statusEl = document.getElementById('featuredBantamaStatus');
   const updatedEl = document.getElementById('featuredBantamaUpdated');
-  const contributorsEl = document.getElementById('featuredBantamaContributors');
+  const reportsEl = document.getElementById('featuredBantamaReports');
   const pulseEl = document.getElementById('featuredBantamaPulse');
 
   const isOn = bantama.status === 'on';
@@ -104,7 +104,7 @@ function renderFeaturedBantama(areas) {
 
   if (statusEl) statusEl.textContent = isUnknown ? 'Checking status' : (isOn ? 'Light on' : 'Light off');
   if (updatedEl) updatedEl.textContent = bantama.lastUpdated;
-  if (contributorsEl) contributorsEl.textContent = (bantama.contributors ?? '—').toString();
+  if (reportsEl) reportsEl.textContent = (bantama.reports ?? '—').toString();
   if (pulseEl) {
     pulseEl.classList.remove('pulse--on', 'pulse--off', 'pulse--low');
     pulseEl.classList.add(isUnknown ? 'pulse--low' : (isOn ? 'pulse--on' : 'pulse--off'));
@@ -115,14 +115,15 @@ function renderAreas(liveResults) {
   const grid = document.getElementById('areaGrid');
   if (!grid) return;
 
-  const allAreas = [...liveResults];
+  const allAreas = [...liveResults, ...DEMO_AREAS];
 
   renderSummary(allAreas);
   renderFeaturedBantama(allAreas);
   grid.innerHTML = allAreas.map(areaCardTemplate).join('');
 }
 
-async function fetchLiveArea(name) {
+async function fetchLiveBantama() {
+  const name = 'Bantama';
   try {
     const res = await fetch(`${apiBase()}/lightstatus?location=${encodeURIComponent(name)}`);
     if (!res.ok) throw new Error(`Bad response for ${name}`);
@@ -131,18 +132,18 @@ async function fetchLiveArea(name) {
       name,
       status: data.status || 'unknown',
       lastUpdated: relativeTime(data.reportedAt),
-      contributors: data.stats ? data.stats.uniqueContributors : null,
+      reports: data.stats ? data.stats.totalChecks : null,
       live: true
     };
   } catch (err) {
     console.error(`Failed to load live status for ${name}:`, err.message);
-    return { name, status: 'unknown', lastUpdated: 'Unavailable', contributors: null, live: true };
+    return { name, status: 'unknown', lastUpdated: 'Unavailable', reports: null, live: true };
   }
 }
 
 async function loadAreas() {
-  const liveAreas = await Promise.all(AREAS.map(fetchLiveArea));
-  renderAreas(liveAreas);
+  const liveBantama = await fetchLiveBantama();
+  renderAreas([liveBantama]);
 }
 
 function startAreasPolling() {

@@ -418,7 +418,7 @@ function showLightConfirmPopup(nextStatus, onConfirm) {
             @keyframes lw-fade-in { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: scale(1); } }
             #lw-confirm-card { background: #fff; border-radius: 16px; padding: 28px 24px; max-width: 340px; width: 100%; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.25); }
             #lw-confirm-card .lw-icon { font-size: 2.4rem; margin-bottom: 12px; }
-            #lw-confirm-card h3 { font-family: "Space Grotesk", sans-serif; font-size: 1.1rem; margin: 0 0 8px; color: #111; }
+            #lw-confirm-card h3 { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 1.1rem; margin: 0 0 8px; color: #111; }
             #lw-confirm-card p { font-size: 0.88rem; color: #555; margin: 0 0 22px; line-height: 1.5; }
             .lw-confirm-btns { display: flex; gap: 10px; }
             .lw-confirm-btns button { flex: 1; padding: 12px; border-radius: 10px; border: none; font-size: 0.92rem; font-weight: 600; cursor: pointer; transition: opacity 0.15s; }

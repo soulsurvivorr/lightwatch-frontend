@@ -69,6 +69,23 @@
   <!-- Notification toast -->
   <div id="lw-toast"></div>
 
+  <div class="home-reminder-overlay" id="homeReminderOverlay" hidden>
+    <div class="home-reminder-card" role="dialog" aria-modal="true" aria-labelledby="homeReminderTitle">
+      <div class="card__head">
+        <span class="card__title" id="homeReminderTitle">LightWatch reminder</span>
+        <span class="card__meta">Community-powered information</span>
+      </div>
+      <div class="home-reminder-copy">
+        <p>LightWatch relies on reports submitted by community members. Electricity status can change quickly, so information may not always reflect the current situation.</p>
+        <p>Please submit updates only after personally confirming the electricity status in your area. False or outdated reports reduce the accuracy of the platform for everyone.</p>
+        <p>LightWatch is an independent community initiative and is not affiliated with or operated by ECG or any government agency.</p>
+      </div>
+      <div class="home-reminder-actions">
+        <button type="button" class="btn btn--primary" id="homeReminderCloseBtn">Understood</button>
+      </div>
+    </div>
+  </div>
+
   <header class="topbar">
     <div class="topbar__inner">
        <div class="topbar__brand">
@@ -385,6 +402,7 @@
   
   <script src="../Js/theme.js" defer></script>
   <script src="../Js/profile.js" defer></script>
+  <script src="../Js/home-reminder.js" defer></script>
   <script src="../Js/notification.js" defer></script>
   <script src="../Js/chat.js" defer></script>
   <script src="../Js/home.js" defer></script>
