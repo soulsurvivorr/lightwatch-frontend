@@ -149,7 +149,7 @@ function setLightStatus(status) {
         statusBadge.textContent = "Light on";
         statusPulse.classList.add("pulse--on");
         statusIcon.classList.add("status-hero__icon--on");
-        statusIcon.textContent = "💡";
+        statusIcon.innerHTML = "<img src='/images/light-on.png' alt='Light on' style='width: 1.2em; height: 1.2em;'>";
         statusPillText.textContent = "Light is on now";
         lightSwitch.classList.add("light-switch--on");
         lightSwitch.classList.remove("light-switch--off");
@@ -160,7 +160,7 @@ function setLightStatus(status) {
         statusBadge.textContent = "Light off";
         statusPulse.classList.add("pulse--off");
         statusIcon.classList.add("status-hero__icon--off");
-        statusIcon.textContent = "🔌";
+        statusIcon.innerHTML = "<img src='/images/light-off.png' alt='Light off' style='width: 1.2em; height: 1.2em;'>";
         statusPillText.textContent = "Light is off now";
         lightSwitch.classList.remove("light-switch--on");
         lightSwitch.classList.add("light-switch--off");
