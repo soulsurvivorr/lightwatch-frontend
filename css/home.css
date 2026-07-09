@@ -97,8 +97,8 @@
       flex-shrink: 0;
       transition: background 0.3s;
     }
-    .status-hero__icon--on  { background: rgba(61,217,194,0.15); }
-    .status-hero__icon--off { background: rgba(229,72,77,0.15); }
+    .status-hero__icon--on  { background: rgba(0, 0, 0, 0.15); }
+    .status-hero__icon--off { background: rgba(233, 54, 60, 0.15); }
     .status-hero__icon--unknown { background: rgba(242,179,61,0.15); }
     .status-hero__text { flex: 1; }
     .status-hero__title {

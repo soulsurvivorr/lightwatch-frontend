@@ -124,7 +124,7 @@ function applyNavVisibility() {
             // on mobile, only Home and Reports stay in the
             // dropdown nav (Account/You is reachable via the
             // bottom nav bar instead, so it's not duplicated here)
-            const allowedOnMobile = section === "home" || section === "reports";
+            const allowedOnMobile = section === "home" || section === "areas" || section === "reports";
             link.style.display = allowedOnMobile ? "" : "none";
         } else {
             // full desktop nav — show everything
@@ -150,6 +150,7 @@ function highlightActiveNav() {
 
     const pageToSection = {
         'home.html': 'home',
+        'areas.html': 'areas',
         'reports.html': 'reports',
         'alerts.html': 'alerts',
         'account.html': 'account'

@@ -1,0 +1,140 @@
+/* ============================================================
+   Areas page
+   Browsable grid of Kumasi neighborhoods and their light status.
+   Universal rules (colors, .card, .badge, .pulse, bottom nav)
+   live in styles.css — this file only holds page-specific layout.
+   ============================================================ */
+
+.areas-summary-strip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-soft);
+  background: var(--bg-panel-raised);
+  margin-bottom: 18px;
+  animation: fadeInUp 0.4s ease both;
+}
+
+.areas-summary-strip__icon {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--teal-dim);
+  color: var(--teal);
+}
+
+.areas-summary-strip__icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.areas-summary-strip__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+#areasSummaryText {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.98rem;
+  color: var(--text-bright);
+}
+
+.areas-summary-strip__sub {
+  font-size: 0.78rem;
+  color: var(--text-faint);
+}
+
+/* ---- Grid of area cards ---- */
+
+.area-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+  margin-bottom: 26px;
+}
+
+.area-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
+  transition: transform 0.15s ease, border-color 0.15s ease;
+  animation: fadeInUp 0.35s ease both;
+}
+
+.area-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-strong);
+}
+
+.area-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.area-card__name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.area-card__name {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.98rem;
+  color: var(--text-bright);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.area-card__live-tag {
+  flex-shrink: 0;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--teal);
+  background: var(--teal-dim);
+  border-radius: 999px;
+  padding: 3px 8px;
+}
+
+.area-card__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  color: var(--text-faint);
+}
+
+/* Loading skeleton, shown briefly before the first fetch resolves */
+.area-grid--loading .area-card {
+  opacity: 0.5;
+}
+
+@media (max-width: 520px) {
+  .area-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px;
+  }
+
+  .area-card {
+    padding: 13px;
+  }
+}
