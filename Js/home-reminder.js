@@ -1,5 +1,19 @@
 const HOME_REMINDER_SEEN_KEY = 'lw_home_reminder_seen';
 const HOME_REMINDER_SKIP_ONCE_KEY = 'lw_skip_disclaimer_once';
+let homeReminderDismissed = false;
+let homeReminderObserver = null;
+let homeReminderFallbackTimer = null;
+
+function clearPendingReminderOpen() {
+  if (homeReminderObserver) {
+    homeReminderObserver.disconnect();
+    homeReminderObserver = null;
+  }
+  if (homeReminderFallbackTimer) {
+    clearTimeout(homeReminderFallbackTimer);
+    homeReminderFallbackTimer = null;
+  }
+}
 
 function shouldShowHomeReminder() {
   if (typeof getSession === 'function' && !getSession()) return false;
@@ -10,12 +24,14 @@ function shouldShowHomeReminder() {
     return false;
   }
 
-  return true;
+  return sessionStorage.getItem(HOME_REMINDER_SEEN_KEY) !== '1';
 }
 
 function closeHomeReminder() {
   const overlay = document.getElementById('homeReminderOverlay');
   if (!overlay) return;
+  homeReminderDismissed = true;
+  clearPendingReminderOpen();
   document.body.classList.remove('modal-open');
   overlay.hidden = true;
   overlay.classList.remove('is-open');
@@ -24,7 +40,7 @@ function closeHomeReminder() {
 
 function openHomeReminder() {
   const overlay = document.getElementById('homeReminderOverlay');
-  if (!overlay) return;
+  if (!overlay || homeReminderDismissed) return;
   overlay.hidden = false;
   overlay.classList.add('is-open');
   document.body.classList.add('modal-open');
@@ -47,24 +63,28 @@ function initHomeReminder() {
 
   if (!shouldShowHomeReminder()) return;
 
-  const showReminder = () => openHomeReminder();
+  const showReminder = () => {
+    if (homeReminderDismissed) return;
+    clearPendingReminderOpen();
+    openHomeReminder();
+  };
 
   if (!document.body.classList.contains('app-loading')) {
     showReminder();
     return;
   }
 
-  const observer = new MutationObserver(() => {
+  homeReminderObserver = new MutationObserver(() => {
     if (!document.body.classList.contains('app-loading')) {
-      observer.disconnect();
+      clearPendingReminderOpen();
       showReminder();
     }
   });
 
-  observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+  homeReminderObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
 
-  setTimeout(() => {
-    observer.disconnect();
+  homeReminderFallbackTimer = setTimeout(() => {
+    clearPendingReminderOpen();
     showReminder();
   }, 1600);
 }

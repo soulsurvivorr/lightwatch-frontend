@@ -126,65 +126,10 @@
 
     <section class="areas-board card" aria-label="Areas liveboard">
       <div class="card__head">
-        <span class="card__title">Areas liveboard</span>
-        <span class="card__meta">Bantama is live now. Other areas show community signal snapshots.</span>
+        <span class="card__title">Cities and towns status</span>
+        <span class="card__meta">Live power status list</span>
       </div>
-      <div class="area-grid" id="areaGrid">
-        <!-- area rows injected by areas.js -->
-      </div>
-    </section>
-
-    <section class="areas-story" aria-label="Community insight">
-      <div class="areas-story__card">
-        <h2>How to read this page</h2>
-        <p>Bantama uses direct live backend status. Other neighborhoods show rolling community signal snapshots based on recent reporting patterns, so you can compare likely conditions before moving.</p>
-      </div>
-      <div class="areas-story__stats">
-        <article class="areas-story__stat">
-          <div class="areas-story__value">Live</div>
-          <div class="areas-story__label">Bantama refreshes from real LightWatch backend status</div>
-        </article>
-        <article class="areas-story__stat">
-          <div class="areas-story__value">Signal</div>
-          <div class="areas-story__label">Community confidence helps you judge reliability at a glance</div>
-        </article>
-        <article class="areas-story__stat">
-          <div class="areas-story__value">Practical</div>
-          <div class="areas-story__label">Compare neighborhoods before commuting, charging, or opening shop</div>
-        </article>
-      </div>
-      <div class="areas-story__tips card">
-        <div class="card__head">
-          <span class="card__title">Quick community tips</span>
-          <span class="card__meta">For better report quality</span>
-        </div>
-        <ul>
-          <li>Report only after checking nearby houses or shops.</li>
-          <li>Use clear messages if you post in the area chat.</li>
-          <li>Update again when power is restored.</li>
-        </ul>
-      </div>
-    </section>
-
-    <section class="areas-extra card" aria-label="About neighborhood reliability">
-      <div class="card__head">
-        <span class="card__title">Why neighborhood updates matter</span>
-        <span class="card__meta">Community intelligence</span>
-      </div>
-      <div class="areas-extra__grid">
-        <article>
-          <h3>Before you move</h3>
-          <p>Checking another area first can save time, transport cost, and unnecessary travel during outages.</p>
-        </article>
-        <article>
-          <h3>For workers and shops</h3>
-          <p>Quick visibility into nearby neighborhoods can help with planning deliveries, charging, and opening hours.</p>
-        </article>
-        <article>
-          <h3>For the whole city</h3>
-          <p>As more people report consistently, LightWatch can reveal broader outage patterns across Kumasi.</p>
-        </article>
-      </div>
+      <div class="area-grid" id="areaGrid" role="list" aria-label="Town status list"></div>
     </section>
 
     <p class="footnote">LightWatch — meter &amp; grid status monitoring</p>
