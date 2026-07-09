@@ -73,8 +73,70 @@
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="./css/styles.css" />
   <link rel="stylesheet" href="./css/login.css" />
+  <link rel="stylesheet" href="./css/onboarding.css" />
 </head>
 <body>
+  <!-- First-visit walkthrough. Only ever seen by signed-out visitors,
+       since the auth-check script above redirects anyone with a
+       session straight to home.html before this page renders. Shown
+       once per device (localStorage-gated in onboarding.js). -->
+  <div class="onboarding-overlay" id="onboardingOverlay">
+    <div class="onboarding-card" role="dialog" aria-modal="true" aria-label="Welcome to LightWatch">
+      <button type="button" class="onboarding-skip" id="onboardingSkipBtn">Skip</button>
+
+      <div class="onboarding-slide is-active" data-slide="0">
+        <span class="onboarding-slide__icon">
+          <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z"/>
+          </svg>
+        </span>
+        <h2>Welcome to LightWatch GH</h2>
+        <p>A community-powered way to track electricity status across Kumasi. Every report you or your neighbors send helps build a clearer, real-time picture of where power is on — and where it isn't.</p>
+      </div>
+
+      <div class="onboarding-slide" data-slide="1">
+        <span class="onboarding-slide__icon">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <rect x="2" y="8" width="20" height="8" rx="4" stroke="currentColor" stroke-width="1.8"/>
+            <circle cx="15" cy="12" r="3" fill="currentColor"/>
+          </svg>
+        </span>
+        <h2>Report in seconds</h2>
+        <p>Flip the light switch on your area's page the moment you notice a change. Reports from two or more residents boost confidence fast, so everyone sees an accurate status sooner.</p>
+        <ul class="onboarding-slide__points">
+          <li>Check nearby homes or shops before reporting.</li>
+          <li>Update again as soon as power is restored.</li>
+        </ul>
+      </div>
+
+      <div class="onboarding-slide onboarding-slide--areas" data-slide="2">
+        <span class="onboarding-slide__icon">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <rect x="3" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/>
+            <rect x="14" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/>
+            <rect x="3" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/>
+            <rect x="14" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/>
+          </svg>
+        </span>
+        <h2>See your whole neighborhood</h2>
+        <p>Once you're in, use the Areas tab anytime to check other Kumasi neighborhoods, not just your own — useful for spotting whether an outage is a local feeder fault or a wider grid interruption.</p>
+        <ul class="onboarding-slide__points">
+          <li>Most reports arrive between 5pm and 10pm — peak demand hours.</li>
+          <li>Matching reports from nearby residents confirm status faster.</li>
+        </ul>
+      </div>
+
+      <div class="onboarding-footer">
+        <div class="onboarding-dots">
+          <span class="onboarding-dots__dot is-active"></span>
+          <span class="onboarding-dots__dot"></span>
+          <span class="onboarding-dots__dot"></span>
+        </div>
+        <button type="button" class="btn btn--primary onboarding-next" id="onboardingNextBtn">Next</button>
+      </div>
+    </div>
+  </div>
+
   <main class="login-shell">
     <section class="login-visual" aria-label="LightWatch overview">
       <div class="login-visual__content">
@@ -167,5 +229,6 @@
   <script src="./Js/config.js"></script>
   <script src="./Js/auth.js"></script>
   <script src="./Js/login.js"></script>
+  <script src="./Js/onboarding.js"></script>
 </body>
 </html>

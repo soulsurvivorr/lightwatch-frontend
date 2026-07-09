@@ -1,0 +1,187 @@
+/* ============================================================
+   Onboarding overlay
+   Shown once, the first time a new user reaches the app. Reuses
+   .btn / .card tokens from styles.css so it never looks bolted
+   on. Universal (used site-wide), so it lives standalone rather
+   than inside a single page's CSS file.
+   ============================================================ */
+
+.onboarding-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(11, 16, 22, 0.62);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.22s ease;
+}
+
+.onboarding-overlay.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.onboarding-card {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  padding: 30px 26px 24px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+  transform: translateY(14px) scale(0.98);
+  opacity: 0;
+  transition: transform 0.24s ease, opacity 0.24s ease;
+}
+
+.onboarding-overlay.is-open .onboarding-card {
+  transform: translateY(0) scale(1);
+  opacity: 1;
+}
+
+.onboarding-skip {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: transparent;
+  border: none;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-faint);
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.onboarding-skip:hover {
+  color: var(--text-bright);
+  background: var(--bg-panel-raised);
+}
+
+.onboarding-slide {
+  display: none;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  animation: fadeInUp 0.28s ease both;
+}
+
+.onboarding-slide.is-active {
+  display: flex;
+}
+
+.onboarding-slide__icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--amber-dim);
+  color: var(--brand);
+  margin-bottom: 4px;
+}
+
+.onboarding-slide__icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.onboarding-slide--areas .onboarding-slide__icon {
+  background: var(--teal-dim);
+  color: var(--teal);
+}
+
+.onboarding-slide h2 {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-bright);
+  margin: 0;
+  line-height: 1.25;
+}
+
+.onboarding-slide p {
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.onboarding-slide__points {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.onboarding-slide__points li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.84rem;
+  color: var(--text-muted);
+  background: var(--bg-panel-raised);
+  border-radius: var(--radius-md);
+  padding: 9px 12px;
+}
+
+.onboarding-slide__points li::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--teal);
+  margin-top: 6px;
+  flex-shrink: 0;
+}
+
+.onboarding-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.onboarding-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.onboarding-dots__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--border-strong);
+  opacity: 0.5;
+  transition: opacity 0.2s ease, width 0.2s ease, background 0.2s ease;
+}
+
+.onboarding-dots__dot.is-active {
+  opacity: 1;
+  width: 18px;
+  border-radius: 999px;
+  background: var(--brand);
+}
+
+.onboarding-next {
+  min-width: 108px;
+}
+
+@media (max-width: 420px) {
+  .onboarding-card {
+    padding: 26px 20px 20px;
+  }
+}
