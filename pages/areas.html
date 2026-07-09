@@ -99,12 +99,7 @@
 
     <div class="areas-summary-strip">
       <span class="areas-summary-strip__icon">
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <rect x="3" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/>
-          <rect x="14" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/>
-          <rect x="3" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/>
-          <rect x="14" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/>
-        </svg>
+        <img src="../images/areas.png?v=20260710" alt="Areas" width="18" height="18">
       </span>
       <span class="areas-summary-strip__text">
         <span id="areasSummaryText">Loading area status…</span>
@@ -112,9 +107,79 @@
       </span>
     </div>
 
+    <section class="featured-area card" aria-label="Bantama live status">
+      <div class="card__head">
+        <span class="card__title">Bantama live spotlight</span>
+        <span class="card__meta">Real-time from LightWatch logic</span>
+      </div>
+      <div class="featured-area__body">
+        <div class="featured-area__status-row">
+          <span id="featuredBantamaPulse" class="pulse pulse--low"></span>
+          <strong id="featuredBantamaStatus">Checking status</strong>
+        </div>
+        <div class="featured-area__meta">
+          <div><span>Last update</span><strong id="featuredBantamaUpdated">—</strong></div>
+          <div><span>Contributors</span><strong id="featuredBantamaContributors">—</strong></div>
+        </div>
+      </div>
+    </section>
+
     <div class="area-grid" id="areaGrid">
       <!-- area cards injected by areas.js -->
     </div>
+
+    <section class="areas-story" aria-label="Community insight">
+      <div class="areas-story__card">
+        <h2>How this helps neighborhoods</h2>
+        <p>Every report from residents builds a clearer picture of where power is stable and where support is needed most. The goal is simple: reduce guesswork and improve response time for everyone.</p>
+      </div>
+      <div class="areas-story__stats">
+        <article class="areas-story__stat">
+          <div class="areas-story__value">24/7</div>
+          <div class="areas-story__label">Live updates from the community</div>
+        </article>
+        <article class="areas-story__stat">
+          <div class="areas-story__value">Fast</div>
+          <div class="areas-story__label">Signal on/off changes in seconds</div>
+        </article>
+        <article class="areas-story__stat">
+          <div class="areas-story__value">Local</div>
+          <div class="areas-story__label">Built around Kumasi neighborhoods</div>
+        </article>
+      </div>
+      <div class="areas-story__tips card">
+        <div class="card__head">
+          <span class="card__title">Quick community tips</span>
+          <span class="card__meta">For better report quality</span>
+        </div>
+        <ul>
+          <li>Report only after checking nearby houses or shops.</li>
+          <li>Use clear messages if you post in the area chat.</li>
+          <li>Update again when power is restored.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="areas-extra card" aria-label="About neighborhood reliability">
+      <div class="card__head">
+        <span class="card__title">What to expect by area</span>
+        <span class="card__meta">Community intelligence</span>
+      </div>
+      <div class="areas-extra__grid">
+        <article>
+          <h3>Peak outage windows</h3>
+          <p>Most reports arrive between 5pm and 10pm. Keep alerts enabled during evening demand spikes.</p>
+        </article>
+        <article>
+          <h3>Fast verification</h3>
+          <p>When two or more residents report the same status, confidence increases and false alerts drop quickly.</p>
+        </article>
+        <article>
+          <h3>Neighborhood context</h3>
+          <p>Compare nearby districts to understand if issues are local feeder faults or wider grid interruptions.</p>
+        </article>
+      </div>
+    </section>
 
     <p class="footnote">LightWatch — meter &amp; grid status monitoring</p>
   </main>
@@ -154,12 +219,8 @@
       </a>
       <a href="./areas.html" class="bottom-nav-link" data-nav="areas" aria-label="Areas">
         <span class="bottom-nav-icon bottom-nav-icon--user">
-          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="20" height="20">
-            <rect x="3" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/>
-            <rect x="14" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/>
-            <rect x="3" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/>
-            <rect x="14" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/>
-          </svg>
+          <img src="../images/areas.png?v=20260710" alt="Areas" class="bottom-nav-icon-img bottom-nav-icon-img--light">
+          <img src="../images/areas.png?v=20260710" alt="" aria-hidden="true" class="bottom-nav-icon-img bottom-nav-icon-img--dark">
         </span>
         <span class="bottom-nav-label">Areas</span>
       </a>

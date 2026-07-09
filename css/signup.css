@@ -2,6 +2,18 @@
     box-sizing: border-box;
 }
 
+/*
+    HTML -> CSS order guide (pages/signup.html)
+    1) section / #dev-logo-cont
+    2) #main-content_wrapper
+         2.1) .submit-info-section
+         2.2) #input-field-section
+                    - .user-icon-container
+                    - .prompt-input-tabs / .prompt-inputs
+                    - .notify-wrapper
+                    - .submit-btn
+*/
+
 html,
 body {
     height: 100%;

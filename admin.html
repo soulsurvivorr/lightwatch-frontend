@@ -97,6 +97,8 @@
   .delete-btn { background:transparent; border:1px solid var(--border2); color:var(--muted); padding:6px 12px; border-radius:var(--r-md); cursor:pointer; font-size:0.8rem; }
   .delete-btn:hover { border-color:var(--red); color:var(--red); }
   .delete-btn:disabled { opacity:0.5; cursor:not-allowed; }
+  .delete-btn--danger { border-color: rgba(229,72,77,0.45); color: #ff9b9e; }
+  .delete-btn--danger:hover { border-color: var(--red); color: #ffd7d8; background: rgba(229,72,77,0.1); }
   .row-del-btn { background:transparent; border:1px solid var(--border2); color:var(--muted); padding:4px 8px; border-radius:var(--r-sm); cursor:pointer; font-size:0.72rem; }
   .row-del-btn:hover { border-color:var(--red); color:var(--red); }
   .select-col { width:34px; }
@@ -184,6 +186,7 @@
     <!-- Tabs -->
     <div class="tabs">
       <button class="tab-btn active" data-tab="activity" type="button">Live activity</button>
+      <button class="tab-btn" data-tab="reports" type="button">Reports management</button>
       <button class="tab-btn" data-tab="users" type="button">Users</button>
       <button class="tab-btn" data-tab="chats" type="button">Chat messages</button>
     </div>
@@ -194,12 +197,33 @@
         <div class="toolbar__left">
           <span class="status-msg" id="activityStatus">Loading…</span>
           <button class="refresh-btn" id="refreshActivity" type="button">↻ Refresh</button>
+          <button class="delete-btn delete-btn--danger" id="clearReportsBtnActivity" type="button">Clear all reports</button>
         </div>
         <span style="font-size:0.75rem;color:var(--faint);">Auto-refreshes every 15s</span>
       </div>
       <div class="activity-log" id="activityLog">
         <div class="empty-state">Loading activity…</div>
       </div>
+    </div>
+
+    <!-- Reports panel -->
+    <div class="panel" id="reportsPanel">
+      <div class="toolbar">
+        <div class="toolbar__left">
+          <span class="status-msg" id="reportsStatus">Loading reports…</span>
+          <button class="refresh-btn" id="refreshReports" type="button">↻ Refresh</button>
+          <button class="delete-btn delete-btn--danger" id="clearReportsBtnPanel" type="button">Clear all reports</button>
+        </div>
+      </div>
+      <table id="reportsTable" style="display:none;">
+        <thead>
+          <tr>
+            <th>Type</th><th>Location</th><th>Details</th><th>Reported</th>
+          </tr>
+        </thead>
+        <tbody id="reportsTbody"></tbody>
+      </table>
+      <div id="reportsEmpty" class="empty-state" style="display:none;">No reports available.</div>
     </div>
 
     <!-- Users panel -->
@@ -306,6 +330,21 @@
         return payload;
       }
 
+      async function apiDeleteNoBody(path) {
+        const res = await fetch(`${API}${path}`, {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${getToken()}`
+          }
+        });
+        if (res.status === 401 || res.status === 403) {
+          clearToken(); showLogin("Session expired."); throw new Error("auth");
+        }
+        const payload = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(payload.error || "Delete request failed");
+        return payload;
+      }
+
       function showLogin(msg) {
         document.getElementById("loginScreen").style.display = "flex";
         document.getElementById("dashboard").style.display = "none";
@@ -319,7 +358,7 @@
         setInterval(loadActivity, 15000);
       }
 
-      let allUsers = [], allChats = [];
+      let allUsers = [], allChats = [], allReports = [];
       const selectedUserIds = new Set();
       const selectedChatIds = new Set();
 
@@ -343,8 +382,61 @@
       async function loadAll() {
         loadSummary();
         loadActivity();
+        loadReportsPanel();
         loadUsers();
         loadChats();
+      }
+
+      async function loadReportsPanel() {
+        const table = document.getElementById("reportsTable");
+        const empty = document.getElementById("reportsEmpty");
+        const status = document.getElementById("reportsStatus");
+        try {
+          const res = await fetch(`${API}/reports?limit=80`);
+          if (!res.ok) throw new Error("Could not load reports");
+          allReports = await res.json();
+
+          if (!allReports.length) {
+            table.style.display = "none";
+            empty.style.display = "block";
+            status.textContent = "No reports available.";
+            return;
+          }
+
+          const tbody = document.getElementById("reportsTbody");
+          tbody.innerHTML = allReports.map(r => `
+            <tr>
+              <td data-label="Type" class="${r.type === 'warning' ? 'faint' : 'teal'}">${esc(r.type === 'warning' ? 'Outage' : 'Restored')}</td>
+              <td data-label="Location">${esc(r.location || '—')}</td>
+              <td data-label="Details">${esc(r.text || r.title || '—')}</td>
+              <td data-label="Reported" class="faint">${fmtDate(r.reportedAt)}</td>
+            </tr>
+          `).join("");
+          table.style.display = "table";
+          empty.style.display = "none";
+          status.textContent = `${allReports.length} recent report${allReports.length === 1 ? '' : 's'}`;
+        } catch (e) {
+          table.style.display = "none";
+          empty.style.display = "block";
+          status.textContent = "Could not load reports.";
+        }
+      }
+
+      async function clearAllReports() {
+        const warning = "Clear ALL outage reports now? This cannot be undone.";
+        if (!window.confirm(warning)) return;
+        try {
+          const payload = await apiDeleteNoBody('/admin/reports');
+          const deleted = Number(payload.deletedCount || 0);
+          const text = `Cleared ${deleted} report${deleted === 1 ? "" : "s"}.`;
+          const activityStatus = document.getElementById("activityStatus");
+          const reportsStatus = document.getElementById("reportsStatus");
+          if (activityStatus) activityStatus.textContent = text;
+          if (reportsStatus) reportsStatus.textContent = text;
+          await Promise.all([loadSummary(), loadActivity(), loadReportsPanel()]);
+        } catch (e) {
+          if (e.message !== "auth") alert(e.message || "Could not clear reports.");
+        }
       }
 
       async function loadSummary() {
@@ -633,7 +725,11 @@
         await deleteUsersByIds([...selectedUserIds]);
       });
 
+      document.getElementById("clearReportsBtnActivity")?.addEventListener("click", clearAllReports);
+      document.getElementById("clearReportsBtnPanel")?.addEventListener("click", clearAllReports);
+
       document.getElementById("refreshActivity")?.addEventListener("click", loadActivity);
+      document.getElementById("refreshReports")?.addEventListener("click", loadReportsPanel);
 
       // Login
       async function handleLogin() {

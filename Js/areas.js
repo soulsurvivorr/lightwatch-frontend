@@ -3,24 +3,19 @@
 // Powers the "Areas" page — a browsable grid of Kumasi
 // neighborhoods and their light status.
 //
-// LIVE_AREAS are wired to the real GET /lightstatus endpoint
-// (same one home.js uses for the user's own location), so if
-// someone reports a status change for one of these, it will
-// show up here on the next poll.
-//
-// DEMO_AREAS is hardcoded for now, purely so the page looks
-// populated before more neighborhoods have real contributors.
-// Swap an entry from DEMO_AREAS into LIVE_AREAS any time that
-// neighborhood starts getting real reports — no other change
-// needed, fetchLiveArea() will pick it up automatically.
+// Areas shown on this page are wired to the real GET /lightstatus
+// endpoint (same source home.js uses). No demo rows are injected.
 // =========================================================
 
-const LIVE_AREAS = ['Bantama', 'Asokwa', 'Adum'];
-
-const DEMO_AREAS = [
-  { name: 'Suame', status: 'on', lastUpdated: '2h ago', contributors: 6 },
-  { name: 'Ahodwo', status: 'off', lastUpdated: '38m ago', contributors: 3 },
-  { name: 'Nhyiaeso', status: 'on', lastUpdated: '5h ago', contributors: 9 }
+const AREAS = [
+  'Bantama',
+  'Asokwa',
+  'Adum',
+  'Suame',
+  'Ahodwo',
+  'Nhyiaeso',
+  'Tafo',
+  'KNUST'
 ];
 
 // Matches the slower polling cadence used elsewhere on the site
@@ -66,12 +61,20 @@ function areaCardTemplate({ name, status, lastUpdated, contributors, live }) {
           <span class="pulse ${pulseClass}"></span>
           <span class="area-card__name">${name}</span>
         </div>
-        ${live ? '<span class="area-card__live-tag">Live</span>' : ''}
+        ${live ? '<span class="area-card__live-tag">Live feed</span>' : ''}
       </div>
-      <span class="badge ${badgeClass}">${statusLabel}</span>
-      <div class="area-card__meta">
-        <span>${contributorLabel}</span>
-        <span>${lastUpdated}</span>
+      <div class="area-card__right">
+        <span class="badge ${badgeClass}">${statusLabel}</span>
+      </div>
+      <div class="area-card__meta-grid">
+        <div class="area-card__meta-item">
+          <span class="area-card__meta-label">Contributors</span>
+          <span class="area-card__meta-value">${contributorLabel}</span>
+        </div>
+        <div class="area-card__meta-item">
+          <span class="area-card__meta-label">Updated</span>
+          <span class="area-card__meta-value">${lastUpdated}</span>
+        </div>
       </div>
     </div>
   `;
@@ -80,20 +83,42 @@ function areaCardTemplate({ name, status, lastUpdated, contributors, live }) {
 function renderSummary(areas) {
   const total = areas.length;
   const onCount = areas.filter(a => a.status === 'on').length;
+  const offCount = areas.filter(a => a.status === 'off').length;
   const summaryEl = document.getElementById('areasSummaryText');
   if (summaryEl) {
-    summaryEl.textContent = `${onCount} of ${total} areas currently have power`;
+    summaryEl.textContent = `${onCount} on, ${offCount} off, ${total} tracked areas live`;
   }
 }
 
-function renderAreas(liveResults, demoResults) {
+function renderFeaturedBantama(areas) {
+  const bantama = areas.find(a => a.name.toLowerCase() === 'bantama');
+  if (!bantama) return;
+
+  const statusEl = document.getElementById('featuredBantamaStatus');
+  const updatedEl = document.getElementById('featuredBantamaUpdated');
+  const contributorsEl = document.getElementById('featuredBantamaContributors');
+  const pulseEl = document.getElementById('featuredBantamaPulse');
+
+  const isOn = bantama.status === 'on';
+  const isUnknown = bantama.status === 'unknown' || !bantama.status;
+
+  if (statusEl) statusEl.textContent = isUnknown ? 'Checking status' : (isOn ? 'Light on' : 'Light off');
+  if (updatedEl) updatedEl.textContent = bantama.lastUpdated;
+  if (contributorsEl) contributorsEl.textContent = (bantama.contributors ?? '—').toString();
+  if (pulseEl) {
+    pulseEl.classList.remove('pulse--on', 'pulse--off', 'pulse--low');
+    pulseEl.classList.add(isUnknown ? 'pulse--low' : (isOn ? 'pulse--on' : 'pulse--off'));
+  }
+}
+
+function renderAreas(liveResults) {
   const grid = document.getElementById('areaGrid');
   if (!grid) return;
 
-  const allAreas = [...liveResults, ...demoResults]
-    .sort((a, b) => a.name.localeCompare(b.name));
+  const allAreas = [...liveResults];
 
   renderSummary(allAreas);
+  renderFeaturedBantama(allAreas);
   grid.innerHTML = allAreas.map(areaCardTemplate).join('');
 }
 
@@ -116,9 +141,8 @@ async function fetchLiveArea(name) {
 }
 
 async function loadAreas() {
-  const demoAreas = DEMO_AREAS.map(area => ({ ...area, live: false }));
-  const liveAreas = await Promise.all(LIVE_AREAS.map(fetchLiveArea));
-  renderAreas(liveAreas, demoAreas);
+  const liveAreas = await Promise.all(AREAS.map(fetchLiveArea));
+  renderAreas(liveAreas);
 }
 
 function startAreasPolling() {

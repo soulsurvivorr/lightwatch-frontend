@@ -2,6 +2,16 @@
     box-sizing: border-box;
 }
 
+/*
+    HTML -> CSS order guide (pages/verification.html)
+    1) header
+    2) main .verify-card
+         - .verify-hero
+         - .otp-boxes / .otp-box
+         - .resend-row
+         - #continueBtn
+*/
+
 html, body {
     min-height: 100%;
     height: 100%;

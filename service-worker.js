@@ -3,17 +3,91 @@
 //  Handles: push notifications, offline cache (basic)
 // ============================================================
 
-const CACHE_NAME = 'lightwatch-v1';
+const CACHE_NAME = 'lightwatch-v3';
 const APP_ICON = new URL('/images/dev-logo.png?v=20260708', self.location.origin).href;
 const APP_BADGE = new URL('/images/notification-badge.png?v=20260708', self.location.origin).href;
+const SHELL_ASSETS = [
+    '/',
+    '/index.html',
+    '/pages/home.html',
+    '/pages/areas.html',
+    '/pages/reports.html',
+    '/pages/account.html',
+    '/css/styles.css',
+    '/css/home.css',
+    '/css/areas.css',
+    '/images/dev-logo.png?v=20260707',
+    '/images/areas.png'
+];
 
 // ── Install: cache core shell ─────────────────────────────────
 self.addEventListener('install', event => {
-    self.skipWaiting();
+    event.waitUntil(
+        caches.open(CACHE_NAME)
+            .then(cache => cache.addAll(SHELL_ASSETS))
+            .catch(() => {})
+            .finally(() => self.skipWaiting())
+    );
 });
 
 self.addEventListener('activate', event => {
-    event.waitUntil(clients.claim());
+    event.waitUntil(
+        caches.keys()
+            .then(keys => Promise.all(keys
+                .filter(key => key !== CACHE_NAME)
+                .map(key => caches.delete(key))
+            ))
+            .then(() => clients.claim())
+    );
+});
+
+// ── Fetch: quick cache-first static assets + network-first HTML ──
+self.addEventListener('fetch', event => {
+    const req = event.request;
+    if (req.method !== 'GET') return;
+
+    const url = new URL(req.url);
+    if (url.origin !== self.location.origin) return;
+
+    const isApiPath = /^\/(admin|reports|lightstatus|chat|subscribe|user|stats)(\/|$)/.test(url.pathname);
+    if (isApiPath) return;
+
+    if (req.mode === 'navigate') {
+        event.respondWith((async () => {
+            try {
+                const fresh = await fetch(req);
+                const cache = await caches.open(CACHE_NAME);
+                cache.put(req, fresh.clone());
+                return fresh;
+            } catch {
+                const cached = await caches.match(req);
+                return cached || caches.match('/pages/home.html') || Response.error();
+            }
+        })());
+        return;
+    }
+
+    event.respondWith((async () => {
+        const cached = await caches.match(req);
+        if (cached) {
+            fetch(req)
+                .then(async fresh => {
+                    const cache = await caches.open(CACHE_NAME);
+                    cache.put(req, fresh.clone());
+                })
+                .catch(() => {});
+            return cached;
+        }
+
+        try {
+            const fresh = await fetch(req);
+            const cache = await caches.open(CACHE_NAME);
+            cache.put(req, fresh.clone());
+            return fresh;
+        } catch {
+            return Response.error();
+        }
+    })());
 });
 
 // ── Push: show notification when server sends a push ─────────

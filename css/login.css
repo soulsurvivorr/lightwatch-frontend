@@ -2,6 +2,16 @@
    Login page
    ============================================================ */
 
+/*
+  HTML -> CSS order guide (index.html)
+  1) .login-shell
+    1.1) .login-visual
+    1.2) .login-form-side
+       - .login-box__brand (+ .brand-loop-line)
+       - .field / .remember-me
+       - #sendCodebtn / .login-create-btn
+*/
+
 .login-shell {
   min-height: 100vh;
   display: grid;

@@ -485,7 +485,7 @@ function hideProfileLoader() {
     document.getElementById('lwBootLoader')?.remove();
 }
 
-function waitForChatReady(maxWait = 1400) {
+function waitForChatReady(maxWait = 700) {
     if (!document.getElementById('chatThread')) return Promise.resolve();
     if (window.__lwChatReady) return Promise.resolve();
 
@@ -512,7 +512,7 @@ function waitForChatReady(maxWait = 1400) {
 // -----------------------------------------------------
 async function loadCurrentUserProfile() {
 
-    showProfileLoader(5000);
+    showProfileLoader(3200);
 
     // ── Get user ID from the active session (set by auth.js) ──
     const session = getSession(); // defined in auth.js
