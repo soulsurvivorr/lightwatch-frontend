@@ -495,10 +495,10 @@
 .status-hero {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 0 8px;
+  gap: 10px;
+  padding: 6px 0 6px;
   border-bottom: 1px solid var(--border-soft);
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .status-hero__icon {
@@ -1516,7 +1516,7 @@ body.modal-open {
 .chat-card {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
 /* Hidden by default -- this floating toggle button is only meant to
@@ -1531,37 +1531,37 @@ body.modal-open {
 .chat-thread {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  max-height: 320px;
+  gap: 3px;
+  max-height: 380px;
   overflow-y: auto;
-  padding-right: 4px;
+  padding-right: 2px;
 }
 
 .chat-message {
   background: var(--bg-panel-raised);
   border: 1px solid var(--border-soft);
   border-radius: 9px;
-  padding: 6px 8px;
+  padding: 4px 6px;
   display: grid;
   gap: 1px;
-  font-size: 0.84rem;
+  font-size: 0.8rem;
   animation: chat-message-in 0.22s ease both;
 }
 
 .chat-message__author {
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 700;
   color: var(--teal);
 }
 
 .chat-message__text {
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   color: var(--text-bright);
-  line-height: 1.28;
+  line-height: 1.24;
 }
 
 .chat-message__time {
-  font-size: 0.63rem;
+  font-size: 0.6rem;
   color: var(--text-faint);
 }
 
@@ -1582,15 +1582,15 @@ body.modal-open {
 
 .chat-form {
   display: flex;
-  gap: 10px;
+  gap: 8px;
 }
 
 .chat-form__input {
   flex: 1;
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-md);
-  padding: 9px 10px;
-  font-size: 0.88rem;
+  padding: 7px 9px;
+  font-size: 0.84rem;
   background: var(--bg-panel);
   color: var(--text-bright);
   font-family: var(--font-body);
@@ -1606,15 +1606,15 @@ body.modal-open {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  margin-bottom: 10px;
-  padding: 8px 10px;
+  margin-bottom: 6px;
+  padding: 6px 8px;
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-md);
   background: var(--bg-panel-raised);
 }
 
 .chat-scope-label {
-  font-size: 0.82rem;
+  font-size: 0.76rem;
   color: var(--text-faint);
   font-weight: 600;
 }
@@ -1628,10 +1628,10 @@ body.modal-open {
 .chat-scope-option {
   border: 1px solid var(--border-soft);
   border-radius: 999px;
-  padding: 6px 10px;
+  padding: 4px 8px;
   background: var(--bg-panel);
   color: var(--text-muted);
-  font-size: 0.82rem;
+  font-size: 0.76rem;
   font-family: var(--font-body);
   font-weight: 600;
   cursor: pointer;
@@ -1649,28 +1649,28 @@ body.modal-open {
 }
 
 .chat-message__author {
-  font-size: 0.82rem;
+  font-size: 0.72rem;
 }
 
 .chat-message__text {
-  font-size: 0.95rem;
-  line-height: 1.45;
+  font-size: 0.84rem;
+  line-height: 1.3;
 }
 
 .chat-message__time {
-  font-size: 0.74rem;
+  font-size: 0.62rem;
 }
 
 .chat-form__input {
-  font-size: 0.95rem;
+  font-size: 0.84rem;
 }
 
 .chat-reply-preview__label {
-  font-size: 0.76rem;
+  font-size: 0.7rem;
 }
 
 .chat-reply-preview__text {
-  font-size: 0.84rem;
+  font-size: 0.78rem;
 }
 
 /* ============================================================
@@ -1680,16 +1680,16 @@ body.modal-open {
 /* Compact chat styles for small screens */
 @media (max-width: 640px) {
   .chat-thread {
-    max-height: 200px;
-    gap: 4px;
+    max-height: 220px;
+    gap: 3px;
   }
   .chat-message {
-    padding: 7px 9px;
+    padding: 5px 7px;
   }
-  .chat-message__author { font-size: 0.74rem; }
-  .chat-message__text { font-size: 0.88rem; line-height: 1.32; }
-  .chat-message__time { font-size: 0.68rem; }
-  .chat-form__input { padding: 9px 10px; font-size: 0.9rem; }
+  .chat-message__author { font-size: 0.68rem; }
+  .chat-message__text { font-size: 0.8rem; line-height: 1.24; }
+  .chat-message__time { font-size: 0.6rem; }
+  .chat-form__input { padding: 7px 9px; font-size: 0.82rem; }
 }
 
 .add-location-card__note {
@@ -2019,25 +2019,25 @@ body.modal-open {
   }
 
   .chat-message {
-    padding: 7px 9px;
+    padding: 5px 7px;
   }
 
   .chat-message__author {
-    font-size: 0.74rem;
-  }
-
-  .chat-message__text {
-    font-size: 0.86rem;
-    line-height: 1.33;
-  }
-
-  .chat-message__time {
     font-size: 0.66rem;
   }
 
+  .chat-message__text {
+    font-size: 0.78rem;
+    line-height: 1.22;
+  }
+
+  .chat-message__time {
+    font-size: 0.58rem;
+  }
+
   .chat-form__input {
-    font-size: 0.88rem;
-    padding: 9px 10px;
+    font-size: 0.8rem;
+    padding: 7px 9px;
   }
 
   .chat-scope-row {
@@ -2425,7 +2425,7 @@ body.modal-open {
 
   .chat-message__text,
   .chat-form__input {
-    font-size: 0.82rem;
+    font-size: 0.76rem;
   }
 
   .bottom-icons-container {
