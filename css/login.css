@@ -517,4 +517,30 @@
     font-size: 0.8rem;
     margin-top: 22px;
   }
+  
+  .login-form-side::before {
+    width: 150px;
+    height: 150px;
+    top: -58px;
+    right: -54px;
+    background:
+      radial-gradient(circle at 34% 32%, rgba(255, 255, 255, 0.18), transparent 24%),
+      radial-gradient(circle at 46% 46%, rgba(214, 162, 74, 0.68), rgba(166, 108, 20, 0.34) 46%, transparent 68%),
+      radial-gradient(circle at 66% 68%, rgba(28, 90, 158, 0.64), transparent 60%);
+    filter: blur(1.4px) saturate(0.92);
+    animation-duration: 4.2s;
+  }
+  
+  .login-form-side::after {
+    width: 162px;
+    height: 162px;
+    left: -60px;
+    bottom: -72px;
+    background:
+      radial-gradient(circle at 32% 30%, rgba(255, 255, 255, 0.14), transparent 22%),
+      radial-gradient(circle at 58% 42%, rgba(28, 90, 158, 0.6), transparent 58%),
+      radial-gradient(circle at 44% 70%, rgba(214, 162, 74, 0.66), rgba(166, 108, 20, 0.3) 48%, transparent 68%);
+    filter: blur(1.4px) saturate(0.92);
+    animation-duration: 4.8s;
+  }
 }
