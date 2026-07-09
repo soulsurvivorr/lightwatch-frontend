@@ -2,21 +2,28 @@
     box-sizing: border-box;
 }
 
+html,
+body {
+    height: 100%;
+}
+
 body {
     margin: 0;
-    min-height: 100vh;
+    min-height: 100svh;
     display: flex;
     justify-content: center; /* left-right */
     align-items: center;     /* top-bottom */
-        padding: .9rem;
+    padding: 0;
     background: var(--bg-deep);
     color: var(--text-bright);
+    overflow: hidden;
 }
 
 section {
-    padding: 0rem;
+    padding: 0;
     width: 100%;
-    max-width: 700px;
+    max-width: 920px;
+    max-height: 100svh;
         background-image:
             linear-gradient(140deg, rgba(214, 162, 74, 0.16), rgba(74, 144, 217, 0.08) 60%, rgba(14, 19, 29, 0.12)),
             url("../images/ChatGPT Image Jun 18, 2026, 02_54_18 AM.png");
@@ -45,7 +52,7 @@ section {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 1.5rem;
+    gap: 1rem;
 }
 
 .submit-info-section {
@@ -93,7 +100,7 @@ img {
     background-color: color-mix(in srgb, var(--bg-panel) 94%, transparent);
     border: 1px solid var(--border-soft);
     backdrop-filter: blur(3px);
-    padding: 2rem 1.3rem;
+    padding: 1.45rem 1.1rem;
     border-radius: 10px;
 }
 
@@ -121,7 +128,7 @@ img {
 }
 
 .user-icon-container {
-    margin-bottom: 1.4rem;
+    margin-bottom: .7rem;
 }
 
 .prompt-inputs{
@@ -148,7 +155,7 @@ img {
 }
 
 .prompt-input-tabs {
-    margin-top: 1.4rem;
+    margin-top: .72rem;
 }
 
 .prompt-input-tabs p {
@@ -168,7 +175,7 @@ img {
     display: inline-flex;
     align-items: center;
     gap: 10px;
-    margin: .2rem 0 1rem 0;
+    margin: .18rem 0 .72rem 0;
     cursor: pointer;
     user-select: none;
 }
@@ -219,7 +226,7 @@ img {
     color: #fff;
     font-size: .9rem;
     width: 100%;
-    padding: 14px;
+    padding: 12px;
     border: none;
     border-radius: 6px;
     cursor: pointer;
@@ -237,8 +244,19 @@ img {
 footer {
     text-align: center;
     font-size: .7rem;
-    margin-top: 1.2rem;
+    margin-top: .75rem;
     color: var(--text-faint);
+}
+
+/* Laptop/desktop: keep standalone layout and remove photo texture. */
+@media (min-width: 1024px) {
+    section {
+        background-image: linear-gradient(140deg, rgba(214, 162, 74, 0.14), rgba(74, 144, 217, 0.1) 70%, rgba(14, 19, 29, 0.08));
+    }
+
+    :root[data-theme="dark"] section {
+        background-image: linear-gradient(140deg, rgba(214, 162, 74, 0.17), rgba(74, 144, 217, 0.14) 70%, rgba(5, 8, 13, 0.42));
+    }
 }
 
 :root[data-theme="dark"] section {
@@ -263,8 +281,14 @@ footer {
 
 /* ===== Responsiveness ===== */
 @media (max-width: 700px) {
+    body {
+        min-height: 100svh;
+        align-items: stretch;
+    }
+
     #main-content_wrapper {
         flex-direction: column;
+        gap: .7rem;
     }
 
     .submit-info-section {
@@ -274,6 +298,9 @@ footer {
     }
 
     section {
+        max-width: none;
+        max-height: 100svh;
+        border-radius: 0;
         background-image: none;
         box-shadow: none;
         border: none;
@@ -288,7 +315,7 @@ footer {
 
 
     #input-field-section {
-        padding: 1.2rem 1rem;
+        padding: 1rem .92rem;
     }
 
     .submit-info-section h3 {
@@ -303,11 +330,20 @@ footer {
 
     .prompt-inputs {
         font-size: .76rem;
-        padding: 12px 10px;
+        padding: 10px 9px;
+    }
+
+    .prompt-input-tabs {
+        margin-top: .56rem;
+    }
+
+    .notify-wrapper {
+        margin-top: .78rem !important;
     }
 
     .submit-btn {
         font-size: .84rem;
+        padding: 11px;
     }
 
     .user-icon-container h3 {
@@ -316,5 +352,6 @@ footer {
 
     footer {
         font-size: .65rem;
+        margin-top: .62rem;
     }
 }

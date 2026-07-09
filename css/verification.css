@@ -4,20 +4,22 @@
 
 html, body {
     min-height: 100%;
+    height: 100%;
 }
 
 body {
     margin: 0;
     display: flex;
-    gap: 2em;
+    gap: 0;
     flex-direction: column;
-    min-height: 100vh;
+    min-height: 100svh;
         background-color: var(--bg-deep);
         background-image:
             radial-gradient(circle at 10% 0%, rgba(214, 162, 74, 0.1), transparent 42%),
             radial-gradient(circle at 100% 100%, rgba(74, 144, 217, 0.08), transparent 48%);
     color: var(--text-bright);
         font-family: var(--font-body);
+    overflow: hidden;
 }
 
 header {
@@ -51,8 +53,8 @@ main {
     flex: 1;
     justify-content: center;
     align-items: center;
-    margin: .5em 0;
-    padding: 0 1.2rem;
+    margin: 0;
+    padding: .6rem .9rem;
     z-index: 1;
 }
 
@@ -68,13 +70,13 @@ main p {
 main div.verify-card {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: .75rem;
     width: 100%;
     max-width: 420px;
     background-color: color-mix(in srgb, var(--bg-panel) 94%, transparent);
     border: 1px solid var(--border-soft);
     backdrop-filter: blur(4px);
-    padding: 2rem;
+    padding: 1.55rem;
     border-radius: 16px;
     box-shadow: 0 4px 18px rgba(0,0,0,0.08);
 }
@@ -91,9 +93,9 @@ main div.verify-card {
 /* ---- OTP boxes: underline style only, no full border box ---- */
 .otp-boxes {
     display: flex;
-    gap: 16px;
+    gap: 12px;
     justify-content: center;
-    margin: .4rem 0;
+    margin: .25rem 0;
 }
 
 .otp-box {
@@ -134,7 +136,7 @@ main div.verify-card {
 }
 
 .resend-row p {
-    font-size: .85rem;
+    font-size: .8rem;
     color: var(--text-muted);
 }
 
@@ -204,7 +206,7 @@ button:disabled:hover {
     }
 
     main div.verify-card {
-        padding: 1.5rem;
+        padding: 1.2rem;
         border-radius: 12px;
         box-shadow: none;
     }
@@ -216,6 +218,10 @@ button:disabled:hover {
 }
 
 @media (max-width: 400px) {
+    main {
+        padding: .45rem .55rem;
+    }
+
     header h3 {
         font-size: .88rem;
     }
@@ -229,7 +235,7 @@ button:disabled:hover {
     }
 
     .otp-boxes {
-        gap: 12px;
+        gap: 10px;
     }
 
     .otp-box {
