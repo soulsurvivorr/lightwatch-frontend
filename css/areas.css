@@ -66,27 +66,28 @@
 .area-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 0;
+  gap: 10px;
   margin-bottom: 0;
 }
 
 .area-card {
-  background: transparent;
-  border: 0;
-  border-bottom: 1px solid var(--border-soft);
-  border-radius: 0;
-  padding: 12px 2px;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--bg-panel) 92%, #ffffff 8%), color-mix(in srgb, var(--bg-panel-raised) 90%, #f8fbff 10%));
+  border: 1px solid color-mix(in srgb, var(--border-soft) 85%, var(--teal) 15%);
+  border-radius: 14px;
+  padding: 14px 14px 12px;
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(0, 0.9fr) minmax(120px, 0.8fr);
-  align-items: center;
-  gap: 8px 14px;
-  box-shadow: none;
-  transition: background 0.15s ease;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr) minmax(0, 1fr);
+  align-items: start;
+  gap: 10px 14px;
+  box-shadow: 0 8px 22px rgba(8, 14, 24, 0.08);
+  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
   animation: fadeInUp 0.35s ease both;
 }
 
 .area-card:hover {
-  background: rgba(61, 217, 194, 0.035);
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--teal) 32%, var(--border-soft));
+  box-shadow: 0 12px 24px rgba(8, 14, 24, 0.13);
 }
 
 .area-card__top {
@@ -98,7 +99,7 @@
 
 .area-card__right {
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
 }
 
 .area-card__name-row {
@@ -132,20 +133,21 @@
 
 .area-card__meta-grid {
   display: flex;
-  justify-content: flex-end;
+  justify-content: flex-start;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .area-card__meta-item {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
   background: transparent;
   border: 0;
   border-radius: 0;
   padding: 0;
-  min-width: 74px;
+  min-width: 96px;
 }
 
 .area-card__meta-label {
@@ -156,8 +158,45 @@
 }
 
 .area-card__meta-value {
-  font-size: 0.8rem;
+  font-size: 0.83rem;
   color: var(--text-soft);
+}
+
+.area-card__meta-item--confidence {
+  min-width: 180px;
+}
+
+.area-card__meta-value--confidence {
+  font-weight: 700;
+  color: var(--text-bright);
+}
+
+.area-card__confidence-track {
+  position: relative;
+  width: 100%;
+  max-width: 190px;
+  height: 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--border-soft) 72%, #8fa2ba 28%);
+  overflow: hidden;
+}
+
+.area-card__confidence-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+}
+
+.area-card__confidence-fill--high {
+  background: linear-gradient(90deg, #1fbba3, #3dd9c2);
+}
+
+.area-card__confidence-fill--mid {
+  background: linear-gradient(90deg, #d6a24a, #efc66a);
+}
+
+.area-card__confidence-fill--low {
+  background: linear-gradient(90deg, #d8704a, #e5484d);
 }
 
 .areas-board {
@@ -313,7 +352,7 @@
   .area-card {
     grid-template-columns: 1fr;
     align-items: stretch;
-    padding: 12px 0;
+    padding: 12px;
   }
 
   .area-card__right {

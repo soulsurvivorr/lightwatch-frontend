@@ -10,13 +10,15 @@ function shouldShowHomeReminder() {
     return false;
   }
 
-  return sessionStorage.getItem(HOME_REMINDER_SEEN_KEY) !== '1';
+  return true;
 }
 
 function closeHomeReminder() {
   const overlay = document.getElementById('homeReminderOverlay');
   if (!overlay) return;
+  document.body.classList.remove('modal-open');
   overlay.hidden = true;
+  overlay.classList.remove('is-open');
   sessionStorage.setItem(HOME_REMINDER_SEEN_KEY, '1');
 }
 
@@ -24,6 +26,8 @@ function openHomeReminder() {
   const overlay = document.getElementById('homeReminderOverlay');
   if (!overlay) return;
   overlay.hidden = false;
+  overlay.classList.add('is-open');
+  document.body.classList.add('modal-open');
 }
 
 function initHomeReminder() {
@@ -31,6 +35,12 @@ function initHomeReminder() {
   if (!overlay) return;
 
   document.getElementById('homeReminderCloseBtn')?.addEventListener('click', closeHomeReminder);
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && !overlay.hidden) {
+      closeHomeReminder();
+    }
+  });
+
   overlay.addEventListener('click', (event) => {
     if (event.target === overlay) closeHomeReminder();
   });

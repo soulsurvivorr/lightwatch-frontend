@@ -38,8 +38,8 @@
   --text-faint: black;
 
   /* Type */
-  --font-display: "Helvetica Neue", Helvetica, Arial, sans-serif;
-  --font-body: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-display: "Sora", "Segoe UI", sans-serif;
+  --font-body: "Manrope", "Segoe UI", sans-serif;
 
   /* Layout */
   --radius-sm: 6px;
@@ -69,8 +69,8 @@
   --text-bright: #121318;
   --text-muted: #2d3342;
   --text-faint: #4f576b;
-  --font-display: "Helvetica Neue", Helvetica, Arial, sans-serif;
-  --font-body: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-display: "Sora", "Segoe UI", sans-serif;
+  --font-body: "Manrope", "Segoe UI", sans-serif;
 }
 
 :root[data-theme="dark"] {
@@ -84,8 +84,8 @@
   --text-bright: #eef3fb;
   --text-muted: #bdc8da;
   --text-faint: #90a0b8;
-  --font-display: "Helvetica Neue", Helvetica, Arial, sans-serif;
-  --font-body: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-display: "Sora", "Segoe UI", sans-serif;
+  --font-body: "Manrope", "Segoe UI", sans-serif;
 
   /* Higher-contrast nav appearance for dark mode */
   --bottom-nav-surface: linear-gradient(165deg, rgba(46, 55, 69, 0.96), rgba(28, 35, 46, 0.94));
@@ -110,8 +110,8 @@
     --text-bright: #eef3fb;
     --text-muted: #bdc8da;
     --text-faint: #90a0b8;
-    --font-display: "Helvetica Neue", Helvetica, Arial, sans-serif;
-    --font-body: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --font-display: "Sora", "Segoe UI", sans-serif;
+    --font-body: "Manrope", "Segoe UI", sans-serif;
 
     --bottom-nav-surface: linear-gradient(165deg, rgba(46, 55, 69, 0.96), rgba(28, 35, 46, 0.94));
     --bottom-nav-border: rgba(153, 178, 218, 0.45);

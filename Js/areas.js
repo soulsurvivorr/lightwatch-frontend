@@ -9,13 +9,13 @@
 // =========================================================
 
 const DEMO_AREAS = [
-  { name: 'Asokwa', status: 'on', lastUpdated: '12m ago', reports: 14, live: false },
-  { name: 'Adum', status: 'off', lastUpdated: '6m ago', reports: 9, live: false },
-  { name: 'Suame', status: 'on', lastUpdated: '22m ago', reports: 11, live: false },
-  { name: 'Ahodwo', status: 'off', lastUpdated: '18m ago', reports: 7, live: false },
-  { name: 'Nhyiaeso', status: 'on', lastUpdated: '31m ago', reports: 8, live: false },
-  { name: 'Tafo', status: 'unknown', lastUpdated: 'No fresh demo update', reports: 4, live: false },
-  { name: 'KNUST', status: 'on', lastUpdated: '9m ago', reports: 16, live: false }
+  { name: 'Asokwa', status: 'on', lastUpdated: '12m ago', reports: 14, confidence: 86, live: false },
+  { name: 'Adum', status: 'off', lastUpdated: '6m ago', reports: 9, confidence: 78, live: false },
+  { name: 'Suame', status: 'on', lastUpdated: '22m ago', reports: 11, confidence: 72, live: false },
+  { name: 'Ahodwo', status: 'off', lastUpdated: '18m ago', reports: 7, confidence: 67, live: false },
+  { name: 'Nhyiaeso', status: 'on', lastUpdated: '31m ago', reports: 8, confidence: 63, live: false },
+  { name: 'Tafo', status: 'unknown', lastUpdated: 'No fresh update', reports: 4, confidence: 41, live: false },
+  { name: 'KNUST', status: 'on', lastUpdated: '9m ago', reports: 16, confidence: 89, live: false }
 ];
 
 // Matches the slower polling cadence used elsewhere on the site
@@ -44,7 +44,7 @@ function relativeTime(dateInput) {
   return `${days}d ago`;
 }
 
-function areaCardTemplate({ name, status, lastUpdated, reports, live }) {
+function areaCardTemplate({ name, status, lastUpdated, reports, confidence, live }) {
   const isOn = status === 'on';
   const isUnknown = status === 'unknown' || !status;
   const statusLabel = isUnknown ? 'Checking status' : isOn ? 'Light on' : 'Light off';
@@ -53,6 +53,8 @@ function areaCardTemplate({ name, status, lastUpdated, reports, live }) {
   const reportLabel = reports === null || reports === undefined
     ? '—'
     : `${reports} report${reports === 1 ? '' : 's'}`;
+  const confidenceValue = Math.max(20, Math.min(100, Number(confidence || 0)));
+  const confidenceTone = confidenceValue >= 80 ? 'high' : confidenceValue >= 60 ? 'mid' : 'low';
 
   return `
     <div class="area-card" data-area="${name}">
@@ -75,6 +77,13 @@ function areaCardTemplate({ name, status, lastUpdated, reports, live }) {
           <span class="area-card__meta-label">Updated</span>
           <span class="area-card__meta-value">${lastUpdated}</span>
         </div>
+        <div class="area-card__meta-item area-card__meta-item--confidence">
+          <span class="area-card__meta-label">Community confidence</span>
+          <span class="area-card__meta-value area-card__meta-value--confidence">${confidenceValue}%</span>
+          <span class="area-card__confidence-track" role="img" aria-label="Community confidence ${confidenceValue}%">
+            <span class="area-card__confidence-fill area-card__confidence-fill--${confidenceTone}" style="width:${confidenceValue}%"></span>
+          </span>
+        </div>
       </div>
     </div>
   `;
@@ -83,10 +92,10 @@ function areaCardTemplate({ name, status, lastUpdated, reports, live }) {
 function renderSummary(areas) {
   const total = areas.length;
   const liveCount = areas.filter(a => a.live).length;
-  const demoCount = total - liveCount;
+  const signalCount = total - liveCount;
   const summaryEl = document.getElementById('areasSummaryText');
   if (summaryEl) {
-    summaryEl.textContent = `${liveCount} live area and ${demoCount} demo neighborhood previews`;
+    summaryEl.textContent = `${liveCount} live area and ${signalCount} community-signal neighborhoods`; 
   }
 }
 
@@ -133,11 +142,12 @@ async function fetchLiveBantama() {
       status: data.status || 'unknown',
       lastUpdated: relativeTime(data.reportedAt),
       reports: data.stats ? data.stats.totalChecks : null,
+      confidence: data.stats?.sourceConfidence ? Number(data.stats.sourceConfidence) : 92,
       live: true
     };
   } catch (err) {
     console.error(`Failed to load live status for ${name}:`, err.message);
-    return { name, status: 'unknown', lastUpdated: 'Unavailable', reports: null, live: true };
+    return { name, status: 'unknown', lastUpdated: 'Unavailable', reports: null, confidence: 38, live: true };
   }
 }
 

@@ -1,31 +1,11 @@
 // =========================================================
 // onboarding.js
-// A one-time walkthrough shown the first time a user reaches the
-// app. It advances slide-by-slide and closes after the final step.
-// Once completed, it's stored in localStorage so it never shows
-// again on this device.
-//
-// To reset it for testing: localStorage.removeItem('lw_onboarding_seen')
+// Full-screen walkthrough shown on every fresh visit to index.html.
+// It blocks interaction with the sign-in form until the final step
+// is acknowledged.
 // =========================================================
 
-const ONBOARDING_KEY = 'lw_onboarding_seen';
 let onboardingCurrentSlide = 0;
-
-function hasSeenOnboarding() {
-  try {
-    return localStorage.getItem(ONBOARDING_KEY) === '1';
-  } catch {
-    return true; // if storage is unavailable, don't block the app on it
-  }
-}
-
-function markOnboardingSeen() {
-  try {
-    localStorage.setItem(ONBOARDING_KEY, '1');
-  } catch {
-    /* ignore */
-  }
-}
 
 function setOnboardingSlide(index) {
   const slides = document.querySelectorAll('.onboarding-slide');
@@ -47,7 +27,6 @@ function closeOnboarding() {
   const overlay = document.getElementById('onboardingOverlay');
   if (!overlay) return;
   overlay.classList.remove('is-open');
-  markOnboardingSeen();
   setTimeout(() => overlay.remove(), 250);
 }
 
@@ -61,11 +40,6 @@ function openOnboarding() {
 function initOnboarding() {
   const overlay = document.getElementById('onboardingOverlay');
   if (!overlay) return;
-
-  if (hasSeenOnboarding()) {
-    overlay.remove();
-    return;
-  }
 
   document.getElementById('onboardingNextBtn')?.addEventListener('click', () => {
     const totalSlides = document.querySelectorAll('.onboarding-slide').length;
