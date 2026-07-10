@@ -68,7 +68,11 @@ function urlBase64ToUint8Array(base64String) {
     return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
 }
 
-// ── Main: register SW, request permission, subscribe ─────────
+// ── Auto-init on page load: registers the SW and silently
+//    resubscribes IF the user already granted permission in a
+//    past session. Does NOT call Notification.requestPermission()
+//    here — see enableLightWatchPush() below for why.
+// ───────────────────────────────────────────────────────────
 async function initPushNotifications() {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
         console.log('Push notifications not supported on this browser.');
@@ -87,23 +91,30 @@ async function initPushNotifications() {
             return;
         }
 
-        const permission = await Notification.requestPermission();
-        if (permission !== 'granted') {
-            console.log('Push permission denied.');
-            return;
+        // Only auto-subscribe if permission was already granted in a
+        // previous session (e.g. returning user, or a browser that
+        // allows silent re-subscription). If permission is still
+        // 'default', we deliberately do NOT call requestPermission()
+        // here — on iOS Safari, calling it outside a direct user
+        // gesture (tap/click) is silently ignored: no prompt ever
+        // shows, and the app never appears under iOS Settings >
+        // Notifications, because iOS never received a real request.
+        // That state is indistinguishable from "nothing to enable",
+        // which is exactly the symptom this was causing.
+        if (Notification.permission === 'granted') {
+            const subscription = await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+            });
+            await sendSubscriptionToServer(subscription);
+            await maybeShowPushWelcome(registration);
+            console.log('Push notifications enabled (resubscribed silently).');
+        } else {
+            console.log(`Push permission is "${Notification.permission}" — waiting for a user tap (enableLightWatchPush) before requesting.`);
         }
 
-        const subscription = await registration.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-        });
-
-        await sendSubscriptionToServer(subscription);
-        await maybeShowPushWelcome(registration);
-        console.log('Push notifications enabled.');
-
     } catch (err) {
-        console.error('Push subscription failed:', err);
+        console.error('Push init failed:', err);
     }
 }
 
@@ -113,6 +124,45 @@ function ensurePushNotificationsInitialized() {
     }
     return pushInitPromise;
 }
+
+// ── Call this from a real tap/click handler — e.g.
+//    <button onclick="enableLightWatchPush()">Enable notifications</button>
+//    This is the ONLY safe place to call Notification.requestPermission()
+//    for iOS: it must run synchronously in response to a user gesture,
+//    with no significant delay/await beforehand.
+// ───────────────────────────────────────────────────────────
+async function enableLightWatchPush() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        window.lwToast?.('Push notifications are not supported on this browser or device.');
+        return;
+    }
+
+    try {
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+            console.log('Push permission denied.');
+            window.lwToast?.('Notifications permission was not granted.');
+            return;
+        }
+
+        const registration = await navigator.serviceWorker.ready;
+        const existing = await registration.pushManager.getSubscription();
+        const subscription = existing || await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+        });
+
+        await sendSubscriptionToServer(subscription);
+        await maybeShowPushWelcome(registration);
+        console.log('Push notifications enabled.');
+        window.lwToast?.('Notifications are on.');
+    } catch (err) {
+        console.error('Push subscription failed:', err);
+        window.lwToast?.('Could not enable notifications — please try again.');
+    }
+}
+
+window.enableLightWatchPush = enableLightWatchPush;
 
 // ── Send subscription + user location to backend ─────────────
 async function sendSubscriptionToServer(subscription) {
@@ -148,6 +198,7 @@ async function syncSubscriptionWithCurrentLocation() {
 }
 
 // Start immediately so mobile does not wait on location/profile calls.
+// (Safe now — this no longer calls requestPermission() unprompted.)
 ensurePushNotificationsInitialized();
 
 // Prepare audio playback after first user interaction.

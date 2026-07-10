@@ -75,6 +75,19 @@ function confidenceInfo(confirmations) {
   return { label: 'Unverified', cls: 'unverified', title: 'No community confirmations yet' };
 }
 
+function confidencePercent(confirmations) {
+  if (confirmations === null || confirmations === undefined) return 20;
+  if (confirmations <= 0) return 16;
+  if (confirmations === 1) return 38;
+  if (confirmations === 2) return 57;
+  if (confirmations === 3) return 71;
+  return Math.min(96, 78 + (confirmations - 4) * 4);
+}
+
+function safeId(name) {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+}
+
 function areaRowTemplate({ name, status, minutesAgo, confirmations, live }) {
   const isOn = status === 'on';
   const isUnknown = status === 'unknown' || !status;
@@ -83,14 +96,36 @@ function areaRowTemplate({ name, status, minutesAgo, confirmations, live }) {
   const pulseClass = isUnknown ? 'pulse--low' : isOn ? 'pulse--on' : 'pulse--off';
   const timeText = formatRelativeTime(minutesAgo);
   const confidence = confidenceInfo(confirmations);
+  const confidencePct = confidencePercent(confirmations);
+  const confidenceCount = confirmations === null || confirmations === undefined ? 0 : confirmations;
+  const statusInsight = isUnknown
+    ? 'Signal is still settling. More reports will lock this in.'
+    : isOn
+      ? 'Power is stable in recent checks. Risk of disruption is currently low.'
+      : 'Recent reports lean toward outage. Keep devices charged as a backup.';
+  const detailsId = `area-details-${safeId(name)}`;
 
   return `
     <div class="area-row" data-area="${name}" data-status="${status}" data-name="${name.toLowerCase()}" role="listitem">
-      <span class="area-row__dot pulse ${pulseClass}"></span>
-      <span class="area-row__name">${name}${live ? ' <span class="area-row__live">LIVE</span>' : ''}</span>
-      <span class="area-row__confidence area-row__confidence--${confidence.cls}" title="${confidence.title}">${confidence.label}</span>
-      <span class="area-row__time">${timeText}</span>
-      <span class="badge ${badgeClass} area-row__badge">${statusLabel}</span>
+      <div class="area-row__main">
+        <span class="area-row__dot pulse ${pulseClass}"></span>
+        <span class="area-row__name">${name}${live ? ' <span class="area-row__live">LIVE</span>' : ''}</span>
+        <span class="area-row__confidence area-row__confidence--${confidence.cls}" title="${confidence.title}">${confidence.label}</span>
+        <span class="area-row__time">${timeText}</span>
+        <span class="badge ${badgeClass} area-row__badge">${statusLabel}</span>
+        <button type="button" class="area-row__toggle" aria-expanded="false" aria-controls="${detailsId}" aria-label="Show ${name} details"></button>
+      </div>
+      <div class="area-row__details" id="${detailsId}">
+        <p class="area-details__summary">${statusInsight}</p>
+        <div class="area-details__metric-row">
+          <span class="area-details__label">Confidence</span>
+          <span class="area-details__value">${confidencePct}% (${confidenceCount} reports)</span>
+        </div>
+        <div class="area-details__meter" role="presentation" aria-hidden="true">
+          <span style="width:${confidencePct}%"></span>
+        </div>
+        <div class="area-details__meta">Community pulse updates: ${timeText}</div>
+      </div>
     </div>
   `;
 }
@@ -184,6 +219,19 @@ function bindControls() {
     searchInput.addEventListener('input', () => {
       currentSearch = searchInput.value.trim().toLowerCase();
       applyFilters();
+    });
+  }
+
+  const grid = document.getElementById('areaGrid');
+  if (grid) {
+    grid.addEventListener('click', (event) => {
+      const toggle = event.target.closest('.area-row__toggle');
+      if (!toggle) return;
+      const row = toggle.closest('.area-row');
+      if (!row) return;
+      const willOpen = !row.classList.contains('is-open');
+      row.classList.toggle('is-open', willOpen);
+      toggle.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
     });
   }
 }
