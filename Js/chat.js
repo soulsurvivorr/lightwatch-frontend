@@ -5,6 +5,7 @@
 // =========================================================
 
 const chatThread = document.getElementById('chatThread');
+const chatScrollBottomBtn = document.getElementById('chatScrollBottomBtn');
 const chatForm   = document.getElementById('chatForm');
 const chatInput  = document.getElementById('chatInput');
 const chatHandleDisplay = document.getElementById('chatHandle');
@@ -233,6 +234,18 @@ function updateChatPlaceholder() {
 
 function focusTargetMessageIfPresent() {
     if (!pendingFocusChatId || !chatThread) return;
+
+    // If the skeleton is still covering the real page, acting now just
+    // moves/opens elements nobody can see yet, and skips straight to the
+    // "already open" state with no transition once the skeleton clears.
+    // Wait for profile.js to actually reveal the page first.
+    const stillBehindSkeleton = document.body?.classList.contains('page-data-loading')
+        || document.body?.classList.contains('app-loading');
+    if (stillBehindSkeleton) {
+        window.addEventListener('lw-page-revealed', focusTargetMessageIfPresent, { once: true });
+        return;
+    }
+
     const target = [...chatThread.querySelectorAll('.chat-message')]
         .find(el => el.dataset.chatId === pendingFocusChatId);
     if (!target) return;
@@ -264,12 +277,29 @@ updateScopeButtons();
 chatThread?.addEventListener('scroll', () => {
     if (!chatThread) return;
     isNearBottom = (chatThread.scrollHeight - chatThread.scrollTop - chatThread.clientHeight) < 80;
+    chatScrollBottomBtn?.classList.toggle('is-visible', !isNearBottom);
 });
+
+function scrollChatToBottom(smooth) {
+    if (!chatThread) return;
+    chatThread.scrollTo({ top: chatThread.scrollHeight, behavior: smooth ? 'smooth' : 'auto' });
+    isNearBottom = true;
+    chatScrollBottomBtn?.classList.remove('is-visible');
+}
+
+chatScrollBottomBtn?.addEventListener('click', () => scrollChatToBottom(true));
 
 function addToThread(chat, isOwn, scrollDown) {
     const el = buildMessageEl(chat, isOwn);
     chatThread.appendChild(el);
-    if (scrollDown || isNearBottom) chatThread.scrollTop = chatThread.scrollHeight;
+    if (scrollDown || isNearBottom) {
+        chatThread.scrollTop = chatThread.scrollHeight;
+    } else {
+        // A message arrived while the user has scrolled up to read
+        // history — surface the jump-to-bottom button instead of
+        // silently moving their view.
+        chatScrollBottomBtn?.classList.add('is-visible');
+    }
 }
 
 // -------------------------------------------------------
@@ -422,6 +452,15 @@ function setMobileChatOpen(open) {
     if (!card) return;
     card.classList.toggle('chat-card--mobile-open', open);
     setMobileScrollLock(open);
+
+    const toggle = document.getElementById('mobileChatToggle');
+    if (toggle) {
+        const icon = toggle.querySelector('.mobile-chat-toggle__icon');
+        const label = toggle.querySelector('.mobile-chat-toggle__label');
+        if (icon) icon.textContent = open ? '✕' : '💬';
+        if (label) label.textContent = open ? 'Close' : 'Chat';
+        toggle.setAttribute('aria-label', open ? 'Close chat' : 'Open chat');
+    }
 }
 
 document.getElementById('mobileChatToggle')?.addEventListener('click', () => {

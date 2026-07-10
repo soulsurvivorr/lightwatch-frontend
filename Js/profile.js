@@ -489,6 +489,15 @@ function hideProfileLoader() {
     }
     document.body?.classList.remove('app-loading');
     document.getElementById('lwBootLoader')?.remove();
+
+    // Anything that needs the real page (not the skeleton) to actually
+    // be visible before it acts — e.g. chat.js opening the mobile chat
+    // popup for a notification deep-link — should wait for this instead
+    // of reacting the moment its own data happens to be ready. Reacting
+    // early was toggling the popup open while it was still hidden behind
+    // the skeleton, so it appeared already-open with no transition once
+    // the skeleton cleared.
+    window.dispatchEvent(new CustomEvent('lw-page-revealed'));
 }
 
 function waitForChatReady(maxWait = 700) {
