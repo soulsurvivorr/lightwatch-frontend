@@ -2086,7 +2086,7 @@ body.modal-open {
     box-shadow: 0 10px 30px rgba(0,0,0,0.2);
     backdrop-filter: blur(10px);
     transform: translateY(0);
-    transition: transform 0.22s cubic-bezier(0.22, 0.74, 0.2, 1), box-shadow 0.22s ease;
+    transition: bottom 0.24s cubic-bezier(0.22, 0.74, 0.2, 1), transform 0.22s cubic-bezier(0.22, 0.74, 0.2, 1), box-shadow 0.22s ease;
   }
 
   .mobile-chat-toggle__icon {
@@ -2101,7 +2101,8 @@ body.modal-open {
   }
 
   body.mobile-chat-open .mobile-chat-toggle {
-    transform: translateY(5px);
+    bottom: calc(82px + env(safe-area-inset-bottom));
+    transform: translateY(0);
     box-shadow: 0 8px 24px rgba(0,0,0,0.18);
   }
 }
@@ -2929,5 +2930,15 @@ body.modal-open {
   .mobile-chat-toggle__label {
     font-size: 0.7rem;
     line-height: 1;
+  }
+
+  body.mobile-chat-open .mobile-chat-toggle {
+    bottom: calc(72px + env(safe-area-inset-bottom));
+  }
+}
+
+@media (min-width: 391px) and (max-width: 720px) {
+  body.mobile-chat-open .mobile-chat-toggle {
+    bottom: calc(78px + env(safe-area-inset-bottom));
   }
 }
