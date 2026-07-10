@@ -1647,10 +1647,17 @@ body.modal-open {
    same whether the card is the inline desktop panel or the mobile
    popup. Only shown once the thread has scrolled away from the
    latest message — see chat.js. */
+.chat-thread-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
 .chat-scroll-bottom-btn {
   position: absolute;
   right: 14px;
-  bottom: 64px;
+  bottom: 12px;
   width: 34px;
   height: 34px;
   display: flex;
@@ -2141,16 +2148,18 @@ body.modal-open {
     padding-bottom: calc(8px + env(safe-area-inset-bottom));
   }
 
+  .chat-card--mobile-open .chat-thread-wrap {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
   .chat-card--mobile-open .chat-thread {
     flex: 1 1 auto;
     min-height: 0;
+    height: 100%;
     max-height: none;
     overflow-y: auto;
     padding-bottom: 6px;
-  }
-
-  .chat-card--mobile-open .chat-scroll-bottom-btn {
-    bottom: 72px;
   }
 
   .chat-card__head {
@@ -2263,14 +2272,6 @@ body.modal-open {
 }
 
 @media (max-width: 480px) {
-  .chat-form {
-    flex-direction: column;
-  }
-
-  .chat-form .btn {
-    width: 100%;
-  }
-
   .chat-message {
     padding: 5px 7px;
   }
@@ -3072,5 +3073,56 @@ body.modal-open {
 @media (min-width: 391px) and (max-width: 720px) {
   body.mobile-chat-open .mobile-chat-toggle {
     bottom: calc(78px + env(safe-area-inset-bottom));
+  }
+}
+
+/* ------------------------------------------------------------
+   Chat popup — final, single source of truth for phone sizing.
+   Earlier breakpoints (640/480/430/400/390) accumulated several
+   overlapping, sometimes contradictory rules for the same chat
+   elements, so devices that missed the narrowest bands (e.g.
+   iPhone XR at 414px, iPhone 14 Pro Max at 430px) ended up with
+   larger fonts/padding than Samsung S8/SE (which matched every
+   band down to 390px) — same available width, visibly less
+   breathing room around the close/send/scroll-arrow controls.
+   This block applies one consistent, compact sizing to every
+   phone up to 480px so the popup looks the same, well-spaced way
+   on all of them. It is intentionally last in the file so it
+   wins over the earlier fragmented rules. ------------------- */
+@media (max-width: 480px) {
+  .chat-card__head {
+    gap: 10px;
+  }
+
+  .chat-close-btn {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+  }
+
+  .chat-thread-wrap {
+    gap: 6px;
+  }
+
+  .chat-form {
+    gap: 8px;
+  }
+
+  .chat-form__input {
+    font-size: 0.82rem;
+    padding: 8px 9px;
+  }
+
+  .chat-form .btn {
+    font-size: 0.78rem;
+    padding: 8px 12px;
+    min-width: 64px;
+  }
+
+  .chat-scroll-bottom-btn {
+    width: 32px;
+    height: 32px;
+    right: 12px;
+    bottom: 10px;
   }
 }
