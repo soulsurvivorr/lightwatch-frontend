@@ -463,6 +463,10 @@ function showProfileLoader(maxDuration = 8000) {
         return;
     }
 
+    const connectionType = navigator?.connection?.effectiveType || '';
+    const isSlowConnection = /(^|-)2g$|^3g$/.test(connectionType) || connectionType === 'slow-2g';
+    const safetyDuration = Math.max(maxDuration, isSlowConnection ? 20000 : 12000);
+
     if (document.body?.dataset.skeletonManaged === '1') {
         document.body?.classList.add('page-data-loading');
     } else {
@@ -471,7 +475,7 @@ function showProfileLoader(maxDuration = 8000) {
     clearTimeout(profileLoaderSafetyTimer);
     profileLoaderSafetyTimer = setTimeout(() => {
         hideProfileLoader();
-    }, maxDuration);
+    }, safetyDuration);
 }
 
 function hideProfileLoader() {
@@ -514,7 +518,7 @@ function waitForChatReady(maxWait = 700) {
 // -----------------------------------------------------
 async function loadCurrentUserProfile() {
 
-    showProfileLoader(3200);
+    showProfileLoader();
 
     // ── Get user ID from the active session (set by auth.js) ──
     const session = getSession(); // defined in auth.js
