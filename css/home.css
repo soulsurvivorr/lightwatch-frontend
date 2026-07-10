@@ -1686,11 +1686,36 @@ body.modal-open {
 
 .chat-form {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
+}
+
+.chat-reply-preview {
+  order: -1;
+  flex: 1 0 100%;
+  margin-bottom: 6px;
+  border-left-width: 4px;
+  background: color-mix(in srgb, var(--brand) 16%, transparent);
+}
+
+.chat-reply-preview__label {
+  font-weight: 600;
+}
+
+.chat-reply-preview__cancel {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+}
+
+.chat-form .btn {
+  flex-shrink: 0;
 }
 
 .chat-form__input {
   flex: 1;
+  min-width: 0;
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-md);
   padding: 7px 9px;

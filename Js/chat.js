@@ -19,6 +19,13 @@ const CHAT_SCOPE_KEY = 'lw_chat_scope_pref';
 const CHAT_SCOPE_LOCAL = 'local';
 const CHAT_SCOPE_GLOBAL = 'global';
 
+const initialChatParams = new URLSearchParams(window.location.search);
+const targetChatIdFromNotification = initialChatParams.get('chatId') || '';
+const targetChatScope = initialChatParams.get('chatScope') === CHAT_SCOPE_GLOBAL ? CHAT_SCOPE_GLOBAL : CHAT_SCOPE_LOCAL;
+const targetChatLocation = (initialChatParams.get('chatLocation') || '').trim();
+
+let pendingFocusChatId = targetChatIdFromNotification;
+
 window.__lwChatReady = false;
 
 function markChatReady() {
@@ -46,9 +53,16 @@ let myHandle = getOrCreateHandle();
 if (chatHandleDisplay) chatHandleDisplay.textContent = myHandle;
 
 let chatScope = (() => {
+    if (targetChatIdFromNotification) {
+        return targetChatScope;
+    }
     const saved = localStorage.getItem(CHAT_SCOPE_KEY);
     return saved === CHAT_SCOPE_GLOBAL ? CHAT_SCOPE_GLOBAL : CHAT_SCOPE_LOCAL;
 })();
+
+if (targetChatIdFromNotification) {
+    localStorage.setItem(CHAT_SCOPE_KEY, chatScope);
+}
 
 function getLocationNameOnly() {
     const loc = window.currentChatLocation || getCurrentChatLocation();
@@ -217,11 +231,29 @@ function updateChatPlaceholder() {
         : 'Share an update about this location...';
 }
 
+function focusTargetMessageIfPresent() {
+    if (!pendingFocusChatId || !chatThread) return;
+    const target = [...chatThread.querySelectorAll('.chat-message')]
+        .find(el => el.dataset.chatId === pendingFocusChatId);
+    if (!target) return;
+
+    if (window.matchMedia('(max-width: 720px)').matches) {
+        setMobileChatOpen(true);
+    }
+
+    target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    target.classList.add('chat-message--highlight');
+    setTimeout(() => target.classList.remove('chat-message--highlight'), 2600);
+    pendingFocusChatId = '';
+}
+
 function buildChatsUrl() {
     if (chatScope === CHAT_SCOPE_GLOBAL) {
         return `${API_URL}/chats?scope=global`;
     }
-    const loc = window.currentChatLocation || getCurrentChatLocation();
+    const loc = (targetChatLocation && pendingFocusChatId)
+        ? targetChatLocation
+        : (window.currentChatLocation || getCurrentChatLocation());
     if (!loc) return null;
     return `${API_URL}/chats?scope=local&location=${encodeURIComponent(loc)}`;
 }
@@ -276,6 +308,7 @@ function loadChatHistory() {
                 addToThread(chat, resolveUserId(chat) === myId, false);
             });
             chatThread.scrollTop = chatThread.scrollHeight;
+            focusTargetMessageIfPresent();
             markChatReady();
             startPolling();
         })
@@ -309,6 +342,7 @@ function startPolling() {
                 if (!id || knownIds.has(id)) return; // skip already-shown messages
                 knownIds.add(id);
                 addToThread(chat, resolveUserId(chat) === myId, false);
+                focusTargetMessageIfPresent();
             });
         } catch(e) {
             // silent — retries next tick

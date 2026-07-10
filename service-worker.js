@@ -144,16 +144,20 @@ self.addEventListener('push', event => {
 // ── Notification click: open the app ─────────────────────────
 self.addEventListener('notificationclick', event => {
     event.notification.close();
+    const targetUrl = new URL(event.notification.data?.url || '/pages/home.html', self.location.origin).href;
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
-            // If app already open, focus it
+            // If app already open, navigate it to the exact target first.
             for (const client of list) {
-                if (client.url.includes('/pages/home') && 'focus' in client) {
+                if ('focus' in client) {
+                    if ('navigate' in client) {
+                        return client.navigate(targetUrl).then(() => client.focus());
+                    }
                     return client.focus();
                 }
             }
             // Otherwise open a new window
-            return clients.openWindow(event.notification.data?.url || '/pages/home.html');
+            return clients.openWindow(targetUrl);
         })
     );
 });
