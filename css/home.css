@@ -2894,3 +2894,41 @@ body.modal-open {
     font-size: 0.66rem;
   }
 }
+
+/* Final mobile chat layout override:
+   keep panel short and pin composer at the bottom. */
+@media (max-width: 720px) {
+  .chat-card--mobile-open {
+    top: auto !important;
+    bottom: 112px !important;
+    height: min(52vh, 350px) !important;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .chat-card--mobile-open .chat-thread {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow-y: auto;
+  }
+
+  .chat-card--mobile-open .chat-form {
+    margin-top: auto;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: row !important;
+    align-items: center;
+  }
+
+  .chat-card--mobile-open .chat-form .btn {
+    width: auto !important;
+    flex-shrink: 0;
+  }
+}
+
+@media (max-width: 390px) {
+  .chat-card--mobile-open {
+    height: min(48vh, 320px) !important;
+  }
+}
