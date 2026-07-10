@@ -746,13 +746,13 @@
 }
 
 @keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(6px) scale(0.996); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .page {
   animation: fadeInUp 0.34s cubic-bezier(0.22, 0.61, 0.36, 1) both;
-  will-change: transform, opacity;
+  will-change: opacity;
 }
 
 .report-list {
@@ -2899,9 +2899,12 @@ body.modal-open {
    keep panel short and pin composer at the bottom. */
 @media (max-width: 720px) {
   .chat-card--mobile-open {
+    position: fixed !important;
+    left: 10px;
+    right: 10px;
     top: auto !important;
-    bottom: 112px !important;
-    height: min(52vh, 350px) !important;
+    bottom: calc(102px + env(safe-area-inset-bottom)) !important;
+    height: clamp(18rem, 48vh, 22rem) !important;
     display: flex;
     flex-direction: column;
   }
@@ -2929,6 +2932,6 @@ body.modal-open {
 
 @media (max-width: 390px) {
   .chat-card--mobile-open {
-    height: min(48vh, 320px) !important;
+    height: clamp(17rem, 44vh, 20rem) !important;
   }
 }
