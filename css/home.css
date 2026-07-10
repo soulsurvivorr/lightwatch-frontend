@@ -1986,7 +1986,7 @@ body.modal-open {
     margin: 0 auto;
     width: auto;
     max-width: 420px;
-    height: clamp(20rem, 52dvh, 24rem);
+    height: clamp(38rem, 90dvh, 44rem);
     border-radius: 20px;
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.18);
     background: var(--bg-panel);
@@ -2889,6 +2889,6 @@ body.modal-open {
 
 @media (max-width: 390px) {
   .chat-card--mobile-open {
-    height: clamp(19rem, 48dvh, 22rem);
+    height: clamp(36rem, 86dvh, 40rem);
   }
 }
