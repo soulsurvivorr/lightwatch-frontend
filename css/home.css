@@ -1980,9 +1980,13 @@ body.modal-open {
 
   .chat-card {
     position: fixed;
-    inset: auto 10px 102px;
-    width: min(calc(100% - 20px), 420px);
+    left: 10px;
+    right: 10px;
+    bottom: calc(102px + env(safe-area-inset-bottom));
+    margin: 0 auto;
+    width: auto;
     max-width: 420px;
+    height: clamp(20rem, 52dvh, 24rem);
     border-radius: 20px;
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.18);
     background: var(--bg-panel);
@@ -1993,32 +1997,30 @@ body.modal-open {
     transition: transform 0.34s cubic-bezier(0.2, 0.75, 0.15, 1), opacity 0.24s ease, visibility 0s linear 0.34s;
     z-index: 55;
     display: flex;
-    overflow: hidden;
     flex-direction: column;
+    overflow: hidden;
   }
 
   .chat-card--mobile-open {
-    top: 108px;
-    bottom: 122px;
-    height: auto;
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
     transition: transform 0.34s cubic-bezier(0.2, 0.75, 0.15, 1), opacity 0.24s ease;
   }
 
   /* Header and form stay fixed height; the thread fills whatever
-     space is left between them, based on the card's actual anchored
-     top/bottom position rather than a guessed vh value. */
+     space is left between them. */
   .chat-card--mobile-open .chat-card__head,
   .chat-card--mobile-open .chat-form {
     flex-shrink: 0;
   }
 
   .chat-card--mobile-open .chat-thread {
-    flex: 0 1 auto;
-    max-height: 190px;
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+    overflow-y: auto;
   }
 
   .chat-card__head {
@@ -2615,16 +2617,6 @@ body.modal-open {
     align-items: flex-start;
   }
 
-  .chat-card--mobile-open {
-    top: 64px;
-    bottom: 92px;
-    height: auto;
-  }
-
-  .chat-card--mobile-open .chat-thread {
-    min-height: 200px;
-  }
-
   .chat-scope-row {
     margin-bottom: 4px;
     padding: 4px 6px;
@@ -2895,43 +2887,8 @@ body.modal-open {
   }
 }
 
-/* Final mobile chat layout override:
-   keep panel short and pin composer at the bottom. */
-@media (max-width: 720px) {
-  .chat-card--mobile-open {
-    position: fixed !important;
-    left: 10px;
-    right: 10px;
-    top: auto !important;
-    bottom: calc(102px + env(safe-area-inset-bottom)) !important;
-    height: clamp(18rem, 48vh, 22rem) !important;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .chat-card--mobile-open .chat-thread {
-    flex: 1 1 auto !important;
-    min-height: 0 !important;
-    max-height: none !important;
-    overflow-y: auto;
-  }
-
-  .chat-card--mobile-open .chat-form {
-    margin-top: auto;
-    flex-shrink: 0;
-    display: flex;
-    flex-direction: row !important;
-    align-items: center;
-  }
-
-  .chat-card--mobile-open .chat-form .btn {
-    width: auto !important;
-    flex-shrink: 0;
-  }
-}
-
 @media (max-width: 390px) {
   .chat-card--mobile-open {
-    height: clamp(17rem, 44vh, 20rem) !important;
+    height: clamp(19rem, 48dvh, 22rem);
   }
 }
