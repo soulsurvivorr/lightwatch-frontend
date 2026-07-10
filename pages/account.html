@@ -34,6 +34,23 @@
       align-items: start;
     }
 
+    #accountSkeleton {
+      display: none;
+    }
+
+    .page-data-loading #accountSkeleton {
+      display: block;
+    }
+
+    .page-data-loading #accountRealContent {
+      display: none;
+    }
+
+    .page-data-loading .topbar,
+    .page-data-loading #bottom_nav_wrapper {
+      pointer-events: none;
+    }
+
     /* ---- Profile card ---- */
     .profile-hero {
       text-align: center;
@@ -287,8 +304,9 @@
     }
   </style>
 </head>
-<body class="app-loading">
+<body class="page-data-loading" data-skeleton-managed="1">
 
+  <!-- Skeleton-first loading replaces the old lightning overlay on Account.
   <div class="lw-boot-loader" id="lwBootLoader" aria-hidden="true">
     <div class="lw-loader-orbit">
       <div class="lw-loader-halo"></div>
@@ -305,6 +323,7 @@
       </div>
     </div>
   </div>
+  -->
 
   <header class="topbar">
     <div class="topbar__inner">
@@ -333,29 +352,76 @@
     </div>
   </header>
 
-  <main class="page">
+  <div class="page" id="accountSkeleton" aria-hidden="true">
+    <div class="page__header">
+      <div>
+        <span class="skel skel-line" style="width:110px;height:10px;margin-bottom:8px;"></span>
+        <span class="skel skel-line" style="width:210px;height:24px;"></span>
+        <span class="skel skel-line" style="width:300px;max-width:86vw;height:12px;margin-top:10px;"></span>
+      </div>
+    </div>
+
+    <div class="account-grid">
+      <div>
+        <div class="card" style="padding: 0; overflow: hidden;">
+          <div style="padding: 28px 20px 20px; text-align:center;">
+          <span class="skel skel-circle skel-circle--lg" style="margin:0 auto;"></span>
+          <span class="skel skel-line" style="width:70%;height:16px;margin:12px auto 0;"></span>
+          <span class="skel skel-line" style="width:50%;height:12px;margin:8px auto 0;"></span>
+          <span class="skel skel-pill" style="margin:12px auto 0;"></span>
+          </div>
+          <div style="padding: 0 20px 20px;">
+            <span class="skel skel-line" style="width:110px;height:10px;margin-bottom:12px;"></span>
+            <span class="skel skel-line" style="width:100%;height:13px;margin-top:10px;"></span>
+            <span class="skel skel-line" style="width:100%;height:13px;margin-top:12px;"></span>
+            <span class="skel skel-line" style="width:100%;height:13px;margin-top:12px;"></span>
+            <span class="skel skel-line" style="width:100%;height:13px;margin-top:12px;"></span>
+            <span class="skel skel-line" style="width:100%;height:13px;margin-top:12px;"></span>
+          </div>
+        </div>
+        <div class="card" style="margin-top: 16px;">
+          <span class="skel skel-line" style="width:90px;height:14px;"></span>
+          <span class="skel skel-line" style="width:100%;height:12px;margin-top:8px;"></span>
+          <span class="skel skel-block" style="height:38px;margin-top:12px;"></span>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div class="card">
+          <span class="skel skel-line" style="width:120px;height:14px;"></span>
+          <span class="skel skel-line" style="width:170px;height:10px;margin-top:8px;"></span>
+          <span class="skel skel-block" style="height:34px;margin-top:12px;"></span>
+          <span class="skel skel-block" style="height:34px;margin-top:10px;"></span>
+          <span class="skel skel-block" style="height:34px;margin-top:10px;"></span>
+        </div>
+        <div class="card">
+          <span class="skel skel-line" style="width:100px;height:14px;"></span>
+          <span class="skel skel-line" style="width:150px;height:10px;margin-top:8px;"></span>
+          <span class="skel skel-block" style="height:46px;margin-top:12px;"></span>
+          <span class="skel skel-block" style="height:38px;margin-top:12px;"></span>
+        </div>
+        <div class="card">
+          <span class="skel skel-line" style="width:70px;height:14px;"></span>
+          <span class="skel skel-line" style="width:130px;height:10px;margin-top:8px;"></span>
+          <span class="skel skel-block" style="height:34px;margin-top:12px;"></span>
+          <span class="skel skel-block" style="height:34px;margin-top:10px;"></span>
+        </div>
+        <div class="card">
+          <span class="skel skel-line" style="width:140px;height:14px;"></span>
+          <span class="skel skel-line" style="width:130px;height:10px;margin-top:8px;"></span>
+          <span class="skel skel-block" style="height:96px;margin-top:12px;"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <main class="page" id="accountRealContent">
 
     <div class="page__header">
       <div>
         <div class="page__eyebrow">Your account</div>
         <h1 class="page__title" id="pageGreeting">Account</h1>
         <p class="page__subtitle">Manage your profile, preferences, and locations.</p>
-      </div>
-    </div>
-
-    <!-- Stats row -->
-    <div class="account-stats">
-      <div class="account-stat">
-        <div class="account-stat__value" id="statReports">—</div>
-        <div class="account-stat__label">Reports made</div>
-      </div>
-      <div class="account-stat">
-        <div class="account-stat__value" id="statChats">—</div>
-        <div class="account-stat__label">Chat messages</div>
-      </div>
-      <div class="account-stat">
-        <div class="account-stat__value" id="statDays">—</div>
-        <div class="account-stat__label">Days on LightWatch</div>
       </div>
     </div>
 
@@ -570,9 +636,11 @@
   <script src="../Js/nav.js"></script>
   <script>
     // Account-page extras: load user's chat history + fill extra fields
-    const API_URL = "https://lightwatch-backend.onrender.com";
-
     async function loadAccountExtras() {
+      document.body.dataset.accountExtrasLoading = '1';
+      document.body.classList.add('page-data-loading');
+
+      try {
       const userId = localStorage.getItem("currentUserId");
       if (!userId) return;
 
@@ -589,23 +657,9 @@
           if (el("profileChatHandle")) el("profileChatHandle").textContent = chatHandleValue;
           if (el("profileHandle")) el("profileHandle").textContent = user.chatHandle || localStorage.getItem("chatHandle") || "";
 
-          // Days on LightWatch
-          if (user.createdAt && el("statDays")) {
-            const days = Math.max(1, Math.floor((Date.now() - new Date(user.createdAt).getTime()) / (1000 * 60 * 60 * 24)));
-            el("statDays").textContent = days;
-          }
-
           // Member since
           if (user.createdAt && el("profileLastLogin")) {
             el("profileLastLogin").textContent = new Date(user.createdAt).toLocaleDateString([], { year: "numeric", month: "short", day: "numeric" });
-          }
-
-          // Real report/chat counts from backend user data
-          if (el("statReports")) {
-            el("statReports").textContent = String(user.reportCount ?? 0);
-          }
-          if (el("statChats")) {
-            el("statChats").textContent = String(user.chatCount ?? 0);
           }
 
           // Page greeting
@@ -652,18 +706,16 @@
                     <div style="font-size:0.84rem;color:var(--text-bright);">"${c.text}"</div>
                     <div style="font-size:0.74rem;color:var(--text-faint);margin-top:3px;">${c.location} · ${new Date(c.createdAt).toLocaleString([], {dateStyle:"short",timeStyle:"short"})}</div>
                   </div>`).join("") + (chats.filter(c => (c.userId?._id || c.userId) === userId).length > 5 ? `<div style="font-size:0.78rem;color:var(--text-faint);padding-top:8px;">Showing 5 most recent</div>` : "");
-                const chatCount = chats.filter(c => (c.userId?._id || c.userId) === userId).length;
-                const statChatsEl = document.getElementById("statChats");
-                if (statChatsEl) statChatsEl.textContent = chatCount;
               }
             }
           }
         }
       } catch(e) { /* silent */ }
 
-      // Placeholder stats
-      const statReports = document.getElementById("statReports");
-      if (statReports && statReports.textContent === "—") statReports.textContent = "0";
+      } finally {
+        delete document.body.dataset.accountExtrasLoading;
+        document.body.classList.remove('page-data-loading');
+      }
     }
 
     loadAccountExtras();

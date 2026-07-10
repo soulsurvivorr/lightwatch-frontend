@@ -39,6 +39,10 @@ function openHomeReminder() {
   document.body.classList.add('modal-open');
 }
 
+function isHomeStillLoading() {
+  return document.body.classList.contains('app-loading') || document.body.classList.contains('page-data-loading');
+}
+
 function initHomeReminder() {
   const overlay = document.getElementById('homeReminderOverlay');
   if (!overlay) return;
@@ -62,13 +66,13 @@ function initHomeReminder() {
     openHomeReminder();
   };
 
-  if (!document.body.classList.contains('app-loading')) {
+  if (!isHomeStillLoading()) {
     showReminder();
     return;
   }
 
   homeReminderObserver = new MutationObserver(() => {
-    if (!document.body.classList.contains('app-loading')) {
+    if (!isHomeStillLoading()) {
       clearPendingReminderOpen();
       showReminder();
     }

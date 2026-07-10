@@ -39,6 +39,10 @@ function ensureBootLoaderElement() {
 }
 
 function triggerLightningTransition() {
+    if (document.body?.dataset.skeletonManaged === '1') {
+        return;
+    }
+
     ensureBootLoaderElement();
     document.body?.classList.add('app-loading');
 

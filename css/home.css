@@ -922,20 +922,20 @@
 }
 
 /* Sidebar and profile panel */
-.app-loading {
+.page-data-loading {
   overflow: hidden;
 }
 
-.app-loading .topbar,
-.app-loading #bottom_nav_wrapper,
-.app-loading .mobile-chat-toggle {
+.page-data-loading .topbar,
+.page-data-loading #bottom_nav_wrapper,
+.page-data-loading .mobile-chat-toggle {
   opacity: 1;
   filter: none;
   pointer-events: none;
   transition: opacity 0.08s ease;
 }
 
-.app-loading .lw-boot-loader {
+.page-data-loading .lw-boot-loader {
   display: none !important;
 }
 
@@ -945,7 +945,7 @@
    built from the same layout classes (.hero-banner, .card,
    .location-page-grid, etc.) so it lines up pixel-for-pixel
    with the real thing, just with .skel blocks instead of text.
-   Swaps with #realPageContent based on .app-loading — see the
+  Swaps with #realPageContent based on .page-data-loading — see the
    two rules right below.
    ------------------------------------------------------------ */
 
@@ -953,11 +953,11 @@
   display: none;
 }
 
-.app-loading #pageSkeleton {
+.page-data-loading #pageSkeleton {
   display: block;
 }
 
-.app-loading #realPageContent {
+.page-data-loading #realPageContent {
   display: none;
 }
 

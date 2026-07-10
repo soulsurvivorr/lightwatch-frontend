@@ -472,7 +472,11 @@ function renderSignedOutEverywhere() {
 let profileLoaderSafetyTimer = null;
 
 function showProfileLoader(maxDuration = 8000) {
-    document.body?.classList.add('app-loading');
+    if (document.body?.dataset.skeletonManaged === '1') {
+        document.body?.classList.add('page-data-loading');
+    } else {
+        document.body?.classList.add('app-loading');
+    }
     clearTimeout(profileLoaderSafetyTimer);
     profileLoaderSafetyTimer = setTimeout(() => {
         hideProfileLoader();
@@ -481,6 +485,9 @@ function showProfileLoader(maxDuration = 8000) {
 
 function hideProfileLoader() {
     clearTimeout(profileLoaderSafetyTimer);
+    if (document.body?.dataset.accountExtrasLoading !== '1') {
+        document.body?.classList.remove('page-data-loading');
+    }
     document.body?.classList.remove('app-loading');
     document.getElementById('lwBootLoader')?.remove();
 }
