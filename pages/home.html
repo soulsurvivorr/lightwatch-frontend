@@ -33,8 +33,9 @@
   <link rel="prefetch" href="./reports.html">
   <link rel="prefetch" href="./account.html">
 </head>
-<body class="app-loading">
+<body class="app-loading" data-skeleton-managed="1">
 
+  <!-- Skeleton-first loading replaces the old lightning overlay on Home.
   <div class="lw-boot-loader" id="lwBootLoader" aria-hidden="true">
     <div class="lw-loader-orbit">
       <div class="lw-loader-halo"></div>
@@ -51,6 +52,7 @@
       </div>
     </div>
   </div>
+  -->
 
   <!-- These two load blocking (no defer) on purpose, and run BEFORE
        anything below is allowed to paint — this is what stops the app
@@ -118,22 +120,22 @@
     <div class="hero-banner">
       <div class="hero-banner__location">
         <span class="pulse pulse--on" style="width:8px;height:8px;"></span>
-        <span id="locationName">Your location</span>
+        <span id="locationName" data-skel="line">Your location</span>
       </div>
       <div class="hero-banner__eyebrow">LightWatch · Live status</div>
-      <div class="hero-banner__greeting" id="pageGreeting">Welcome back</div>
-      <div class="hero-banner__sub" id="locationSubtitle">Real-time power reporting for your area.</div>
+      <div class="hero-banner__greeting" id="pageGreeting" data-skel="line">Welcome back</div>
+      <div class="hero-banner__sub" id="locationSubtitle" data-skel="line">Real-time power reporting for your area.</div>
       <div class="hero-banner__stats">
         <div class="hero-stat">
-          <span class="hero-stat__value" id="heroContributors"></span>
+          <span class="hero-stat__value" id="heroContributors" data-skel="line"></span>
           <span class="hero-stat__label">Contributors</span>
         </div>
         <div class="hero-stat">
-          <span class="hero-stat__value" id="heroChecks"></span>
+          <span class="hero-stat__value" id="heroChecks" data-skel="line"></span>
           <span class="hero-stat__label">Total checks</span>
         </div>
         <div class="hero-stat">
-          <span class="hero-stat__value" id="heroUptime"></span>
+          <span class="hero-stat__value" id="heroUptime" data-skel="line"></span>
           <span class="hero-stat__label">Uptime this week</span>
         </div>
       </div>
@@ -146,19 +148,20 @@
         <div class="card location-card">
           <div class="card__head">
             <div>
-              <span class="card__title" id="locationNameCard">Your chosen location</span>
-              <p class="card__meta" id="locationMeta">Location set by you</p>
+              <span class="card__title" id="locationNameCard" data-skel="line">Your chosen location</span>
+              <p class="card__meta" id="locationMeta" data-skel="line">Location set by you</p>
             </div>
-            <span class="badge badge--low" id="statusBadge"></span>
+            <span class="badge badge--low" id="statusBadge" data-skel="pill"></span>
           </div>
 
           <!-- Status hero row -->
           <div class="status-hero">
             <div class="status-hero__icon status-hero__icon--unknown" id="statusIcon">❔</div>
             <div class="status-hero__text">
-              <div class="status-hero__title" id="statusPillText">Checking live status</div>
+              <!--Checking Live Status-->
+              <div class="status-hero__title" id="statusPillText" data-skel="line">unconfirmed light status</div>
               <div class="status-hero__sub">
-                Last verified: <strong id="lastVerified">—</strong>
+                Last verified: <strong id="lastVerified" data-skel="line">—</strong>
                 &nbsp;·&nbsp;
                 <span class="pulse pulse--low" id="statusPulse" style="display:inline-block;width:8px;height:8px;vertical-align:middle;"></span>
                 Live
@@ -170,20 +173,20 @@
             <div class="location-card__info">
               <div class="location-card__row">
                 <span class="location-card__label">Average outage length</span>
-                <strong id="avgOutage">—</strong>
+                <strong id="avgOutage" data-skel="line">—</strong>
               </div>
               <div class="location-card__row">
                 <span class="location-card__label">Outage frequency</span>
-                <strong id="outageFreq">—</strong>
+                <strong id="outageFreq" data-skel="line">—</strong>
               </div>
               <div class="location-card__row">
                 <span class="location-card__label">Source confidence</span>
-                <strong id="sourceConfidence">—</strong>
+                <strong id="sourceConfidence" data-skel="line">—</strong>
               </div>
             </div>
             <div class="location-card__meta-panel">
-              <div class="meta-pill meta-pill--accent" id="heroContributorsPill">— contributors</div>
-              <div class="meta-pill meta-pill--muted" id="heroChecksPill">— total checks</div>
+              <div class="meta-pill meta-pill--accent" id="heroContributorsPill" data-skel="pill">— contributors</div>
+              <div class="meta-pill meta-pill--muted" id="heroChecksPill" data-skel="pill">— total checks</div>
             </div>
           </div>
 
@@ -253,15 +256,15 @@
               <div class="status-insight__stats">
                 <div>
                   <span class="status-insight__label">Confirmed sources</span>
-                  <strong id="confirmedSources">—</strong>
+                  <strong id="confirmedSources" data-skel="line">—</strong>
                 </div>
                 <div>
                   <span class="status-insight__label">Light on checks</span>
-                  <strong id="lightOnCount">—</strong>
+                  <strong id="lightOnCount" data-skel="line">—</strong>
                 </div>
                 <div>
                   <span class="status-insight__label">Recent outage</span>
-                  <strong id="lastOutageLength">—</strong>
+                  <strong id="lastOutageLength" data-skel="line">—</strong>
                 </div>
               </div>
             </div>
@@ -274,7 +277,7 @@
           <div class="card__head chat-card__head">
             <div>
               <span class="card__title">Community chat</span>
-              <span class="card__meta">Posting as <strong id="chatHandle">anon-glow-291</strong></span>
+              <span class="card__meta">Posting as <strong id="chatHandle" data-skel="line">anon-glow-291</strong></span>
             </div>
             <button type="button" id="mobileChatClose" class="chat-close-btn" aria-label="Close chat">✕</button>
           </div>
@@ -292,7 +295,7 @@
               <p class="chat-reply-preview__text" id="chatReplyText"></p>
               <button type="button" class="chat-reply-preview__cancel" id="chatReplyCancel" aria-label="Cancel reply">×</button>
             </div>
-            <input type="text" class="chat-form__input" id="chatInput" placeholder="Share an update about this location..." maxlength="240" />
+            <input type="text" class="chat-form__input" id="chatInput" placeholder="Share an update about this location..." maxlength="240" data-skel="input" />
             <button type="submit" class="btn btn--primary">Send</button>
           </form>
         </div>
@@ -304,17 +307,17 @@
         <div class="card profile-card">
           <div class="card__head">
             <span class="card__title">Logged in as</span>
-            <span class="card__meta" id="profileLastLogin">—</span>
+            <span class="card__meta" id="profileLastLogin" data-skel="line">—</span>
           </div>
           <div class="profile-card__avatar">
             <span class="avatar avatar--large" id="profileAvatar">?</span>
           </div>
           <div class="profile-card__info">
-            <div class="profile-card__name" id="profileName">Not signed in</div>
+            <div class="profile-card__name" id="profileName" data-skel="line">Not signed in</div>
           </div>
           <div class="profile-card__details">
-            <div><span>Contact</span><strong id="profileContact">—</strong></div>
-            <div><span>Location</span><strong id="profileRegion">—</strong></div>
+            <div><span>Contact</span><strong id="profileContact" data-skel="line">—</strong></div>
+            <div><span>Location</span><strong id="profileRegion" data-skel="line">—</strong></div>
           </div>
           <a href="../index.html"><button type="button" class="btn btn--ghost" id="profileSignOutBtn">Log out</button></a>
         </div>
@@ -330,11 +333,11 @@
           <form class="location-form" id="addLocationForm" action="javascript:void(0)">
             <label class="form-field">
               <span>Location name</span>
-              <input type="text" placeholder="e.g. Bantama Market" id="newLocationName" />
+              <input type="text" placeholder="e.g. Bantama Market" id="newLocationName" data-skel="input" />
             </label>
             <label class="form-field autocomplete-field">
               <span>Address or area</span>
-              <input type="text" placeholder="Start typing a place in Kumasi..." id="newLocationAddress" autocomplete="off" />
+              <input type="text" placeholder="Start typing a place in Kumasi..." id="newLocationAddress" autocomplete="off" data-skel="input" />
               <ul class="autocomplete-list" id="autocompleteList" hidden></ul>
             </label>
             <button type="submit" class="btn btn--primary btn--block">Save location</button>

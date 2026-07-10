@@ -52,6 +52,9 @@ function triggerLightningTransition() {
 window.addEventListener('pageshow', () => {
     clearTimeout(navTransitionFailSafe);
     navTransitionFailSafe = null;
+    if (document.body?.dataset.skeletonManaged === '1') {
+        return;
+    }
     document.body?.classList.remove('app-loading');
 });
 

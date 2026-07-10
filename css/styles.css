@@ -759,7 +759,7 @@ button, a {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
+  margin: 0px;
   gap: 12px;
 }
 
@@ -772,6 +772,7 @@ button, a {
 .card__meta {
   font-size: 0.78rem;
   color: var(--text-faint);
+  margin: 0;
 }
 
 /* ============================================================
