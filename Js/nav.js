@@ -50,7 +50,7 @@ function triggerLightningTransition() {
     clearTimeout(navTransitionFailSafe);
     navTransitionFailSafe = setTimeout(() => {
         document.body?.classList.remove('app-loading');
-    }, 900);
+    }, 450);
 }
 
 window.addEventListener('pageshow', () => {

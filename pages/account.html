@@ -304,7 +304,7 @@
     }
   </style>
 </head>
-<body class="page-data-loading" data-skeleton-managed="1">
+<body class="page-data-loading" data-skeleton-managed="1" data-skeleton-key="account">
 
   <!-- Skeleton-first loading replaces the old lightning overlay on Account.
   <div class="lw-boot-loader" id="lwBootLoader" aria-hidden="true">
@@ -637,8 +637,11 @@
   <script>
     // Account-page extras: load user's chat history + fill extra fields
     async function loadAccountExtras() {
-      document.body.dataset.accountExtrasLoading = '1';
-      document.body.classList.add('page-data-loading');
+      const hasSeenAccountSkeleton = localStorage.getItem('lw_skeleton_seen_account') === '1';
+      if (!hasSeenAccountSkeleton) {
+        document.body.dataset.accountExtrasLoading = '1';
+        document.body.classList.add('page-data-loading');
+      }
 
       try {
       const userId = localStorage.getItem("currentUserId");
@@ -713,8 +716,10 @@
       } catch(e) { /* silent */ }
 
       } finally {
-        delete document.body.dataset.accountExtrasLoading;
-        document.body.classList.remove('page-data-loading');
+        if (!hasSeenAccountSkeleton) {
+          delete document.body.dataset.accountExtrasLoading;
+          document.body.classList.remove('page-data-loading');
+        }
       }
     }
 

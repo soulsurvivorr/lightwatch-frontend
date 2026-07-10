@@ -12,7 +12,7 @@
   border: 1px solid var(--border-soft);
   background: var(--bg-panel);
   margin-bottom: 12px;
-  animation: fadeInUp 0.35s ease both;
+  animation: none;
 }
 
 .areas-summary-strip__icon {

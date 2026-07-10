@@ -352,12 +352,16 @@ chatScopeGlobalBtn?.addEventListener('click', () => setChatScope(CHAT_SCOPE_GLOB
 // -------------------------------------------------------
 // MOBILE PANEL
 // -------------------------------------------------------
+function getVisibleChatCard() {
+    return document.querySelector('#realPageContent .chat-card') || document.querySelector('.chat-card');
+}
+
 document.getElementById('mobileChatToggle')?.addEventListener('click', () => {
-    document.querySelector('.chat-card')?.classList.add('chat-card--mobile-open');
+    getVisibleChatCard()?.classList.add('chat-card--mobile-open');
     document.body.classList.add('mobile-chat-open');
 });
 document.getElementById('mobileChatClose')?.addEventListener('click', () => {
-    document.querySelector('.chat-card')?.classList.remove('chat-card--mobile-open');
+    getVisibleChatCard()?.classList.remove('chat-card--mobile-open');
     document.body.classList.remove('mobile-chat-open');
 });
 
@@ -367,7 +371,7 @@ document.getElementById('mobileChatClose')?.addEventListener('click', () => {
 // resizing, etc.), force both off immediately rather than trusting CSS
 // alone to sort it out.
 function closeMobileChatPopup() {
-    document.querySelector('.chat-card')?.classList.remove('chat-card--mobile-open');
+    getVisibleChatCard()?.classList.remove('chat-card--mobile-open');
     document.body.classList.remove('mobile-chat-open');
 }
 const desktopBreakpoint = window.matchMedia('(min-width: 721px)');

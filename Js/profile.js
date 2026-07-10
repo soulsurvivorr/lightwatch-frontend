@@ -472,6 +472,12 @@ function renderSignedOutEverywhere() {
 let profileLoaderSafetyTimer = null;
 
 function showProfileLoader(maxDuration = 8000) {
+    const skeletonKey = document.body?.dataset.skeletonKey;
+    const seenKey = skeletonKey ? `lw_skeleton_seen_${skeletonKey}` : null;
+    if (seenKey && localStorage.getItem(seenKey) === '1') {
+        return;
+    }
+
     if (document.body?.dataset.skeletonManaged === '1') {
         document.body?.classList.add('page-data-loading');
     } else {
@@ -485,6 +491,10 @@ function showProfileLoader(maxDuration = 8000) {
 
 function hideProfileLoader() {
     clearTimeout(profileLoaderSafetyTimer);
+    const skeletonKey = document.body?.dataset.skeletonKey;
+    if (skeletonKey) {
+        localStorage.setItem(`lw_skeleton_seen_${skeletonKey}`, '1');
+    }
     if (document.body?.dataset.accountExtrasLoading !== '1') {
         document.body?.classList.remove('page-data-loading');
     }
