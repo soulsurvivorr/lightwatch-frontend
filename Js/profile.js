@@ -364,21 +364,6 @@ function renderLocationPage(user) {
                     lastReportedAtMs = Date.now();
                     refreshLastVerifiedLabel();
                     loadLocationStats();
-                    // Send a chat notification to the room
-                    const myId = getSession()?.user?.id || localStorage.getItem("currentUserId");
-                    const myHandle = getSession()?.user?.chatHandle || localStorage.getItem("chatHandle") || "someone";
-                    if (myId && nextStatus !== "off") {
-                        fetch(`${API_URL}/chats`, {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                                userId: myId,
-                                handle: myHandle,
-                                text: `💡 ${myHandle} reported: Light is now ${nextStatus.toUpperCase()} in this area.`,
-                                location
-                            })
-                        }).catch(() => {});
-                    }
                 })
                 .catch(() => {
                     setLightStatus(nextStatus); // fallback local update

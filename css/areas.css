@@ -183,7 +183,7 @@
   grid-template-columns: 8px minmax(0, 1fr) auto auto auto 20px;
   align-items: center;
   column-gap: 7px;
-  padding: 6px 7px;
+  padding: 13px 7px;
 }
 
 .area-row__dot {
@@ -386,7 +386,7 @@
   .area-row__main {
     grid-template-columns: 7px minmax(0, 1fr) auto auto 18px;
     column-gap: 7px;
-    padding: 5px 6px;
+    padding: 12px 6px;
   }
 
   .area-row__confidence {

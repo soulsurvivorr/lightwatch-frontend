@@ -2072,7 +2072,7 @@ body.modal-open {
     position: fixed;
     right: 18px;
     bottom: calc(132px + env(safe-area-inset-bottom));
-    z-index: 50;
+    z-index: 82;
     display: inline-flex;
     align-items: center;
     gap: 10px;
@@ -2085,6 +2085,8 @@ body.modal-open {
     font-weight: 700;
     box-shadow: 0 10px 30px rgba(0,0,0,0.2);
     backdrop-filter: blur(10px);
+    transform: translateY(0);
+    transition: transform 0.22s cubic-bezier(0.22, 0.74, 0.2, 1), box-shadow 0.22s ease;
   }
 
   .mobile-chat-toggle__icon {
@@ -2098,16 +2100,9 @@ body.modal-open {
     touch-action: none;
   }
 
-  body.mobile-chat-open #bottom_nav_wrapper {
-    pointer-events: none;
-    opacity: 0;
-    transform: translateY(10px);
-    transition: opacity 0.18s ease, transform 0.18s ease;
-  }
-
   body.mobile-chat-open .mobile-chat-toggle {
-    pointer-events: none;
-    opacity: 0;
+    transform: translateY(5px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.18);
   }
 }
 
