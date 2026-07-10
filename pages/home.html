@@ -34,31 +34,6 @@
   <link rel="prefetch" href="./account.html">
 </head>
 <body class="page-data-loading" data-skeleton-managed="1">
-
-  <!-- Skeleton-first loading replaces the old lightning overlay on Home.
-  <div class="lw-boot-loader" id="lwBootLoader" aria-hidden="true">
-    <div class="lw-loader-orbit">
-      <div class="lw-loader-halo"></div>
-      <svg class="lw-loader-ring" viewBox="0 0 84 84" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <circle class="lw-loader-track" cx="42" cy="42" r="36" />
-        <circle class="lw-loader-arc lw-loader-arc--1" cx="42" cy="42" r="36" />
-        <circle class="lw-loader-arc lw-loader-arc--2" cx="42" cy="42" r="36" />
-        <circle class="lw-loader-arc lw-loader-arc--3" cx="42" cy="42" r="36" />
-      </svg>
-      <div class="lw-loader-core">
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z" fill="#F2B33D"/>
-        </svg>
-      </div>
-    </div>
-  </div>
-  -->
-
-  <!-- These two load blocking (no defer) on purpose, and run BEFORE
-       anything below is allowed to paint — this is what stops the app
-       from ever flashing a blank/unauthenticated home.html. If there's
-       no session, we leave immediately; if there is, we reveal the
-       page. Everything else on this page stays deferred as before. -->
   <script src="../Js/config.js"></script>
   <script src="../Js/auth.js"></script>
   <script>

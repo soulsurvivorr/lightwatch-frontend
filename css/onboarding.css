@@ -110,7 +110,7 @@
   color: rgba(227, 236, 246, 0.88);
   margin: 0;
   max-width: 74ch;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .onboarding-slide__points {
@@ -135,7 +135,7 @@
   border-radius: var(--radius-md);
   padding: 12px 14px;
   border: 1px solid rgba(255, 255, 255, 0.09);
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .onboarding-slide__points li::before {
@@ -207,5 +207,24 @@
   .onboarding-next {
     min-width: 104px;
     min-height: 42px;
+  }
+
+  /* Disclaimer labels ("Live but time-sensitive:", etc.) are too
+     long to sit inline with the description on narrow screens —
+     stack the bold label on its own line above the text instead
+     of letting it wrap awkwardly mid-word. */
+  .onboarding-slide__points--disclaimer li {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .onboarding-slide__points--disclaimer li::before {
+    display: none;
+  }
+
+  .onboarding-slide__points--disclaimer strong {
+    display: block;
+    font-size: 0.9rem;
   }
 }

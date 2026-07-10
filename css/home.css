@@ -1803,20 +1803,20 @@ body.modal-open {
 }
 
 .chat-message__author {
-  font-size: 0.72rem;
+  font-size: 0.8rem;
 }
 
 .chat-message__text {
-  font-size: 0.84rem;
-  line-height: 1.3;
+  font-size: 0.96rem;
+  line-height: 1.4;
 }
 
 .chat-message__time {
-  font-size: 0.62rem;
+  font-size: 0.7rem;
 }
 
 .chat-form__input {
-  font-size: 0.84rem;
+  font-size: 0.96rem;
 }
 
 .chat-reply-preview__label {
@@ -1825,6 +1825,15 @@ body.modal-open {
 
 .chat-reply-preview__text {
   font-size: 0.78rem;
+}
+
+/* On laptop and larger, the chat card has plenty of room in the
+   grid column — let the thread breathe so several messages are
+   visible without needing to scroll the moment the page loads. */
+@media (min-width: 721px) {
+  .chat-thread {
+    max-height: 460px;
+  }
 }
 
 /* ============================================================
@@ -1840,10 +1849,10 @@ body.modal-open {
   .chat-message {
     padding: 5px 7px;
   }
-  .chat-message__author { font-size: 0.68rem; }
-  .chat-message__text { font-size: 0.8rem; line-height: 1.24; }
-  .chat-message__time { font-size: 0.6rem; }
-  .chat-form__input { padding: 7px 9px; font-size: 0.82rem; }
+  .chat-message__author { font-size: 0.76rem; }
+  .chat-message__text { font-size: 0.92rem; line-height: 1.35; }
+  .chat-message__time { font-size: 0.68rem; }
+  .chat-form__input { padding: 7px 9px; font-size: 0.92rem; }
 }
 
 .add-location-card__note {
@@ -2150,10 +2159,15 @@ body.modal-open {
     touch-action: none;
   }
 
+  /* While the chat popup is open, the underlying bottom nav pill and
+     the floating chat toggle have nothing useful to do (the popup's
+     own close button covers that job) — and left visible, they get
+     dragged up along with the on-screen keyboard the moment the chat
+     input is focused, which reads as a layout glitch. Hiding both for
+     the duration the popup is open removes anything that could jump. */
+  body.mobile-chat-open #bottom_nav_wrapper,
   body.mobile-chat-open .mobile-chat-toggle {
-    bottom: calc(82px + env(safe-area-inset-bottom));
-    transform: translateY(0);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+    display: none;
   }
 }
 
@@ -2200,20 +2214,20 @@ body.modal-open {
   }
 
   .chat-message__author {
-    font-size: 0.66rem;
+    font-size: 0.74rem;
   }
 
   .chat-message__text {
-    font-size: 0.78rem;
-    line-height: 1.22;
+    font-size: 0.9rem;
+    line-height: 1.32;
   }
 
   .chat-message__time {
-    font-size: 0.58rem;
+    font-size: 0.66rem;
   }
 
   .chat-form__input {
-    font-size: 0.8rem;
+    font-size: 0.9rem;
     padding: 7px 9px;
   }
 
@@ -2868,18 +2882,21 @@ body.modal-open {
   }
 
   .chat-message__author {
-    font-size: 0.62rem;
+    font-size: 0.7rem;
   }
 
   .chat-message__text,
-  .chat-form__input,
+  .chat-form__input {
+    font-size: 0.88rem;
+  }
+
   .form-field input,
   .form-field select {
     font-size: 0.72rem;
   }
 
   .chat-message__time {
-    font-size: 0.56rem;
+    font-size: 0.62rem;
   }
 
   .chat-form__input,
@@ -2945,7 +2962,10 @@ body.modal-open {
   }
 
   .chat-message__text,
-  .chat-form__input,
+  .chat-form__input {
+    font-size: 0.82rem;
+  }
+
   .form-field input,
   .form-field select {
     font-size: 0.68rem;
