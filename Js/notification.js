@@ -305,3 +305,52 @@ async function setGlobalChatMutePreference(muteGlobalChat) {
 }
 
 window.setGlobalChatMutePreference = setGlobalChatMutePreference;
+
+async function setChatMentionsPreference(chatMentionsEnabled) {
+    const session = typeof getSession === 'function' ? getSession() : null;
+    const userId = session?.user?.id || localStorage.getItem('currentUserId');
+    if (!userId) return { success: false, error: 'No signed-in user' };
+
+    const endpoint = await getCurrentPushEndpoint();
+    if (!endpoint) {
+        return { success: false, error: 'No active push subscription on this device' };
+    }
+
+    try {
+        const res = await fetch(`${API_URL}/subscribe/preferences`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId, endpoint, chatMentionsEnabled: Boolean(chatMentionsEnabled) })
+        });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            return { success: false, error: data.error || 'Could not save mentions preference' };
+        }
+        const data = await res.json();
+        return { success: true, chatMentionsEnabled: Boolean(data.chatMentionsEnabled) };
+    } catch (err) {
+        return { success: false, error: err.message || 'Could not save mentions preference' };
+    }
+}
+
+window.setChatMentionsPreference = setChatMentionsPreference;
+
+// ── Fetch saved mute/mentions prefs for this device so the account
+//    page can reflect the real server state instead of only localStorage.
+// ───────────────────────────────────────────────────────────
+async function getChatPushPreferences() {
+    const session = typeof getSession === 'function' ? getSession() : null;
+    const userId = session?.user?.id || localStorage.getItem('currentUserId');
+    const endpoint = await getCurrentPushEndpoint();
+    if (!userId || !endpoint) return null;
+
+    try {
+        const res = await fetch(`${API_URL}/subscribe/preferences?userId=${encodeURIComponent(userId)}&endpoint=${encodeURIComponent(endpoint)}`);
+        if (!res.ok) return null;
+        return await res.json(); // { muteGlobalChat, chatMentionsEnabled }
+    } catch {
+        return null;
+    }
+}
+
+window.getChatPushPreferences = getChatPushPreferences;

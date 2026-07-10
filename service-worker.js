@@ -3,7 +3,7 @@
 //  Handles: push notifications, offline cache (basic)
 // ============================================================
 
-const CACHE_NAME = 'lightwatch-v3';
+const CACHE_NAME = 'lightwatch-v4';
 const APP_ICON = new URL('/images/dev-logo.png?v=20260708', self.location.origin).href;
 const APP_BADGE = new URL('/images/notification-badge.png?v=20260708', self.location.origin).href;
 const SHELL_ASSETS = [
@@ -145,19 +145,33 @@ self.addEventListener('push', event => {
 self.addEventListener('notificationclick', event => {
     event.notification.close();
     const targetUrl = new URL(event.notification.data?.url || '/pages/home.html', self.location.origin).href;
-    event.waitUntil(
-        clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
-            // If app already open, navigate it to the exact target first.
+
+    event.waitUntil((async () => {
+        try {
+            const list = await clients.matchAll({ type: 'window', includeUncontrolled: true });
+
             for (const client of list) {
-                if ('focus' in client) {
+                try {
                     if ('navigate' in client) {
-                        return client.navigate(targetUrl).then(() => client.focus());
+                        const navigated = await client.navigate(targetUrl);
+                        return (navigated || client).focus();
                     }
-                    return client.focus();
+                    if ('focus' in client) {
+                        return client.focus();
+                    }
+                } catch (err) {
+                    // This particular client couldn't be navigated/focused
+                    // (e.g. it was closed mid-flight, or navigate() is
+                    // restricted on it) — try the next matching client
+                    // instead of giving up and opening nothing.
                 }
             }
-            // Otherwise open a new window
+
+            // No existing window could be reused — open a fresh one.
             return clients.openWindow(targetUrl);
-        })
-    );
+        } catch (err) {
+            // Absolute last resort so a tap never does nothing.
+            return clients.openWindow(targetUrl);
+        }
+    })());
 });

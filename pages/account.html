@@ -534,9 +534,12 @@
           <form id="cityEditForm" action="javascript:void(0)">
             <label class="form-field" style="margin-bottom:10px;">
               <span>City / Town</span>
-              <input type="text" id="cityEditInput" placeholder="Enter your correct city or town" maxlength="60" />
+              <div style="display:flex;gap:8px;align-items:stretch;">
+                <input type="text" id="cityEditInput" placeholder="Enter your correct city or town" maxlength="60" disabled style="flex:1;" />
+                <button type="button" class="btn btn--ghost" id="cityEditToggleBtn" style="flex-shrink:0;white-space:nowrap;">Edit</button>
+              </div>
             </label>
-            <button type="submit" class="btn btn--primary btn--block" id="cityEditSaveBtn">Save city/town</button>
+            <button type="submit" class="btn btn--primary btn--block" id="cityEditSaveBtn" disabled>Save city/town</button>
             <p id="cityEditMessage" style="margin-top:8px;font-size:0.76rem;color:var(--text-faint);"></p>
           </form>
         </div>
@@ -673,6 +676,10 @@
           if (el("cityEditForm") && user.cityChangeLocked) {
             el("cityEditInput").disabled = true;
             el("cityEditSaveBtn").disabled = true;
+            if (el("cityEditToggleBtn")) {
+              el("cityEditToggleBtn").disabled = true;
+              el("cityEditToggleBtn").hidden = true;
+            }
             el("cityEditMessage").textContent = "City/town is locked after your one-time edit.";
           }
           const chatHandleValue = user.chatHandle || localStorage.getItem("chatHandle") || "—";
@@ -743,8 +750,28 @@
     loadAccountExtras();
 
     const muteGlobalToggle = document.getElementById('prefMuteGlobalChat');
+    const chatMentionsToggle = document.getElementById('prefChatMentions');
+
+    // Seed from localStorage immediately (fast paint), then reconcile with
+    // the server's saved state once the push subscription is ready.
+    if (muteGlobalToggle) muteGlobalToggle.checked = localStorage.getItem('lw_mute_global_chat') === '1';
+    if (chatMentionsToggle) chatMentionsToggle.checked = localStorage.getItem('lw_chat_mentions') !== '0'; // defaults ON
+
+    (async () => {
+      if (typeof window.getChatPushPreferences !== 'function') return;
+      const prefs = await window.getChatPushPreferences();
+      if (!prefs) return;
+      if (muteGlobalToggle) {
+        muteGlobalToggle.checked = Boolean(prefs.muteGlobalChat);
+        localStorage.setItem('lw_mute_global_chat', muteGlobalToggle.checked ? '1' : '0');
+      }
+      if (chatMentionsToggle) {
+        chatMentionsToggle.checked = prefs.chatMentionsEnabled !== false;
+        localStorage.setItem('lw_chat_mentions', chatMentionsToggle.checked ? '1' : '0');
+      }
+    })();
+
     if (muteGlobalToggle) {
-      muteGlobalToggle.checked = localStorage.getItem('lw_mute_global_chat') === '1';
       muteGlobalToggle.addEventListener('change', async () => {
         if (typeof window.setGlobalChatMutePreference !== 'function') {
           window.lwToast?.('Notification service is not ready yet.');
@@ -759,10 +786,43 @@
         }
         localStorage.setItem('lw_mute_global_chat', muteGlobalToggle.checked ? '1' : '0');
         window.lwToast?.(muteGlobalToggle.checked
-          ? 'Everyone chat alerts are muted.'
+          ? 'Everyone chat alerts are muted. Replies and @mentions will still notify you if Community chat mentions is on.'
           : 'Everyone chat alerts are active.');
       });
     }
+
+    if (chatMentionsToggle) {
+      chatMentionsToggle.addEventListener('change', async () => {
+        if (typeof window.setChatMentionsPreference !== 'function') {
+          window.lwToast?.('Notification service is not ready yet.');
+          chatMentionsToggle.checked = !chatMentionsToggle.checked;
+          return;
+        }
+        const result = await window.setChatMentionsPreference(chatMentionsToggle.checked);
+        if (!result.success) {
+          chatMentionsToggle.checked = !chatMentionsToggle.checked;
+          window.lwToast?.(result.error || 'Could not save mentions setting.');
+          return;
+        }
+        localStorage.setItem('lw_chat_mentions', chatMentionsToggle.checked ? '1' : '0');
+        window.lwToast?.(chatMentionsToggle.checked
+          ? 'You will be notified when someone replies to you or @mentions you, even with Everyone chat muted.'
+          : 'Replies and @mentions will no longer send notifications.');
+      });
+    }
+
+    const cityEditInputEl = document.getElementById('cityEditInput');
+    const cityEditToggleBtn = document.getElementById('cityEditToggleBtn');
+    cityEditToggleBtn?.addEventListener('click', () => {
+      if (!cityEditInputEl || cityEditInputEl.disabled === false) return;
+      cityEditInputEl.disabled = false;
+      cityEditInputEl.focus();
+      cityEditInputEl.select();
+      const saveBtn = document.getElementById('cityEditSaveBtn');
+      if (saveBtn) saveBtn.disabled = false;
+      cityEditToggleBtn.textContent = 'Editing…';
+      cityEditToggleBtn.disabled = true;
+    });
 
     const cityEditForm = document.getElementById('cityEditForm');
     cityEditForm?.addEventListener('submit', async () => {
@@ -803,6 +863,7 @@
         if (messageEl) messageEl.textContent = 'Saved. City/town is now locked and cannot be changed again.';
         input.disabled = true;
         saveBtn.disabled = true;
+        if (cityEditToggleBtn) cityEditToggleBtn.hidden = true;
         window.lwToast?.('City/town updated successfully.');
       } catch (err) {
         if (messageEl) messageEl.textContent = 'Could not save city/town right now.';
