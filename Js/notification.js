@@ -265,3 +265,43 @@ async function maybeShowPushWelcome(registration) {
         console.error('Could not show welcome notification:', err);
     }
 }
+
+async function getCurrentPushEndpoint() {
+    if (!('serviceWorker' in navigator)) return null;
+    try {
+        const registration = await navigator.serviceWorker.ready;
+        const existing = await registration.pushManager.getSubscription();
+        return existing?.endpoint || null;
+    } catch {
+        return null;
+    }
+}
+
+async function setGlobalChatMutePreference(muteGlobalChat) {
+    const session = typeof getSession === 'function' ? getSession() : null;
+    const userId = session?.user?.id || localStorage.getItem('currentUserId');
+    if (!userId) return { success: false, error: 'No signed-in user' };
+
+    const endpoint = await getCurrentPushEndpoint();
+    if (!endpoint) {
+        return { success: false, error: 'No active push subscription on this device' };
+    }
+
+    try {
+        const res = await fetch(`${API_URL}/subscribe/preferences`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId, endpoint, muteGlobalChat: Boolean(muteGlobalChat) })
+        });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            return { success: false, error: data.error || 'Could not save mute preference' };
+        }
+        const data = await res.json();
+        return { success: true, muteGlobalChat: Boolean(data.muteGlobalChat) };
+    } catch (err) {
+        return { success: false, error: err.message || 'Could not save mute preference' };
+    }
+}
+
+window.setGlobalChatMutePreference = setGlobalChatMutePreference;

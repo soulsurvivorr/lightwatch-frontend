@@ -498,6 +498,16 @@
               <span class="toggle__track"></span>
             </label>
           </div>
+          <div class="pref-row">
+            <div class="pref-row__info">
+              <div class="pref-row__title">Mute everyone-audience chat alerts</div>
+              <div class="pref-row__sub">Stops push notifications from messages sent to Everyone audience</div>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="prefMuteGlobalChat">
+              <span class="toggle__track"></span>
+            </label>
+          </div>
         </div>
 
         <div class="card">
@@ -511,6 +521,24 @@
           <button type="button" class="btn btn--ghost btn--block" onclick="window.location.href='./home.html'">
             + Go to home to add locations
           </button>
+        </div>
+
+        <div class="card">
+          <div class="card__head">
+            <span class="card__title">Edit city/town</span>
+            <span class="card__meta">One-time correction only</span>
+          </div>
+          <p style="font-size:0.8rem;color:var(--text-faint);margin-bottom:10px;line-height:1.45;">
+            Disclaimer: You can change your city/town only once. After saving, it cannot be changed again.
+          </p>
+          <form id="cityEditForm" action="javascript:void(0)">
+            <label class="form-field" style="margin-bottom:10px;">
+              <span>City / Town</span>
+              <input type="text" id="cityEditInput" placeholder="Enter your correct city or town" maxlength="60" />
+            </label>
+            <button type="submit" class="btn btn--primary btn--block" id="cityEditSaveBtn">Save city/town</button>
+            <p id="cityEditMessage" style="margin-top:8px;font-size:0.76rem;color:var(--text-faint);"></p>
+          </form>
         </div>
 
         <div class="card">
@@ -647,6 +675,12 @@
 
           if (el("profileCity")) el("profileCity").textContent = user.city || "—";
           if (el("profileRegion")) el("profileRegion").textContent = user.region || "—";
+          if (el("cityEditInput")) el("cityEditInput").value = user.city || "";
+          if (el("cityEditForm") && user.cityChangeLocked) {
+            el("cityEditInput").disabled = true;
+            el("cityEditSaveBtn").disabled = true;
+            el("cityEditMessage").textContent = "City/town is locked after your one-time edit.";
+          }
           const chatHandleValue = user.chatHandle || localStorage.getItem("chatHandle") || "—";
           if (el("profileChatHandle")) el("profileChatHandle").textContent = chatHandleValue;
           if (el("profileHandle")) el("profileHandle").textContent = user.chatHandle || localStorage.getItem("chatHandle") || "";
@@ -715,6 +749,74 @@
     }
 
     loadAccountExtras();
+
+    const muteGlobalToggle = document.getElementById('prefMuteGlobalChat');
+    if (muteGlobalToggle) {
+      muteGlobalToggle.checked = localStorage.getItem('lw_mute_global_chat') === '1';
+      muteGlobalToggle.addEventListener('change', async () => {
+        if (typeof window.setGlobalChatMutePreference !== 'function') {
+          window.lwToast?.('Notification service is not ready yet.');
+          muteGlobalToggle.checked = !muteGlobalToggle.checked;
+          return;
+        }
+        const result = await window.setGlobalChatMutePreference(muteGlobalToggle.checked);
+        if (!result.success) {
+          muteGlobalToggle.checked = !muteGlobalToggle.checked;
+          window.lwToast?.(result.error || 'Could not save mute setting.');
+          return;
+        }
+        localStorage.setItem('lw_mute_global_chat', muteGlobalToggle.checked ? '1' : '0');
+        window.lwToast?.(muteGlobalToggle.checked
+          ? 'Everyone chat alerts are muted.'
+          : 'Everyone chat alerts are active.');
+      });
+    }
+
+    const cityEditForm = document.getElementById('cityEditForm');
+    cityEditForm?.addEventListener('submit', async () => {
+      const input = document.getElementById('cityEditInput');
+      const messageEl = document.getElementById('cityEditMessage');
+      const saveBtn = document.getElementById('cityEditSaveBtn');
+      const city = String(input?.value || '').trim();
+      const userId = localStorage.getItem('currentUserId');
+      if (!userId || !city) {
+        if (messageEl) messageEl.textContent = 'Please enter a city/town first.';
+        return;
+      }
+
+      saveBtn.disabled = true;
+      if (messageEl) messageEl.textContent = 'Saving...';
+
+      try {
+        const res = await fetch(`${API_URL}/user/${userId}/city`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ city })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          if (messageEl) messageEl.textContent = data.error || 'Could not save city/town.';
+          saveBtn.disabled = false;
+          return;
+        }
+
+        document.getElementById('profileCity').textContent = data.user?.city || city;
+        document.getElementById('profileRegion').textContent = data.user?.region || document.getElementById('profileRegion').textContent;
+
+        const cachedUser = JSON.parse(localStorage.getItem('currentUserData') || '{}');
+        cachedUser.city = data.user?.city || city;
+        if (data.user?.region) cachedUser.region = data.user.region;
+        localStorage.setItem('currentUserData', JSON.stringify(cachedUser));
+
+        if (messageEl) messageEl.textContent = 'Saved. City/town is now locked and cannot be changed again.';
+        input.disabled = true;
+        saveBtn.disabled = true;
+        window.lwToast?.('City/town updated successfully.');
+      } catch (err) {
+        if (messageEl) messageEl.textContent = 'Could not save city/town right now.';
+        saveBtn.disabled = false;
+      }
+    });
   </script>
 </body>
 </html>
