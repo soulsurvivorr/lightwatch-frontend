@@ -2889,6 +2889,24 @@ body.modal-open {
 
 @media (max-width: 390px) {
   .chat-card--mobile-open {
-    height: clamp(36rem, 86dvh, 40rem);
+    height: clamp(35rem, 84dvh, 39rem);
+  }
+
+  .mobile-chat-toggle {
+    right: 12px;
+    bottom: calc(124px + env(safe-area-inset-bottom));
+    gap: 6px;
+    padding: 8px 10px;
+    font-size: 0.74rem;
+    border-radius: 999px;
+  }
+
+  .mobile-chat-toggle__icon {
+    font-size: 0.9rem;
+  }
+
+  .mobile-chat-toggle__label {
+    font-size: 0.7rem;
+    line-height: 1;
   }
 }

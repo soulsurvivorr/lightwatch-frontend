@@ -1,23 +1,24 @@
 /* ============================================================
    Areas page
-   Simple list of towns and current light status.
+   Dense, scannable list of towns with status, confidence, and
+   time-since-last-report — built to show many rows on screen at
+   once rather than a handful of large cards.
    ============================================================ */
 
 .areas-summary-strip {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 12px 14px;
+  padding: 10px 12px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-soft);
   background: var(--bg-panel);
-  margin-bottom: 12px;
-  animation: none;
+  margin-bottom: 10px;
 }
 
 .areas-summary-strip__icon {
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   flex-shrink: 0;
   border-radius: 50%;
   display: flex;
@@ -27,110 +28,252 @@
 }
 
 .areas-summary-strip__icon img {
-  width: 16px;
-  height: 16px;
+  width: 15px;
+  height: 15px;
 }
 
 .areas-summary-strip__text {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
+  min-width: 0;
 }
 
 #areasSummaryText {
   font-family: var(--font-display);
-  font-size: 0.92rem;
+  font-size: clamp(0.82rem, 2.4vw, 0.92rem);
   color: var(--text-bright);
+  font-weight: 600;
 }
 
 .areas-summary-strip__sub {
-  font-size: 0.74rem;
+  font-size: clamp(0.68rem, 2vw, 0.74rem);
   color: var(--text-faint);
+}
+
+/* ---- Controls: filter chips + search ---- */
+
+.areas-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.areas-filter-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.areas-filter-tab {
+  border: 1px solid var(--border-soft);
+  background: var(--bg-panel);
+  color: var(--text-faint);
+  font-size: 0.74rem;
+  font-weight: 600;
+  padding: 5px 11px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.areas-filter-tab:hover {
+  border-color: var(--border-strong);
+  color: var(--text-bright);
+}
+
+.areas-filter-tab.is-active {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: white;
+}
+
+.areas-search {
+  flex: 1 1 160px;
+  min-width: 140px;
+}
+
+.areas-search input {
+  width: 100%;
+  background: var(--bg-deep);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  padding: 7px 11px;
+  font-size: 0.78rem;
+  color: var(--text-bright);
+  font-family: var(--font-body);
+}
+
+.areas-search input:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgba(240, 172, 61, 0.15);
 }
 
 .areas-board {
   margin-bottom: 18px;
+  padding: 10px 12px 6px;
 }
+
+.areas-board .card__head {
+  margin-bottom: 6px;
+}
+
+/* ---- Dense row list ---- */
 
 .area-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.area-card {
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-md);
-  background: linear-gradient(165deg, color-mix(in srgb, var(--bg-panel) 94%, #ffffff 6%), color-mix(in srgb, var(--bg-panel-raised) 90%, #ffffff 10%));
-  padding: 11px 12px;
-  display: grid;
-  grid-template-columns: 1fr auto;
-  grid-template-areas:
-    "top status"
-    "context context";
-  gap: 8px 10px;
-}
-
-.area-card:hover {
-  border-color: color-mix(in srgb, var(--teal) 32%, var(--border-soft));
-}
-
-.area-card__top {
-  grid-area: top;
   display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
+  flex-direction: column;
 }
 
-.area-card__name {
-  font-size: 0.92rem;
+.area-row {
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1.3fr) auto auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 4px;
+  border-bottom: 1px solid var(--border-soft);
+  transition: background 0.12s ease;
+}
+
+.area-row:last-child {
+  border-bottom: none;
+}
+
+.area-row:hover {
+  background: var(--bg-panel-raised);
+}
+
+.area-row__dot {
+  width: 8px;
+  height: 8px;
+}
+
+.area-row__name {
+  font-size: clamp(0.82rem, 2.2vw, 0.9rem);
+  font-weight: 600;
   color: var(--text-bright);
-  font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.area-card__tag {
-  flex-shrink: 0;
-  font-size: 0.62rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--text-faint);
-  border: 1px solid var(--border-soft);
-  background: var(--bg-panel-raised);
-  border-radius: 999px;
+.area-row__live {
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--teal);
+  background: var(--teal-dim);
+  border-radius: 4px;
+  padding: 1px 4px;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+.area-row__confidence {
+  font-size: clamp(0.64rem, 1.8vw, 0.7rem);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
   padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid transparent;
 }
 
-.area-card__status {
-  grid-area: status;
-  flex-shrink: 0;
+.area-row__confidence--high {
+  color: var(--teal);
+  background: var(--teal-dim);
 }
 
-.area-card__context {
-  grid-area: context;
-  margin: 0;
-  font-size: 0.78rem;
-  line-height: 1.35;
+.area-row__confidence--medium {
+  color: var(--brand);
+  background: color-mix(in srgb, var(--brand) 16%, transparent);
+}
+
+.area-row__confidence--low {
   color: var(--text-faint);
+  background: var(--bg-panel-raised);
+  border-color: var(--border-soft);
 }
 
+.area-row__confidence--unverified {
+  color: var(--text-faint);
+  background: transparent;
+  border-color: var(--border-soft);
+  font-style: italic;
+}
+
+.area-row__time {
+  font-size: clamp(0.66rem, 1.9vw, 0.74rem);
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+
+.area-row__badge {
+  font-size: clamp(0.66rem, 1.9vw, 0.72rem);
+  padding: 3px 9px;
+}
+
+.areas-empty-state {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 26px 10px;
+  color: var(--text-faint);
+  text-align: center;
+}
+
+.areas-empty-state strong {
+  color: var(--text-muted);
+  font-size: 0.86rem;
+}
+
+.areas-empty-state span {
+  font-size: 0.76rem;
+}
+
+/* ---- Small screens: trim confidence + time so name/status stay
+   legible; keep everything on one row rather than wrapping. ---- */
 @media (max-width: 520px) {
-  .areas-summary-strip {
-    padding: 10px 12px;
+  .areas-board {
+    padding: 8px 10px 4px;
   }
 
-  .area-grid {
-    grid-template-columns: 1fr;
+  .area-row {
+    grid-template-columns: 7px minmax(0, 1fr) auto auto;
+    gap: 7px;
+    padding: 6px 3px;
   }
 
-  .area-card {
-    padding: 10px;
+  .area-row__confidence {
+    display: none;
   }
 
-  .area-card__name {
-    font-size: 0.9rem;
+  .area-row__name {
+    font-size: 0.8rem;
+  }
+
+  .area-row__time {
+    font-size: 0.66rem;
+  }
+
+  .area-row__badge {
+    font-size: 0.64rem;
+    padding: 2px 7px;
+  }
+
+  .areas-filter-tab {
+    font-size: 0.7rem;
+    padding: 4px 9px;
+  }
+}
+
+@media (max-width: 360px) {
+  .area-row__time {
+    display: none;
   }
 }
