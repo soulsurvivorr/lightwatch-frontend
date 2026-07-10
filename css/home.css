@@ -1636,7 +1636,7 @@ body.modal-open {
   display: flex;
   flex-direction: column;
   gap: 3px;
-  max-height: 380px;
+  max-height: 230px;
   overflow-y: auto;
   padding-right: 2px;
 }
@@ -1998,10 +1998,9 @@ body.modal-open {
   }
 
   .chat-card--mobile-open {
-    top: 72px;
-    bottom: 102px;
-    height: calc(100vh - 174px);
-    height: calc(100dvh - 174px);
+    top: 108px;
+    bottom: 122px;
+    height: auto;
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
@@ -2018,8 +2017,8 @@ body.modal-open {
   }
 
   .chat-card--mobile-open .chat-thread {
-    flex: 1 1 auto;
-    max-height: none;
+    flex: 0 1 auto;
+    max-height: 190px;
   }
 
   .chat-card__head {

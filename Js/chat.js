@@ -357,8 +357,11 @@ function getVisibleChatCard() {
 }
 
 document.getElementById('mobileChatToggle')?.addEventListener('click', () => {
-    getVisibleChatCard()?.classList.add('chat-card--mobile-open');
-    document.body.classList.add('mobile-chat-open');
+    const card = getVisibleChatCard();
+    if (!card) return;
+    const isOpen = card.classList.contains('chat-card--mobile-open');
+    card.classList.toggle('chat-card--mobile-open', !isOpen);
+    document.body.classList.toggle('mobile-chat-open', !isOpen);
 });
 document.getElementById('mobileChatClose')?.addEventListener('click', () => {
     getVisibleChatCard()?.classList.remove('chat-card--mobile-open');
