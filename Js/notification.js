@@ -12,6 +12,14 @@ let pushInitPromise = null;
 let lwAudioCtx = null;
 let lwAudioReady = false;
 
+function updateEnablePushButtonsVisibility() {
+    const shouldShow = Notification.permission !== 'granted';
+    document.querySelectorAll('[data-enable-push-btn]').forEach((btn) => {
+        btn.hidden = !shouldShow;
+        btn.setAttribute('aria-hidden', shouldShow ? 'false' : 'true');
+    });
+}
+
 function ensureAudioContext() {
     if (lwAudioCtx) return lwAudioCtx;
     const Ctx = window.AudioContext || window.webkitAudioContext;
@@ -29,6 +37,14 @@ function unlockForegroundAudio() {
         }).catch(() => {});
     };
     resume();
+}
+
+function triggerForegroundSignal() {
+    unlockForegroundAudio();
+    if (navigator.vibrate) {
+        navigator.vibrate([90, 40, 90]);
+    }
+    playDewDropsTone();
 }
 
 function playDewDropsTone() {
@@ -139,6 +155,7 @@ async function enableLightWatchPush() {
 
     try {
         const permission = await Notification.requestPermission();
+        updateEnablePushButtonsVisibility();
         if (permission !== 'granted') {
             console.log('Push permission denied.');
             window.lwToast?.('Notifications permission was not granted.');
@@ -156,9 +173,11 @@ async function enableLightWatchPush() {
         await maybeShowPushWelcome(registration);
         console.log('Push notifications enabled.');
         window.lwToast?.('Notifications are on.');
+        updateEnablePushButtonsVisibility();
     } catch (err) {
         console.error('Push subscription failed:', err);
         window.lwToast?.('Could not enable notifications — please try again.');
+        updateEnablePushButtonsVisibility();
     }
 }
 
@@ -200,6 +219,9 @@ async function syncSubscriptionWithCurrentLocation() {
 // Start immediately so mobile does not wait on location/profile calls.
 // (Safe now — this no longer calls requestPermission() unprompted.)
 ensurePushNotificationsInitialized();
+updateEnablePushButtonsVisibility();
+
+document.addEventListener('DOMContentLoaded', updateEnablePushButtonsVisibility);
 
 // Prepare audio playback after first user interaction.
 ['click', 'touchstart', 'keydown'].forEach(evt => {
@@ -209,7 +231,7 @@ ensurePushNotificationsInitialized();
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.addEventListener('message', (event) => {
         if (event?.data?.type === 'LW_PUSH_RECEIVED') {
-            playDewDropsTone();
+            triggerForegroundSignal();
         }
     });
 }
@@ -233,6 +255,9 @@ async function maybeShowPushWelcome(registration) {
             icon: APP_ICON,
             tag: 'lw-notifications-on',
             renotify: false,
+            silent: false,
+            vibrate: [120, 40, 120],
+            sound: 'default',
             data: { url: '/pages/home.html' }
         });
         localStorage.setItem(PUSH_WELCOME_KEY, '1');

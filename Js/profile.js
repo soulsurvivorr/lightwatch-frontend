@@ -367,7 +367,7 @@ function renderLocationPage(user) {
                     // Send a chat notification to the room
                     const myId = getSession()?.user?.id || localStorage.getItem("currentUserId");
                     const myHandle = getSession()?.user?.chatHandle || localStorage.getItem("chatHandle") || "someone";
-                    if (myId) {
+                    if (myId && nextStatus !== "off") {
                         fetch(`${API_URL}/chats`, {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },

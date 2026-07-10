@@ -1982,7 +1982,7 @@ body.modal-open {
     position: fixed;
     left: 10px;
     right: 10px;
-    bottom: calc(102px + env(safe-area-inset-bottom));
+    bottom: calc(118px + env(safe-area-inset-bottom));
     margin: 0 auto;
     width: auto;
     max-width: 420px;
@@ -1995,7 +1995,7 @@ body.modal-open {
     visibility: hidden;
     pointer-events: none;
     transition: transform 0.34s cubic-bezier(0.2, 0.75, 0.15, 1), opacity 0.24s ease, visibility 0s linear 0.34s;
-    z-index: 55;
+    z-index: 70;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -2016,11 +2016,22 @@ body.modal-open {
     flex-shrink: 0;
   }
 
+  .chat-card--mobile-open .chat-form {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    background: var(--bg-panel);
+    border-top: 1px solid var(--border-soft);
+    padding-top: 8px;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));
+  }
+
   .chat-card--mobile-open .chat-thread {
     flex: 1 1 auto;
     min-height: 0;
     max-height: none;
     overflow-y: auto;
+    padding-bottom: 6px;
   }
 
   .chat-card__head {
@@ -2080,8 +2091,23 @@ body.modal-open {
     font-size: 1.2rem;
   }
 
+  html.mobile-chat-open,
   body.mobile-chat-open {
     overflow: hidden;
+    overscroll-behavior: none;
+    touch-action: none;
+  }
+
+  body.mobile-chat-open #bottom_nav_wrapper {
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.18s ease, transform 0.18s ease;
+  }
+
+  body.mobile-chat-open .mobile-chat-toggle {
+    pointer-events: none;
+    opacity: 0;
   }
 }
 

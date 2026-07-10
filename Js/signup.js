@@ -87,3 +87,12 @@ document.addEventListener("keydown", (e) => {
         handleSignup();
     }
 });
+
+if (notifyUpdatesInput) {
+    notifyUpdatesInput.addEventListener('change', () => {
+        if (!notifyUpdatesInput.checked) return;
+        if (typeof window.enableLightWatchPush === 'function') {
+            window.enableLightWatchPush();
+        }
+    });
+}

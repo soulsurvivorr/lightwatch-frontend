@@ -108,6 +108,7 @@ self.addEventListener('push', event => {
         vibrate: Array.isArray(data.vibrate) ? data.vibrate : [200, 100, 200],
         requireInteraction: data.requireInteraction !== false,
         silent: false,
+        sound: data.sound || 'default',
         actions: [
             {
                 action: "open",

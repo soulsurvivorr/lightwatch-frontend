@@ -356,16 +356,48 @@ function getVisibleChatCard() {
     return document.querySelector('#realPageContent .chat-card') || document.querySelector('.chat-card');
 }
 
+let lockedScrollY = 0;
+
+function setMobileScrollLock(locked) {
+    const onMobile = window.matchMedia('(max-width: 720px)').matches;
+    if (!onMobile) locked = false;
+
+    if (locked) {
+        lockedScrollY = window.scrollY || window.pageYOffset || 0;
+        document.documentElement.classList.add('mobile-chat-open');
+        document.body.classList.add('mobile-chat-open');
+        document.body.style.position = 'fixed';
+        document.body.style.top = `-${lockedScrollY}px`;
+        document.body.style.left = '0';
+        document.body.style.right = '0';
+        document.body.style.width = '100%';
+    } else {
+        document.documentElement.classList.remove('mobile-chat-open');
+        document.body.classList.remove('mobile-chat-open');
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.left = '';
+        document.body.style.right = '';
+        document.body.style.width = '';
+        window.scrollTo(0, lockedScrollY);
+    }
+}
+
+function setMobileChatOpen(open) {
+    const card = getVisibleChatCard();
+    if (!card) return;
+    card.classList.toggle('chat-card--mobile-open', open);
+    setMobileScrollLock(open);
+}
+
 document.getElementById('mobileChatToggle')?.addEventListener('click', () => {
     const card = getVisibleChatCard();
     if (!card) return;
     const isOpen = card.classList.contains('chat-card--mobile-open');
-    card.classList.toggle('chat-card--mobile-open', !isOpen);
-    document.body.classList.toggle('mobile-chat-open', !isOpen);
+    setMobileChatOpen(!isOpen);
 });
 document.getElementById('mobileChatClose')?.addEventListener('click', () => {
-    getVisibleChatCard()?.classList.remove('chat-card--mobile-open');
-    document.body.classList.remove('mobile-chat-open');
+    setMobileChatOpen(false);
 });
 
 // Safety net: the mobile chat popup + its scroll-lock are only meant to
@@ -374,8 +406,7 @@ document.getElementById('mobileChatClose')?.addEventListener('click', () => {
 // resizing, etc.), force both off immediately rather than trusting CSS
 // alone to sort it out.
 function closeMobileChatPopup() {
-    getVisibleChatCard()?.classList.remove('chat-card--mobile-open');
-    document.body.classList.remove('mobile-chat-open');
+    setMobileChatOpen(false);
 }
 const desktopBreakpoint = window.matchMedia('(min-width: 721px)');
 desktopBreakpoint.addEventListener('change', (e) => {

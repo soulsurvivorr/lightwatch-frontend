@@ -113,7 +113,7 @@ function areaRowTemplate({ name, status, minutesAgo, confirmations, live }) {
         <span class="area-row__confidence area-row__confidence--${confidence.cls}" title="${confidence.title}">${confidence.label}</span>
         <span class="area-row__time">${timeText}</span>
         <span class="badge ${badgeClass} area-row__badge">${statusLabel}</span>
-        <button type="button" class="area-row__toggle" aria-expanded="false" aria-controls="${detailsId}" aria-label="Show ${name} details"></button>
+        <span class="area-row__toggle" role="button" tabindex="0" aria-expanded="false" aria-controls="${detailsId}" aria-label="Show ${name} details"></span>
       </div>
       <div class="area-row__details" id="${detailsId}">
         <p class="area-details__summary">${statusInsight}</p>
@@ -232,6 +232,14 @@ function bindControls() {
       const willOpen = !row.classList.contains('is-open');
       row.classList.toggle('is-open', willOpen);
       toggle.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+    });
+
+    grid.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      const toggle = event.target.closest('.area-row__toggle');
+      if (!toggle) return;
+      event.preventDefault();
+      toggle.click();
     });
   }
 }
