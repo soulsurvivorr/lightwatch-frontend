@@ -539,6 +539,18 @@ async function loadCurrentUserProfile() {
     try {
         const response = await fetch(`${API_URL}/user/${userId}`);
 
+        // If admin deleted this user (or session became invalid), do not
+        // continue with cached local data. End the session and send them
+        // back to sign in on next open.
+        if ([401, 403, 404, 410].includes(response.status)) {
+            if (typeof signOut === 'function') {
+                signOut();
+                return;
+            }
+            window.location.replace('../index.html');
+            return;
+        }
+
         if (!response.ok) {
             if (!fallbackUser) renderSignedOutEverywhere();
             return;
