@@ -246,6 +246,22 @@
             </div>
           </div>
 
+          
+          <!-- Light toggle -->
+          <div class="light-toggle-row">
+            <div class="light-toggle-row__label">
+              <span class="light-toggle-row__title">Report current status</span>
+              <span class="light-toggle-row__sub">Flip this only if you can actually see the area right now</span>
+            </div>
+            <button type="button" class="light-switch" id="lightSwitch" role="switch" aria-checked="false" aria-label="Toggle light status">
+              <span class="light-switch__track">
+                <span class="light-switch__thumb"></span>
+              </span>
+              <span class="light-switch__state" id="lightSwitchState">CHECK</span>
+            </button>
+          </div>
+
+
           <div class="location-card__top">
             <div class="location-card__info">
               <div class="location-card__row">
@@ -294,21 +310,6 @@
               </div>
             </div>
           </div>
-
-          <!-- Light toggle -->
-          <div class="light-toggle-row">
-            <div class="light-toggle-row__label">
-              <span class="light-toggle-row__title">Report current status</span>
-              <span class="light-toggle-row__sub">Flip this only if you can actually see the area right now</span>
-            </div>
-            <button type="button" class="light-switch" id="lightSwitch" role="switch" aria-checked="false" aria-label="Toggle light status">
-              <span class="light-switch__track">
-                <span class="light-switch__thumb"></span>
-              </span>
-              <span class="light-switch__state" id="lightSwitchState">CHECK</span>
-            </button>
-          </div>
-
                 <!-- Status insight panel — outer shell/classes left as-is
                (status-insight-panel / __header / __title / __sub) so the
                existing responsive + dark-theme rules for this card keep
