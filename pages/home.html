@@ -202,6 +202,16 @@
       <div class="hero-banner__eyebrow">LightWatch · Live status</div>
       <div class="hero-banner__greeting" id="pageGreeting" data-skel="line">Welcome back</div>
       <div class="hero-banner__sub" id="locationSubtitle" data-skel="line">Real-time power reporting for your area.</div>
+
+      <!-- Shown only when the user has added a second location on the
+           Account page. Tapping it opens a side panel — kept out of the
+           main content flow rather than adding a whole new card here. -->
+      <button type="button" class="secondary-location-chip" id="secondaryLocationChip" hidden>
+        <span class="secondary-location-chip__dot" aria-hidden="true"></span>
+        <span id="secondaryLocationChipLabel">Second location</span>
+        <span class="secondary-location-chip__arrow" aria-hidden="true">›</span>
+      </button>
+
       <div class="hero-banner__stats">
         <div class="hero-stat">
           <span class="hero-stat__value" id="heroContributors" data-skel="line"></span>
@@ -510,6 +520,28 @@
       </div>
       <button type="button" class="btn btn--primary btn--block" onclick="window.location.href='./account.html'">Manage account</button>
       <a href="../index.html"><button type="button" class="btn btn--ghost btn--block" id="sidebarSignOutBtn">Log out</button></a>
+    </div>
+  </aside>
+
+  <!-- Secondary location panel — opened from the hero-banner chip above.
+       Its own overlay so it doesn't fight the profile sidebar's state. -->
+  <div class="sidebar-overlay" id="secondaryLocationOverlay"></div>
+  <aside class="user-sidebar-panel" id="secondaryLocationPanel" aria-hidden="true">
+    <button type="button" class="user-sidebar__close" id="secondaryLocationClose" aria-label="Close location panel">×</button>
+    <div class="card profile-card profile-card--sidebar">
+      <div class="card__head">
+        <span class="card__title">Second location</span>
+        <span class="card__meta" id="secondaryLocationPanelBadge">—</span>
+      </div>
+      <div class="profile-card__details" style="margin-top:6px;">
+        <div><span>Label</span><strong id="secondaryLocationPanelLabel">—</strong></div>
+        <div><span>City</span><strong id="secondaryLocationPanelCity">—</strong></div>
+        <div><span>Region</span><strong id="secondaryLocationPanelRegion">—</strong></div>
+      </div>
+      <p style="font-size:0.78rem;color:var(--text-faint);margin-top:12px;line-height:1.5;">
+        This is a second spot you're keeping an eye on, separate from your primary location above.
+      </p>
+      <button type="button" class="btn btn--primary btn--block" onclick="window.location.href='./account.html'">Manage in Account</button>
     </div>
   </aside>
 

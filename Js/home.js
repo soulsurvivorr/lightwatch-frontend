@@ -14,6 +14,96 @@
 
 requireAuth(); // redirects to login if no session — defined in auth.js
 
+// ------------------------------------------------------------
+// DISPLAY PREFERENCES — applied here too, not just on Account.
+// Account.js is the source of truth for these localStorage keys
+// (see DISPLAY_PREF_KEYS there); this just re-applies them as
+// data-attributes on <html> so home.css's [data-*] rules kick in,
+// since a page load doesn't inherit another page's DOM state.
+// ------------------------------------------------------------
+(function applyDisplayPrefsOnHome() {
+    const root = document.documentElement;
+    const KEYS = {
+        'data-compact-chat':     'lw_pref_compact_chat',
+        'data-reduce-motion':    'lw_pref_reduce_motion',
+        'data-large-chat-text':  'lw_pref_large_chat_text'
+    };
+    Object.entries(KEYS).forEach(([attr, key]) => {
+        root.setAttribute(attr, localStorage.getItem(key) === '1' ? '1' : '0');
+    });
+    root.setAttribute('data-density', localStorage.getItem('lw_pref_density') || 'comfortable');
+    root.setAttribute('data-accent', localStorage.getItem('lw_pref_accent') || 'teal');
+
+    // Live-sync if the user flips a toggle on Account while Home stays
+    // open in another tab.
+    window.addEventListener('storage', (e) => {
+        const attr = Object.keys(KEYS).find(a => KEYS[a] === e.key);
+        if (attr) root.setAttribute(attr, e.newValue === '1' ? '1' : '0');
+        if (e.key === 'lw_pref_density') root.setAttribute('data-density', e.newValue || 'comfortable');
+        if (e.key === 'lw_pref_accent') root.setAttribute('data-accent', e.newValue || 'teal');
+    });
+})();
+
+// ------------------------------------------------------------
+// SECONDARY LOCATION CHIP — when the user adds a second location
+// on Account, show a small clickable box for it here instead of
+// forcing new content into the main layout. Reads the same
+// currentUserData cache profile.js/account.js already keep fresh.
+// ------------------------------------------------------------
+function getCachedUserForSecondaryLocation() {
+    try {
+        return JSON.parse(localStorage.getItem('currentUserData') || sessionStorage.getItem('currentUserData') || '{}');
+    } catch {
+        return {};
+    }
+}
+
+function renderSecondaryLocationChip() {
+    const chip = document.getElementById('secondaryLocationChip');
+    if (!chip) return;
+
+    const sec = getCachedUserForSecondaryLocation().secondaryLocation;
+    if (!sec?.city) {
+        chip.hidden = true;
+        return;
+    }
+
+    const label = sec.label || 'Second location';
+    document.getElementById('secondaryLocationChipLabel').textContent = `${label} · ${sec.city}`;
+    chip.hidden = false;
+
+    document.getElementById('secondaryLocationPanelBadge').textContent = label;
+    document.getElementById('secondaryLocationPanelLabel').textContent = label;
+    document.getElementById('secondaryLocationPanelCity').textContent = sec.city || '—';
+    document.getElementById('secondaryLocationPanelRegion').textContent = sec.region || '—';
+}
+
+function openSecondaryLocationPanel() {
+    document.getElementById('secondaryLocationPanel')?.classList.add('user-sidebar-panel--open');
+    document.getElementById('secondaryLocationOverlay')?.classList.add('sidebar-overlay--visible');
+    document.getElementById('secondaryLocationPanel')?.setAttribute('aria-hidden', 'false');
+}
+
+function closeSecondaryLocationPanel() {
+    document.getElementById('secondaryLocationPanel')?.classList.remove('user-sidebar-panel--open');
+    document.getElementById('secondaryLocationOverlay')?.classList.remove('sidebar-overlay--visible');
+    document.getElementById('secondaryLocationPanel')?.setAttribute('aria-hidden', 'true');
+}
+
+document.getElementById('secondaryLocationChip')?.addEventListener('click', openSecondaryLocationPanel);
+document.getElementById('secondaryLocationClose')?.addEventListener('click', closeSecondaryLocationPanel);
+document.getElementById('secondaryLocationOverlay')?.addEventListener('click', closeSecondaryLocationPanel);
+
+// Cached data may still be stale on first paint — re-render once profile.js
+// has fetched the fresh copy and revealed the real page.
+renderSecondaryLocationChip();
+window.addEventListener('lw-page-revealed', renderSecondaryLocationChip);
+
+// Live update if a location is added/edited/removed on Account in another tab.
+window.addEventListener('storage', (e) => {
+    if (e.key === 'currentUserData') renderSecondaryLocationChip();
+});
+
 const addressInput = document.getElementById('newLocationAddress');
 const autocompleteList = document.getElementById('autocompleteList');
 const addLocationForm = document.getElementById('addLocationForm');

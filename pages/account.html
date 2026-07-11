@@ -267,6 +267,16 @@
       .account-stats {
         grid-template-columns: 1fr 1fr;
       }
+      /* Mobile only: flatten the two grid columns so every card becomes
+         a direct grid item and can be reordered independently. Desktop
+         keeps the original two-column layout untouched. */
+      .account-grid > div {
+        display: contents;
+      }
+      #accountSignOutZone {
+        order: 99;
+        margin-top: 0;
+      }
     }
 
     @media (max-width: 480px) {
@@ -323,8 +333,78 @@
         radial-gradient(120% 140% at 50% -10%, color-mix(in srgb, var(--teal) 22%, transparent), transparent 60%);
     }
 
+    .profile-hero__ring {
+      width: 88px;
+      height: 88px;
+      margin: 0 auto 14px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: conic-gradient(from 200deg, var(--teal), var(--brand), var(--teal));
+      padding: 3px;
+    }
+
+    .profile-hero__ring .profile-hero__avatar {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      border: 3px solid var(--bg-panel);
+    }
+
     .profile-hero__avatar {
       box-shadow: 0 8px 22px -8px color-mix(in srgb, var(--teal) 60%, transparent);
+    }
+
+    .profile-details-card .section-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .profile-details-card .section-label::before {
+      content: "";
+      width: 12px;
+      height: 2px;
+      border-radius: 2px;
+      background: var(--teal);
+      display: inline-block;
+    }
+
+    .detail-row {
+      gap: 10px;
+    }
+
+    .detail-row__icon {
+      width: 26px;
+      height: 26px;
+      border-radius: 8px;
+      background: var(--bg-panel-raised, var(--bg-panel));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.76rem;
+      flex-shrink: 0;
+    }
+
+    .detail-row__label {
+      flex: 1;
+    }
+
+    #cityEditCard {
+      overflow: hidden;
+      transition: opacity 0.25s ease, max-height 0.3s ease, margin 0.3s ease, padding 0.3s ease;
+    }
+
+    #cityEditCard.card--collapsed {
+      opacity: 0;
+      max-height: 0;
+      margin-top: 0 !important;
+      margin-bottom: 0 !important;
+      padding-top: 0;
+      padding-bottom: 0;
+      border-width: 0;
+      pointer-events: none;
     }
 
     .card__head {
@@ -518,6 +598,10 @@
     (function () {
       if (localStorage.getItem('lw_skeleton_seen_account') === '1') return;
       document.body.classList.add('page-data-loading');
+      // Tell profile.js's hideProfileLoader() to leave the skeleton up
+      // even after the base profile finishes — account.js clears this
+      // once locations/chat-handle/city extras are actually in the DOM.
+      document.body.dataset.accountExtrasLoading = '1';
     })();
   </script>
 
@@ -625,37 +709,44 @@
 
       <!-- Left: profile card -->
       <div>
-        <div class="card" style="padding: 0; overflow: hidden;">
+        <div class="card profile-details-card" style="padding: 0; overflow: hidden;">
           <div class="profile-hero">
-            <div class="profile-hero__avatar" id="profileAvatar">?</div>
+            <div class="profile-hero__ring">
+              <div class="profile-hero__avatar" id="profileAvatar">?</div>
+            </div>
             <div class="profile-hero__name" id="profileName">Not signed in</div>
             <div class="profile-hero__handle" id="profileHandle">—</div>
-            <span class="profile-hero__badge">
+            <span class="profile-hero__badge" id="profileBadge">
               <span class="pulse pulse--on" style="width:8px;height:8px;"></span>
-              Active contributor
+              <span id="profileBadgeText">Community member</span>
             </span>
           </div>
 
-          <div style="padding: 0 20px 20px;">
+          <div style="padding: 4px 20px 20px;">
             <div class="section-label">Account details</div>
             <div class="detail-list">
               <div class="detail-row">
+                <span class="detail-row__icon" aria-hidden="true">✉️</span>
                 <span class="detail-row__label">Contact</span>
                 <span class="detail-row__value" id="profileContact">—</span>
               </div>
               <div class="detail-row">
+                <span class="detail-row__icon" aria-hidden="true">🗺️</span>
                 <span class="detail-row__label">Region</span>
                 <span class="detail-row__value" id="profileRegion">—</span>
               </div>
               <div class="detail-row">
+                <span class="detail-row__icon" aria-hidden="true">🏙️</span>
                 <span class="detail-row__label">City</span>
                 <span class="detail-row__value" id="profileCity">—</span>
               </div>
               <div class="detail-row">
+                <span class="detail-row__icon" aria-hidden="true">💬</span>
                 <span class="detail-row__label">Chat handle</span>
                 <span class="detail-row__value" id="profileChatHandle">—</span>
               </div>
               <div class="detail-row">
+                <span class="detail-row__icon" aria-hidden="true">🗓️</span>
                 <span class="detail-row__label">Member since</span>
                 <span class="detail-row__value" id="profileLastLogin">—</span>
               </div>
@@ -663,7 +754,7 @@
           </div>
         </div>
 
-        <div class="danger-zone" style="margin-top: 16px;">
+        <div class="danger-zone" id="accountSignOutZone" style="margin-top: 16px;">
           <div class="danger-zone__title">Sign out</div>
           <div class="danger-zone__sub">You'll need to verify your contact to sign back in.</div>
           <button type="button" class="btn btn--ghost" id="profileSignOutBtn" data-action="signout" style="border-color: var(--red); color: var(--red); width:100%;">
@@ -674,6 +765,47 @@
 
       <!-- Right: settings & preferences -->
       <div style="display: flex; flex-direction: column; gap: 16px;">
+
+        <div class="card">
+          <div class="card__head">
+            <span class="card__icon" aria-hidden="true">📍</span>
+            <span class="card__head-text">
+              <span class="card__title">My locations</span>
+              <span class="card__meta">Areas you're monitoring</span>
+            </span>
+          </div>
+          <div id="myLocationsList" style="margin-bottom: 4px;">
+            <div style="color: var(--text-faint); font-size: 0.85rem; padding: 8px 0;">Loading your locations…</div>
+          </div>
+
+          <div id="secondaryLocationBlock" class="secondary-location">
+            <button type="button" class="secondary-location__add" id="secondaryLocationAddBtn" hidden>
+              + Add another location, like Work
+            </button>
+
+            <form id="secondaryLocationForm" class="secondary-location__form" hidden action="javascript:void(0)">
+              <label class="form-field">
+                <span>Label</span>
+                <input type="text" id="secondaryLocationLabel" placeholder="e.g. Work" maxlength="40" />
+              </label>
+              <div class="secondary-location__row">
+                <label class="form-field">
+                  <span>City / Town</span>
+                  <input type="text" id="secondaryLocationCity" placeholder="City or town" maxlength="60" required />
+                </label>
+                <label class="form-field">
+                  <span>Region</span>
+                  <input type="text" id="secondaryLocationRegion" placeholder="Region" maxlength="60" required />
+                </label>
+              </div>
+              <p id="secondaryLocationMessage" style="font-size:0.76rem;color:var(--text-faint);margin:0;"></p>
+              <div class="secondary-location__actions">
+                <button type="button" class="btn btn--ghost" id="secondaryLocationCancelBtn">Cancel</button>
+                <button type="submit" class="btn btn--primary" id="secondaryLocationSaveBtn">Save location</button>
+              </div>
+            </form>
+          </div>
+        </div>
 
         <div class="card">
           <div class="card__head">
@@ -728,48 +860,7 @@
           </div>
         </div>
 
-        <div class="card">
-          <div class="card__head">
-            <span class="card__icon" aria-hidden="true">📍</span>
-            <span class="card__head-text">
-              <span class="card__title">My locations</span>
-              <span class="card__meta">Areas you're monitoring</span>
-            </span>
-          </div>
-          <div id="myLocationsList" style="margin-bottom: 4px;">
-            <div style="color: var(--text-faint); font-size: 0.85rem; padding: 8px 0;">Loading your locations…</div>
-          </div>
-
-          <div id="secondaryLocationBlock" class="secondary-location">
-            <button type="button" class="secondary-location__add" id="secondaryLocationAddBtn" hidden>
-              + Add another location, like Work
-            </button>
-
-            <form id="secondaryLocationForm" class="secondary-location__form" hidden action="javascript:void(0)">
-              <label class="form-field">
-                <span>Label</span>
-                <input type="text" id="secondaryLocationLabel" placeholder="e.g. Work" maxlength="40" />
-              </label>
-              <div class="secondary-location__row">
-                <label class="form-field">
-                  <span>City / Town</span>
-                  <input type="text" id="secondaryLocationCity" placeholder="City or town" maxlength="60" required />
-                </label>
-                <label class="form-field">
-                  <span>Region</span>
-                  <input type="text" id="secondaryLocationRegion" placeholder="Region" maxlength="60" required />
-                </label>
-              </div>
-              <p id="secondaryLocationMessage" style="font-size:0.76rem;color:var(--text-faint);margin:0;"></p>
-              <div class="secondary-location__actions">
-                <button type="button" class="btn btn--ghost" id="secondaryLocationCancelBtn">Cancel</button>
-                <button type="submit" class="btn btn--primary" id="secondaryLocationSaveBtn">Save location</button>
-              </div>
-            </form>
-          </div>
-        </div>
-
-        <div class="card">
+        <div class="card" id="cityEditCard">
           <div class="card__head">
             <span class="card__icon" aria-hidden="true">✏️</span>
             <span class="card__head-text">
@@ -971,7 +1062,6 @@
   </div>
 
 
-  <script src="../Js/account.js?v=1.0.14"></script>
   <script src="../Js/theme.js?v=1.0.14"></script>
   <script src="../Js/config.js?v=1.0.14"></script>
   <script src="../Js/auth.js?v=1.0.14"></script>

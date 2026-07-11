@@ -12,6 +12,8 @@
 //  one place.
 // ============================================================
 
+requireAuth(); // redirects to login if no session — defined in auth.js
+
 const el = (id) => document.getElementById(id);
 
 // ------------------------------------------------------------
@@ -210,20 +212,25 @@ function initNotificationPrefToggles() {
 // CITY / TOWN EDIT — one-time only, with a real locked state
 // once it's been used (no more disabled-looking form).
 // ------------------------------------------------------------
-function showCityLockedView(city, region) {
-    const lockedView = el('cityEditLockedView');
-    const formWrap = el('cityEditFormWrap');
-    const lockedValue = el('cityEditLockedValue');
-    const meta = el('cityEditCardMeta');
-    if (lockedValue) lockedValue.textContent = [city, region].filter(Boolean).join(', ') || '—';
-    if (lockedView) lockedView.hidden = false;
-    if (formWrap) formWrap.hidden = true;
-    if (meta) meta.textContent = 'Locked';
+function showCityLockedView(city, region, animate = true) {
+    // The one-time edit has been used — there's nothing left for the user
+    // to do here, so the whole card collapses out of the page rather than
+    // sticking around in a disabled/locked state.
+    const card = el('cityEditCard');
+    if (!card) return;
+
+    if (!animate) {
+        card.hidden = true;
+        return;
+    }
+
+    requestAnimationFrame(() => card.classList.add('card--collapsed'));
+    setTimeout(() => { card.hidden = true; }, 320);
 }
 
 function initCityEditForm(user) {
     if (user?.cityChangeLocked) {
-        showCityLockedView(user.city, user.region);
+        showCityLockedView(user.city, user.region, false);
         return;
     }
 
@@ -448,6 +455,14 @@ async function loadAccountExtras() {
         if (el('profileCity')) el('profileCity').textContent = user.city || '—';
         if (el('profileRegion')) el('profileRegion').textContent = user.region || '—';
 
+        // The badge used to say "Active contributor" for everyone, whether
+        // or not they'd ever done anything — swap it for something true:
+        // the area LightWatch is actually watching for them.
+        const badgeTextEl = el('profileBadgeText');
+        if (badgeTextEl) {
+            badgeTextEl.textContent = user.city ? `Monitoring ${user.city}` : 'Community member';
+        }
+
         const chatHandleValue = user.chatHandle || localStorage.getItem('chatHandle') || '—';
         if (el('profileChatHandle')) el('profileChatHandle').textContent = chatHandleValue;
         if (el('profileHandle')) el('profileHandle').textContent = user.chatHandle || localStorage.getItem('chatHandle') || '';
@@ -493,6 +508,12 @@ async function loadAccountExtras() {
             }
         }
     } catch (e) { /* silent */ }
+
+    // Whatever happened above (success or failure), the extras are done
+    // loading now — release the flag profile.js's hideProfileLoader() was
+    // respecting, and reveal the real content if the skeleton is still up.
+    if (document.body) delete document.body.dataset.accountExtrasLoading;
+    document.body?.classList.remove('page-data-loading');
 }
 
 // ------------------------------------------------------------

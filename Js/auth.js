@@ -168,3 +168,14 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.addEventListener('click', e => { e.preventDefault(); signOut(); });
     });
 });
+
+// ── Re-check session when a page is restored from the back-forward
+//    cache (phone back-gesture, browser back button). Without this,
+//    a protected page's requireAuth() only ran once on the original
+//    load — after signing out, hitting back could silently restore
+//    the cached authenticated DOM instead of bouncing to sign-in.
+window.addEventListener('pageshow', (event) => {
+    if (event.persisted && typeof requireAuth === 'function') {
+        requireAuth();
+    }
+});
