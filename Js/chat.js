@@ -121,11 +121,12 @@ function getCurrentChatLocation() {
     } catch { return null; }
 }
 
-// Deterministic accent per handle, used to tint message cards in the
-// "Everyone" (global) audience so a busy multi-user feed is easy to
-// scan by author at a glance. Same handle -> same shade, every time.
-// Grayscale on purpose (varying lightness, zero saturation) rather than
-// colorful hues — distinct without turning the thread into a rainbow.
+// Deterministic accent per handle, used to tint message cards in both
+// the "Only <location>" (local) and "Everyone" (global) audiences so a
+// busy multi-user feed is easy to scan by author at a glance. Same
+// handle -> same shade, every time. Grayscale on purpose (varying
+// lightness, zero saturation) rather than colorful hues — distinct
+// without turning the thread into a rainbow.
 function handleAccentColor(handle) {
     const str = handle || '';
     let hash = 0;
@@ -193,10 +194,10 @@ function buildMessageEl(chat, isOwn, enterAnimationClass) {
     el.dataset.chatId   = chat._id || chat.id || "";
     el.dataset.createdAt = chat.createdAt;
 
-    // Everyone/global audience mixes many different people in one feed,
+    // Both audiences (Local and Global) mix multiple people in one feed,
     // so give each handle its own consistent card color to tell authors
     // apart at a glance. Own messages keep the existing teal styling.
-    if (!isOwn && chatScope === CHAT_SCOPE_GLOBAL) {
+    if (!isOwn) {
         el.classList.add('chat-message--tinted');
         el.style.setProperty('--msg-accent', handleAccentColor(chat.handle));
     }
@@ -272,6 +273,14 @@ let pollInterval  = null;
 let chatLocation  = null; // set once on load, reused by poll
 let isNearBottom  = true;
 let replyTarget = null;
+
+// Typing indicator state — see the TYPING INDICATOR section further
+// down for the actual ping/poll/render logic.
+let typingPollInterval = null;
+let typingStopTimer    = null;
+let lastTypingPingAt   = 0;
+let isSelfTyping       = false;
+let typingIndicatorEl  = null;
 
 function updateChatPlaceholder() {
     if (!chatInput) return;
@@ -417,6 +426,7 @@ function loadChatHistory() {
     chatLocation = loc; // kept for local-scope send calls
     chatThread.innerHTML = "";
     knownIds.clear();
+    typingIndicatorEl = null; // the node above was just wiped out with the thread
 
     const url = buildChatsUrl();
     if (!url) {
@@ -438,6 +448,7 @@ function loadChatHistory() {
             focusTargetMessageIfPresent();
             markChatReady();
             startPolling();
+            startTypingPoll();
         })
         .catch(err => {
             console.error("Could not load chat history:", err);
@@ -477,12 +488,186 @@ function startPolling() {
     }, 5000);
 }
 
+// -------------------------------------------------------
+// TYPING INDICATOR
+// No sockets in this app, so this rides the same polling
+// model as everything else: a heartbeat while you type,
+// and a fast poll to pick up everyone else's heartbeats.
+// Rendered as the last bubble in the thread (see render
+// function below) rather than as a separate UI element.
+// -------------------------------------------------------
+const TYPING_PING_INTERVAL_MS = 2000; // min gap between our own heartbeats
+const TYPING_POLL_INTERVAL_MS = 2000; // how often we check who else is typing
+const TYPING_STOP_DELAY_MS    = 3000; // no keystrokes for this long = "stopped"
+const TYPING_MAX_HANDLES_SHOWN = 3;
+
+function buildTypingHeartbeatBody() {
+    const myId = getCurrentUserId();
+    const loc  = chatLocation || getCurrentChatLocation();
+    if (!myId) return null;
+    if (chatScope === CHAT_SCOPE_LOCAL && !loc) return null;
+    return {
+        userId: myId,
+        handle: myHandle,
+        scope: chatScope,
+        location: chatScope === CHAT_SCOPE_GLOBAL ? 'All areas' : loc
+    };
+}
+
+function pingTyping() {
+    const body = buildTypingHeartbeatBody();
+    if (!body) return;
+    isSelfTyping = true;
+    fetch(`${API_URL}/chats/typing`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    }).catch(() => { /* silent — next keystroke retries */ });
+}
+
+function stopTyping() {
+    clearTimeout(typingStopTimer);
+    if (!isSelfTyping) return;
+    isSelfTyping = false;
+    const body = buildTypingHeartbeatBody();
+    if (!body) return;
+    fetch(`${API_URL}/chats/typing`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    }).catch(() => { /* silent — the TTL on the server cleans it up anyway */ });
+}
+
+chatInput?.addEventListener('input', () => {
+    if (chatInput.value.trim().length === 0) {
+        stopTyping();
+        return;
+    }
+
+    const now = Date.now();
+    if (now - lastTypingPingAt >= TYPING_PING_INTERVAL_MS) {
+        lastTypingPingAt = now;
+        pingTyping();
+    }
+
+    clearTimeout(typingStopTimer);
+    typingStopTimer = setTimeout(stopTyping, TYPING_STOP_DELAY_MS);
+});
+
+chatInput?.addEventListener('blur', stopTyping);
+
+function buildTypingPollUrl() {
+    const myId = getCurrentUserId();
+    const loc  = chatLocation || getCurrentChatLocation();
+    if (!myId) return null;
+    if (chatScope === CHAT_SCOPE_LOCAL && !loc) return null;
+    const params = new URLSearchParams({
+        scope: chatScope,
+        location: chatScope === CHAT_SCOPE_GLOBAL ? 'All areas' : loc,
+        userId: myId
+    });
+    return `${API_URL}/chats/typing?${params.toString()}`;
+}
+
+function startTypingPoll() {
+    if (typingPollInterval) clearInterval(typingPollInterval);
+    if (chatScope === CHAT_SCOPE_LOCAL && !chatLocation) return;
+
+    typingPollInterval = setInterval(async () => {
+        try {
+            const url = buildTypingPollUrl();
+            if (!url) return;
+            const res = await fetch(url);
+            if (!res.ok) return;
+            renderTypingIndicator(await res.json());
+        } catch (e) {
+            // silent — retries next tick
+        }
+    }, TYPING_POLL_INTERVAL_MS);
+}
+
+// Builds/updates/removes the typing bubble, always keeping it pinned
+// as the last child of the thread. Built with textContent (not
+// innerHTML) throughout since handles are user-supplied strings.
+function renderTypingIndicator(typers) {
+    if (!chatThread) return;
+
+    if (!typers || typers.length === 0) {
+        typingIndicatorEl?.remove();
+        typingIndicatorEl = null;
+        return;
+    }
+
+    if (!typingIndicatorEl) {
+        typingIndicatorEl = document.createElement('div');
+        typingIndicatorEl.className = 'chat-message chat-message--typing';
+        typingIndicatorEl.setAttribute('role', 'status');
+        typingIndicatorEl.setAttribute('aria-live', 'polite');
+
+        const handles = document.createElement('div');
+        handles.className = 'typing-indicator__handles';
+
+        const dots = document.createElement('div');
+        dots.className = 'typing-indicator__dots';
+        dots.setAttribute('aria-hidden', 'true');
+        dots.appendChild(document.createElement('span'));
+        dots.appendChild(document.createElement('span'));
+        dots.appendChild(document.createElement('span'));
+
+        typingIndicatorEl.appendChild(handles);
+        typingIndicatorEl.appendChild(dots);
+    }
+
+    const shown = typers.slice(0, TYPING_MAX_HANDLES_SHOWN);
+    const extraCount = typers.length - shown.length;
+    const handlesEl = typingIndicatorEl.querySelector('.typing-indicator__handles');
+    handlesEl.innerHTML = "";
+
+    if (shown.length === 1) {
+        // Single typist: "handle is typing" read as one line, same
+        // spirit as WhatsApp/iMessage's single-person indicator.
+        const text = document.createElement('span');
+        text.className = 'typing-indicator__text';
+        const strong = document.createElement('strong');
+        strong.textContent = shown[0].handle;
+        text.appendChild(strong);
+        text.appendChild(document.createTextNode(' is typing'));
+        handlesEl.appendChild(text);
+    } else {
+        // 2+ typists: up to 3 handle chips laid out horizontally,
+        // with a "+N" chip if there are more than that.
+        shown.forEach(t => {
+            const chip = document.createElement('span');
+            chip.className = 'typing-indicator__handle';
+            chip.textContent = t.handle;
+            handlesEl.appendChild(chip);
+        });
+        if (extraCount > 0) {
+            const more = document.createElement('span');
+            more.className = 'typing-indicator__more';
+            more.textContent = `+${extraCount}`;
+            handlesEl.appendChild(more);
+        }
+    }
+
+    typingIndicatorEl.classList.toggle('chat-message--typing-single', shown.length === 1);
+
+    if (chatThread.lastElementChild !== typingIndicatorEl) {
+        chatThread.appendChild(typingIndicatorEl);
+    }
+    if (isNearBottom) {
+        chatThread.scrollTop = chatThread.scrollHeight;
+    }
+}
+
 // Pause poll when tab is hidden (saves mobile data & battery)
 document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
         clearInterval(pollInterval);
+        clearInterval(typingPollInterval);
     } else if (chatScope === CHAT_SCOPE_GLOBAL || chatLocation) {
         startPolling();
+        startTypingPoll();
     }
 });
 
@@ -662,6 +847,7 @@ chatForm?.addEventListener('submit', async (e) => {
     chatInput.focus();
     updateSendButtonState();
     resetChatInputHeight();
+    stopTyping(); // setting .value doesn't fire 'input', so this won't happen on its own
 
     // Quick tactile pop on the button itself the instant Send is hit.
     if (chatSendBtn) {
