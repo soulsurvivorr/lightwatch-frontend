@@ -368,7 +368,7 @@ section {
 
 .notify-heading {
     font-weight: 600;
-    font-size: .9rem;
+    font-size: .8rem;
     margin: 0 0 .4rem;
 }
 
@@ -390,8 +390,8 @@ section {
 
 .notify-toggle-track {
     position: relative;
-    width: 42px;
-    height: 24px;
+    width: 38px;
+    height: 20px;
     border-radius: 999px;
     background: var(--border-strong);
     transition: background 0.2s ease;
@@ -400,10 +400,10 @@ section {
 
 .notify-toggle-thumb {
     position: absolute;
-    top: 3px;
-    left: 3px;
+    top: 2px;
+    left: 1px;
     width: 18px;
-    height: 18px;
+    height: 16px;
     border-radius: 50%;
     background: white;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.22);
@@ -525,10 +525,12 @@ footer {
 
 /* ===== Responsiveness =====
    Below 700px this becomes a single fixed card (no page scroll).
-   Vertical rhythm (paddings/margins/font-sizes) is compressed just
-   enough that the full form — logo, fields, toggle, button, footer —
-   fits inside one screen on common phone viewports. overflow-y: auto
-   on `section` stays only as a safety net for unusually short/zoomed
+   This base tier is tuned for compact phones (~375-414px wide, e.g.
+   iPhone SE/mini/standard) so the full form fits on one screen.
+   Wider phones (Pro Max-class, ~420px+) get bumped back up in the
+   "roomier" tier below them — otherwise the card reads as too small
+   on devices that actually have plenty of room. overflow-y: auto on
+   `section` stays only as a safety net for unusually short/zoomed
    viewports; it should not be needed in normal use. */
 @media (max-width: 700px) {
     body {
@@ -610,6 +612,13 @@ footer {
         font-size: .7rem;
     }
 
+    /* Slightly smaller than the desktop checkmark — on a phone-sized
+       toggle the full-size mark reads as visually heavy. */
+    .notify-check {
+        width: 9px;
+        height: 9px;
+    }
+
     .submit-btn {
         margin-top: .8rem;
         padding: 11px;
@@ -620,7 +629,91 @@ footer {
     }
 }
 
-@media (max-width: 480px) {
+/* Roomier tier for larger phones (iPhone Pro Max, large Android
+   phones, ~420px+ wide). These have enough width and, typically,
+   enough height that the compact base tier above looks undersized —
+   so scale the card and its contents back up rather than reusing the
+   small-phone sizing. */
+@media (min-width: 421px) and (max-width: 700px) {
+    section {
+        max-width: 640px;
+        padding: 1.15rem 1.3rem 1.3rem;
+    }
+
+    #input-field-section {
+        padding: 1.4rem 1.3rem;
+    }
+
+    .user-icon-container {
+        margin-bottom: .65rem;
+    }
+
+    .user-profile-btn {
+        padding: 11px 13px;
+        margin-bottom: 9px;
+    }
+
+    .user-profile-btn img {
+        height: 23px;
+        width: 23px;
+    }
+
+    .user-icon-container h3 {
+        font-size: 1.15rem;
+    }
+
+    .user-icon-container p {
+        font-size: .8rem;
+    }
+
+    .prompt-input-tabs {
+        margin-top: .65rem;
+    }
+
+    .prompt-input-tabs label {
+        font-size: .8rem;
+        margin-bottom: .3rem;
+    }
+
+    .prompt-inputs {
+        padding: 13px 12px;
+        font-size: .9rem;
+    }
+
+    .notify-wrapper {
+        margin-top: 1.1rem;
+    }
+
+    .notify-heading {
+        font-size: .92rem;
+    }
+
+    .notify-toggle-text {
+        font-size: .82rem;
+    }
+
+    .notify-subtext {
+        font-size: .76rem;
+    }
+
+    .submit-btn {
+        margin-top: 1.1rem;
+        padding: 14px;
+        font-size: .95rem;
+    }
+
+    footer {
+        margin-top: .8rem;
+        font-size: .72rem;
+    }
+
+}
+
+/* Extra-compact tier for genuinely small/narrow phones only (this
+   used to kick in as early as 480px, which was wide enough to also
+   catch Pro Max-class devices and made them look cramped — narrowed
+   to 400px so it's reserved for actually small screens). */
+@media (max-width: 400px) {
     body {
         padding: clamp(8px, 1.8vh, 14px) 8px;
     }
@@ -628,9 +721,7 @@ footer {
     #input-field-section {
         padding: .9rem .85rem;
     }
-}
 
-@media (max-width: 400px) {
     .prompt-input-tabs label {
         font-size: .74rem;
     }
@@ -653,6 +744,11 @@ footer {
         font-size: .65rem;
         margin-top: .4rem;
     }
+
+      .notify-toggle-text {
+        font-size: .7rem;
+    }
+    
 }
 
 /* Extra compression for short viewports (small-height phones, phones
