@@ -138,45 +138,12 @@
   }
 }
 
-/* ---- Chat improvements ---- */
-    .chat-thread {
-      /* Smaller message bubbles, more messages visible */
-      font-size: 0.84rem;
-    }
-    .chat-message {
-      padding: 7px 10px;
-      margin-bottom: 6px;
-      border-radius: var(--radius-md);
-      background: var(--bg-deep);
-      border: 1px solid var(--border-soft);
-      max-width: 88%;
-    }
-    .chat-message--own {
-      margin-left: auto;
-      background: rgba(17,17,80,0.3);
-      border-color: rgba(61,217,194,0.2);
-    }
-    .chat-message__author {
-      font-size: 0.72rem;
-      color: var(--teal);
-      font-weight: 600;
-      display: block;
-      margin-bottom: 2px;
-    }
-    .chat-message__text {
-      font-size: 0.83rem;
-      color: var(--text-bright);
-      line-height: 1.4;
-      word-break: break-word;
-    }
-    .chat-message--own .chat-message__text { color: var(--text-bright); }
-    .chat-message__time {
-      font-size: 0.68rem;
-      color: var(--text-faint);
-      display: block;
-      margin-top: 3px;
-    }
-
+/* ---- Chat improvements ----
+   Bubble sizing/color/alignment now lives in one place further down
+   (the "Community chat" section) to avoid two blocks fighting over
+   the same properties — that fight was the reason bubbles/text were
+   rendering larger than intended on phones. This section now only
+   holds the reply/actions styling that's unique to it. */
     .chat-message__reply {
       margin: 2px 0 6px;
       padding: 6px 8px;
@@ -2079,29 +2046,36 @@ body.modal-open {
 .chat-message {
   background: var(--bg-panel-raised);
   border: 1px solid var(--border-soft);
-  border-radius: 9px;
-  padding: 4px 6px;
+  border-radius: 14px;
+  padding: 6px 10px;
   display: grid;
-  gap: 1px;
+  gap: 2px;
   font-size: 0.8rem;
+  max-width: 82%;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
   animation: chat-message-in 0.22s ease both;
 }
 
 .chat-message__author {
-  font-size: 0.68rem;
+  font-size: 0.66rem;
   font-weight: 700;
   color: var(--teal);
+  letter-spacing: 0.01em;
+  font-family: var(--font-body);
 }
 
 .chat-message__text {
   font-size: 0.8rem;
   color: var(--text-bright);
-  line-height: 1.24;
+  line-height: 1.36;
+  font-family: var(--font-body);
+  word-break: break-word;
 }
 
 .chat-message__time {
   font-size: 0.6rem;
   color: var(--text-faint);
+  justify-self: end;
 }
 
 @keyframes chat-message-in {
@@ -2116,7 +2090,9 @@ body.modal-open {
 }
 
 .chat-message--own {
-  border-color: var(--teal);
+  margin-left: auto;
+  border-color: color-mix(in srgb, var(--teal) 55%, var(--border-soft));
+  background: color-mix(in srgb, var(--teal) 12%, var(--bg-panel-raised));
 }
 
 /* Applied by chat.js only to genuinely new messages (just sent, or just
@@ -2198,7 +2174,7 @@ body.modal-open {
 .chat-form {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-end;
   gap: 8px;
 }
 
@@ -2251,12 +2227,23 @@ body.modal-open {
   flex: 1;
   min-width: 0;
   border: 1px solid var(--border-soft);
-  border-radius: var(--radius-md);
-  padding: 7px 9px;
+  border-radius: 18px;
+  padding: 9px 14px;
   font-size: 0.84rem;
+  line-height: 1.35;
   background: var(--bg-panel);
   color: var(--text-bright);
   font-family: var(--font-body);
+  resize: none;
+  overflow-y: hidden;
+  max-height: 120px;
+  transition: border-color 0.15s ease;
+}
+
+/* Once it hits its max height, let it scroll internally instead of
+   growing further — same behavior as WhatsApp's input. */
+.chat-form__input.is-maxed {
+  overflow-y: auto;
 }
 
 .chat-form__input:focus {
@@ -2311,31 +2298,6 @@ body.modal-open {
   outline-offset: 2px;
 }
 
-.chat-message__author {
-  font-size: 0.8rem;
-}
-
-.chat-message__text {
-  font-size: 0.96rem;
-  line-height: 1.4;
-}
-
-.chat-message__time {
-  font-size: 0.7rem;
-}
-
-.chat-form__input {
-  font-size: 0.96rem;
-}
-
-.chat-reply-preview__label {
-  font-size: 0.7rem;
-}
-
-.chat-reply-preview__text {
-  font-size: 0.78rem;
-}
-
 /* On laptop and larger, the chat card has plenty of room in the
    grid column — let the thread breathe so several messages are
    visible without needing to scroll the moment the page loads. */
@@ -2353,15 +2315,15 @@ body.modal-open {
 @media (max-width: 640px) {
   .chat-thread {
     max-height: 220px;
-    gap: 3px;
+    gap: 4px;
   }
   .chat-message {
-    padding: 5px 7px;
+    padding: 6px 9px;
   }
-  .chat-message__author { font-size: 0.76rem; }
-  .chat-message__text { font-size: 0.92rem; line-height: 1.35; }
-  .chat-message__time { font-size: 0.68rem; }
-  .chat-form__input { padding: 7px 9px; font-size: 0.92rem; }
+  .chat-message__author { font-size: 0.65rem; }
+  .chat-message__text { font-size: 0.8rem; line-height: 1.34; }
+  .chat-message__time { font-size: 0.58rem; }
+  .chat-form__input { padding: 8px 12px; font-size: 0.82rem; }
 }
 
 .add-location-card__note {
@@ -2719,25 +2681,25 @@ body.modal-open {
 
 @media (max-width: 480px) {
   .chat-message {
-    padding: 5px 7px;
+    padding: 6px 9px;
   }
 
   .chat-message__author {
-    font-size: 0.74rem;
+    font-size: 0.64rem;
   }
 
   .chat-message__text {
-    font-size: 0.9rem;
+    font-size: 0.79rem;
     line-height: 1.32;
   }
 
   .chat-message__time {
-    font-size: 0.66rem;
+    font-size: 0.58rem;
   }
 
   .chat-form__input {
-    font-size: 0.9rem;
-    padding: 7px 9px;
+    font-size: 0.8rem;
+    padding: 8px 12px;
   }
 
   .chat-scope-row {
@@ -3387,16 +3349,16 @@ body.modal-open {
   }
 
   .chat-message {
-    padding: 4px 6px;
+    padding: 6px 9px;
   }
 
   .chat-message__author {
-    font-size: 0.7rem;
+    font-size: 0.64rem;
   }
 
   .chat-message__text,
   .chat-form__input {
-    font-size: 0.88rem;
+    font-size: 0.78rem;
   }
 
   .form-field input,
@@ -3405,13 +3367,13 @@ body.modal-open {
   }
 
   .chat-message__time {
-    font-size: 0.62rem;
+    font-size: 0.58rem;
   }
 
   .chat-form__input,
   .form-field input,
   .form-field select {
-    padding: 6px 8px;
+    padding: 8px 12px;
   }
 
   .chat-form .btn,
@@ -3472,7 +3434,7 @@ body.modal-open {
 
   .chat-message__text,
   .chat-form__input {
-    font-size: 0.82rem;
+    font-size: 0.76rem;
   }
 
   .form-field input,
@@ -3541,13 +3503,37 @@ body.modal-open {
   }
 
   .chat-close-btn {
-    width: 32px;
-    height: 32px;
+    width: 28px;
+    height: 28px;
+    font-size: 0.8rem;
+    border-radius: 10px;
     flex-shrink: 0;
   }
 
   .chat-thread-wrap {
     gap: 6px;
+  }
+
+  .chat-thread {
+    gap: 5px;
+  }
+
+  .chat-message {
+    padding: 6px 9px;
+    max-width: 82%;
+  }
+
+  .chat-message__author {
+    font-size: 0.63rem;
+  }
+
+  .chat-message__text {
+    font-size: 0.78rem;
+    line-height: 1.34;
+  }
+
+  .chat-message__time {
+    font-size: 0.58rem;
   }
 
   .chat-form {
@@ -3556,7 +3542,7 @@ body.modal-open {
 
   .chat-form__input {
     font-size: 0.82rem;
-    padding: 8px 9px;
+    padding: 9px 13px;
   }
 
   .chat-form .btn {
@@ -3570,6 +3556,17 @@ body.modal-open {
     height: 32px;
     right: 12px;
     bottom: 10px;
+  }
+}
+
+/* Chat close button only makes sense on the mobile popup — on
+   desktop/tablet the chat card is a permanent inline panel, so
+   an "✕ close" control has nothing to close and was just sitting
+   there unstyled/misplaced. Hide it once we're past the mobile
+   popup breakpoint. */
+@media (min-width: 721px) {
+  .chat-close-btn {
+    display: none;
   }
 }
 /* ============================================================

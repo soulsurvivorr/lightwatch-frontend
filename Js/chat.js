@@ -245,6 +245,40 @@ function updateSendButtonState() {
 chatInput?.addEventListener('input', updateSendButtonState);
 updateSendButtonState();
 
+// -------------------------------------------------------
+// AUTO-GROW INPUT — expands the textarea's height as the
+// user types past one line (WhatsApp-style), instead of the
+// browser's default single-line input scrolling sideways.
+// -------------------------------------------------------
+const CHAT_INPUT_MAX_HEIGHT = 120; // px — keep in sync with .chat-form__input max-height in CSS
+
+function autoGrowChatInput() {
+    if (!chatInput) return;
+    chatInput.style.height = 'auto';
+    const nextHeight = Math.min(chatInput.scrollHeight, CHAT_INPUT_MAX_HEIGHT);
+    chatInput.style.height = `${nextHeight}px`;
+    chatInput.classList.toggle('is-maxed', chatInput.scrollHeight > CHAT_INPUT_MAX_HEIGHT);
+}
+
+function resetChatInputHeight() {
+    if (!chatInput) return;
+    chatInput.style.height = 'auto';
+    chatInput.classList.remove('is-maxed');
+}
+
+chatInput?.addEventListener('input', autoGrowChatInput);
+
+// Enter sends the message; Shift+Enter drops to a new line, same as
+// WhatsApp/most chat apps. Needed now that chatInput is a <textarea>.
+chatInput?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        if (chatSendBtn && !chatSendBtn.disabled) {
+            chatForm?.requestSubmit ? chatForm.requestSubmit() : chatForm?.dispatchEvent(new Event('submit', { cancelable: true }));
+        }
+    }
+});
+
 function focusTargetMessageIfPresent() {
     if (!pendingFocusChatId || !chatThread) return;
 
@@ -470,6 +504,16 @@ function setMobileChatOpen(open) {
     card.classList.toggle('chat-card--mobile-open', open);
     setMobileScrollLock(open);
 
+    // Jump straight to the latest message on open, unless we're mid a
+    // deep-link to a specific message (focusTargetMessageIfPresent
+    // handles that scroll itself). The popup's layout only settles
+    // after the open transition/reflow, so wait a tick before scrolling.
+    if (open && !pendingFocusChatId) {
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => scrollChatToBottom(false));
+        });
+    }
+
     const toggle = document.getElementById('mobileChatToggle');
     if (toggle) {
         const icon = toggle.querySelector('.mobile-chat-toggle__icon');
@@ -525,6 +569,7 @@ chatForm?.addEventListener('submit', async (e) => {
     chatInput.value = "";
     chatInput.focus();
     updateSendButtonState();
+    resetChatInputHeight();
 
     // Quick tactile pop on the button itself the instant Send is hit.
     if (chatSendBtn) {
@@ -552,6 +597,7 @@ chatForm?.addEventListener('submit', async (e) => {
             // Put text back so user can retry
             chatInput.value = text;
             updateSendButtonState();
+            autoGrowChatInput();
             return;
         }
 
@@ -569,5 +615,6 @@ chatForm?.addEventListener('submit', async (e) => {
         console.error("Failed to send:", err);
         chatInput.value = text; // restore on failure
         updateSendButtonState();
+        autoGrowChatInput();
     }
 });
