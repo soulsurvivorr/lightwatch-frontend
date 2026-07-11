@@ -88,8 +88,13 @@ async function handleSubmit() {
     // of a custom "cannot be empty" message.
     userInput.value = userInput.value.trim();
 
-    if (!userInput.checkValidity()) {
-        userInput.reportValidity();
+    // Note: userInput is type="email" (for browser autofill suggestions),
+    // so its native checkValidity()/reportValidity() only accept email-shaped
+    // strings and would incorrectly reject valid phone numbers. We do our
+    // own required + format check below instead of relying on those.
+    if (!userInput.value) {
+        errorMsg.textContent = 'Enter your email or phone number';
+        userInput.focus();
         return;
     }
 

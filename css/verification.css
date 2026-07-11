@@ -218,7 +218,7 @@ main h2 {
 /* ---- OTP boxes: boxed, modern style with pop + error states ---- */
 .otp-boxes {
     display: flex;
-    gap: 8px;
+    gap: 10px;
     justify-content: center;
     margin: .2rem 0;
 }
@@ -487,21 +487,6 @@ button#continueBtn.is-loading .btn-label {
 
     .resend-row p {
         font-size: .78rem;
-    }
-}
-
-/* Smallest phones — same shrinking pattern as above, just carried one
-   step further so 6 boxes (was 4) still has breathing room instead of
-   crowding the card edges. */
-@media (max-width: 360px) {
-    .otp-boxes {
-        gap: 6px;
-    }
-
-    .otp-box {
-        width: 34px;
-        height: 44px;
-        font-size: 1.05rem;
     }
 }
 

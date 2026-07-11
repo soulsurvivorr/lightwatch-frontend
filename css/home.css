@@ -2061,7 +2061,7 @@ body.modal-open {
   font-weight: 700;
   color: var(--teal);
   letter-spacing: 0.01em;
-  font-family: var(--font-body);
+  font-family: var(--font-display);
 }
 
 .chat-message__text {
@@ -2069,7 +2069,20 @@ body.modal-open {
   color: var(--text-bright);
   line-height: 1.32;
   font-family: var(--font-body);
+  font-weight: 500;
   word-break: break-word;
+}
+
+/* Everyone/global audience: each handle gets its own consistent card
+   color (set via --msg-accent in chat.js) so a busy multi-person feed
+   reads at a glance instead of every bubble looking identical. */
+.chat-message--tinted {
+  border-color: color-mix(in srgb, var(--msg-accent) 50%, var(--border-soft));
+  background: color-mix(in srgb, var(--msg-accent) 13%, var(--bg-panel-raised));
+}
+
+.chat-message--tinted .chat-message__author {
+  color: var(--msg-accent);
 }
 
 .chat-message__time {
@@ -3488,7 +3501,7 @@ body.modal-open {
   }
 
   body.mobile-chat-open .mobile-chat-toggle {
-    bottom: calc(72px + env(safe-area-inset-bottom));
+    bottom: calc(60px + env(safe-area-inset-bottom));
   }
 }
 

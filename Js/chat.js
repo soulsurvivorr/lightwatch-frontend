@@ -121,6 +121,19 @@ function getCurrentChatLocation() {
     } catch { return null; }
 }
 
+// Deterministic accent color per handle, used to tint message cards in
+// the "Everyone" (global) audience so a busy multi-user feed is easy to
+// scan by author at a glance. Same handle -> same color, every time.
+function handleAccentColor(handle) {
+    const str = handle || '';
+    let hash = 0;
+    for (let i = 0; i < str.length; i += 1) {
+        hash = (hash * 31 + str.charCodeAt(i)) | 0;
+    }
+    const hue = Math.abs(hash) % 360;
+    return `hsl(${hue}, 62%, 47%)`;
+}
+
 function resolveUserId(chat) {
     // Server returns userId as a plain string (we fixed the populate issue).
     // toString() handles any edge cases where it might still be an ObjectId.
@@ -154,6 +167,14 @@ function buildMessageEl(chat, isOwn, enterAnimationClass) {
     if (enterAnimationClass) el.classList.add(enterAnimationClass);
     el.dataset.chatId   = chat._id || chat.id || "";
     el.dataset.createdAt = chat.createdAt;
+
+    // Everyone/global audience mixes many different people in one feed,
+    // so give each handle its own consistent card color to tell authors
+    // apart at a glance. Own messages keep the existing teal styling.
+    if (!isOwn && chatScope === CHAT_SCOPE_GLOBAL) {
+        el.classList.add('chat-message--tinted');
+        el.style.setProperty('--msg-accent', handleAccentColor(chat.handle));
+    }
 
     const author = document.createElement('span');
     author.className   = "chat-message__author";
