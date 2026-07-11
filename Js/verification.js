@@ -74,7 +74,23 @@ function shakeOtpBoxes() {
 // -----------------------------------------------------
 otpBoxes.forEach((box, index) => {
     box.addEventListener('input', () => {
-        box.value = box.value.replace(/[^0-9]/g, '').slice(0, 1);
+        const digits = box.value.replace(/[^0-9]/g, '');
+
+        // iOS Safari natively fills one digit per box when every box has
+        // autocomplete="one-time-code". Some other browsers' AutoFill
+        // (notably Android/Chrome) instead drop the entire code into
+        // whichever box was focused — same shape as a paste, so handle
+        // it the same way rather than only taking the first digit.
+        if (digits.length > 1) {
+            otpBoxes.forEach((b, i) => { b.value = digits[i] || ''; });
+            const nextEmpty = otpBoxes.find(b => !b.value) || otpBoxes[otpBoxes.length - 1];
+            nextEmpty.focus();
+            updateButtonState();
+            if (getOtpValue().length === otpBoxes.length) checkOTP();
+            return;
+        }
+
+        box.value = digits.slice(0, 1);
 
         if (box.value && index < otpBoxes.length - 1) {
             otpBoxes[index + 1].focus();
