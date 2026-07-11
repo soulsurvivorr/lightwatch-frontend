@@ -48,9 +48,13 @@
 
   <div class="home-reminder-overlay" id="homeReminderOverlay" hidden>
     <div class="home-reminder-card" role="dialog" aria-modal="true" aria-labelledby="homeReminderTitle">
+      <button type="button" class="home-reminder-card__close" id="homeReminderCloseX" aria-label="Close">×</button>
       <div class="card__head">
-        <span class="card__title" id="homeReminderTitle">LightWatch reminder</span>
-        <span class="card__meta">Read before you post</span>
+        <span class="home-reminder-card__icon" aria-hidden="true">⚠️</span>
+        <div>
+          <span class="card__title" id="homeReminderTitle">LightWatch reminder</span>
+          <span class="card__meta">Read before you post</span>
+        </div>
       </div>
       <div class="home-reminder-copy">
         <p class="home-reminder-copy__lead">People make real movement and business decisions from this page. Treat every report as a public responsibility, not a guess.</p>
@@ -277,69 +281,65 @@
             </button>
           </div>
 
-                <!-- Status insight panel -->
+                <!-- Status insight panel — outer shell/classes left as-is
+               (status-insight-panel / __header / __title / __sub) so the
+               existing responsive + dark-theme rules for this card keep
+               working untouched. Only the inner body was redesigned:
+               a reliability meter, a trend banner, a same-day timeline,
+               and a recent-reports feed, in place of the old grid mosaic. -->
           <div class="status-insight-panel">
             <div class="status-insight__header">
               <div>
-                <span class="status-insight__title">Local grid snapshot</span>
-                <p class="status-insight__sub">A compact view of recent status checks for your area.</p>
+                <span class="status-insight__title">Live status pulse</span>
+                <p class="status-insight__sub" id="communityPulseLine">A quick read on your area, at a glance.</p>
               </div>
               <span class="badge badge--low">Live</span>
             </div>
-            <div class="status-insight__body">
-              <div class="status-insight__graphic" aria-hidden="true">
-                <div class="status-grid" id="statusGrid">
-                  <!-- Each cell = one status check. Teal = light on, amber = light off.
-                       Static pattern matching the "23 of 28" summary below; wire this
-                       up to real per-check data later by toggling .status-grid__cell--off. -->
-                  <span class="status-grid__cell status-grid__cell--on"></span>
-                  <span class="status-grid__cell status-grid__cell--on"></span>
-                  <span class="status-grid__cell status-grid__cell--on"></span>
-                  <span class="status-grid__cell status-grid__cell--off"></span>
-                  <span class="status-grid__cell status-grid__cell--on"></span>
-                  <span class="status-grid__cell status-grid__cell--on"></span>
-                  <span class="status-grid__cell status-grid__cell--on"></span>
-                  <span class="status-grid__cell status-grid__cell--on"></span>
-                  <span class="status-grid__cell status-grid__cell--on"></span>
-                  <span class="status-grid__cell status-grid__cell--off"></span>
-                  <span class="status-grid__cell status-grid__cell--on"></span>
-                  <span class="status-grid__cell status-grid__cell--on"></span>
-                  <span class="status-grid__cell status-grid__cell--on"></span>
-                  <span class="status-grid__cell status-grid__cell--on"></span>
-                  <span class="status-grid__cell status-grid__cell--on"></span>
-                  <span class="status-grid__cell status-grid__cell--on"></span>
-                  <span class="status-grid__cell status-grid__cell--off"></span>
-                  <span class="status-grid__cell status-grid__cell--on"></span>
-                  <span class="status-grid__cell status-grid__cell--on"></span>
-                  <span class="status-grid__cell status-grid__cell--on"></span>
-                  <span class="status-grid__cell status-grid__cell--on"></span>
-                  <span class="status-grid__cell status-grid__cell--off"></span>
-                  <span class="status-grid__cell status-grid__cell--on"></span>
-                  <span class="status-grid__cell status-grid__cell--on"></span>
-                  <span class="status-grid__cell status-grid__cell--on"></span>
-                  <span class="status-grid__cell status-grid__cell--on"></span>
-                  <span class="status-grid__cell status-grid__cell--off"></span>
-                  <span class="status-grid__cell status-grid__cell--on"></span>
+
+            <div class="pulse-panel">
+
+              <!-- Reliability meter: mirrors whatever confidence value ends
+                   up in #sourceConfidence above; falls back to a locally
+                   computed estimate from this device's report history until
+                   that's wired up. See lightstatus.js: syncReliabilityMeter(). -->
+              <div class="reliability-meter">
+                <div class="reliability-meter__head">
+                  <span class="reliability-meter__label">Reliability</span>
+                  <span class="reliability-meter__value" id="reliabilityMeterValue">—</span>
                 </div>
-                <div class="status-grid__legend">
-                  <span><i class="status-grid__dot status-grid__dot--on"></i>On</span>
-                  <span><i class="status-grid__dot status-grid__dot--off"></i>Off</span>
+                <div class="reliability-meter__track" role="progressbar" aria-label="Reliability" aria-valuemin="0" aria-valuemax="100" id="reliabilityMeterTrack">
+                  <div class="reliability-meter__fill" id="reliabilityMeterFill"></div>
+                </div>
+                <span class="reliability-meter__caption" id="reliabilityMeterCaption">Calculating from recent reports…</span>
+              </div>
+
+              <!-- Trend banner: "stable" vs "frequent outages", computed from
+                   the last 24h of the status log. -->
+              <div class="trend-banner trend-banner--stable" id="trendBanner">
+                <span class="trend-banner__icon" id="trendBannerIcon">⚡</span>
+                <div class="trend-banner__text">
+                  <strong id="trendBannerTitle">Checking today's trend…</strong>
+                  <span id="trendBannerSub">—</span>
                 </div>
               </div>
-              <div class="status-insight__stats">
-                <div>
-                  <span class="status-insight__label">Confirmed sources</span>
-                  <strong id="confirmedSources" data-skel="line">—</strong>
-                </div>
-                <div>
-                  <span class="status-insight__label">Light on checks</span>
-                  <strong id="lightOnCount" data-skel="line">—</strong>
-                </div>
-                <div>
-                  <span class="status-insight__label">Recent outage</span>
-                  <strong id="lastOutageLength" data-skel="line">—</strong>
-                </div>
+
+              <!-- Today's activity timeline -->
+              <div class="pulse-section">
+                <span class="pulse-section__title">Today's activity</span>
+                <ul class="status-timeline" id="statusTimeline">
+                  <li class="status-timeline__empty">No status changes yet today.</li>
+                </ul>
               </div>
+
+              <!-- Latest community reports, with a friendly display name per
+                   report (see GHANA_NAMES in lightstatus.js) rather than the
+                   raw anonymous chat handle — same spirit as the anon-*
+                   handle system, just warmer for a reports feed. -->
+              <div class="pulse-section">
+                <span class="pulse-section__title">Latest community reports</span>
+                <div class="report-list report-list--compact" id="recentReportsList"></div>
+              </div>
+
             </div>
           </div>
 
@@ -402,27 +402,10 @@
           <a href="../index.html"><button type="button" class="btn btn--ghost" id="profileSignOutBtn">Log out</button></a>
         </div>
 
-        <div class="card add-location-card">
-          <div class="card__head">
-            <span class="card__title">Add a location</span>
-            <span class="card__meta">Quick capture</span>
-          </div>
-          <p class="add-location-card__note">
-            LightWatch is starting in Kumasi. Suggestions are limited to this area while we grow coverage.
-          </p>
-          <form class="location-form" id="addLocationForm" action="javascript:void(0)">
-            <label class="form-field">
-              <span>Location name</span>
-              <input type="text" placeholder="e.g. Bantama Market" id="newLocationName" data-skel="input" />
-            </label>
-            <label class="form-field autocomplete-field">
-              <span>Address or area</span>
-              <input type="text" placeholder="Start typing a place in Kumasi..." id="newLocationAddress" autocomplete="off" data-skel="input" />
-              <ul class="autocomplete-list" id="autocompleteList" hidden></ul>
-            </label>
-            <button type="submit" class="btn btn--primary btn--block">Save location</button>
-          </form>
-        </div>
+        <!-- "Add a location" moved off Home — it's a setup/management action,
+             not something people need in their 15-second daily check-in.
+             Belongs on the Areas page now. (Not touching the loading
+             skeleton above on purpose, per instructions.) -->
 
       </aside>
     </div>

@@ -48,6 +48,7 @@ function initHomeReminder() {
   if (!overlay) return;
 
   document.getElementById('homeReminderCloseBtn')?.addEventListener('click', closeHomeReminder);
+  document.getElementById('homeReminderCloseX')?.addEventListener('click', closeHomeReminder);
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape' && !overlay.hidden) {
       closeHomeReminder();

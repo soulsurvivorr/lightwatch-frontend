@@ -764,6 +764,241 @@
   color: var(--text-bright);
 }
 
+/* ---- Live status pulse: reliability meter / trend / timeline / reports ----
+   Inner replacement for the old "Local grid snapshot" mosaic. Lives inside
+   the untouched .status-insight-panel shell, so it inherits that card's
+   existing responsive + dark-theme rules automatically. */
+
+.pulse-panel {
+  display: grid;
+  gap: 16px;
+}
+
+.reliability-meter {
+  display: grid;
+  gap: 7px;
+}
+
+.reliability-meter__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.reliability-meter__label {
+  font-size: 0.78rem;
+  color: var(--text-faint);
+  font-weight: 600;
+}
+
+.reliability-meter__value {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text-bright);
+}
+
+.reliability-meter__track {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-soft);
+  overflow: hidden;
+}
+
+.reliability-meter__fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--teal), color-mix(in srgb, var(--teal) 70%, var(--brand)));
+  transition: width 0.5s ease, background 0.3s ease;
+}
+
+.reliability-meter__caption {
+  font-size: 0.72rem;
+  color: var(--text-faint);
+}
+
+.trend-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-panel);
+}
+
+.trend-banner__icon {
+  font-size: 1.25rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.trend-banner__text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.trend-banner__text strong {
+  font-size: 0.88rem;
+  color: var(--text-bright);
+}
+
+.trend-banner__text span {
+  font-size: 0.76rem;
+  color: var(--text-faint);
+}
+
+.trend-banner--stable {
+  border-color: rgba(61, 217, 194, 0.4);
+  background: color-mix(in srgb, var(--teal-dim) 10%, var(--bg-panel));
+}
+
+.trend-banner--warning {
+  border-color: rgba(229, 72, 77, 0.4);
+  background: color-mix(in srgb, var(--red-dim) 10%, var(--bg-panel));
+}
+
+.pulse-section {
+  display: grid;
+  gap: 10px;
+}
+
+.pulse-section__title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Timeline: a vertical connecting line with a dot per event, like a
+   restore/outage log rather than an abstract grid of squares. */
+.status-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0;
+}
+
+.status-timeline__item {
+  position: relative;
+  display: flex;
+  gap: 12px;
+  padding: 0 0 16px 2px;
+}
+
+.status-timeline__item:last-child {
+  padding-bottom: 0;
+}
+
+.status-timeline__dot {
+  position: relative;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-top: 4px;
+  flex-shrink: 0;
+  background: var(--teal);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--teal) 20%, transparent);
+}
+
+.status-timeline__item:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 14px;
+  bottom: -4px;
+  width: 1px;
+  background: var(--border-soft);
+}
+
+.status-timeline__item--off .status-timeline__dot {
+  background: var(--red);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--red) 20%, transparent);
+}
+
+.status-timeline__body {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.status-timeline__body strong {
+  font-size: 0.86rem;
+  color: var(--text-bright);
+  font-weight: 600;
+}
+
+.status-timeline__body span {
+  font-size: 0.74rem;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+
+.status-timeline__empty {
+  list-style: none;
+  font-size: 0.82rem;
+  color: var(--text-faint);
+  padding: 6px 0;
+}
+
+/* Recent reports reuses .report-item / .report-list, just at a tighter
+   density since it's living inside a card instead of a full page. */
+.report-list--compact {
+  gap: 10px;
+}
+
+.report-list--compact .report-item {
+  padding: 12px 14px;
+}
+
+.report-list--compact .report-item strong {
+  margin-bottom: 3px;
+  font-size: 0.88rem;
+}
+
+.report-list--compact .report-item__text {
+  font-size: 0.82rem;
+}
+
+@media (max-width: 480px) {
+  .pulse-panel {
+    gap: 13px;
+  }
+
+  .trend-banner {
+    padding: 10px 12px;
+  }
+
+  .trend-banner__icon {
+    font-size: 1.1rem;
+  }
+
+  .trend-banner__text strong {
+    font-size: 0.82rem;
+  }
+
+  .trend-banner__text span,
+  .reliability-meter__caption,
+  .pulse-section__title {
+    font-size: 0.7rem;
+  }
+
+  .status-timeline__body strong {
+    font-size: 0.8rem;
+  }
+
+  .report-list--compact .report-item {
+    padding: 10px 12px;
+  }
+}
+
 @keyframes fadeInUp {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -1202,12 +1437,13 @@
   inset: 0;
   display: grid;
   place-items: center;
-  padding: 20px;
+  padding: clamp(14px, 5vw, 20px);
   background:
-    radial-gradient(circle at 18% 12%, rgba(61, 217, 194, 0.12), transparent 46%),
-    radial-gradient(circle at 82% 88%, rgba(214, 162, 74, 0.14), transparent 44%),
-    rgba(8, 12, 18, 0.72);
-  backdrop-filter: blur(5px);
+    radial-gradient(circle at 18% 12%, rgba(61, 217, 194, 0.16), transparent 46%),
+    radial-gradient(circle at 82% 88%, rgba(214, 162, 74, 0.18), transparent 44%),
+    rgba(6, 9, 14, 0.78);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   z-index: 12000;
 }
 
@@ -1220,26 +1456,84 @@
 }
 
 .home-reminder-card {
-  width: min(100%, 540px);
-  border-radius: 24px;
+  position: relative;
+  width: min(100%, 460px);
+  max-height: min(88vh, 640px);
+  overflow-y: auto;
+  border-radius: 22px;
   border: 1px solid color-mix(in srgb, var(--brand) 35%, var(--border-soft));
-  background: linear-gradient(170deg, color-mix(in srgb, var(--bg-panel) 92%, #ffffff 8%) 0%, color-mix(in srgb, var(--bg-panel-raised) 88%, #fefbf4 12%) 100%);
-  box-shadow: 0 30px 80px rgba(6, 12, 22, 0.38);
-  padding: 24px 22px 20px;
+  background: linear-gradient(170deg, color-mix(in srgb, var(--bg-panel) 94%, #ffffff 6%) 0%, color-mix(in srgb, var(--bg-panel-raised) 90%, #fefbf4 10%) 100%);
+  box-shadow: 0 30px 80px rgba(6, 12, 22, 0.4);
+  padding: clamp(18px, 5vw, 26px) clamp(16px, 4.5vw, 24px) clamp(16px, 4vw, 20px);
   animation: fadeInUp 0.24s ease both;
 }
 
+.home-reminder-card__close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  border: 1px solid var(--border-soft);
+  background: color-mix(in srgb, var(--bg-panel) 85%, transparent);
+  color: var(--text-faint);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.home-reminder-card__close:hover,
+.home-reminder-card__close:focus-visible {
+  background: color-mix(in srgb, var(--red-dim) 30%, var(--bg-panel));
+  color: var(--red);
+  outline: none;
+}
+
+.home-reminder-card__close:active {
+  transform: scale(0.92);
+}
+
 .home-reminder-card .card__head {
-  margin-bottom: 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding-right: 34px;
+}
+
+.home-reminder-card__icon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  font-size: 1.15rem;
+  background: linear-gradient(135deg, var(--teal-dim), color-mix(in srgb, var(--teal-dim) 60%, var(--brand-dim)));
+  color: var(--teal);
+}
+
+.home-reminder-card .card__head > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
 }
 
 .home-reminder-card .card__title {
-  font-size: 1.08rem;
+  font-size: clamp(1rem, 4vw, 1.1rem);
+  font-weight: 700;
   letter-spacing: 0;
+  color: var(--text-bright);
 }
 
 .home-reminder-card .card__meta {
-  font-size: 0.76rem;
+  font-size: 0.72rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: color-mix(in srgb, var(--text-faint) 80%, var(--brand) 20%);
@@ -1247,15 +1541,15 @@
 
 .home-reminder-copy {
   display: grid;
-  gap: 12px;
+  gap: 11px;
   margin-top: 2px;
 }
 
 .home-reminder-copy p {
   margin: 0;
   color: var(--text-muted);
-  font-size: 0.94rem;
-  line-height: 1.58;
+  font-size: clamp(0.86rem, 3.4vw, 0.94rem);
+  line-height: 1.56;
 }
 
 .home-reminder-copy__lead {
@@ -1271,7 +1565,7 @@
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 9px;
+  gap: 8px;
 }
 
 .home-reminder-points li {
@@ -1281,8 +1575,8 @@
   border-radius: 12px;
   border: 1px solid color-mix(in srgb, var(--border-soft) 84%, var(--brand) 16%);
   background: color-mix(in srgb, var(--bg-panel-raised) 70%, #ffffff 30%);
-  font-size: 0.9rem;
-  line-height: 1.5;
+  font-size: clamp(0.82rem, 3.2vw, 0.9rem);
+  line-height: 1.48;
   color: var(--text-muted);
 }
 
@@ -1302,6 +1596,44 @@
   display: flex;
   justify-content: flex-end;
   margin-top: 18px;
+  position: sticky;
+  bottom: -1px;
+  padding-top: 4px;
+  background: linear-gradient(0deg, color-mix(in srgb, var(--bg-panel-raised) 92%, transparent) 60%, transparent);
+}
+
+.home-reminder-actions .btn {
+  width: 100%;
+  justify-content: center;
+}
+
+@media (max-width: 480px) {
+  .home-reminder-card {
+    width: 100%;
+    border-radius: 18px;
+    max-height: 92vh;
+  }
+
+  .home-reminder-card__icon {
+    width: 34px;
+    height: 34px;
+    font-size: 1rem;
+    border-radius: 10px;
+  }
+}
+
+@media (max-width: 360px) {
+  .home-reminder-card .card__head {
+    padding-right: 30px;
+  }
+
+  .home-reminder-card__close {
+    width: 28px;
+    height: 28px;
+    font-size: 1rem;
+    top: 10px;
+    right: 10px;
+  }
 }
 
 body.modal-open {
