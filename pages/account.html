@@ -587,22 +587,24 @@
     }
   </style>
 </head>
-<body data-skeleton-managed="1" data-skeleton-key="account">
+<body class="page-data-loading" data-skeleton-managed="1" data-skeleton-key="account">
   <script>
-    // Apply the skeleton state synchronously, before the browser paints
-    // the real content below — otherwise the full account page renders
-    // for one frame first (with stale/empty fields) and THEN gets hidden
-    // once profile.js runs at the bottom of the page, which is the
-    // flash people were seeing. This mirrors the theme-color script in
-    // <head>: run before layout, not after all scripts have loaded.
-    (function () {
-      if (localStorage.getItem('lw_skeleton_seen_account') === '1') return;
-      document.body.classList.add('page-data-loading');
-      // Tell profile.js's hideProfileLoader() to leave the skeleton up
-      // even after the base profile finishes — account.js clears this
-      // once locations/chat-handle/city extras are actually in the DOM.
-      document.body.dataset.accountExtrasLoading = '1';
-    })();
+    // The skeleton is now applied unconditionally via the "page-data-loading"
+    // class already on <body> in the raw HTML (see above), so it covers the
+    // very first paint on every visit — first-time or returning. The old
+    // version of this script skipped adding that class entirely on repeat
+    // visits (once "lw_skeleton_seen_account" was set), on the theory that
+    // returning users didn't need it. In practice the page still had to wait
+    // on the same network fetches either way, so skipping the skeleton just
+    // meant the raw, dash-filled content sat on screen for a second or two
+    // before real data filled in — that was the "skeleton isn't working"
+    // flash. Always covering the wait, however brief, reads better than ever
+    // showing an unfinished page.
+    //
+    // Tell profile.js's hideProfileLoader() to leave the skeleton up even
+    // after the base profile finishes loading — account.js clears this once
+    // locations/chat-handle/city extras are actually in the DOM too.
+    document.body.dataset.accountExtrasLoading = '1';
   </script>
 
   <header class="topbar">
@@ -1057,7 +1059,7 @@
         <button type="button" class="chat-popup__close" id="chatPopupCloseBtn" aria-label="Close chat preview">×</button>
       </div>
       <div class="chat-popup__body" id="chatPopupBody"></div>
-      <div class="chat-popup__note">This is a preview of your bubble size — open Home to chat live.</div>
+      <div class="chat-popup__note">This preview matches your saved display settings — open Home to chat live.</div>
     </div>
   </div>
 

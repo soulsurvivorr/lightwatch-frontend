@@ -80,7 +80,7 @@ function initDisplayPrefsUI() {
 
     compactToggle?.addEventListener('change', () => {
         setDisplayPref('compactChat', compactToggle.checked);
-        openChatPreviewPopup(compactToggle.checked);
+        openChatPreviewPopup();
     });
 
     reduceMotionToggle?.addEventListener('change', () => {
@@ -89,6 +89,7 @@ function initDisplayPrefsUI() {
 
     largeTextToggle?.addEventListener('change', () => {
         setDisplayPref('largeChatText', largeTextToggle.checked);
+        openChatPreviewPopup();
     });
 
     densitySelect?.addEventListener('change', () => {
@@ -111,21 +112,30 @@ function initDisplayPrefsUI() {
 // already work end to end).
 // ------------------------------------------------------------
 const DUMMY_PREVIEW_MESSAGES = [
-    { mine: false, text: "Light just came back on near the market." },
-    { mine: true,  text: "Thanks for the update!" },
-    { mine: false, text: "Still off on my street though." }
+    { mine: false, author: "Ama K.", text: "Light just came back on near the market.", time: "2:14 PM" },
+    { mine: true,  author: "You",    text: "Thanks for the update!", time: "2:15 PM" },
+    { mine: false, author: "Kojo B.", text: "Still off on my street though.", time: "2:17 PM" }
 ];
 
-function openChatPreviewPopup(compact) {
+// Reuses the exact same markup/classes the live community chat renders
+// with (.chat-message, .chat-message--own, etc.) instead of a separate
+// "chat-bubble" style. That way this preview isn't just a lookalike —
+// it's driven by the same [data-compact-chat]/[data-large-chat-text]/
+// [data-reduce-motion] attributes already applied to <html>, so toggling
+// a preference here updates the preview exactly the way it'll actually
+// look in chat, live, with nothing to keep in sync by hand.
+function openChatPreviewPopup() {
     const overlay = el('chatPopupOverlay');
     const popup = el('chatPopup');
     const body = el('chatPopupBody');
     if (!overlay || !popup || !body) return;
 
-    popup.classList.toggle('chat-popup--compact', Boolean(compact));
-    body.innerHTML = DUMMY_PREVIEW_MESSAGES.map(m =>
-        `<div class="chat-bubble${m.mine ? ' chat-bubble--mine' : ''}">${m.text}</div>`
-    ).join('');
+    body.innerHTML = `<div class="chat-thread">${DUMMY_PREVIEW_MESSAGES.map(m => `
+        <div class="chat-message${m.mine ? ' chat-message--own' : ''}">
+          <span class="chat-message__author">${m.author}</span>
+          <span class="chat-message__text">${m.text}</span>
+          <span class="chat-message__time">${m.time}</span>
+        </div>`).join('')}</div>`;
 
     overlay.classList.add('chat-popup-overlay--open');
     overlay.setAttribute('aria-hidden', 'false');

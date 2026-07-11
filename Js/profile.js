@@ -527,6 +527,12 @@ function waitForChatReady(maxWait = 700) {
 // -----------------------------------------------------
 async function loadCurrentUserProfile() {
 
+    // auth.js runs requireAuth() the moment it parses, ahead of this
+    // (deferred) script. If it already decided this visitor has no
+    // session and is being sent to sign-in, don't render "Guest"
+    // placeholders into the page at all — just let the redirect land.
+    if (window.__lwAuthRedirecting) return;
+
     showProfileLoader();
 
     // ── Get user ID from the active session (set by auth.js) ──

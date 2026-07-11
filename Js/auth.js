@@ -156,11 +156,31 @@ function requireAuth() {
         if (path.endsWith('/index.html') || path === '/' || path === '') {
             return;
         }
+
+        // Flip this BEFORE issuing the redirect. location.replace() doesn't
+        // stop the rest of the page's scripts from running while the new
+        // document loads — without this flag, profile.js's auto-run was
+        // still rendering "Guest" placeholder content into the real (now
+        // unhidden-by-skeleton) page for a frame or two before the redirect
+        // actually took over, which is the flash users were seeing on the
+        // way back to sign-in. Anything that renders user data checks this
+        // flag first and bails out instead of painting anything.
+        window.__lwAuthRedirecting = true;
+
         const depth = window.location.pathname.split('/').filter(Boolean).length;
         const prefix = depth > 1 ? '../'.repeat(depth - 1) : './';
         window.location.replace(prefix + 'index.html');
     }
 }
+
+// ── Run the guard immediately, as soon as auth.js itself parses.
+//    auth.js loads early (non-deferred) on every protected page, well
+//    before profile.js/notification.js (which are deferred and render
+//    content). Checking here — instead of relying on each page's own
+//    script (home.js/account.js) to call requireAuth() later in the
+//    load order — closes the window where a signed-out visitor could
+//    briefly see a page's real content before being bounced to sign-in.
+requireAuth();
 
 // ── Wire all [data-action="signout"] buttons on the page ──────
 document.addEventListener('DOMContentLoaded', () => {

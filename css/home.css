@@ -2173,6 +2173,112 @@ body.modal-open {
   animation: none !important;
 }
 
+/* ---- Chat display-preferences preview popup (Account → Display) ----
+   Reuses the real .chat-message classes above so this preview is driven
+   by the exact same [data-compact-chat]/[data-large-chat-text]/
+   [data-reduce-motion] attributes as the live chat — this block only
+   styles the popup shell around it. Previously had no CSS at all, so it
+   rendered as unstyled stacked divs. */
+.chat-popup-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(10, 12, 16, 0.5);
+  backdrop-filter: blur(2px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease;
+}
+
+.chat-popup-overlay--open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.chat-popup {
+  width: 100%;
+  max-width: 360px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
+  padding: 16px 16px 14px;
+  transform: translateY(10px) scale(0.98);
+  opacity: 0;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.chat-popup-overlay--open .chat-popup {
+  transform: translateY(0) scale(1);
+  opacity: 1;
+}
+
+[data-reduce-motion="1"] .chat-popup-overlay,
+[data-reduce-motion="1"] .chat-popup {
+  transition: none !important;
+}
+
+.chat-popup__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.chat-popup__title {
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-bright);
+}
+
+.chat-popup__close {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: var(--bg-panel-raised);
+  color: var(--text-faint);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.chat-popup__close:hover {
+  background: var(--border-soft);
+  color: var(--text-bright);
+}
+
+.chat-popup__body {
+  background: var(--bg-deep);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  margin-bottom: 10px;
+}
+
+.chat-popup__body .chat-thread {
+  max-height: none;
+  overflow: visible;
+}
+
+.chat-popup__note {
+  font-size: 0.72rem;
+  color: var(--text-faint);
+  text-align: center;
+  line-height: 1.4;
+}
+
 /* Applied by chat.js only to genuinely new messages (just sent, or just
    arrived via polling) — NOT to the initial history batch, so opening
    the chat doesn't play a cascade of 20 animations at once. */
