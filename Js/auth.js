@@ -189,13 +189,30 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// ── Re-check session when a page is restored from the back-forward
-//    cache (phone back-gesture, browser back button). Without this,
-//    a protected page's requireAuth() only ran once on the original
-//    load — after signing out, hitting back could silently restore
-//    the cached authenticated DOM instead of bouncing to sign-in.
+// ── Back-forward cache (phone back-gesture, browser back button) ──
+//    A bfcache restore does NOT re-run any <script> — the browser just
+//    repaints the exact frozen DOM from the moment the page was left,
+//    then fires 'pageshow' with persisted:true. That's why calling
+//    requireAuth() up top (above) only fixes FRESH loads: it can't stop
+//    a stale frame from painting on a restore, because none of this
+//    file's top-level code executes again on restore.
+//
+//    Fix: hide the page the instant it's about to be frozen (pagehide),
+//    so whatever gets captured into bfcache is already invisible. On
+//    restore, that hidden state is what paints first — then pageshow
+//    re-checks the session and either reveals the page (still signed
+//    in) or lets requireAuth()'s redirect carry on hidden (signed out),
+//    instead of ever showing stale signed-in content or "Guest"
+//    placeholders on the way to sign-in.
+window.addEventListener('pagehide', () => {
+    document.documentElement.classList.add('lw-bfcache-hide');
+});
+
 window.addEventListener('pageshow', (event) => {
     if (event.persisted && typeof requireAuth === 'function') {
         requireAuth();
+    }
+    if (!window.__lwAuthRedirecting) {
+        document.documentElement.classList.remove('lw-bfcache-hide');
     }
 });
