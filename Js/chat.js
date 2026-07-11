@@ -124,16 +124,20 @@ function getCurrentChatLocation() {
 // Deterministic accent per handle, used to tint message cards in both
 // the "Only <location>" (local) and "Everyone" (global) audiences so a
 // busy multi-user feed is easy to scan by author at a glance. Same
-// handle -> same shade, every time. Grayscale on purpose (varying
-// lightness, zero saturation) rather than colorful hues — distinct
-// without turning the thread into a rainbow.
+// handle -> same shade, every time. Grayscale on purpose (zero
+// saturation) rather than colorful hues — distinct without turning the
+// thread into a rainbow. Fixed, widely-spaced steps rather than a
+// continuous range: two different handles hashing close together on a
+// continuum can end up looking like the same shade, which defeats the
+// point. A small fixed palette guarantees real separation instead.
+const MESSAGE_ACCENT_STEPS = [30, 42, 54, 66, 78, 90]; // % lightness, evenly spread
 function handleAccentColor(handle) {
     const str = handle || '';
     let hash = 0;
     for (let i = 0; i < str.length; i += 1) {
         hash = (hash * 31 + str.charCodeAt(i)) | 0;
     }
-    const lightness = 42 + (Math.abs(hash) % 30); // 42%–72%, several distinguishable steps
+    const lightness = MESSAGE_ACCENT_STEPS[Math.abs(hash) % MESSAGE_ACCENT_STEPS.length];
     return `hsl(0, 0%, ${lightness}%)`;
 }
 

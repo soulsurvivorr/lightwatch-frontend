@@ -2075,14 +2075,19 @@ body.modal-open {
 
 /* Everyone/global audience: each handle gets its own consistent card
    color (set via --msg-accent in chat.js) so a busy multi-person feed
-   reads at a glance instead of every bubble looking identical. */
+   reads at a glance instead of every bubble looking identical. Mixed
+   at strengths high enough to actually register as "this bubble looks
+   different," not just a faint suggestion of one. */
 .chat-message--tinted {
-  border-color: color-mix(in srgb, var(--msg-accent) 50%, var(--border-soft));
-  background: color-mix(in srgb, var(--msg-accent) 13%, var(--bg-panel-raised));
+  border-color: color-mix(in srgb, var(--msg-accent) 65%, var(--border-soft));
+  background: color-mix(in srgb, var(--msg-accent) 26%, var(--bg-panel-raised));
 }
 
 .chat-message--tinted .chat-message__author {
-  color: var(--msg-accent);
+  /* Blended with the theme's own text color (not raw --msg-accent) so
+     the author name stays legible at both ends of the gray range —
+     a pale accent alone would wash out against a light background. */
+  color: color-mix(in srgb, var(--msg-accent) 70%, var(--text-bright));
 }
 
 .chat-message__time {
