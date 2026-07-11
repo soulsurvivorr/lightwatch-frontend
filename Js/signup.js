@@ -50,9 +50,25 @@ function setLoading(isLoading) {
 // was never requested. Calling this here, before any await in
 // handleSignup(), keeps it inside the same user gesture the browser
 // (notably iOS Safari) requires for Notification.requestPermission().
-function requestPushIfWanted() {
+//
+// IMPORTANT: this returns the enableLightWatchPush() promise so the
+// caller can await it. The native permission dialog it triggers is an
+// OS-level prompt — while it's on screen, mobile browsers (iOS Safari
+// and Android Chrome both do this) can throttle or drop in-flight
+// network requests on the page underneath it. If the signup fetch
+// below is fired while that dialog is still up, it fails with a
+// generic network error ("Could not reach the server") on this first
+// submit only — the very next submit has permission already decided,
+// no dialog appears, and it works. Awaiting this call before making
+// any network request avoids the overlap.
+async function requestPushIfWanted() {
     if (notifyUpdatesInput?.checked && typeof window.enableLightWatchPush === 'function') {
-        window.enableLightWatchPush();
+        try {
+            await window.enableLightWatchPush();
+        } catch (err) {
+            // Never let a push opt-in failure block signup itself.
+            console.error('Push opt-in failed (continuing signup):', err);
+        }
     }
 }
 
@@ -81,7 +97,9 @@ async function handleSignup() {
 
     // Validation passed and we're about to go async — this is the last
     // synchronous moment in this user gesture, so request push here.
-    requestPushIfWanted();
+    // We await it so the permission dialog fully resolves before the
+    // signup fetch below ever fires (see comment on the function).
+    await requestPushIfWanted();
 
     setLoading(true);
 

@@ -1,58 +1,76 @@
 // =========================================================
 // light-status.js
-// Powers the on/off switch for Bantama's reported light
-// status. Flipping it updates the badge, the pulsing dot,
-// the status pill text, AND recalculates the outage stats
-// (average outage length, frequency) from a small log of
-// on/off events.
+// Drives the "Live status pulse" panel on Home: community
+// activity, a reliability/confidence bar, a today/trend
+// banner, a same-day activity timeline, a recent community
+// reports feed, a "Nearby" mini-card list, the hero mini-card
+// (verified status / people helped / star rating), and the
+// Achievements card in the sidebar.
 //
-// Also drives the "Live status pulse" panel: a reliability
-// meter, a today/trend banner, a same-day activity timeline,
-// and a recent community reports feed — replacing the old
-// static grid mosaic.
+// DIVISION OF LABOR WITH profile.js:
+// profile.js already owns the light switch, the status badge/
+// pill/pulse dot, and the raw numbers in #sourceConfidence /
+// #heroContributorsPill / #heroChecksPill / #avgOutage /
+// #outageFreq / #lastVerified (it fetches /lightstatus and
+// POSTs toggles). This file does NOT re-fetch or re-render any
+// of that — it reads those elements as a data source (same
+// MutationObserver pattern the original version of this file
+// used) and fetches the separate /reports endpoint (scoped to
+// this location) for everything profile.js doesn't cover.
 //
-// This is all client-side / in-memory for now. The natural
-// next step (not done here) is POSTing each toggle to a
-// backend route like POST /locations/:id/status, so the
-// status — and the reports feed below — is shared across
-// everyone instead of just this browser tab.
+// Previously this whole panel ran on a fake in-browser
+// "statusLog" that reset on every page load. That's gone now —
+// everything below comes from GET /reports?location=... (added
+// an optional ?location filter server-side to support this)
+// and, for Achievements, GET /reports?userId=... + GET /user/:id.
 // =========================================================
 
-const lightSwitch = document.getElementById('lightSwitch');
-const lightSwitchState = document.getElementById('lightSwitchState');
-const statusBadge = document.getElementById('statusBadge');
-const statusPulse = document.getElementById('statusPulse');
-const statusPillText = document.getElementById('statusPillText');
-const lastVerified = document.getElementById('lastVerified');
-const avgOutageEl = document.getElementById('avgOutage');
-const outageFreqEl = document.getElementById('outageFreq');
-const lastOutageLengthEl = document.getElementById('lastOutageLength');
+const API_BASE = typeof API_URL !== 'undefined' ? API_URL : '';
 
-// -- Live status pulse panel elements --
+// -- Elements this file owns / renders into --
 const reliabilityMeterValue = document.getElementById('reliabilityMeterValue');
 const reliabilityMeterFill = document.getElementById('reliabilityMeterFill');
 const reliabilityMeterTrack = document.getElementById('reliabilityMeterTrack');
 const reliabilityMeterCaption = document.getElementById('reliabilityMeterCaption');
-const sourceConfidenceEl = document.getElementById('sourceConfidence');
 const trendBanner = document.getElementById('trendBanner');
 const trendBannerIcon = document.getElementById('trendBannerIcon');
 const trendBannerTitle = document.getElementById('trendBannerTitle');
 const trendBannerSub = document.getElementById('trendBannerSub');
 const statusTimelineEl = document.getElementById('statusTimeline');
 const recentReportsListEl = document.getElementById('recentReportsList');
-const communityPulseLine = document.getElementById('communityPulseLine');
-const heroContributorsPill = document.getElementById('heroContributorsPill');
+const nearbyListEl = document.getElementById('nearbyList');
+
+const confidenceBarFill = document.getElementById('confidenceBarFill');
+const confidenceBarValue = document.getElementById('confidenceBarValue');
+const confidenceCaption = document.getElementById('confidenceCaption');
+
+const heroMiniDot = document.getElementById('heroMiniDot');
+const heroMiniVerified = document.getElementById('heroMiniVerified');
+const heroPeopleHelped = document.getElementById('heroPeopleHelped');
+const heroStarsGraphic = document.getElementById('heroStarsGraphic');
+
+const communityActivityHeadline = document.getElementById('communityActivityHeadline');
+const communityActivityLastReport = document.getElementById('communityActivityLastReport');
+const communityActivityNow = document.getElementById('communityActivityNow');
+
+const achievementCard = document.getElementById('achievementCard');
+const achievementPoints = document.getElementById('achievementPoints');
+const achievementWeekReports = document.getElementById('achievementWeekReports');
+const achievementTotalReports = document.getElementById('achievementTotalReports');
+
+// -- Data sources profile.js writes into (hidden in the DOM now,
+//    see home.html — this file reads them, never writes them) --
+const sourceConfidenceEl = document.getElementById('sourceConfidence');
+const heroContributorsPillEl = document.getElementById('heroContributorsPill');
 
 
 // -----------------------------------------------------
-// GHANA_NAMES — first names used to give each report in
-// the "Latest community reports" feed a friendly face,
-// instead of surfacing anyone's real account details.
-// Reports stay genuinely anonymous under the hood (same
-// idea as the anon-<word>-<number> chat handles server.js
-// generates) — this is purely a cosmetic display name
-// picked at report time, mixing common Akan day-names with
-// other names you'll actually hear day-to-day in Kumasi.
+// GHANA_NAMES — cosmetic display names for the recent-reports
+// feed, same idea as the anon-<word>-<number> chat handles
+// server.js generates: reports stay genuinely anonymous, this
+// just gives each one a friendly face instead of "anonymous".
+// Picked deterministically per report id so a given report
+// doesn't change name on every refresh.
 // -----------------------------------------------------
 const GHANA_NAMES = [
     "Kofi", "Kwabena", "Kwame", "Kwaku", "Yaw", "Kwadwo", "Kwesi",
@@ -61,43 +79,52 @@ const GHANA_NAMES = [
     "Priscilla", "Michael", "Comfort", "Gifty", "Selina"
 ];
 
-function pickGhanaName() {
-    return GHANA_NAMES[Math.floor(Math.random() * GHANA_NAMES.length)];
+function nameForReportId(id) {
+    const str = String(id || Math.random());
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) hash = (hash * 31 + str.charCodeAt(i)) >>> 0;
+    return GHANA_NAMES[hash % GHANA_NAMES.length];
 }
 
 
 // -----------------------------------------------------
-// EVENT LOG
-// Each time the switch flips, we record { status, time, name }.
-// From this log we can derive: how often the light goes
-// off, how long it stays off on average, today's timeline,
-// and the recent-reports feed — "name" is the display name
-// assigned to that particular report (see GHANA_NAMES above).
-//
-// Seeded with a small bit of history so the stats panel
-// isn't empty on first load — matches the "1h 12m" / "3
-// this week" numbers already shown in the original HTML.
+// NEARBY_MAP — which areas show up under "Nearby" for a given
+// location. We don't have geocoding/lat-lng yet, so this is a
+// hand-built adjacency map based on how these neighborhoods
+// actually sit relative to each other in Kumasi. Worth a
+// sanity check against local knowledge — this is a reasonable
+// approximation, not verified survey data.
 // -----------------------------------------------------
-const now = Date.now();
-const HOUR = 60 * 60 * 1000;
-const DAY = 24 * HOUR;
-
-let statusLog = [
-    { status: "off", time: now - (6 * DAY), name: pickGhanaName() },
-    { status: "on",  time: now - (6 * DAY) + (1 * HOUR) + (5 * 60 * 1000), name: pickGhanaName() },
-    { status: "off", time: now - (3 * DAY), name: pickGhanaName() },
-    { status: "on",  time: now - (3 * DAY) + (48 * 60 * 1000), name: pickGhanaName() },
-    { status: "off", time: now - (1 * DAY) - (1 * HOUR) - (12 * 60 * 1000), name: pickGhanaName() },
-    { status: "on",  time: now - (1 * DAY), name: pickGhanaName() },
-];
-
-let isOn = true;
+const NEARBY_MAP = {
+    "bantama": ["Suame", "Kejetia", "Asafo", "Manhyia"],
+    "adum": ["Kejetia", "Nhyiaeso", "Bantama"],
+    "asafo": ["Asokwa", "Nhyiaeso", "Bantama"],
+    "asokwa": ["Ahodwo", "Asafo"],
+    "ahodwo": ["Asokwa", "Nhyiaeso"],
+    "suame": ["Bantama", "Suame Magazine", "Kejetia"],
+    "suame magazine": ["Suame", "Bantama"],
+    "tafo": ["Oforikrom", "Asuoyeboah"],
+    "kejetia": ["Adum", "Bantama", "Asafo"],
+    "kejetia market": ["Adum", "Bantama"],
+    "nhyiaeso": ["Adum", "Asafo", "Ahodwo", "Santasi"],
+    "santasi": ["Nhyiaeso", "Bomso"],
+    "bomso": ["Ayigya", "Santasi"],
+    "asuoyeboah": ["Tafo", "Oforikrom"],
+    "kwadaso": ["Patasi", "Santasi"],
+    "oforikrom": ["Ayigya", "Tafo"],
+    "ayigya": ["Bomso", "Oforikrom"],
+    "patasi": ["Kwadaso", "Suame"],
+    "manhyia": ["Bantama", "Suame"]
+};
 
 
 // -----------------------------------------------------
-// HELPER: format milliseconds as "1h 12m"
+// HELPERS: duration / relative-time formatting
 // -----------------------------------------------------
+const DAY = 24 * 60 * 60 * 1000;
+
 function formatDuration(ms) {
+    if (ms == null || Number.isNaN(ms)) return "—";
     const totalMinutes = Math.round(ms / 60000);
     const hours = Math.floor(totalMinutes / 60);
     const minutes = totalMinutes % 60;
@@ -105,13 +132,6 @@ function formatDuration(ms) {
     return `${hours}h ${minutes}m`;
 }
 
-
-// -----------------------------------------------------
-// HELPER: format a timestamp as a relative "X min ago"
-// string, falling back to a clock time once it's more
-// than a day old (matches the "Today / Yesterday" grouping
-// people expect from a status timeline).
-// -----------------------------------------------------
 function formatRelativeTime(time) {
     const diffMs = Date.now() - time;
     const diffMinutes = Math.round(diffMs / 60000);
@@ -133,71 +153,140 @@ function formatRelativeTime(time) {
     return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
 }
 
+function startOfTodayMs() {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d.getTime();
+}
+
+function slugify(loc) {
+    return (loc || '').split(',')[0].trim().toLowerCase();
+}
+
 
 // -----------------------------------------------------
-// HELPER: recalculate average outage length + frequency
-// from statusLog, then update the stat elements on screen.
+// STATE
 // -----------------------------------------------------
-function recalculateStats() {
+let currentLocation = null;
+let currentLocationKey = null;
+let currentUserId = (typeof getSession === 'function' && getSession()?.user?.id) || localStorage.getItem('currentUserId');
+let locationReports = []; // reports scoped to the current location, newest first
+let reportsPollInterval = null;
 
-    // walk the log in pairs: an "off" followed by the next "on"
-    // is one complete outage we can measure
-    const outageDurations = [];
 
-    for (let i = 0; i < statusLog.length - 1; i++) {
-        if (statusLog[i].status === "off" && statusLog[i + 1].status === "on") {
-            const duration = statusLog[i + 1].time - statusLog[i].time;
-            outageDurations.push(duration);
-        }
+// -----------------------------------------------------
+// FETCHERS
+// -----------------------------------------------------
+async function fetchLocationReports(location) {
+    try {
+        const res = await fetch(`${API_BASE}/reports?location=${encodeURIComponent(location)}&limit=50`);
+        if (!res.ok) throw new Error('bad response');
+        return await res.json();
+    } catch (err) {
+        return [];
+    }
+}
+
+async function fetchNearby(locationKey) {
+    if (!nearbyListEl) return;
+    const neighbors = NEARBY_MAP[locationKey] || [];
+
+    if (neighbors.length === 0) {
+        nearbyListEl.innerHTML = '<span class="nearby-list__empty">No nearby areas mapped for this location yet.</span>';
+        return;
     }
 
-    // average outage length
-    if (outageDurations.length > 0) {
-        const totalMs = outageDurations.reduce((sum, d) => sum + d, 0);
-        const avgMs = totalMs / outageDurations.length;
-        if (avgOutageEl) avgOutageEl.textContent = formatDuration(avgMs);
-        if (lastOutageLengthEl) {
-            lastOutageLengthEl.textContent = formatDuration(
-                outageDurations[outageDurations.length - 1]
-            );
+    const results = await Promise.all(neighbors.map(async name => {
+        try {
+            const res = await fetch(`${API_BASE}/lightstatus?location=${encodeURIComponent(name)}`);
+            const data = await res.json();
+            return { name, status: data.status || 'unknown', reportedAt: data.reportedAt || null };
+        } catch (err) {
+            return { name, status: 'unknown', reportedAt: null };
         }
+    }));
+
+    renderNearby(results);
+}
+
+function renderNearby(results) {
+    if (!nearbyListEl) return;
+    nearbyListEl.innerHTML = '';
+
+    results.forEach(area => {
+        const item = document.createElement('div');
+        item.className = 'nearby-item';
+
+        const dotEmoji = area.status === 'on' ? '🟢' : area.status === 'off' ? '🔴' : '⚪';
+        const metaText = area.reportedAt
+            ? `Verified ${formatRelativeTime(new Date(area.reportedAt).getTime())}`
+            : 'No reports yet';
+
+        const nameRow = document.createElement('span');
+        nameRow.className = 'nearby-item__name';
+        nameRow.innerHTML = `<span class="nearby-item__dot">${dotEmoji}</span>${area.name}`;
+
+        const meta = document.createElement('span');
+        meta.className = 'nearby-item__meta';
+        meta.textContent = metaText;
+
+        item.appendChild(nameRow);
+        item.appendChild(meta);
+        nearbyListEl.appendChild(item);
+    });
+}
+
+
+// -----------------------------------------------------
+// COMMUNITY ACTIVITY
+// -----------------------------------------------------
+function renderCommunityActivity() {
+    if (!communityActivityHeadline) return;
+
+    const todayStart = startOfTodayMs();
+    const reportsToday = locationReports.filter(r => new Date(r.reportedAt).getTime() >= todayStart);
+    const locationLabel = currentLocation ? currentLocation.split(',')[0].trim() : 'your area';
+
+    communityActivityHeadline.textContent = reportsToday.length > 0
+        ? `👥 ${reportsToday.length} report${reportsToday.length === 1 ? '' : 's'} checked in on ${locationLabel} today`
+        : `👥 No reports for ${locationLabel} yet today`;
+
+    if (communityActivityLastReport) {
+        communityActivityLastReport.textContent = locationReports[0]
+            ? `Last report ${formatRelativeTime(new Date(locationReports[0].reportedAt).getTime())}`
+            : 'No reports yet';
     }
 
-    // frequency: how many outages started in the last 7 days
-    const oneWeekAgo = Date.now() - (7 * DAY);
-    const outagesThisWeek = statusLog.filter(
-        entry => entry.status === "off" && entry.time >= oneWeekAgo
-    ).length;
-
-    if (outageFreqEl) {
-        outageFreqEl.textContent = `${outagesThisWeek} this week`;
+    if (communityActivityNow) {
+        const fiveMinAgo = Date.now() - 5 * 60 * 1000;
+        const activeNow = locationReports.filter(r => new Date(r.reportedAt).getTime() >= fiveMinAgo).length;
+        communityActivityNow.innerHTML = activeNow > 0
+            ? `<span class="community-activity__live-dot"></span> ${activeNow} reporting in the last few minutes`
+            : `<span class="community-activity__live-dot"></span> No new activity right now`;
     }
 }
 
 
 // -----------------------------------------------------
 // TREND BANNER: "Stable today" vs "Frequent outages today",
-// based on outages that started in the last 24h.
+// based on outages reported since local midnight.
 // -----------------------------------------------------
 function updateTrendBanner() {
     if (!trendBanner) return;
 
-    const oneDayAgo = Date.now() - DAY;
-    const outagesToday = statusLog.filter(
-        entry => entry.status === "off" && entry.time >= oneDayAgo
-    );
+    const todayStart = startOfTodayMs();
+    const outagesToday = locationReports.filter(r => r.status === 'off' && new Date(r.reportedAt).getTime() >= todayStart);
 
     if (outagesToday.length === 0) {
-        // stable — show how long it's been since the last outage started,
-        // if we have one on record at all
-        const lastOffEvent = [...statusLog].reverse().find(e => e.status === "off");
+        // locationReports is newest-first, so the first "off" we find is the most recent
+        const lastOff = locationReports.find(r => r.status === 'off');
         trendBanner.classList.remove('trend-banner--warning');
         trendBanner.classList.add('trend-banner--stable');
         if (trendBannerIcon) trendBannerIcon.textContent = "⚡";
         if (trendBannerTitle) trendBannerTitle.textContent = "Stable today";
         if (trendBannerSub) {
-            trendBannerSub.textContent = lastOffEvent
-                ? `No outage for ${formatDuration(Date.now() - lastOffEvent.time)}`
+            trendBannerSub.textContent = lastOff
+                ? `No outage for ${formatDuration(Date.now() - new Date(lastOff.reportedAt).getTime())}`
                 : "No outages on record yet";
         }
     } else {
@@ -218,13 +307,8 @@ function updateTrendBanner() {
 function renderTimeline() {
     if (!statusTimelineEl) return;
 
-    const startOfToday = new Date();
-    startOfToday.setHours(0, 0, 0, 0);
-
-    const todaysEvents = statusLog
-        .filter(entry => entry.time >= startOfToday.getTime())
-        .slice()
-        .reverse();
+    const todayStart = startOfTodayMs();
+    const todaysEvents = locationReports.filter(r => new Date(r.reportedAt).getTime() >= todayStart);
 
     statusTimelineEl.innerHTML = "";
 
@@ -250,7 +334,7 @@ function renderTimeline() {
         label.textContent = entry.status === "on" ? "Light came on" : "Power went off";
 
         const time = document.createElement('span');
-        time.textContent = formatRelativeTime(entry.time);
+        time.textContent = formatRelativeTime(new Date(entry.reportedAt).getTime());
 
         body.appendChild(label);
         body.appendChild(time);
@@ -262,89 +346,115 @@ function renderTimeline() {
 
 
 // -----------------------------------------------------
-// RECENT REPORTS: most recent few log entries, shown as
-// who reported what and when. Capped at 5, newest first.
+// RECENT REPORTS: latest 5 for this location, checkmark style.
 // -----------------------------------------------------
 function renderRecentReports() {
     if (!recentReportsListEl) return;
 
-    const recent = statusLog.slice(-5).reverse();
+    const recent = locationReports.slice(0, 5);
     recentReportsListEl.innerHTML = "";
 
-    recent.forEach(entry => {
-        const item = document.createElement('div');
-        item.className = `report-item report-item--${entry.status === 'on' ? 'success' : 'warning'}`;
+    if (recent.length === 0) {
+        const empty = document.createElement('p');
+        empty.className = "status-timeline__empty";
+        empty.textContent = "No reports for this location yet — be the first to check in.";
+        recentReportsListEl.appendChild(empty);
+        return;
+    }
 
-        const left = document.createElement('div');
+    recent.forEach(entry => {
+        const isOn = entry.status === "on";
+        const item = document.createElement('div');
+        item.className = `report-item report-item--check report-item--${isOn ? 'success' : 'warning'}`;
+
+        const check = document.createElement('span');
+        check.className = "report-item__check";
+        check.textContent = "✔";
+
+        const body = document.createElement('div');
+        body.className = "report-item__body";
         const name = document.createElement('strong');
-        name.textContent = entry.name || pickGhanaName();
+        name.textContent = nameForReportId(entry.id);
         const text = document.createElement('p');
         text.className = "report-item__text";
-        text.textContent = entry.status === "on"
-            ? "Confirmed power is back on."
-            : "Reported the light is off.";
-        left.appendChild(name);
-        left.appendChild(text);
+        text.textContent = isOn ? "Light ON" : "Light OFF";
+        body.appendChild(name);
+        body.appendChild(text);
 
         const time = document.createElement('span');
         time.className = "report-item__time";
-        time.textContent = formatRelativeTime(entry.time);
+        time.textContent = formatRelativeTime(new Date(entry.reportedAt).getTime());
 
-        item.appendChild(left);
+        item.appendChild(check);
+        item.appendChild(body);
         item.appendChild(time);
         recentReportsListEl.appendChild(item);
     });
-
-    // "Community activity" line in the panel header — built from real
-    // numbers already on the page (contributor pill + last-verified time)
-    // rather than inventing a separate figure.
-    if (communityPulseLine) {
-        const contributorsText = heroContributorsPill?.textContent?.trim();
-        const lastReport = recent[0] ? formatRelativeTime(recent[0].time) : null;
-        if (contributorsText && lastReport) {
-            communityPulseLine.textContent = `${contributorsText} · last report ${lastReport}`;
-        } else if (lastReport) {
-            communityPulseLine.textContent = `Last report ${lastReport}`;
-        }
-    }
 }
 
 
 // -----------------------------------------------------
-// RELIABILITY METER: mirrors whatever percentage lands in
-// #sourceConfidence (populated elsewhere once wired to the
-// backend's /lightstatus stats). Until then, falls back to
-// a locally computed estimate from this device's own log —
-// clearly labeled as such so it's never mistaken for a
-// verified network-wide figure.
+// RELIABILITY / CONFIDENCE: drives the pulse-panel meter, the
+// new visual bar on the card, and the hero mini-card's stars —
+// all from one shared percentage so they never disagree.
 // -----------------------------------------------------
-function localReliabilityEstimate() {
-    const oneWeekAgo = Date.now() - (7 * DAY);
-    const recentEntries = statusLog.filter(e => e.time >= oneWeekAgo);
-    if (recentEntries.length === 0) return null;
-    const onCount = recentEntries.filter(e => e.status === "on").length;
-    return Math.round((onCount / recentEntries.length) * 100);
+function reliabilityLabel(percent) {
+    if (percent >= 85) return "Highly reliable";
+    if (percent >= 65) return "Reliable";
+    if (percent >= 40) return "Moderately reliable";
+    return "Low reliability — few recent reports";
 }
 
-function applyReliabilityValue(percent, isLocalEstimate) {
-    if (!reliabilityMeterFill || !reliabilityMeterValue) return;
+function applyConfidenceValue(percent, isLocalEstimate) {
     const clamped = Math.max(0, Math.min(100, percent));
-
-    reliabilityMeterValue.textContent = `${clamped}%`;
-    reliabilityMeterFill.style.width = `${clamped}%`;
-    reliabilityMeterTrack?.setAttribute('aria-valuenow', String(clamped));
-
-    reliabilityMeterFill.style.background = clamped >= 70
+    const gradient = clamped >= 70
         ? 'linear-gradient(90deg, var(--teal), color-mix(in srgb, var(--teal) 70%, var(--brand)))'
         : clamped >= 40
             ? 'linear-gradient(90deg, var(--amber), var(--brand))'
             : 'linear-gradient(90deg, var(--red), var(--amber))';
 
-    if (reliabilityMeterCaption) {
-        reliabilityMeterCaption.textContent = isLocalEstimate
-            ? "Estimated from reports on this device — syncs once shared data is on."
-            : "Based on how often recent reports agree with each other.";
+    if (reliabilityMeterFill && reliabilityMeterValue) {
+        reliabilityMeterValue.textContent = `${clamped}%`;
+        reliabilityMeterFill.style.width = `${clamped}%`;
+        reliabilityMeterFill.style.background = gradient;
+        reliabilityMeterTrack?.setAttribute('aria-valuenow', String(clamped));
+        if (reliabilityMeterCaption) {
+            reliabilityMeterCaption.textContent = isLocalEstimate
+                ? "Estimated from this location's recent reports — syncs once more data is in."
+                : "Based on how often recent reports agree with each other.";
+        }
     }
+
+    if (confidenceBarFill && confidenceBarValue) {
+        confidenceBarFill.style.width = `${clamped}%`;
+        confidenceBarFill.style.background = gradient;
+        confidenceBarValue.textContent = `${clamped}%`;
+    }
+
+    if (confidenceCaption) {
+        const contributorsText = heroContributorsPillEl?.textContent?.trim();
+        const contributorsCount = contributorsText ? parseInt(contributorsText, 10) : NaN;
+        const contributorsLabel = !Number.isNaN(contributorsCount)
+            ? `${contributorsCount} trusted contributor${contributorsCount === 1 ? '' : 's'}`
+            : null;
+        confidenceCaption.textContent = contributorsLabel
+            ? `${reliabilityLabel(clamped)} · ${contributorsLabel}`
+            : reliabilityLabel(clamped);
+    }
+
+    if (heroStarsGraphic) {
+        const starCount = Math.max(0, Math.min(5, Math.round(clamped / 20)));
+        heroStarsGraphic.textContent = "★".repeat(starCount) + "☆".repeat(5 - starCount);
+    }
+}
+
+function localReliabilityEstimate() {
+    if (locationReports.length === 0) return null;
+    const oneWeekAgo = Date.now() - (7 * DAY);
+    const recentEntries = locationReports.filter(r => new Date(r.reportedAt).getTime() >= oneWeekAgo);
+    if (recentEntries.length === 0) return null;
+    const onCount = recentEntries.filter(r => r.status === "on").length;
+    return Math.round((onCount / recentEntries.length) * 100);
 }
 
 function syncReliabilityMeter() {
@@ -352,18 +462,18 @@ function syncReliabilityMeter() {
     const parsed = sourceText ? parseInt(sourceText, 10) : NaN;
 
     if (!Number.isNaN(parsed) && sourceText.includes('%')) {
-        applyReliabilityValue(parsed, false);
+        applyConfidenceValue(parsed, false);
         return;
     }
 
     const estimate = localReliabilityEstimate();
     if (estimate !== null) {
-        applyReliabilityValue(estimate, true);
+        applyConfidenceValue(estimate, true);
     }
 }
 
-// Keep the meter in sync if/when something else populates #sourceConfidence
-// (e.g. a backend-driven script loaded elsewhere on the page).
+// Keep the meter in sync whenever profile.js updates #sourceConfidence
+// (it's fetched/set independently on its own poll cycle).
 if (sourceConfidenceEl && typeof MutationObserver !== 'undefined') {
     const confidenceObserver = new MutationObserver(syncReliabilityMeter);
     confidenceObserver.observe(sourceConfidenceEl, { childList: true, characterData: true, subtree: true });
@@ -371,75 +481,108 @@ if (sourceConfidenceEl && typeof MutationObserver !== 'undefined') {
 
 
 // -----------------------------------------------------
-// HELPER: apply the current isOn state to every visual
-// element tied to status (badge, pulse dot, pill text,
-// switch itself).
+// HERO MINI-CARD: reads the status badge profile.js already set
+// (rather than re-fetching status), plus today's report count.
 // -----------------------------------------------------
-function renderStatus() {
+function renderHeroMiniCard() {
+    if (!heroMiniDot) return;
 
-    if (isOn) {
-        statusBadge.textContent = "Light on";
-        statusBadge.className = "badge badge--on";
+    const badgeEl = document.getElementById('statusBadge');
+    const isOn = badgeEl?.classList.contains('badge--on');
+    const isOff = badgeEl?.classList.contains('badge--off');
+    heroMiniDot.textContent = isOn ? '🟢' : isOff ? '🔴' : '⚪';
 
-        statusPulse.className = "pulse pulse--on";
-        statusPillText.textContent = "Light is on now";
-
-        lightSwitch.classList.remove("light-switch--off");
-        lightSwitch.classList.add("light-switch--on");
-        lightSwitch.setAttribute("aria-checked", "true");
-        lightSwitchState.textContent = "ON";
-
-    } else {
-        statusBadge.textContent = "Light off";
-        statusBadge.className = "badge badge--off";
-
-        statusPulse.className = "pulse pulse--off";
-        statusPillText.textContent = "Light is off right now";
-
-        lightSwitch.classList.remove("light-switch--on");
-        lightSwitch.classList.add("light-switch--off");
-        lightSwitch.setAttribute("aria-checked", "false");
-        lightSwitchState.textContent = "OFF";
+    const lastVerifiedEl = document.getElementById('lastVerified');
+    const verifiedText = lastVerifiedEl?.textContent?.trim();
+    if (heroMiniVerified) {
+        heroMiniVerified.textContent = verifiedText && verifiedText !== '—'
+            ? `Verified ${verifiedText}`
+            : 'Awaiting first report';
     }
 
-    lastVerified.textContent = "Just now";
+    if (heroPeopleHelped) {
+        const todayStart = startOfTodayMs();
+        const helpedToday = locationReports.filter(r => new Date(r.reportedAt).getTime() >= todayStart).length;
+        heroPeopleHelped.textContent = helpedToday > 0
+            ? `${helpedToday} ${helpedToday === 1 ? 'person' : 'people'} helped today`
+            : 'Be the first to help today';
+    }
 }
 
 
 // -----------------------------------------------------
-// FULL REFRESH: everything the pulse panel shows, in one
-// call — used on load and after every toggle.
+// ACHIEVEMENTS: real numbers only — reportCount from /user/:id,
+// this-week count from /reports?userId=. "Points" is a simple,
+// documented formula (3 pts per report made today), not a
+// hidden/fake score. NOTE: /reports is capped at 100 results,
+// so "this week" undercounts only for a user with >100 reports
+// in the last 7 days — unlikely at this stage, but worth
+// knowing about if the community grows a lot.
 // -----------------------------------------------------
-function refreshPulsePanel() {
-    recalculateStats();
+async function loadAchievements() {
+    if (!currentUserId || !achievementCard) return;
+
+    try {
+        const [userRes, myReportsRes] = await Promise.all([
+            fetch(`${API_BASE}/user/${currentUserId}`),
+            fetch(`${API_BASE}/reports?userId=${encodeURIComponent(currentUserId)}&limit=100`)
+        ]);
+
+        if (!userRes.ok) throw new Error('user fetch failed');
+        const user = await userRes.json();
+        const myReports = myReportsRes.ok ? await myReportsRes.json() : [];
+
+        const todayStart = startOfTodayMs();
+        const weekAgo = Date.now() - 7 * DAY;
+        const reportsToday = myReports.filter(r => new Date(r.reportedAt).getTime() >= todayStart).length;
+        const reportsThisWeek = myReports.filter(r => new Date(r.reportedAt).getTime() >= weekAgo).length;
+        const pointsToday = reportsToday * 3;
+
+        achievementCard.hidden = false;
+        if (achievementPoints) achievementPoints.innerHTML = `+${pointsToday} <span>points</span>`;
+        if (achievementWeekReports) achievementWeekReports.textContent = String(reportsThisWeek);
+        if (achievementTotalReports) achievementTotalReports.textContent = user.reportCount != null ? String(user.reportCount) : '—';
+    } catch (err) {
+        // Leave the card hidden rather than show broken/zeroed numbers.
+    }
+}
+
+
+// -----------------------------------------------------
+// ORCHESTRATION
+// -----------------------------------------------------
+async function refreshLocationPanel() {
+    if (!currentLocation) return;
+    locationReports = await fetchLocationReports(currentLocation);
+    renderCommunityActivity();
+    syncReliabilityMeter();
     updateTrendBanner();
     renderTimeline();
     renderRecentReports();
-    syncReliabilityMeter();
+    renderHeroMiniCard();
 }
 
+function initForLocation(location) {
+    if (!location || location === currentLocation) return;
+    currentLocation = location;
+    currentLocationKey = slugify(location);
 
-// -----------------------------------------------------
-// HANDLE CLICK: flip the status, log it (with a freshly
-// picked display name for the reports feed), then refresh
-// every part of the pulse panel.
-// -----------------------------------------------------
-lightSwitch?.addEventListener('click', () => {
+    refreshLocationPanel();
+    fetchNearby(currentLocationKey);
 
-    isOn = !isOn;
+    clearInterval(reportsPollInterval);
+    // Offset from profile.js's 10s status poll so the two don't hammer
+    // the backend in lockstep.
+    reportsPollInterval = setInterval(refreshLocationPanel, 20000);
+}
 
-    statusLog.push({
-        status: isOn ? "on" : "off",
-        time: Date.now(),
-        name: pickGhanaName()
-    });
+// profile.js dispatches 'locationReady' (and sets window.currentChatLocation)
+// once it knows the user's location — that fetch is async, so it may not
+// have happened yet when this script runs. Handle both orders.
+if (window.currentChatLocation) {
+    initForLocation(window.currentChatLocation);
+} else {
+    window.addEventListener('locationReady', (e) => initForLocation(e.detail?.location));
+}
 
-    renderStatus();
-    refreshPulsePanel();
-});
-
-
-// -----------------------------------------------------
-// INITIAL RENDER
-// -----------------------------------------------------
-refreshPulsePanel();
+loadAchievements();

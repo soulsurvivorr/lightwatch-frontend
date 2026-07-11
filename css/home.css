@@ -3458,3 +3458,300 @@ body.modal-open {
     bottom: 10px;
   }
 }
+/* ============================================================
+   Home page redesign additions — confidence bar, community
+   activity, hero mini-card, nearby areas, achievements card,
+   and the checkmark-style recent reports list.
+   All of these read real numbers coming from lightstatus.js
+   (backed by /lightstatus, /reports), not placeholder text.
+   ============================================================ */
+
+/* ---- Source confidence: visual bar instead of a bare "50%" ---- */
+.confidence-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.confidence-bar__track {
+  flex: 1;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--bg-panel-raised);
+  border: 1px solid var(--border-soft);
+  overflow: hidden;
+}
+
+.confidence-bar__fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--teal), color-mix(in srgb, var(--teal) 70%, var(--brand)));
+  transition: width 0.5s ease, background 0.3s ease;
+}
+
+.confidence-bar__value {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--text-bright);
+  white-space: nowrap;
+}
+
+.confidence-bar__caption {
+  margin: 6px 0 0;
+  font-size: 0.72rem;
+  color: var(--text-faint);
+  grid-column: 1 / -1;
+}
+
+/* ---- Hero mini card: replaces the plain contributor/checks pills ---- */
+.hero-mini-card {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-panel-raised);
+  min-width: 190px;
+}
+
+.hero-mini-card__status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.hero-mini-card__dot {
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+.hero-mini-card__status strong {
+  display: block;
+  font-size: 0.86rem;
+  color: var(--text-bright);
+}
+
+.hero-mini-card__status span {
+  display: block;
+  font-size: 0.74rem;
+  color: var(--text-faint);
+  margin-top: 2px;
+}
+
+.hero-mini-card__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  padding-top: 8px;
+  border-top: 1px solid var(--border-soft);
+}
+
+.hero-mini-card__stars {
+  justify-content: space-between;
+}
+
+.hero-mini-card__stars-graphic {
+  letter-spacing: 1px;
+  color: var(--amber);
+  font-size: 0.86rem;
+}
+
+.hero-mini-card__stars-label {
+  font-size: 0.72rem;
+  color: var(--text-faint);
+}
+
+/* ---- Community activity block ---- */
+.community-activity {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-panel);
+}
+
+.community-activity__headline {
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--text-bright);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.community-activity__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  font-size: 0.74rem;
+  color: var(--text-faint);
+}
+
+.community-activity__live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--teal);
+  display: inline-block;
+  animation: communityPulse 1.6s ease-in-out infinite;
+}
+
+@keyframes communityPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+/* ---- Recent reports: checkmark style ---- */
+.report-item--check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.report-item__check {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  margin-top: 2px;
+  background: color-mix(in srgb, var(--teal) 18%, transparent);
+  color: var(--teal);
+}
+
+.report-item--warning .report-item__check {
+  background: color-mix(in srgb, var(--red) 16%, transparent);
+  color: var(--red);
+}
+
+.report-item__body {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ---- Nearby areas mini cards ---- */
+.nearby-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.nearby-item {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-panel);
+}
+
+.nearby-item__name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-bright);
+}
+
+.nearby-item__dot {
+  font-size: 0.7rem;
+  line-height: 1;
+}
+
+.nearby-item__meta {
+  font-size: 0.7rem;
+  color: var(--text-faint);
+}
+
+.nearby-list__empty {
+  font-size: 0.8rem;
+  color: var(--text-faint);
+  padding: 6px 0;
+}
+
+/* ---- Achievements card ---- */
+.achievement-card {
+  text-align: left;
+}
+
+.achievement-card__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.achievement-card__badge {
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+.achievement-card__title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text-bright);
+}
+
+.achievement-card__points {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--brand);
+  margin: 6px 0 12px;
+}
+
+.achievement-card__points span {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-faint);
+  margin-left: 6px;
+}
+
+.achievement-card__stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.achievement-card__stat {
+  padding: 10px;
+  border-radius: 12px;
+  background: var(--bg-panel-raised);
+  text-align: center;
+}
+
+.achievement-card__stat strong {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  color: var(--text-bright);
+}
+
+.achievement-card__stat span {
+  font-size: 0.68rem;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+@media (max-width: 480px) {
+  .hero-mini-card {
+    min-width: 0;
+  }
+
+  .achievement-card__points {
+    font-size: 1.4rem;
+  }
+
+  .nearby-list {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  }
+}

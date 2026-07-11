@@ -256,14 +256,42 @@
                 <span class="location-card__label">Outage frequency</span>
                 <strong id="outageFreq" data-skel="line">—</strong>
               </div>
-              <div class="location-card__row">
+              <div class="location-card__row location-card__row--confidence">
                 <span class="location-card__label">Source confidence</span>
-                <strong id="sourceConfidence" data-skel="line">—</strong>
+                <div class="confidence-bar" role="img" id="confidenceBarLabel" aria-label="Source confidence">
+                  <span class="confidence-bar__track">
+                    <span class="confidence-bar__fill" id="confidenceBarFill"></span>
+                  </span>
+                  <strong class="confidence-bar__value" id="confidenceBarValue">—</strong>
+                </div>
               </div>
+              <p class="confidence-bar__caption" id="confidenceCaption">—</p>
+              <!-- Hidden data source — profile.js keeps writing the raw
+                   numbers here (used elsewhere too); confidenceBarFill above
+                   and the hero mini-card both read from these via
+                   lightstatus.js instead of duplicating the fetch. -->
+              <strong id="sourceConfidence" data-skel="line" hidden>—</strong>
+              <span id="heroContributorsPill" hidden>— contributors</span>
+              <span id="heroChecksPill" hidden>— total checks</span>
             </div>
             <div class="location-card__meta-panel">
-              <div class="meta-pill meta-pill--accent" id="heroContributorsPill" data-skel="pill">— contributors</div>
-              <div class="meta-pill meta-pill--muted" id="heroChecksPill" data-skel="pill">— total checks</div>
+              <div class="hero-mini-card" id="heroMiniCard">
+                <div class="hero-mini-card__status">
+                  <span class="hero-mini-card__dot" id="heroMiniDot">🟢</span>
+                  <div>
+                    <strong>Current status</strong>
+                    <span id="heroMiniVerified">Verified —</span>
+                  </div>
+                </div>
+                <div class="hero-mini-card__row">
+                  <span>👥</span>
+                  <span id="heroPeopleHelped">— people helped today</span>
+                </div>
+                <div class="hero-mini-card__row hero-mini-card__stars">
+                  <span class="hero-mini-card__stars-graphic" id="heroStarsGraphic">☆☆☆☆☆</span>
+                  <span class="hero-mini-card__stars-label">Community reliability</span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -297,6 +325,18 @@
             </div>
 
             <div class="pulse-panel">
+
+              <!-- Community activity: how many reports this location has
+                   gotten today, plus how fresh the latest one is. Built
+                   from real /reports data (see lightstatus.js), scoped to
+                   just this location. -->
+              <div class="community-activity" id="communityActivity">
+                <span class="community-activity__headline" id="communityActivityHeadline">👥 Gathering today's activity…</span>
+                <div class="community-activity__meta">
+                  <span id="communityActivityLastReport">Last report —</span>
+                  <span id="communityActivityNow"><span class="community-activity__live-dot"></span> —</span>
+                </div>
+              </div>
 
               <!-- Reliability meter: mirrors whatever confidence value ends
                    up in #sourceConfidence above; falls back to a locally
@@ -338,6 +378,19 @@
               <div class="pulse-section">
                 <span class="pulse-section__title">Latest community reports</span>
                 <div class="report-list report-list--compact" id="recentReportsList"></div>
+              </div>
+
+              <!-- Nearby areas: live status pulled from /lightstatus for
+                   each neighboring location, using a hardcoded adjacency
+                   map since we don't have geocoding yet (see NEARBY_MAP in
+                   lightstatus.js). Statuses shown are real; "nearby" itself
+                   is an approximation worth double-checking against how you
+                   actually think about area groupings. -->
+              <div class="pulse-section">
+                <span class="pulse-section__title">Nearby</span>
+                <div class="nearby-list" id="nearbyList">
+                  <span class="nearby-list__empty">Loading nearby areas…</span>
+                </div>
               </div>
 
             </div>
@@ -406,6 +459,28 @@
              not something people need in their 15-second daily check-in.
              Belongs on the Areas page now. (Not touching the loading
              skeleton above on purpose, per instructions.) -->
+
+        <!-- Achievements: real numbers from /user/:id (reportCount) and
+             /reports?userId=... (this week's reports) — see lightstatus.js.
+             "Points" is a simple, transparent formula (3 pts / report
+             today), not a hidden score. -->
+        <div class="card achievement-card" id="achievementCard" hidden>
+          <div class="achievement-card__head">
+            <span class="achievement-card__badge">🏅</span>
+            <span class="achievement-card__title" id="achievementHeadline">You helped today</span>
+          </div>
+          <div class="achievement-card__points" id="achievementPoints">+0 <span>points</span></div>
+          <div class="achievement-card__stats">
+            <div class="achievement-card__stat">
+              <strong id="achievementWeekReports">—</strong>
+              <span>Reports this week</span>
+            </div>
+            <div class="achievement-card__stat">
+              <strong id="achievementTotalReports">—</strong>
+              <span>Total reports</span>
+            </div>
+          </div>
+        </div>
 
       </aside>
     </div>
@@ -482,6 +557,7 @@
   <script src="../Js/notification.js" defer></script>
   <script src="../Js/chat.js" defer></script>
   <script src="../Js/home.js" defer></script>
+  <script src="../Js/lightstatus.js" defer></script>
   <script src="../Js/nav.js" defer></script>
   <script defer>
     // ---- Toast notification system ----

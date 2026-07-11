@@ -7,7 +7,6 @@
     1) .lw-ambient (fixed background blobs)
     2) header
     3) main .verify-card
-         - .current-line (signature accent)
          - .verify-body
              - .contact-row / .edit-link
              - .verify-hero
@@ -172,28 +171,6 @@ main div.verify-card {
 @keyframes lw-panel-in {
     from { opacity: 0; transform: translateY(12px) scale(.98); }
     to { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-/* Signature current-line, matching the signup page */
-.current-line {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: repeating-linear-gradient(
-        90deg,
-        var(--brand, #D6A24A) 0 22px,
-        var(--brand2, #4A90D9) 22px 44px,
-        transparent 44px 54px
-    );
-    background-size: 200% 100%;
-    animation: lw-current-flow 3.4s linear infinite;
-    opacity: .85;
-}
-
-@keyframes lw-current-flow {
-    to { background-position: -108px 0; }
 }
 
 .verify-body {
@@ -523,8 +500,7 @@ button#continueBtn.is-loading .btn-label {
         transition-duration: 0.001ms !important;
     }
 
-    .lw-blob,
-    .current-line {
+    .lw-blob {
         animation: none !important;
     }
 }
