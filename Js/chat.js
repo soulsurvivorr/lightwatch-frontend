@@ -262,7 +262,7 @@ function autoGrowChatInput() {
 
 function resetChatInputHeight() {
     if (!chatInput) return;
-    chatInput.style.height = 'auto';
+    chatInput.style.height = '';
     chatInput.classList.remove('is-maxed');
 }
 
@@ -456,6 +456,7 @@ function setChatScope(nextScope) {
     localStorage.setItem(CHAT_SCOPE_KEY, chatScope);
     updateChatPlaceholder();
     updateScopeButtons();
+    resetChatInputHeight();
     replyTarget = null;
     if (chatReplyPreview) chatReplyPreview.hidden = true;
     loadChatHistory();
