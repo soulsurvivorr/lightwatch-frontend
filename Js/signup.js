@@ -142,13 +142,25 @@ async function handleSignup() {
 form.addEventListener("submit", (e) => {
     e.preventDefault();
     if (submitBtn?.disabled) return;
+
+    // With novalidate removed from the form, the browser already blocks
+    // submission and shows its own "please fill this in" bubble on any
+    // empty required field before this listener even runs — this check
+    // is just a safety net for programmatic submits.
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+
     handleSignup();
 });
 
 document.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && !submitBtn?.disabled) {
         e.preventDefault();
-        handleSignup();
+        // Go through the form's real submit path (not handleSignup directly)
+        // so the native required-field validation runs here too.
+        form.requestSubmit();
     }
 });
 

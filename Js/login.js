@@ -80,15 +80,21 @@ runBrandLoop();
 
 // ── Send OTP code ─────────────────────────────────────────────
 async function handleSubmit() {
-    const loginInput = userInput.value.trim();
-    const rememberMe = document.getElementById('rememberMe')?.checked || false;
-
     errorMsg.textContent = '';
 
-    if (!loginInput) {
-        errorMsg.textContent = 'Input cannot be empty';
+    // Normalize first (trims whitespace-only input down to empty) so the
+    // native "required" check below also catches someone who just typed
+    // spaces, then let the browser show its own validation bubble instead
+    // of a custom "cannot be empty" message.
+    userInput.value = userInput.value.trim();
+
+    if (!userInput.checkValidity()) {
+        userInput.reportValidity();
         return;
     }
+
+    const loginInput = userInput.value;
+    const rememberMe = document.getElementById('rememberMe')?.checked || false;
 
     const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(loginInput);
     const isPhone = /^[0-9]{10}$/.test(loginInput);
