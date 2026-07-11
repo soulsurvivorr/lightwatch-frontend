@@ -3,10 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <link rel="manifest" href="/manifest.json">
+  <link rel="manifest" href="/manifest.json?v=1.0.14">
+  <script src="../Js/app-startup.js?v=1.0.14" defer></script>
   <meta name="theme-color" content="#1C1F26">
-  <link rel="apple-touch-icon" sizes="180x180" href="/images/dev-logo.png?v=20260707">
-  <link rel="apple-touch-icon" sizes="192x192" href="/images/dev-logo.png?v=20260707">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/dev-logo.png?v=1.0.14">
+  <link rel="apple-touch-icon" sizes="192x192" href="/images/dev-logo.png?v=1.0.14">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="LightWatch">
   <script>
@@ -21,12 +22,12 @@
     })();
   </script>
   <title>LightWatch — Areas</title>
-  <link rel="icon" href="/images/dev-logo.png?v=20260707" type="image/png">
+  <link rel="icon" href="/images/dev-logo.png?v=1.0.14" type="image/png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../css/home.css" />
-  <link rel="stylesheet" href="../css/areas.css" />
-  <link rel="stylesheet" href="../css/styles.css">
+  <link rel="stylesheet" href="../css/home.css?v=1.0.14" />
+  <link rel="stylesheet" href="../css/areas.css?v=1.0.14" />
+  <link rel="stylesheet" href="../css/styles.css?v=1.0.14">
   <link rel="prefetch" href="./home.html">
   <link rel="prefetch" href="./reports.html">
 </head>
@@ -51,8 +52,8 @@
 
   <!-- Same blocking auth guard as home.html — stops an unauthenticated
        flash before we know whether there's a session. -->
-  <script src="../Js/config.js"></script>
-  <script src="../Js/auth.js"></script>
+  <script src="../Js/config.js?v=1.0.14"></script>
+  <script src="../Js/auth.js?v=1.0.14"></script>
   <script>
     const session = typeof getSession === 'function' ? getSession() : null;
     if (!session) {
@@ -99,7 +100,7 @@
 
     <div class="areas-summary-strip">
       <span class="areas-summary-strip__icon">
-        <img src="../images/areas.png?v=20260710" alt="Areas" width="18" height="18">
+        <img src="../images/areas.png?v=1.0.14" alt="Areas" width="18" height="18">
       </span>
       <span class="areas-summary-strip__text">
         <span id="areasSummaryText">Loading area status…</span>
@@ -169,8 +170,8 @@
       </a>
       <a href="./areas.html" class="bottom-nav-link" data-nav="areas" aria-label="Areas">
         <span class="bottom-nav-icon bottom-nav-icon--user">
-          <img src="../images/areas.png?v=20260710" alt="Areas" class="bottom-nav-icon-img bottom-nav-icon-img--light">
-          <img src="../images/areas.png?v=20260710" alt="" aria-hidden="true" class="bottom-nav-icon-img bottom-nav-icon-img--dark">
+          <img src="../images/areas.png?v=1.0.14" alt="Areas" class="bottom-nav-icon-img bottom-nav-icon-img--light">
+          <img src="../images/areas.png?v=1.0.14" alt="" aria-hidden="true" class="bottom-nav-icon-img bottom-nav-icon-img--dark">
         </span>
         <span class="bottom-nav-label">Areas</span>
       </a>
@@ -191,11 +192,11 @@
     </div>
   </div>
 
-  <script src="../Js/theme.js" defer></script>
-  <script src="../Js/profile.js" defer></script>
-  <script src="../Js/notification.js" defer></script>
-  <script src="../Js/areas.js" defer></script>
-  <script src="../Js/nav.js" defer></script>
+  <script src="../Js/theme.js?v=1.0.14" defer></script>
+  <script src="../Js/profile.js?v=1.0.14" defer></script>
+  <script src="../Js/notification.js?v=1.0.14" defer></script>
+  <script src="../Js/areas.js?v=1.0.14" defer></script>
+  <script src="../Js/nav.js?v=1.0.14" defer></script>
   <script defer>
     window.lwToast = function(msg, duration) {
       const el = document.getElementById('lw-toast');

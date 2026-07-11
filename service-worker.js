@@ -1,47 +1,69 @@
 // ============================================================
 //  SERVICE WORKER — LightWatch
-//  Handles: push notifications, offline cache (basic)
+//  Handles: push notifications, versioned offline cache,
+//           fast automatic updates across iOS/Android/desktop
 // ============================================================
 
-const CACHE_NAME = 'lightwatch-v4';
-const APP_ICON = new URL('/images/dev-logo.png?v=20260708', self.location.origin).href;
-const APP_BADGE = new URL('/images/notification-badge.png?v=20260708', self.location.origin).href;
-const SHELL_ASSETS = [
-    '/',
-    '/index.html',
-    '/pages/home.html',
-    '/pages/areas.html',
-    '/pages/reports.html',
-    '/pages/account.html',
-    '/css/styles.css',
-    '/css/home.css',
-    '/css/areas.css',
-    '/images/dev-logo.png?v=20260707',
-    '/images/areas.png'
+// ── 1. VERSIONED CACHE ────────────────────────────────────────
+// Bump this ONE string on every deploy. Everything else (cache
+// names, asset URLs pulled in below) derives from it, and the
+// activate handler wipes any cache that doesn't match it.
+const APP_VERSION   = '1.0.14';
+const STATIC_CACHE  = `lightwatch-static-v${APP_VERSION}`;
+const HTML_CACHE     = `lightwatch-html-v${APP_VERSION}`;
+const CURRENT_CACHES = [STATIC_CACHE, HTML_CACHE];
+
+const APP_ICON  = new URL(`/images/dev-logo.png?v=${APP_VERSION}`, self.location.origin).href;
+const APP_BADGE = new URL(`/images/notification-badge.png?v=${APP_VERSION}`, self.location.origin).href;
+
+// Only truly static, rarely-changing shell assets belong here.
+// HTML pages are deliberately NOT precached — they're handled by
+// the network-first navigation strategy below, so users always
+// get the latest markup instead of a frozen shell page.
+const PRECACHE_ASSETS = [
+    `/css/styles.css?v=${APP_VERSION}`,
+    `/css/home.css?v=${APP_VERSION}`,
+    `/css/areas.css?v=${APP_VERSION}`,
+    `/Js/app-startup.js?v=${APP_VERSION}`,
+    `/images/dev-logo.png?v=${APP_VERSION}`,
+    `/images/areas.png?v=${APP_VERSION}`
 ];
 
-// ── Install: cache core shell ─────────────────────────────────
+// Used as the offline fallback when a page has never been visited
+// (and therefore isn't in HTML_CACHE) and the network is down.
+const OFFLINE_FALLBACK_PAGE = '/pages/home.html';
+
+// API routes must never be served from cache — always hit the network.
+const API_PATH_RE = /^\/(admin|reports|lightstatus|chat|subscribe|user|stats)(\/|$)/;
+
+// Extensions handled with stale-while-revalidate.
+const ASSET_DESTINATIONS = new Set(['style', 'script', 'font', 'image']);
+const ASSET_EXT_RE = /\.(css|js|mjs|png|jpg|jpeg|svg|gif|webp|ico|woff2?|ttf)$/i;
+
+// ── Install: pre-cache the shell, activate immediately ────────
 self.addEventListener('install', event => {
     event.waitUntil(
-        caches.open(CACHE_NAME)
-            .then(cache => cache.addAll(SHELL_ASSETS))
-            .catch(() => {})
-            .finally(() => self.skipWaiting())
+        caches.open(STATIC_CACHE)
+            .then(cache => cache.addAll(PRECACHE_ASSETS))
+            .catch(err => console.warn('[SW] precache failed', err))
+            .finally(() => self.skipWaiting()) // don't wait for old tabs to close
     );
 });
 
+// ── Activate: drop every cache that isn't the current version ─
 self.addEventListener('activate', event => {
     event.waitUntil(
         caches.keys()
-            .then(keys => Promise.all(keys
-                .filter(key => key !== CACHE_NAME)
-                .map(key => caches.delete(key))
+            .then(keys => Promise.all(
+                keys
+                    .filter(key => !CURRENT_CACHES.includes(key))
+                    .map(key => caches.delete(key))
             ))
-            .then(() => clients.claim())
+            .then(() => self.clients.claim()) // take control of open tabs now
     );
 });
 
-// ── Fetch: quick cache-first static assets + network-first HTML ──
+// ── Fetch: route by request type ──────────────────────────────
 self.addEventListener('fetch', event => {
     const req = event.request;
     if (req.method !== 'GET') return;
@@ -49,45 +71,63 @@ self.addEventListener('fetch', event => {
     const url = new URL(req.url);
     if (url.origin !== self.location.origin) return;
 
-    const isApiPath = /^\/(admin|reports|lightstatus|chat|subscribe|user|stats)(\/|$)/.test(url.pathname);
-    if (isApiPath) return;
+    // 6. API requests — network only, never cached, never stale.
+    if (API_PATH_RE.test(url.pathname)) return;
 
-    if (req.mode === 'navigate') {
-        event.respondWith((async () => {
-            try {
-                const fresh = await fetch(req);
-                const cache = await caches.open(CACHE_NAME);
-                cache.put(req, fresh.clone());
-                return fresh;
-            } catch {
-                const cached = await caches.match(req);
-                return cached || caches.match('/pages/home.html') || Response.error();
-            }
-        })());
+    // 4. HTML navigations — network first, cache as a fallback.
+    const isNavigation = req.mode === 'navigate' || req.destination === 'document';
+    if (isNavigation) {
+        event.respondWith(networkFirstHTML(req));
         return;
     }
 
-    event.respondWith((async () => {
-        const cached = await caches.match(req);
-        if (cached) {
-            fetch(req)
-                .then(async fresh => {
-                    const cache = await caches.open(CACHE_NAME);
-                    cache.put(req, fresh.clone());
-                })
-                .catch(() => {});
-            return cached;
-        }
+    // 5. CSS/JS/images/fonts — stale while revalidate.
+    const isAsset = ASSET_DESTINATIONS.has(req.destination) || ASSET_EXT_RE.test(url.pathname);
+    if (isAsset) {
+        event.respondWith(staleWhileRevalidate(req));
+        return;
+    }
 
-        try {
-            const fresh = await fetch(req);
-            const cache = await caches.open(CACHE_NAME);
-            cache.put(req, fresh.clone());
+    // Anything else: try network, fall back to cache.
+    event.respondWith(
+        fetch(req).catch(() => caches.match(req))
+    );
+});
+
+async function networkFirstHTML(req) {
+    const cache = await caches.open(HTML_CACHE);
+    try {
+        const fresh = await fetch(req, { cache: 'no-store' });
+        cache.put(req, fresh.clone());
+        return fresh;
+    } catch {
+        const cached = await cache.match(req);
+        if (cached) return cached;
+        const fallback = await cache.match(OFFLINE_FALLBACK_PAGE);
+        return fallback || Response.error();
+    }
+}
+
+async function staleWhileRevalidate(req) {
+    const cache = await caches.open(STATIC_CACHE);
+    const cached = await cache.match(req);
+
+    const networkFetch = fetch(req)
+        .then(fresh => {
+            if (fresh && fresh.ok) cache.put(req, fresh.clone());
             return fresh;
-        } catch {
-            return Response.error();
-        }
-    })());
+        })
+        .catch(() => null);
+
+    // Serve cached copy instantly if we have one; otherwise wait on network.
+    return cached || (await networkFetch) || Response.error();
+}
+
+// ── Message channel: let pages force this worker to activate now ──
+self.addEventListener('message', event => {
+    if (event.data === 'SKIP_WAITING' || event.data?.type === 'SKIP_WAITING') {
+        self.skipWaiting();
+    }
 });
 
 // ── Push: show notification when server sends a push ─────────
