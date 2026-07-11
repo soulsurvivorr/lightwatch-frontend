@@ -1438,12 +1438,9 @@
   display: grid;
   place-items: center;
   padding: clamp(14px, 5vw, 20px);
-  background:
-    radial-gradient(circle at 18% 12%, rgba(61, 217, 194, 0.16), transparent 46%),
-    radial-gradient(circle at 82% 88%, rgba(214, 162, 74, 0.18), transparent 44%),
-    rgba(6, 9, 14, 0.78);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  background: rgba(9, 11, 16, 0.68);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   z-index: 12000;
 }
 
@@ -1457,37 +1454,47 @@
 
 .home-reminder-card {
   position: relative;
-  width: min(100%, 460px);
-  max-height: min(88vh, 640px);
+  width: min(100%, 420px);
+  max-height: min(88vh, 620px);
   overflow-y: auto;
-  border-radius: 22px;
-  border: 1px solid color-mix(in srgb, var(--brand) 35%, var(--border-soft));
-  background: linear-gradient(170deg, color-mix(in srgb, var(--bg-panel) 94%, #ffffff 6%) 0%, color-mix(in srgb, var(--bg-panel-raised) 90%, #fefbf4 10%) 100%);
-  box-shadow: 0 30px 80px rgba(6, 12, 22, 0.4);
-  padding: clamp(18px, 5vw, 26px) clamp(16px, 4.5vw, 24px) clamp(16px, 4vw, 20px);
+  overflow-x: hidden;
+  border-radius: 20px;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-panel);
+  box-shadow: 0 24px 60px rgba(10, 14, 22, 0.28), 0 4px 14px rgba(10, 14, 22, 0.12);
+  padding: clamp(20px, 5vw, 28px);
   animation: fadeInUp 0.24s ease both;
+}
+
+.home-reminder-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  border-radius: 20px 20px 0 0;
+  background: linear-gradient(90deg, var(--amber), var(--red));
 }
 
 .home-reminder-card .card__head {
   display: flex;
   align-items: center;
   gap: 14px;
-  margin-bottom: 16px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid color-mix(in srgb, var(--border-soft) 70%, transparent);
+  margin-bottom: 18px;
 }
 
 .home-reminder-card__icon {
   flex-shrink: 0;
-  width: 42px;
-  height: 42px;
+  width: 44px;
+  height: 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 12px;
-  font-size: clamp(1rem, 4vw, 1.2rem);
-  background: linear-gradient(135deg, var(--teal-dim), color-mix(in srgb, var(--teal-dim) 60%, var(--brand-dim)));
-  color: var(--teal);
+  border-radius: 13px;
+  font-size: clamp(1.05rem, 4vw, 1.25rem);
+  background: color-mix(in srgb, var(--amber) 16%, var(--bg-panel));
+  color: var(--amber);
 }
 
 .home-reminder-card .card__head > div {
@@ -1497,38 +1504,39 @@
 }
 
 .home-reminder-card .card__title {
-  font-size: clamp(1.02rem, 3.6vw, 1.16rem);
+  font-family: var(--font-display);
+  font-size: clamp(1.05rem, 3.8vw, 1.2rem);
   font-weight: 700;
-  letter-spacing: 0;
+  letter-spacing: -0.01em;
   color: var(--text-bright);
   line-height: 1.3;
 }
 
 .home-reminder-card .card__meta {
   font-size: clamp(0.66rem, 2.6vw, 0.72rem);
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--text-faint) 80%, var(--brand) 20%);
+  font-weight: 600;
+  color: var(--amber);
 }
 
 .home-reminder-copy {
   display: grid;
-  gap: 12px;
+  gap: 14px;
   margin-top: 2px;
 }
 
 .home-reminder-copy p {
   margin: 0;
   color: var(--text-muted);
-  font-size: clamp(0.82rem, 3.2vw, 0.94rem);
+  font-size: clamp(0.84rem, 3.2vw, 0.94rem);
   line-height: 1.56;
 }
 
 .home-reminder-copy__lead {
-  border: 1px solid color-mix(in srgb, var(--teal) 26%, var(--border-soft));
-  border-radius: 12px;
-  padding: clamp(10px, 3vw, 12px) clamp(11px, 3.2vw, 13px);
-  background: color-mix(in srgb, var(--teal-dim) 8%, var(--bg-panel));
+  position: relative;
+  padding-left: 14px;
+  border-left: 3px solid var(--amber);
   color: var(--text-bright);
   font-weight: 500;
 }
@@ -1538,68 +1546,100 @@
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 8px;
+  gap: 2px;
 }
 
 .home-reminder-points li {
   position: relative;
   margin: 0;
-  padding: clamp(9px, 2.8vw, 10px) clamp(10px, 3vw, 11px) clamp(9px, 2.8vw, 10px) 28px;
-  border-radius: 12px;
-  border: 1px solid color-mix(in srgb, var(--border-soft) 84%, var(--brand) 16%);
-  background: color-mix(in srgb, var(--bg-panel-raised) 70%, #ffffff 30%);
-  font-size: clamp(0.78rem, 3vw, 0.9rem);
-  line-height: 1.48;
+  padding: clamp(9px, 2.8vw, 10px) 0 clamp(9px, 2.8vw, 10px) 26px;
+  font-size: clamp(0.8rem, 3vw, 0.88rem);
+  line-height: 1.5;
   color: var(--text-muted);
+}
+
+.home-reminder-points li + li {
+  border-top: 1px solid color-mix(in srgb, var(--border-soft) 70%, transparent);
 }
 
 .home-reminder-points li::before {
   content: "";
   position: absolute;
-  top: 15px;
-  left: 11px;
-  width: 8px;
-  height: 8px;
+  top: 16px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--brand), #f1cb75);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 22%, transparent);
+  background: color-mix(in srgb, var(--amber) 18%, var(--bg-panel));
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--amber) 55%, transparent);
+}
+
+.home-reminder-points li::after {
+  content: "";
+  position: absolute;
+  top: 21px;
+  left: 6px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--amber);
 }
 
 .home-reminder-actions {
   display: flex;
   justify-content: flex-end;
-  margin-top: 18px;
-  position: sticky;
-  bottom: -1px;
-  padding-top: 4px;
-  background: linear-gradient(0deg, color-mix(in srgb, var(--bg-panel-raised) 92%, transparent) 60%, transparent);
+  margin-top: 20px;
 }
 
 .home-reminder-actions .btn {
   width: 100%;
   justify-content: center;
   font-size: clamp(0.86rem, 3.2vw, 0.95rem);
+  font-weight: 600;
+  padding-block: 12px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--brand), var(--amber));
+  border: none;
+  color: #1a1408;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+
+.home-reminder-actions .btn:hover {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px color-mix(in srgb, var(--amber) 35%, transparent);
+}
+
+.home-reminder-actions .btn:active {
+  transform: translateY(0);
 }
 
 @media (max-width: 480px) {
   .home-reminder-card {
     width: 100%;
-    border-radius: 18px;
+    border-radius: 16px;
     max-height: 92vh;
     padding: 18px 16px 16px;
   }
 
+  .home-reminder-card::before {
+    border-radius: 16px 16px 0 0;
+  }
+
   .home-reminder-card__icon {
-    width: 36px;
-    height: 36px;
-    font-size: 1rem;
-    border-radius: 10px;
+    width: 38px;
+    height: 38px;
+    font-size: 1.02rem;
+    border-radius: 11px;
   }
 
   .home-reminder-card .card__head {
     gap: 10px;
-    margin-bottom: 12px;
-    padding-bottom: 12px;
+    margin-bottom: 14px;
+  }
+
+  .home-reminder-copy {
+    gap: 11px;
   }
 }
 
@@ -1609,23 +1649,30 @@
   }
 
   .home-reminder-card__icon {
-    width: 32px;
-    height: 32px;
-    font-size: 0.92rem;
-  }
-
-  .home-reminder-copy {
-    gap: 10px;
+    width: 34px;
+    height: 34px;
+    font-size: 0.94rem;
   }
 
   .home-reminder-points li {
-    padding-left: 24px;
+    padding-left: 22px;
+    font-size: 0.78rem;
   }
 
   .home-reminder-points li::before {
-    left: 9px;
-    width: 7px;
-    height: 7px;
+    width: 12px;
+    height: 12px;
+    left: 1px;
+  }
+
+  .home-reminder-points li::after {
+    left: 5px;
+    top: 20px;
+  }
+
+  .home-reminder-actions .btn {
+    font-size: 0.84rem;
+    padding-block: 11px;
   }
 }
 

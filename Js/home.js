@@ -86,6 +86,8 @@ function renderSuggestions(places) {
         item.addEventListener('click', () => {
             addressInput.value = place;
             autocompleteList.hidden = true;
+            // Feeds the admin "most searched areas" analytics — see analytics.js
+            window.LWAnalytics?.trackSearch(place, place.split(',')[0].trim());
         });
         autocompleteList.appendChild(item);
     });
