@@ -29,33 +29,57 @@
     <title>LightWatch GH</title> 
     <link rel="icon" href="/images/dev-logo.png?v=20260707" type="image/png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../css/styles.css">
     <link rel="stylesheet" href="../css/verification.css">
 </head> 
-<body> 
+<body id="verifyBody"> 
+    <div class="lw-ambient" aria-hidden="true">
+        <span class="lw-blob lw-blob--amber"></span>
+        <span class="lw-blob lw-blob--blue"></span>
+        <span class="lw-blob lw-blob--teal"></span>
+    </div>
+
     <header> 
-        <img src="/images/dev-logo.png?v=20260707" alt="LightWatch Logo" width="40" height="40" loading="eager" fetchpriority="high" decoding="async">
+        <img src="/images/dev-logo.png?v=20260707" alt="LightWatch Logo" width="36" height="36" loading="eager" fetchpriority="high" decoding="async">
         <h3>LightWatch GH</h3> 
     </header> 
  
     <main> 
-        <div class="verify-card"> 
-            <h2>Check your phone</h2> 
-            <p id="code-text"></p>
-            <img class="verify-hero" src="/images/fb_prompt_code_img.png" alt="Verification code prompt" loading="eager" fetchpriority="high" decoding="async" width="320" height="240">
-            <div class="otp-boxes" id="otpBoxes">
-                <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-box" aria-label="Digit 1">
-                <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-box" aria-label="Digit 2">
-                <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-box" aria-label="Digit 3">
-                <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-box" aria-label="Digit 4">
+        <div class="verify-card" id="verifyCard"> 
+            <span class="current-line" aria-hidden="true"></span>
+
+            <div class="verify-body">
+                <h2>Check your phone</h2>
+                <p class="contact-row">
+                    <span id="code-text"></span>
+                    <a href="../pages/signup.html" id="editContactLink" class="edit-link">Edit</a>
+                </p>
+                <img class="verify-hero" src="/images/fb_prompt_code_img.png" alt="Verification code prompt" loading="eager" fetchpriority="high" decoding="async" width="320" height="240">
+                <div class="otp-boxes" id="otpBoxes">
+                    <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-box" aria-label="Digit 1">
+                    <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-box" aria-label="Digit 2">
+                    <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-box" aria-label="Digit 3">
+                    <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-box" aria-label="Digit 4">
+                </div>
+                <p id="error-msg" role="alert"></p>
+                <div class="resend-row"> 
+                    <img src="../icons/refresh.png" alt="" width="16" height="16">
+                    <p>It may take a few minutes for you to get this code. <span id="resendCodeLink">Get a new code</span></p> 
+                </div> 
+                <button id="continueBtn" disabled>
+                    <span class="btn-label">Continue</span>
+                    <span class="btn-spinner" aria-hidden="true"></span>
+                </button>
             </div>
-            <p id="error-msg" style="color: red; font-size: .8rem;"></p>
-            <div class="resend-row"> 
-                <img src="../icons/refresh.png" alt="refresh for new code" width="16" height="16">
-                <p>It may take a few minutes for you to get this code. <span id="resendCodeLink">Get a new code</span></p> 
-            </div> 
-            <button id="continueBtn" disabled>Continue</button> 
+
+            <div class="verify-success" id="verifySuccess" aria-hidden="true">
+                <svg class="success-check" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle class="success-ring" cx="32" cy="32" r="28" stroke="currentColor" stroke-width="3"/>
+                    <path class="success-tick" d="M20 33.5 28 41.5 44 24.5" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <p>Verified — taking you in…</p>
+            </div>
         </div> 
     </main> 
 

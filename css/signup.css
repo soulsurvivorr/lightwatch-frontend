@@ -33,6 +33,11 @@ body {
     color: var(--text-bright);
     overflow: hidden;
     position: relative;
+    transition: opacity .26s ease;
+}
+
+body.lw-leaving {
+    opacity: 0;
 }
 
 /* ===== Ambient background ===== */

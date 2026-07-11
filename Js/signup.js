@@ -11,6 +11,25 @@ const form = document.getElementById('signupForm');
 const errorEl = document.getElementById('email_phone-error');
 const submitBtn = document.getElementById('signUpBtn');
 
+// If someone lands here via the verification page's "Edit" link, restore
+// what they'd already typed so fixing a typo'd email/phone doesn't mean
+// retyping everything else.
+(function prefillFromPriorAttempt() {
+    try {
+        const saved = JSON.parse(localStorage.getItem('signupUser') || 'null');
+        if (!saved) return;
+        if (saved.name) nameInput.value = saved.name;
+        if (saved.emailPhone) emailPhoneInput.value = saved.emailPhone;
+        if (saved.region) regionInput.value = saved.region;
+        if (saved.city) cityInput.value = saved.city;
+        if (notifyUpdatesInput && typeof saved.wantsAlerts === 'boolean') {
+            notifyUpdatesInput.checked = saved.wantsAlerts;
+        }
+    } catch {
+        // Ignore malformed/missing data — form just starts blank.
+    }
+})();
+
 function isValidEmail(email) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
@@ -92,7 +111,8 @@ async function handleSignup() {
         // User can still explicitly sign out at any time.
         localStorage.setItem("rememberMePending", "true");
 
-        window.location.replace("../pages/verification.html");
+        document.body.classList.add('lw-leaving');
+        setTimeout(() => window.location.replace("../pages/verification.html"), 220);
 
     } catch (error) {
         console.error("Signup failed:", error);

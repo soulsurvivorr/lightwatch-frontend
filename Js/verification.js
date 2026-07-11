@@ -3,12 +3,15 @@
 //  Requires: auth.js loaded BEFORE this script
 // ============================================================
 
+const RESEND_COOLDOWN_SECONDS = 60;
+
 function getVerificationValue(key) {
     return sessionStorage.getItem(key) || localStorage.getItem(key);
 }
 
 const userValue     = getVerificationValue('userIdentifier');
 const maskedContact = getVerificationValue('maskedContact');
+const isSignupFlow  = !!getVerificationValue('signupUser');
 
 document.getElementById('code-text').textContent =
     `Enter the code we sent to ${maskedContact || maskValue(userValue)}`;
@@ -22,10 +25,21 @@ function maskValue(value) {
     return value[0] + '*******' + value[value.length - 1];
 }
 
-const continueBtn = document.getElementById('continueBtn');
-const errorMsg    = document.getElementById('error-msg');
-const otpBoxes    = Array.from(document.querySelectorAll('.otp-box'));
-const resendLink  = document.getElementById('resendCodeLink');
+const verifyCard    = document.getElementById('verifyCard');
+const continueBtn   = document.getElementById('continueBtn');
+const errorMsg      = document.getElementById('error-msg');
+const otpBoxesWrap  = document.getElementById('otpBoxes');
+const otpBoxes      = Array.from(document.querySelectorAll('.otp-box'));
+const resendLink    = document.getElementById('resendCodeLink');
+const editLink      = document.getElementById('editContactLink');
+
+// Editing the email/phone means going back to the form that collected
+// it. We only know how to route that back for the signup flow (that's
+// the page we have); hide the link otherwise rather than send someone
+// somewhere wrong.
+if (editLink && !isSignupFlow) {
+    editLink.style.display = 'none';
+}
 
 // -----------------------------------------------------
 // Combine the 4 boxes into one code string
@@ -46,6 +60,13 @@ function updateButtonState() {
     continueBtn.classList.toggle('active', isFull);
 }
 
+function shakeOtpBoxes() {
+    otpBoxesWrap.classList.remove('is-shaking');
+    // Force reflow so the animation can re-trigger on repeated errors
+    void otpBoxesWrap.offsetWidth;
+    otpBoxesWrap.classList.add('is-shaking');
+}
+
 // -----------------------------------------------------
 // Wire up each box: digits only, auto-advance to the next
 // box when filled, jump back on backspace when empty, and
@@ -60,6 +81,10 @@ otpBoxes.forEach((box, index) => {
         }
 
         updateButtonState();
+
+        if (getOtpValue().length === otpBoxes.length) {
+            checkOTP();
+        }
     });
 
     box.addEventListener('keydown', (e) => {
@@ -79,15 +104,32 @@ otpBoxes.forEach((box, index) => {
         const nextEmpty = otpBoxes.find(b => !b.value) || otpBoxes[otpBoxes.length - 1];
         nextEmpty.focus();
         updateButtonState();
+
+        if (getOtpValue().length === otpBoxes.length) {
+            checkOTP();
+        }
     });
 });
+
+// -----------------------------------------------------
+// Navigate away with the same soft fade-out used on signup,
+// so the hand-off between pages feels like one continuous flow.
+// -----------------------------------------------------
+function navigateTo(url, delay = 260) {
+    document.body.classList.add('lw-leaving');
+    setTimeout(() => window.location.replace(url), delay);
+}
 
 // -----------------------------------------------------
 // MAIN: verify the OTP code entered across the 4 boxes
 // -----------------------------------------------------
 otpBoxes[0]?.focus();
 
+let verifyInFlight = false;
+
 async function checkOTP() {
+    if (verifyInFlight) return;
+
     const otpValue  = getOtpValue();
     const emailPhone = getVerificationValue('userIdentifier');
 
@@ -98,7 +140,9 @@ async function checkOTP() {
         return;
     }
 
+    verifyInFlight = true;
     continueBtn.disabled = true;
+    continueBtn.classList.add('is-loading');
 
     try {
         const response = await fetch(`${API_URL}/verify`, {
@@ -111,12 +155,15 @@ async function checkOTP() {
 
         if (!response.ok) {
             errorMsg.textContent = result.error || 'Incorrect code';
+            shakeOtpBoxes();
+            otpBoxes.forEach(box => { box.value = ''; box.classList.remove('filled'); });
+            otpBoxes[0]?.focus();
             return;
         }
 
 
         const rememberMe = getVerificationValue('rememberMePending') === 'true';
-        const isSignupFlow = !!getVerificationValue('signupUser');
+        const signupFlow = !!getVerificationValue('signupUser');
         const userResponse = await fetch (`${API_URL}/user/${result.userId}`);
         const fullUser = await userResponse.json();
         const user = {
@@ -137,7 +184,7 @@ async function checkOTP() {
 
         // Signup without permanent remember: keep a temporary browser session
         // for 24h, then require sign-in again.
-        if (!rememberMe && isSignupFlow) {
+        if (!rememberMe && signupFlow) {
             const oneDayMs = 24 * 60 * 60 * 1000;
             localStorage.setItem('app_temp_auth_token', result.userId);
             localStorage.setItem('app_temp_user', JSON.stringify(user));
@@ -154,13 +201,18 @@ async function checkOTP() {
             localStorage.removeItem(k);
         });
 
-        window.location.replace('../pages/home.html');
+        // Small success moment before we hand off to home.html.
+        verifyCard.classList.add('is-success');
+        navigateTo('../pages/home.html', 900);
 
     } catch (err) {
         console.error('Verification failed:', err);
         errorMsg.textContent = 'Server error. Please try again.';
+        shakeOtpBoxes();
     } finally {
-        continueBtn.disabled = false;
+        verifyInFlight = false;
+        continueBtn.classList.remove('is-loading');
+        continueBtn.disabled = getOtpValue().length !== otpBoxes.length;
     }
 }
 
@@ -168,13 +220,51 @@ continueBtn.addEventListener('click', e => { e.preventDefault(); checkOTP(); });
 
 // -----------------------------------------------------
 // RESEND CODE — wires up the "Get a new code" link to the
-// backend's /resend route (this was sitting unwired before).
+// backend's /resend route, plus a 60s cooldown so it can't
+// be spammed. The link is disabled and shows a countdown
+// until the cooldown runs out.
 // -----------------------------------------------------
+let cooldownInterval = null;
+
+function startResendCooldown(seconds = RESEND_COOLDOWN_SECONDS) {
+    if (!resendLink) return;
+
+    let remaining = seconds;
+    resendLink.classList.add('disabled');
+    resendLink.setAttribute('aria-disabled', 'true');
+
+    const render = () => {
+        const m = Math.floor(remaining / 60);
+        const s = String(remaining % 60).padStart(2, '0');
+        resendLink.textContent = `Resend available in ${m}:${s}`;
+    };
+
+    render();
+    clearInterval(cooldownInterval);
+    cooldownInterval = setInterval(() => {
+        remaining -= 1;
+        if (remaining <= 0) {
+            clearInterval(cooldownInterval);
+            resendLink.textContent = 'Get a new code';
+            resendLink.classList.remove('disabled');
+            resendLink.removeAttribute('aria-disabled');
+            return;
+        }
+        render();
+    }, 1000);
+}
+
+// A code was already sent to land us on this page — start the
+// cooldown right away rather than waiting for a resend click.
+startResendCooldown();
+
 resendLink?.addEventListener('click', async () => {
+    if (resendLink.classList.contains('disabled')) return;
+
     const emailPhone = getVerificationValue('userIdentifier');
     if (!emailPhone) return;
 
-    const originalText = resendLink.textContent;
+    resendLink.classList.add('disabled');
     resendLink.textContent = 'Sending…';
     errorMsg.textContent = '';
 
@@ -188,17 +278,20 @@ resendLink?.addEventListener('click', async () => {
 
         if (!response.ok) {
             errorMsg.textContent = result.error || 'Could not resend code';
+            resendLink.classList.remove('disabled');
+            resendLink.textContent = 'Get a new code';
             return;
         }
 
         otpBoxes.forEach(box => { box.value = ''; box.classList.remove('filled'); });
         updateButtonState();
         otpBoxes[0]?.focus();
+        startResendCooldown();
 
     } catch (err) {
         console.error('Resend failed:', err);
         errorMsg.textContent = 'Server error. Please try again.';
-    } finally {
-        resendLink.textContent = originalText;
+        resendLink.classList.remove('disabled');
+        resendLink.textContent = 'Get a new code';
     }
 });

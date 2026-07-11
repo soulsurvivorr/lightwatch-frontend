@@ -4,12 +4,17 @@
 
 /*
     HTML -> CSS order guide (pages/verification.html)
-    1) header
-    2) main .verify-card
-         - .verify-hero
-         - .otp-boxes / .otp-box
-         - .resend-row
-         - #continueBtn
+    1) .lw-ambient (fixed background blobs)
+    2) header
+    3) main .verify-card
+         - .current-line (signature accent)
+         - .verify-body
+             - .contact-row / .edit-link
+             - .verify-hero
+             - .otp-boxes / .otp-box
+             - .resend-row
+             - #continueBtn
+         - .verify-success (shown briefly on success, replaces .verify-body)
 */
 
 html, body {
@@ -19,17 +24,78 @@ html, body {
 
 body {
     margin: 0;
-    display: flex;
     gap: 0;
+    display: flex;
     flex-direction: column;
     min-height: 100svh;
-        background-color: var(--bg-deep);
-        background-image:
-            radial-gradient(circle at 10% 0%, rgba(214, 162, 74, 0.1), transparent 42%),
-            radial-gradient(circle at 100% 100%, rgba(74, 144, 217, 0.08), transparent 48%);
+    background-color: var(--bg-deep);
     color: var(--text-bright);
-        font-family: var(--font-body);
+    font-family: var(--font-body);
     overflow: hidden;
+    position: relative;
+    transition: opacity .28s ease;
+}
+
+body.lw-leaving {
+    opacity: 0;
+}
+
+/* ===== Ambient background (shared motif with signup) ===== */
+.lw-ambient {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.lw-blob {
+    position: absolute;
+    width: 42vmax;
+    height: 42vmax;
+    border-radius: 50%;
+    filter: blur(70px);
+    opacity: .22;
+    will-change: transform;
+}
+
+.lw-blob--amber {
+    top: -14vmax;
+    left: -10vmax;
+    background: radial-gradient(circle, var(--brand, #D6A24A), transparent 70%);
+    animation: lw-drift-a 26s ease-in-out infinite;
+}
+
+.lw-blob--blue {
+    bottom: -18vmax;
+    right: -12vmax;
+    background: radial-gradient(circle, var(--brand2, #4A90D9), transparent 70%);
+    animation: lw-drift-b 32s ease-in-out infinite;
+}
+
+.lw-blob--teal {
+    top: 30vmax;
+    left: 30vmax;
+    width: 26vmax;
+    height: 26vmax;
+    opacity: .14;
+    background: radial-gradient(circle, var(--teal, #3DD9C2), transparent 70%);
+    animation: lw-drift-c 22s ease-in-out infinite;
+}
+
+@keyframes lw-drift-a {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(4vmax, 5vmax) scale(1.08); }
+}
+
+@keyframes lw-drift-b {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(-5vmax, -3vmax) scale(1.1); }
+}
+
+@keyframes lw-drift-c {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(3vmax, -4vmax) scale(0.95); }
 }
 
 header {
@@ -42,20 +108,28 @@ header {
     left: 0;
     right: 0;
     z-index: 100;
-    background-color: color-mix(in srgb, var(--bg-panel) 92%, transparent);
+    background-color: color-mix(in srgb, var(--bg-panel) 80%, transparent);
+    backdrop-filter: blur(10px);
     border-bottom: 1px solid var(--border-soft);
-    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    animation: lw-fade-up .45s ease both;
 }
 
 header h3 {
     color: var(--brand);
-    font-weight: 600;
+    font-family: var(--font-display);
+    font-weight: 700;
     margin: 0;
 }
 
 header img {
-    height: 40px;
-    width: 40px;
+    height: 34px;
+    width: 34px;
+    border-radius: 8px;
+}
+
+@keyframes lw-fade-up {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 main {
@@ -66,6 +140,7 @@ main {
     margin: 0;
     padding: .6rem .9rem;
     z-index: 1;
+    position: relative;
 }
 
 main h2, main p {
@@ -78,58 +153,146 @@ main p {
 }
 
 main div.verify-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 420px;
+    background-color: color-mix(in srgb, var(--bg-panel) 88%, transparent);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--border-soft);
+    padding: 1.6rem 1.55rem 1.55rem;
+    border-radius: 18px;
+    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.14);
+    overflow: hidden;
+    animation: lw-panel-in .5s cubic-bezier(.2, .8, .2, 1) both;
+}
+
+@keyframes lw-panel-in {
+    from { opacity: 0; transform: translateY(12px) scale(.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Signature current-line, matching the signup page */
+.current-line {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: repeating-linear-gradient(
+        90deg,
+        var(--brand, #D6A24A) 0 22px,
+        var(--brand2, #4A90D9) 22px 44px,
+        transparent 44px 54px
+    );
+    background-size: 200% 100%;
+    animation: lw-current-flow 3.4s linear infinite;
+    opacity: .85;
+}
+
+@keyframes lw-current-flow {
+    to { background-position: -108px 0; }
+}
+
+.verify-body {
     display: flex;
     flex-direction: column;
     gap: .75rem;
-    width: 100%;
-    max-width: 420px;
-    background-color: color-mix(in srgb, var(--bg-panel) 94%, transparent);
-    border: 1px solid var(--border-soft);
-    backdrop-filter: blur(4px);
-    padding: 1.55rem;
-    border-radius: 16px;
-    box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+    animation: lw-fade-up .45s ease .08s both;
+}
+
+main h2 {
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    font-weight: 800;
+    letter-spacing: -.01em;
+}
+
+.contact-row {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: .5rem .6rem;
+}
+
+.edit-link {
+    font-size: .78rem;
+    font-weight: 700;
+    color: var(--brand2);
+    text-decoration: none;
+    flex-shrink: 0;
+}
+
+.edit-link:hover {
+    text-decoration: underline;
 }
 
 .verify-hero {
     height: auto;
     width: 100%;
-    max-width: 320px;
+    max-width: 260px;
     margin: 0 auto;
     border-radius: 12px;
     border: 1px solid var(--border-soft);
 }
 
-/* ---- OTP boxes: underline style only, no full border box ---- */
+/* ---- OTP boxes: boxed, modern style with pop + error states ---- */
 .otp-boxes {
     display: flex;
-    gap: 12px;
+    gap: 10px;
     justify-content: center;
-    margin: .25rem 0;
+    margin: .2rem 0;
+}
+
+.otp-boxes.is-shaking {
+    animation: lw-shake .32s ease;
+}
+
+@keyframes lw-shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
 }
 
 .otp-box {
-    width: 44px;
-    padding: 0 0 8px;
+    width: 52px;
+    height: 58px;
+    padding: 0;
     text-align: center;
-    font-size: 1.6rem;
+    font-family: var(--font-display);
+    font-size: 1.5rem;
     font-weight: 700;
-    letter-spacing: 0;
-    border: none;
-    border-bottom: 2px solid var(--border-strong);
-    border-radius: 0;
-    background: transparent;
+    border: 1.5px solid var(--border-soft);
+    border-radius: 10px;
+    background: var(--bg-panel);
     color: var(--text-bright);
-    transition: border-color 0.15s ease;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s cubic-bezier(.3, 1.4, .5, 1);
 }
 
 .otp-box:focus {
     outline: none;
-    border-bottom-color: var(--brand2);
+    border-color: var(--brand2);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand2, #4A90D9) 18%, transparent);
 }
 
 .otp-box.filled {
-    border-bottom-color: var(--brand);
+    border-color: var(--brand);
+    animation: lw-pop .18s ease;
+}
+
+@keyframes lw-pop {
+    0% { transform: scale(1); }
+    45% { transform: scale(1.12); }
+    100% { transform: scale(1); }
+}
+
+#error-msg {
+    font-size: .78rem;
+    color: var(--red, #E5484D);
+    min-height: 1em;
+    margin: 0;
 }
 
 .resend-row {
@@ -150,42 +313,141 @@ main div.verify-card {
     color: var(--text-muted);
 }
 
-span {
+#resendCodeLink {
     color: var(--brand2);
     font-weight: 600;
     cursor: pointer;
 }
 
-span:hover {
+#resendCodeLink:hover {
     text-decoration: underline;
 }
 
-button {
+#resendCodeLink.disabled {
+    color: var(--text-faint);
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    cursor: default;
+    pointer-events: none;
+    text-decoration: none;
+}
+
+button#continueBtn {
+    position: relative;
     padding: 14px;
     background-color: #c5cbd3;
     color: white;
     border-radius: 26px;
     border: none;
+    font-family: var(--font-body);
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: background-color 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .5rem;
+    margin-top: .2rem;
+    transition: background-color 0.15s ease, transform 0.1s ease, box-shadow .15s ease;
 }
 
-button:hover {
+button#continueBtn:hover {
     background-color: #B3B8C0;
 }
 
-button.active {
+button#continueBtn:active {
+    transform: scale(.99);
+}
+
+button#continueBtn.active {
     background-color: var(--brand);
 }
 
-button.active:hover {
+button#continueBtn.active:hover {
     background-color: var(--brand-dim);
+    box-shadow: 0 6px 16px color-mix(in srgb, var(--brand, #D6A24A) 35%, transparent);
+}
+
+button#continueBtn:disabled {
+    background-color: rgb(224, 219, 211);
+    cursor: not-allowed;
+}
+
+button#continueBtn:disabled:hover {
+    background-color: rgb(224, 219, 211);
+}
+
+.btn-spinner {
+    display: none;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    border-top-color: #fff;
+}
+
+button#continueBtn.is-loading .btn-spinner {
+    display: inline-block;
+    animation: lw-spin .7s linear infinite;
+}
+
+button#continueBtn.is-loading .btn-label {
+    opacity: .85;
+}
+
+@keyframes lw-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ---- Success state: swaps in over the form, then we redirect ---- */
+.verify-success {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: .6rem;
+    padding: 1.4rem 0 .6rem;
+    text-align: center;
+    animation: lw-fade-up .4s ease both;
+}
+
+.verify-card.is-success .verify-body {
+    display: none;
+}
+
+.verify-card.is-success .verify-success {
+    display: flex;
+}
+
+.success-check {
+    width: 56px;
+    height: 56px;
+    color: var(--brand, #D6A24A);
+}
+
+.success-ring {
+    stroke-dasharray: 176;
+    stroke-dashoffset: 176;
+    animation: lw-draw .45s ease forwards;
+}
+
+.success-tick {
+    stroke-dasharray: 32;
+    stroke-dashoffset: 32;
+    animation: lw-draw .3s ease .4s forwards;
+}
+
+@keyframes lw-draw {
+    to { stroke-dashoffset: 0; }
+}
+
+.verify-success p {
+    font-size: .9rem;
+    font-weight: 600;
+    color: var(--text-muted);
 }
 
 :root[data-theme="dark"] main div.verify-card {
-    background-color: color-mix(in srgb, var(--bg-panel) 88%, transparent);
+    background-color: color-mix(in srgb, var(--bg-panel) 82%, transparent);
     border-color: #2a3240;
 }
 
@@ -194,16 +456,8 @@ button.active:hover {
 }
 
 :root[data-theme="dark"] .otp-box {
-    border-bottom-color: #3c4b62;
-}
-
-button:disabled {
-    background-color: rgb(224, 219, 211);
-    cursor: not-allowed;
-}
-
-button:disabled:hover {
-    background-color: rgb(224, 219, 211);
+    background: #121821;
+    border-color: #2a3240;
 }
 
 @media (max-width: 480px) {
@@ -216,14 +470,14 @@ button:disabled:hover {
     }
 
     main div.verify-card {
-        padding: 1.2rem;
-        border-radius: 12px;
-        box-shadow: none;
+        padding: 1.3rem 1.15rem 1.15rem;
+        border-radius: 14px;
     }
 
     .otp-box {
-        width: 38px;
-        font-size: 1.4rem;
+        width: 44px;
+        height: 52px;
+        font-size: 1.3rem;
     }
 }
 
@@ -245,15 +499,37 @@ button:disabled:hover {
     }
 
     .otp-boxes {
-        gap: 10px;
+        gap: 8px;
     }
 
     .otp-box {
-        width: 34px;
-        font-size: 1.25rem;
+        width: 40px;
+        height: 48px;
+        font-size: 1.15rem;
     }
 
     .resend-row p {
         font-size: .78rem;
     }
+}
+
+/* ===== Motion & accessibility ===== */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+    }
+
+    .lw-blob,
+    .current-line {
+        animation: none !important;
+    }
+}
+
+:focus-visible {
+    outline: 2px solid var(--brand, #D6A24A);
+    outline-offset: 2px;
 }
