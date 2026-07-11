@@ -601,11 +601,12 @@ async function loadCurrentUserProfile() {
 // Clears everything this app stored locally and sends
 // the user back to the sign-in page.
 // -----------------------------------------------------
-// signOut is defined in auth.js — no duplicate needed here.
-// The buttons below just call it directly.
-
-document.getElementById("profileSignOutBtn")?.addEventListener("click", signOut);
-document.getElementById("sidebarSignOutBtn")?.addEventListener("click", signOut);
+// signOut is defined in auth.js. Both sign-out buttons carry
+// data-action="signout" in the markup, so auth.js's single delegated
+// listener wires them up — no duplicate bindings here. (Two separate
+// listeners on the same button used to both fire on one click, racing
+// against nav.js's link-loader overlay and making sign-out feel like
+// it needed a second click.)
 
 
 // -----------------------------------------------------

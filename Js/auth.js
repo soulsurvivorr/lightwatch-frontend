@@ -85,15 +85,60 @@ function clearSession() {
     });
 }
 
+// ── Sign-out overlay: brief branded moment before we land back
+//    on the sign-in screen, instead of an abrupt blank flash ───
+let signOutOverlayEl = null;
+
+function showSignOutOverlay() {
+    if (signOutOverlayEl) return signOutOverlayEl;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'lwSignOutOverlay';
+    overlay.setAttribute('aria-hidden', 'true');
+    overlay.style.cssText = `
+        position: fixed; inset: 0; z-index: 99999;
+        display: flex; align-items: center; justify-content: center;
+        background: #1C1F26;
+        animation: lwSignOutFadeIn 0.18s ease both;
+    `;
+    overlay.innerHTML = `
+        <style>
+            @keyframes lwSignOutFadeIn { from { opacity: 0; } to { opacity: 1; } }
+            @keyframes lwSignOutPulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(0.92); opacity: 0.7; } }
+            #lwSignOutOverlay .lw-mark { width: 64px; height: 64px; border-radius: 18px; animation: lwSignOutPulse 1.1s ease-in-out infinite; }
+            #lwSignOutOverlay .lw-text { margin-top: 14px; font-family: 'Manrope', sans-serif; font-size: 0.85rem; color: rgba(255,255,255,0.75); letter-spacing: 0.02em; }
+        </style>
+        <div style="display:flex;flex-direction:column;align-items:center;">
+            <img class="lw-mark" src="/images/dev-logo.png" alt="LightWatch">
+            <span class="lw-text">Signing out…</span>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+    signOutOverlayEl = overlay;
+    return overlay;
+}
+
 // ── Sign out — works from ANY page ───────────────────────────
+let signOutInProgress = false;
+
 function signOut() {
+    // Guard: multiple bound handlers (or a fast double-click) firing on
+    // the same action should still only produce one overlay/redirect.
+    if (signOutInProgress) return;
+    signOutInProgress = true;
+
     clearSession();
+    showSignOutOverlay();
 
     // Figure out the correct path back to index.html from wherever we are
     // Works whether you're at /pages/home.html or /index.html
     const depth = window.location.pathname.split('/').filter(Boolean).length;
     const prefix = depth > 1 ? '../'.repeat(depth - 1) : './';
-    window.location.replace(prefix + 'index.html');
+
+    // Give the overlay a beat to actually paint/register before we leave.
+    setTimeout(() => {
+        window.location.replace(prefix + 'index.html');
+    }, 700);
 }
 
 // ── Guard: redirect to login if no session ────────────────────

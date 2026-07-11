@@ -303,9 +303,223 @@
         padding: 9px 0;
       }
     }
+
+    /* ============================================================
+       MODERN ACCOUNT UI — visual pass over the structure above.
+       Keeps the same design tokens (--teal, --bg-panel, etc.) so it
+       stays on-brand with the rest of the app, just more considered:
+       icon badges, softer elevation, clearer empty/locked states.
+       ============================================================ */
+
+    .account-grid .card {
+      border-radius: var(--radius-lg, 16px);
+      box-shadow: 0 1px 0 rgba(255,255,255,0.02) inset, 0 10px 24px -18px rgba(0,0,0,0.5);
+      transition: box-shadow 0.2s ease;
+    }
+
+    .profile-hero {
+      position: relative;
+      background:
+        radial-gradient(120% 140% at 50% -10%, color-mix(in srgb, var(--teal) 22%, transparent), transparent 60%);
+    }
+
+    .profile-hero__avatar {
+      box-shadow: 0 8px 22px -8px color-mix(in srgb, var(--teal) 60%, transparent);
+    }
+
+    .card__head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .card__icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      flex-shrink: 0;
+      border-radius: 10px;
+      background: var(--teal-dim);
+      font-size: 0.95rem;
+    }
+
+    .card__head-text { display: flex; flex-direction: column; }
+
+    /* ---- Toggle — slightly larger target + smoother knob ---- */
+    .toggle { width: 44px; height: 25px; }
+    .toggle__track::after { width: 19px; height: 19px; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+    .toggle input:checked + .toggle__track::after { transform: translateX(19px); }
+    .toggle__track { transition: background 0.2s ease, box-shadow 0.2s ease; }
+    .toggle input:focus-visible + .toggle__track { box-shadow: 0 0 0 3px color-mix(in srgb, var(--teal) 35%, transparent); }
+
+    /* ---- Notifications: "enabled" resting state ---- */
+    .btn--enabled-state {
+      background: var(--teal-dim) !important;
+      border-color: transparent !important;
+      color: var(--teal) !important;
+      cursor: default;
+      opacity: 1 !important;
+    }
+    .btn__check {
+      display: inline-flex;
+      margin-right: 4px;
+      font-weight: 700;
+    }
+
+    /* ---- Locations list ---- */
+    .location-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border-soft);
+    }
+    .location-row:last-child { border-bottom: none; }
+    .location-row__dot {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+      background: var(--teal);
+      box-shadow: 0 0 0 4px var(--teal-dim);
+    }
+    .location-row__dot--secondary { background: var(--text-faint); box-shadow: 0 0 0 4px var(--border-soft); }
+    .location-row__body { flex: 1; min-width: 0; }
+    .location-row__name { font-size: 0.88rem; font-weight: 500; color: var(--text-bright); }
+    .location-row__badge {
+      font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em;
+      color: var(--text-faint); margin-top: 1px;
+    }
+    .location-row__actions { display: flex; gap: 6px; flex-shrink: 0; }
+    .location-row__actions button {
+      background: none; border: none; color: var(--text-faint); font-size: 0.76rem;
+      cursor: pointer; padding: 4px 6px; border-radius: 6px;
+    }
+    .location-row__actions button:hover { color: var(--text-bright); background: var(--border-soft); }
+
+    .secondary-location { margin-top: 12px; }
+    .secondary-location__add {
+      width: 100%;
+      border: 1px dashed var(--border-strong);
+      background: transparent;
+      color: var(--text-faint);
+      border-radius: var(--radius-md);
+      padding: 11px;
+      font-size: 0.84rem;
+      cursor: pointer;
+      transition: border-color 0.15s ease, color 0.15s ease;
+    }
+    .secondary-location__add:hover { border-color: var(--teal); color: var(--teal); }
+    .secondary-location__form {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 10px;
+      padding: 14px;
+      border-radius: var(--radius-md);
+      background: var(--bg-panel);
+      border: 1px solid var(--border-soft);
+    }
+    .secondary-location__row { display: flex; gap: 8px; }
+    .secondary-location__row .form-field { flex: 1; }
+    .secondary-location__actions { display: flex; gap: 8px; margin-top: 2px; }
+    .secondary-location__actions .btn { flex: 1; }
+
+    /* ---- Locked city state ---- */
+    .locked-field {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      border-radius: var(--radius-md);
+      background: var(--bg-panel);
+      border: 1px solid var(--border-soft);
+    }
+    .locked-field__icon {
+      width: 30px; height: 30px; border-radius: 9px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--border-soft); color: var(--text-faint); font-size: 0.9rem;
+    }
+    .locked-field__value { font-size: 0.9rem; color: var(--text-bright); font-weight: 500; }
+    .locked-field__sub { font-size: 0.74rem; color: var(--text-faint); margin-top: 2px; }
+
+    /* ---- Display prefs: extra controls ---- */
+    .swatch-row { display: flex; gap: 8px; margin-top: 4px; }
+    .swatch {
+      width: 26px; height: 26px; border-radius: 50%; cursor: pointer;
+      border: 2px solid transparent; padding: 0;
+    }
+    .swatch[aria-pressed="true"] { border-color: var(--text-bright); }
+    .density-select {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-soft);
+      color: var(--text-bright);
+      border-radius: var(--radius-md);
+      padding: 8px 10px;
+      font-size: 0.82rem;
+    }
+
+    /* ---- Compact chat popup preview ---- */
+    .chat-popup-overlay {
+      position: fixed; inset: 0; z-index: 9998;
+      background: rgba(0,0,0,0.4);
+      display: flex; align-items: flex-end; justify-content: center;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.18s ease;
+    }
+    .chat-popup-overlay--open { opacity: 1; pointer-events: auto; }
+    .chat-popup {
+      width: 100%; max-width: 420px;
+      background: var(--bg-panel, #20242c);
+      border: 1px solid var(--border-soft);
+      border-radius: 18px 18px 0 0;
+      max-height: 72vh;
+      display: flex; flex-direction: column;
+      transform: translateY(16px);
+      transition: transform 0.2s ease;
+    }
+    .chat-popup-overlay--open .chat-popup { transform: translateY(0); }
+    @media (min-width: 640px) {
+      .chat-popup-overlay { align-items: center; }
+      .chat-popup { border-radius: 18px; max-height: 80vh; }
+    }
+    .chat-popup__head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 16px; border-bottom: 1px solid var(--border-soft);
+    }
+    .chat-popup__title { font-size: 0.92rem; font-weight: 600; color: var(--text-bright); }
+    .chat-popup__close { background: none; border: none; color: var(--text-faint); font-size: 1.1rem; cursor: pointer; }
+    .chat-popup__body { padding: 14px 16px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 8px; }
+    .chat-bubble {
+      max-width: 78%;
+      padding: 8px 12px;
+      border-radius: 14px;
+      font-size: 0.82rem;
+      color: var(--text-bright);
+      background: var(--border-soft);
+      align-self: flex-start;
+    }
+    .chat-bubble--mine { align-self: flex-end; background: var(--teal-dim); color: var(--teal); }
+    .chat-popup--compact .chat-bubble { padding: 5px 10px; font-size: 0.76rem; border-radius: 10px; }
+    .chat-popup__note {
+      padding: 10px 16px; font-size: 0.72rem; color: var(--text-faint);
+      border-top: 1px solid var(--border-soft);
+    }
   </style>
 </head>
 <body data-skeleton-managed="1" data-skeleton-key="account">
+  <script>
+    // Apply the skeleton state synchronously, before the browser paints
+    // the real content below — otherwise the full account page renders
+    // for one frame first (with stale/empty fields) and THEN gets hidden
+    // once profile.js runs at the bottom of the page, which is the
+    // flash people were seeing. This mirrors the theme-color script in
+    // <head>: run before layout, not after all scripts have loaded.
+    (function () {
+      if (localStorage.getItem('lw_skeleton_seen_account') === '1') return;
+      document.body.classList.add('page-data-loading');
+    })();
+  </script>
 
   <header class="topbar">
     <div class="topbar__inner">
@@ -452,7 +666,7 @@
         <div class="danger-zone" style="margin-top: 16px;">
           <div class="danger-zone__title">Sign out</div>
           <div class="danger-zone__sub">You'll need to verify your contact to sign back in.</div>
-          <button type="button" class="btn btn--ghost" id="profileSignOutBtn" style="border-color: var(--red); color: var(--red); width:100%;">
+          <button type="button" class="btn btn--ghost" id="profileSignOutBtn" data-action="signout" style="border-color: var(--red); color: var(--red); width:100%;">
             Log out of LightWatch
           </button>
         </div>
@@ -463,8 +677,11 @@
 
         <div class="card">
           <div class="card__head">
-            <span class="card__title">Notifications</span>
-            <span class="card__meta">What to alert you about</span>
+            <span class="card__icon" aria-hidden="true">🔔</span>
+            <span class="card__head-text">
+              <span class="card__title">Notifications</span>
+              <span class="card__meta">What to alert you about</span>
+            </span>
           </div>
           <button type="button" data-enable-push-btn onclick="enableLightWatchPush()" class="btn btn--ghost btn--block" style="margin-bottom: 12px; border-color: var(--brand); color: var(--brand);">
             Enable notifications
@@ -513,42 +730,89 @@
 
         <div class="card">
           <div class="card__head">
-            <span class="card__title">My locations</span>
-            <span class="card__meta">Areas you're monitoring</span>
+            <span class="card__icon" aria-hidden="true">📍</span>
+            <span class="card__head-text">
+              <span class="card__title">My locations</span>
+              <span class="card__meta">Areas you're monitoring</span>
+            </span>
           </div>
-          <div id="myLocationsList" style="margin-bottom: 14px;">
+          <div id="myLocationsList" style="margin-bottom: 4px;">
             <div style="color: var(--text-faint); font-size: 0.85rem; padding: 8px 0;">Loading your locations…</div>
           </div>
-          <button type="button" class="btn btn--ghost btn--block" onclick="window.location.href='./home.html'">
-            + Go to home to add locations
-          </button>
-        </div>
 
-        <div class="card">
-          <div class="card__head">
-            <span class="card__title">Edit city/town</span>
-            <span class="card__meta">One-time correction only</span>
-          </div>
-          <p style="font-size:0.8rem;color:var(--text-faint);margin-bottom:10px;line-height:1.45;">
-            Disclaimer: You can change your city/town only once. After saving, it cannot be changed again.
-          </p>
-          <form id="cityEditForm" action="javascript:void(0)">
-            <label class="form-field" style="margin-bottom:10px;">
-              <span>City / Town</span>
-              <div style="display:flex;gap:8px;align-items:stretch;">
-                <input type="text" id="cityEditInput" placeholder="Enter your correct city or town" maxlength="60" disabled style="flex:1;" />
-                <button type="button" class="btn btn--ghost" id="cityEditToggleBtn" style="flex-shrink:0;white-space:nowrap;">Edit</button>
+          <div id="secondaryLocationBlock" class="secondary-location">
+            <button type="button" class="secondary-location__add" id="secondaryLocationAddBtn" hidden>
+              + Add another location, like Work
+            </button>
+
+            <form id="secondaryLocationForm" class="secondary-location__form" hidden action="javascript:void(0)">
+              <label class="form-field">
+                <span>Label</span>
+                <input type="text" id="secondaryLocationLabel" placeholder="e.g. Work" maxlength="40" />
+              </label>
+              <div class="secondary-location__row">
+                <label class="form-field">
+                  <span>City / Town</span>
+                  <input type="text" id="secondaryLocationCity" placeholder="City or town" maxlength="60" required />
+                </label>
+                <label class="form-field">
+                  <span>Region</span>
+                  <input type="text" id="secondaryLocationRegion" placeholder="Region" maxlength="60" required />
+                </label>
               </div>
-            </label>
-            <button type="submit" class="btn btn--primary btn--block" id="cityEditSaveBtn" disabled>Save city/town</button>
-            <p id="cityEditMessage" style="margin-top:8px;font-size:0.76rem;color:var(--text-faint);"></p>
-          </form>
+              <p id="secondaryLocationMessage" style="font-size:0.76rem;color:var(--text-faint);margin:0;"></p>
+              <div class="secondary-location__actions">
+                <button type="button" class="btn btn--ghost" id="secondaryLocationCancelBtn">Cancel</button>
+                <button type="submit" class="btn btn--primary" id="secondaryLocationSaveBtn">Save location</button>
+              </div>
+            </form>
+          </div>
         </div>
 
         <div class="card">
           <div class="card__head">
-            <span class="card__title">Display</span>
-            <span class="card__meta">Visual preferences</span>
+            <span class="card__icon" aria-hidden="true">✏️</span>
+            <span class="card__head-text">
+              <span class="card__title">Edit city/town</span>
+              <span class="card__meta" id="cityEditCardMeta">One-time correction only</span>
+            </span>
+          </div>
+
+          <!-- Shown once the one-time edit has been used: a plain, clearly
+               non-editable summary instead of a disabled-looking form. -->
+          <div id="cityEditLockedView" class="locked-field" hidden>
+            <span class="locked-field__icon" aria-hidden="true">🔒</span>
+            <div>
+              <div class="locked-field__value" id="cityEditLockedValue">—</div>
+              <div class="locked-field__sub">City/town is locked and can't be changed again.</div>
+            </div>
+          </div>
+
+          <div id="cityEditFormWrap">
+            <p style="font-size:0.8rem;color:var(--text-faint);margin-bottom:10px;line-height:1.45;">
+              Disclaimer: You can change your city/town only once. After saving, it cannot be changed again.
+            </p>
+            <form id="cityEditForm" action="javascript:void(0)">
+              <label class="form-field" style="margin-bottom:10px;">
+                <span>City / Town</span>
+                <div style="display:flex;gap:8px;align-items:stretch;">
+                  <input type="text" id="cityEditInput" placeholder="Enter your correct city or town" maxlength="60" disabled style="flex:1;" />
+                  <button type="button" class="btn btn--ghost" id="cityEditToggleBtn" style="flex-shrink:0;white-space:nowrap;">Edit</button>
+                </div>
+              </label>
+              <button type="submit" class="btn btn--primary btn--block" id="cityEditSaveBtn" disabled>Save city/town</button>
+              <p id="cityEditMessage" style="margin-top:8px;font-size:0.76rem;color:var(--text-faint);"></p>
+            </form>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card__head">
+            <span class="card__icon" aria-hidden="true">🎨</span>
+            <span class="card__head-text">
+              <span class="card__title">Display</span>
+              <span class="card__meta">Visual preferences</span>
+            </span>
           </div>
           <div class="pref-row">
             <div class="pref-row__info">
@@ -570,12 +834,56 @@
               <span class="toggle__track"></span>
             </label>
           </div>
+          <div class="pref-row">
+            <div class="pref-row__info">
+              <div class="pref-row__title">Reduce motion</div>
+              <div class="pref-row__sub">Turn off page transitions and pulse animations</div>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="prefReduceMotion">
+              <span class="toggle__track"></span>
+            </label>
+          </div>
+          <div class="pref-row">
+            <div class="pref-row__info">
+              <div class="pref-row__title">Larger chat text</div>
+              <div class="pref-row__sub">Increase font size in community chat</div>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="prefLargeChatText">
+              <span class="toggle__track"></span>
+            </label>
+          </div>
+          <div class="pref-row">
+            <div class="pref-row__info">
+              <div class="pref-row__title">Home layout density</div>
+              <div class="pref-row__sub">How tightly packed the home screen cards are</div>
+            </div>
+            <select class="density-select" id="prefDensity">
+              <option value="comfortable">Comfortable</option>
+              <option value="compact">Compact</option>
+            </select>
+          </div>
+          <div class="pref-row">
+            <div class="pref-row__info">
+              <div class="pref-row__title">Accent color</div>
+              <div class="pref-row__sub">Used for buttons, badges, and highlights</div>
+              <div class="swatch-row" id="accentSwatchRow">
+                <button type="button" class="swatch" data-accent="teal" style="background:#3DD9C2;" aria-label="Teal accent" aria-pressed="true"></button>
+                <button type="button" class="swatch" data-accent="amber" style="background:#D6A24A;" aria-label="Amber accent" aria-pressed="false"></button>
+                <button type="button" class="swatch" data-accent="violet" style="background:#8B7CF6;" aria-label="Violet accent" aria-pressed="false"></button>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="card">
           <div class="card__head">
-            <span class="card__title">Recent chat activity</span>
-            <span class="card__meta">Your last messages</span>
+            <span class="card__icon" aria-hidden="true">💬</span>
+            <span class="card__head-text">
+              <span class="card__title">Recent chat activity</span>
+              <span class="card__meta">Your last messages</span>
+            </span>
           </div>
           <div id="recentChatList">
             <div style="color: var(--text-faint); font-size: 0.85rem; padding: 8px 0;">Loading activity…</div>
@@ -593,8 +901,11 @@
     <button type="button" class="user-sidebar__close" id="userSidebarClose" aria-label="Close profile panel">×</button>
     <div class="card profile-card profile-card--sidebar">
       <div class="card__head">
-        <span class="card__title">Logged in as</span>
-        <span class="card__meta">User profile</span>
+        <span class="card__icon" aria-hidden="true">👤</span>
+        <span class="card__head-text">
+          <span class="card__title">Logged in as</span>
+          <span class="card__meta">User profile</span>
+        </span>
       </div>
       <div class="profile-card__avatar">
         <span class="avatar avatar--large" id="sidebarAvatar">?</span>
@@ -608,7 +919,7 @@
         <div><span>Last login</span><strong id="sidebarLastLogin">—</strong></div>
       </div>
       <button type="button" class="btn btn--primary btn--block" onclick="window.location.href='account.html'">Manage account</button>
-      <a href="../index.html"><button type="button" class="btn btn--ghost btn--block" id="sidebarSignOutBtn" data-action="signout">Log out</button></a>
+      <button type="button" class="btn btn--ghost btn--block" id="sidebarSignOutBtn" data-action="signout">Log out</button>
     </div>
   </aside>
 
@@ -645,232 +956,28 @@
     </div>
   </div>
 
+  <!-- Compact chat bubbles preview popup — shell only for now. Built so
+       chat.js can later feed it real thread data; today it just proves
+       out the compact-vs-normal bubble sizing the toggle controls. -->
+  <div class="chat-popup-overlay" id="chatPopupOverlay" aria-hidden="true">
+    <div class="chat-popup" id="chatPopup">
+      <div class="chat-popup__head">
+        <span class="chat-popup__title">Community chat preview</span>
+        <button type="button" class="chat-popup__close" id="chatPopupCloseBtn" aria-label="Close chat preview">×</button>
+      </div>
+      <div class="chat-popup__body" id="chatPopupBody"></div>
+      <div class="chat-popup__note">This is a preview of your bubble size — open Home to chat live.</div>
+    </div>
+  </div>
+
+
+  <script src="../Js/account.js?v=1.0.14"></script>
   <script src="../Js/theme.js?v=1.0.14"></script>
   <script src="../Js/config.js?v=1.0.14"></script>
   <script src="../Js/auth.js?v=1.0.14"></script>
   <script src="../Js/notification.js?v=1.0.14"></script>
   <script src="../Js/profile.js?v=1.0.14"></script>
   <script src="../Js/nav.js?v=1.0.14"></script>
-  <script>
-    // Account-page extras: load user's chat history + fill extra fields
-    document.body.dataset.accountExtrasLoading = '1';
-    document.body.classList.add('page-data-loading');
-
-    async function loadAccountExtras() {
-      document.body.dataset.accountExtrasLoading = '1';
-      document.body.classList.add('page-data-loading');
-
-      try {
-      const userId = localStorage.getItem("currentUserId");
-      if (!userId) return;
-
-      // Fill extra profile fields not covered by profile.js
-      try {
-        const res = await fetch(`${API_URL}/user/${userId}`);
-        if (res.ok) {
-          const user = await res.json();
-          const el = id => document.getElementById(id);
-
-          if (el("profileCity")) el("profileCity").textContent = user.city || "—";
-          if (el("profileRegion")) el("profileRegion").textContent = user.region || "—";
-          if (el("cityEditInput")) el("cityEditInput").value = user.city || "";
-          if (el("cityEditForm") && user.cityChangeLocked) {
-            el("cityEditInput").disabled = true;
-            el("cityEditSaveBtn").disabled = true;
-            if (el("cityEditToggleBtn")) {
-              el("cityEditToggleBtn").disabled = true;
-              el("cityEditToggleBtn").hidden = true;
-            }
-            el("cityEditMessage").textContent = "City/town is locked after your one-time edit.";
-          }
-          const chatHandleValue = user.chatHandle || localStorage.getItem("chatHandle") || "—";
-          if (el("profileChatHandle")) el("profileChatHandle").textContent = chatHandleValue;
-          if (el("profileHandle")) el("profileHandle").textContent = user.chatHandle || localStorage.getItem("chatHandle") || "";
-
-          // Member since
-          if (user.createdAt && el("profileLastLogin")) {
-            el("profileLastLogin").textContent = new Date(user.createdAt).toLocaleDateString([], { year: "numeric", month: "short", day: "numeric" });
-          }
-
-          // Page greeting
-          const hour = new Date().getHours();
-          const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
-          const firstName = (user.name || "").trim().split(/\s+/)[0] || "there";
-          const greetEl = document.getElementById("pageGreeting");
-          if (greetEl) greetEl.textContent = `${greeting}, ${firstName}`;
-
-          // My locations (from localStorage for now)
-          const locListEl = document.getElementById("myLocationsList");
-          if (locListEl) {
-            const loc = user.city ? `${user.city}, ${user.region}` : user.region || null;
-            if (loc) {
-              locListEl.innerHTML = `
-                <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border-soft);">
-                  <span class="pulse pulse--on" style="width:8px;height:8px;flex-shrink:0;"></span>
-                  <span style="font-size:0.88rem;color:var(--text-bright);font-weight:500;">${loc}</span>
-                  <span style="font-size:0.75rem;color:var(--text-faint);margin-left:auto;">Primary</span>
-                </div>`;
-            } else {
-              locListEl.innerHTML = `<div style="color:var(--text-faint);font-size:0.85rem;padding:8px 0;">No locations set yet.</div>`;
-            }
-          }
-        }
-      } catch(e) { /* silent */ }
-
-      // Load recent chat messages by this user
-      try {
-        const userObj = JSON.parse(localStorage.getItem("currentUserData") || "{}");
-        const loc = userObj.city ? `${userObj.city}, ${userObj.region}` : userObj.region || userObj.location;
-        if (loc) {
-          const res = await fetch(`${API_URL}/chats?location=${encodeURIComponent(loc)}`);
-          if (res.ok) {
-            const chats = await res.json();
-            const mine = chats.filter(c => (c.userId?._id || c.userId) === userId).slice(0, 5);
-            const el = document.getElementById("recentChatList");
-            if (el) {
-              if (mine.length === 0) {
-                el.innerHTML = `<div style="color:var(--text-faint);font-size:0.85rem;padding:8px 0;">No chat messages yet.</div>`;
-              } else {
-                el.innerHTML = mine.map(c => `
-                  <div style="padding:10px 0;border-bottom:1px solid var(--border-soft);">
-                    <div style="font-size:0.84rem;color:var(--text-bright);">"${c.text}"</div>
-                    <div style="font-size:0.74rem;color:var(--text-faint);margin-top:3px;">${c.location} · ${new Date(c.createdAt).toLocaleString([], {dateStyle:"short",timeStyle:"short"})}</div>
-                  </div>`).join("") + (chats.filter(c => (c.userId?._id || c.userId) === userId).length > 5 ? `<div style="font-size:0.78rem;color:var(--text-faint);padding-top:8px;">Showing 5 most recent</div>` : "");
-              }
-            }
-          }
-        }
-      } catch(e) { /* silent */ }
-
-      } finally {
-        delete document.body.dataset.accountExtrasLoading;
-        document.body.classList.remove('page-data-loading');
-      }
-    }
-
-    loadAccountExtras();
-
-    const muteGlobalToggle = document.getElementById('prefMuteGlobalChat');
-    const chatMentionsToggle = document.getElementById('prefChatMentions');
-
-    // Seed from localStorage immediately (fast paint), then reconcile with
-    // the server's saved state once the push subscription is ready.
-    if (muteGlobalToggle) muteGlobalToggle.checked = localStorage.getItem('lw_mute_global_chat') === '1';
-    if (chatMentionsToggle) chatMentionsToggle.checked = localStorage.getItem('lw_chat_mentions') !== '0'; // defaults ON
-
-    (async () => {
-      if (typeof window.getChatPushPreferences !== 'function') return;
-      const prefs = await window.getChatPushPreferences();
-      if (!prefs) return;
-      if (muteGlobalToggle) {
-        muteGlobalToggle.checked = Boolean(prefs.muteGlobalChat);
-        localStorage.setItem('lw_mute_global_chat', muteGlobalToggle.checked ? '1' : '0');
-      }
-      if (chatMentionsToggle) {
-        chatMentionsToggle.checked = prefs.chatMentionsEnabled !== false;
-        localStorage.setItem('lw_chat_mentions', chatMentionsToggle.checked ? '1' : '0');
-      }
-    })();
-
-    if (muteGlobalToggle) {
-      muteGlobalToggle.addEventListener('change', async () => {
-        if (typeof window.setGlobalChatMutePreference !== 'function') {
-          window.lwToast?.('Notification service is not ready yet.');
-          muteGlobalToggle.checked = !muteGlobalToggle.checked;
-          return;
-        }
-        const result = await window.setGlobalChatMutePreference(muteGlobalToggle.checked);
-        if (!result.success) {
-          muteGlobalToggle.checked = !muteGlobalToggle.checked;
-          window.lwToast?.(result.error || 'Could not save mute setting.');
-          return;
-        }
-        localStorage.setItem('lw_mute_global_chat', muteGlobalToggle.checked ? '1' : '0');
-        window.lwToast?.(muteGlobalToggle.checked
-          ? 'Everyone chat alerts are muted. Replies and @mentions will still notify you if Community chat mentions is on.'
-          : 'Everyone chat alerts are active.');
-      });
-    }
-
-    if (chatMentionsToggle) {
-      chatMentionsToggle.addEventListener('change', async () => {
-        if (typeof window.setChatMentionsPreference !== 'function') {
-          window.lwToast?.('Notification service is not ready yet.');
-          chatMentionsToggle.checked = !chatMentionsToggle.checked;
-          return;
-        }
-        const result = await window.setChatMentionsPreference(chatMentionsToggle.checked);
-        if (!result.success) {
-          chatMentionsToggle.checked = !chatMentionsToggle.checked;
-          window.lwToast?.(result.error || 'Could not save mentions setting.');
-          return;
-        }
-        localStorage.setItem('lw_chat_mentions', chatMentionsToggle.checked ? '1' : '0');
-        window.lwToast?.(chatMentionsToggle.checked
-          ? 'You will be notified when someone replies to you or @mentions you, even with Everyone chat muted.'
-          : 'Replies and @mentions will no longer send notifications.');
-      });
-    }
-
-    const cityEditInputEl = document.getElementById('cityEditInput');
-    const cityEditToggleBtn = document.getElementById('cityEditToggleBtn');
-    cityEditToggleBtn?.addEventListener('click', () => {
-      if (!cityEditInputEl || cityEditInputEl.disabled === false) return;
-      cityEditInputEl.disabled = false;
-      cityEditInputEl.focus();
-      cityEditInputEl.select();
-      const saveBtn = document.getElementById('cityEditSaveBtn');
-      if (saveBtn) saveBtn.disabled = false;
-      cityEditToggleBtn.textContent = 'Editing…';
-      cityEditToggleBtn.disabled = true;
-    });
-
-    const cityEditForm = document.getElementById('cityEditForm');
-    cityEditForm?.addEventListener('submit', async () => {
-      const input = document.getElementById('cityEditInput');
-      const messageEl = document.getElementById('cityEditMessage');
-      const saveBtn = document.getElementById('cityEditSaveBtn');
-      const city = String(input?.value || '').trim();
-      const userId = localStorage.getItem('currentUserId');
-      if (!userId || !city) {
-        if (messageEl) messageEl.textContent = 'Please enter a city/town first.';
-        return;
-      }
-
-      saveBtn.disabled = true;
-      if (messageEl) messageEl.textContent = 'Saving...';
-
-      try {
-        const res = await fetch(`${API_URL}/user/${userId}/city`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ city })
-        });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) {
-          if (messageEl) messageEl.textContent = data.error || 'Could not save city/town.';
-          saveBtn.disabled = false;
-          return;
-        }
-
-        document.getElementById('profileCity').textContent = data.user?.city || city;
-        document.getElementById('profileRegion').textContent = data.user?.region || document.getElementById('profileRegion').textContent;
-
-        const cachedUser = JSON.parse(localStorage.getItem('currentUserData') || '{}');
-        cachedUser.city = data.user?.city || city;
-        if (data.user?.region) cachedUser.region = data.user.region;
-        localStorage.setItem('currentUserData', JSON.stringify(cachedUser));
-
-        if (messageEl) messageEl.textContent = 'Saved. City/town is now locked and cannot be changed again.';
-        input.disabled = true;
-        saveBtn.disabled = true;
-        if (cityEditToggleBtn) cityEditToggleBtn.hidden = true;
-        window.lwToast?.('City/town updated successfully.');
-      } catch (err) {
-        if (messageEl) messageEl.textContent = 'Could not save city/town right now.';
-        saveBtn.disabled = false;
-      }
-    });
-  </script>
+  <script src="../Js/account.js?v=1.0.14"></script>
 </body>
 </html>

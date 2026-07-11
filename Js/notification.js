@@ -13,10 +13,29 @@ let lwAudioCtx = null;
 let lwAudioReady = false;
 
 function updateEnablePushButtonsVisibility() {
-    const shouldShow = Notification.permission !== 'granted';
+    const isEnabled = Notification.permission === 'granted';
     document.querySelectorAll('[data-enable-push-btn]').forEach((btn) => {
-        btn.hidden = !shouldShow;
-        btn.setAttribute('aria-hidden', shouldShow ? 'false' : 'true');
+        // Keep the button visible either way — flip it into a settled
+        // "Enabled" state rather than disappearing, so the page still
+        // confirms notifications are on instead of the control just vanishing.
+        btn.hidden = false;
+        btn.setAttribute('aria-hidden', 'false');
+
+        if (!btn.dataset.defaultLabel) {
+            btn.dataset.defaultLabel = btn.innerHTML;
+        }
+
+        if (isEnabled) {
+            btn.disabled = true;
+            btn.classList.add('btn--enabled-state');
+            btn.setAttribute('aria-disabled', 'true');
+            btn.innerHTML = '<span class="btn__check" aria-hidden="true">✓</span> Notifications enabled';
+        } else {
+            btn.disabled = false;
+            btn.classList.remove('btn--enabled-state');
+            btn.removeAttribute('aria-disabled');
+            btn.innerHTML = btn.dataset.defaultLabel;
+        }
     });
 }
 
