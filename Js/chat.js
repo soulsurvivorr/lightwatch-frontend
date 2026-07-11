@@ -230,8 +230,8 @@ let replyTarget = null;
 function updateChatPlaceholder() {
     if (!chatInput) return;
     chatInput.placeholder = chatScope === CHAT_SCOPE_GLOBAL
-        ? 'Message everyone in LightWatch...'
-        : 'Share an update about this location...';
+        ? 'Message everyone...'
+        : 'Share an update...';
 }
 
 // Send stays visible at all times — it just looks "off" (dimmed,
