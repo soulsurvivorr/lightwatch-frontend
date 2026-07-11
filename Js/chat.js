@@ -8,6 +8,7 @@ const chatThread = document.getElementById('chatThread');
 const chatScrollBottomBtn = document.getElementById('chatScrollBottomBtn');
 const chatForm   = document.getElementById('chatForm');
 const chatInput  = document.getElementById('chatInput');
+const chatSendBtn = document.getElementById('chatSendBtn');
 const chatHandleDisplay = document.getElementById('chatHandle');
 const chatReplyPreview = document.getElementById('chatReplyPreview');
 const chatReplyHandle = document.getElementById('chatReplyHandle');
@@ -147,9 +148,10 @@ setInterval(refreshChatTimestamps, 30000);
 // -------------------------------------------------------
 // BUILD A MESSAGE ELEMENT
 // -------------------------------------------------------
-function buildMessageEl(chat, isOwn) {
+function buildMessageEl(chat, isOwn, enterAnimationClass) {
     const el = document.createElement('div');
     el.className = isOwn ? "chat-message chat-message--own" : "chat-message";
+    if (enterAnimationClass) el.classList.add(enterAnimationClass);
     el.dataset.chatId   = chat._id || chat.id || "";
     el.dataset.createdAt = chat.createdAt;
 
@@ -232,6 +234,17 @@ function updateChatPlaceholder() {
         : 'Share an update about this location...';
 }
 
+// Send stays visible at all times — it just looks "off" (dimmed,
+// not-allowed cursor, via the :disabled CSS) until there's real text
+// to send, instead of vanishing or looking broken when the chat is empty.
+function updateSendButtonState() {
+    if (!chatSendBtn || !chatInput) return;
+    chatSendBtn.disabled = chatInput.value.trim().length === 0;
+}
+
+chatInput?.addEventListener('input', updateSendButtonState);
+updateSendButtonState();
+
 function focusTargetMessageIfPresent() {
     if (!pendingFocusChatId || !chatThread) return;
 
@@ -289,8 +302,12 @@ function scrollChatToBottom(smooth) {
 
 chatScrollBottomBtn?.addEventListener('click', () => scrollChatToBottom(true));
 
-function addToThread(chat, isOwn, scrollDown) {
-    const el = buildMessageEl(chat, isOwn);
+function addToThread(chat, isOwn, scrollDown, animate) {
+    // "Rise" for a message you just sent, "arrive" for one that just
+    // came in from someone else — same idea (flows in from the bottom),
+    // slightly different feel so sent vs. received still reads distinctly.
+    const enterAnimationClass = animate ? (isOwn ? 'chat-message--sent-in' : 'chat-message--received-in') : null;
+    const el = buildMessageEl(chat, isOwn, enterAnimationClass);
     chatThread.appendChild(el);
     if (scrollDown || isNearBottom) {
         chatThread.scrollTop = chatThread.scrollHeight;
@@ -371,7 +388,7 @@ function startPolling() {
                 const id = chat._id || chat.id;
                 if (!id || knownIds.has(id)) return; // skip already-shown messages
                 knownIds.add(id);
-                addToThread(chat, resolveUserId(chat) === myId, false);
+                addToThread(chat, resolveUserId(chat) === myId, false, true);
                 focusTargetMessageIfPresent();
             });
         } catch(e) {
@@ -507,6 +524,15 @@ chatForm?.addEventListener('submit', async (e) => {
     // Clear input immediately so it feels fast
     chatInput.value = "";
     chatInput.focus();
+    updateSendButtonState();
+
+    // Quick tactile pop on the button itself the instant Send is hit.
+    if (chatSendBtn) {
+        chatSendBtn.classList.remove('is-sent-pulse');
+        // Force reflow so the animation can replay on consecutive sends.
+        void chatSendBtn.offsetWidth;
+        chatSendBtn.classList.add('is-sent-pulse');
+    }
 
     try {
         const res = await fetch(`${API_URL}/chats`, {
@@ -525,6 +551,7 @@ chatForm?.addEventListener('submit', async (e) => {
         if (!res.ok) {
             // Put text back so user can retry
             chatInput.value = text;
+            updateSendButtonState();
             return;
         }
 
@@ -533,7 +560,7 @@ chatForm?.addEventListener('submit', async (e) => {
 
         if (realId && !knownIds.has(realId)) {
             knownIds.add(realId);           // tell poll: skip this one
-            addToThread(saved, true, true); // show it now, scroll to it
+            addToThread(saved, true, true, true); // show it now, scroll to it, animate it in
         }
 
         replyTarget = null;
@@ -541,5 +568,6 @@ chatForm?.addEventListener('submit', async (e) => {
     } catch(err) {
         console.error("Failed to send:", err);
         chatInput.value = text; // restore on failure
+        updateSendButtonState();
     }
 });

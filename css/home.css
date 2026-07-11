@@ -2119,6 +2119,57 @@ body.modal-open {
   border-color: var(--teal);
 }
 
+/* Applied by chat.js only to genuinely new messages (just sent, or just
+   arrived via polling) — NOT to the initial history batch, so opening
+   the chat doesn't play a cascade of 20 animations at once. */
+.chat-message--sent-in {
+  animation: chat-message-rise 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.chat-message--received-in {
+  animation: chat-message-arrive 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes chat-message-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(26px) scale(0.92);
+  }
+  55% {
+    opacity: 1;
+    transform: translateY(-3px) scale(1.015);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes chat-message-arrive {
+  0% {
+    opacity: 0;
+    transform: translateY(18px) scale(0.94);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--teal) 35%, transparent);
+  }
+  55% {
+    opacity: 1;
+    transform: translateY(-2px) scale(1.01);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--teal) 16%, transparent);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--teal) 0%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-message--sent-in,
+  .chat-message--received-in {
+    animation: none;
+  }
+}
+
 /* Applied briefly by chat.js when a notification tap (or reply/mention)
    deep-links to a specific message, so the jump is actually noticeable
    instead of just a silent scroll. */
@@ -2171,6 +2222,29 @@ body.modal-open {
 
 .chat-form .btn {
   flex-shrink: 0;
+  transition: opacity 0.18s ease, transform 0.1s ease, filter 0.18s ease;
+}
+
+/* Send stays visible at all times — just visually "off" until there's
+   something to send, so it never looks like a dead/missing button. */
+.chat-form .btn--primary:disabled {
+  opacity: 0.4;
+  filter: grayscale(0.4);
+  cursor: not-allowed;
+  transform: none;
+  pointer-events: none;
+}
+
+/* Brief tactile pop on the button itself the moment a message is sent —
+   toggled on/off by chat.js right after a successful POST. */
+.chat-form .btn--primary.is-sent-pulse {
+  animation: chat-send-pulse 0.32s ease;
+}
+
+@keyframes chat-send-pulse {
+  0% { transform: scale(1); }
+  40% { transform: scale(0.88); }
+  100% { transform: scale(1); }
 }
 
 .chat-form__input {
