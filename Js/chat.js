@@ -121,17 +121,19 @@ function getCurrentChatLocation() {
     } catch { return null; }
 }
 
-// Deterministic accent color per handle, used to tint message cards in
-// the "Everyone" (global) audience so a busy multi-user feed is easy to
-// scan by author at a glance. Same handle -> same color, every time.
+// Deterministic accent per handle, used to tint message cards in the
+// "Everyone" (global) audience so a busy multi-user feed is easy to
+// scan by author at a glance. Same handle -> same shade, every time.
+// Grayscale on purpose (varying lightness, zero saturation) rather than
+// colorful hues — distinct without turning the thread into a rainbow.
 function handleAccentColor(handle) {
     const str = handle || '';
     let hash = 0;
     for (let i = 0; i < str.length; i += 1) {
         hash = (hash * 31 + str.charCodeAt(i)) | 0;
     }
-    const hue = Math.abs(hash) % 360;
-    return `hsl(${hue}, 62%, 47%)`;
+    const lightness = 42 + (Math.abs(hash) % 30); // 42%–72%, several distinguishable steps
+    return `hsl(0, 0%, ${lightness}%)`;
 }
 
 function resolveUserId(chat) {
@@ -142,8 +144,31 @@ function resolveUserId(chat) {
     return String(chat.userId);
 }
 
+// iOS Safari's Date parser is much stricter than Chrome's: a timestamp
+// missing a "T" separator or a timezone marker (e.g. "2024-05-21 10:11:00"
+// instead of "2024-05-21T10:11:00Z") silently fails on Safari/iOS and
+// returns an Invalid Date, even though Chrome (including its devtools
+// device emulation, which still runs Chrome's engine) parses it fine.
+// That mismatch is exactly why this could look fine in desktop dev tools
+// but show nothing on a real phone. Normalize before parsing so both
+// engines agree.
+function safeParseDate(iso) {
+    if (!iso) return null;
+    let d = new Date(iso);
+    if (!isNaN(d.getTime())) return d;
+    if (typeof iso === 'string') {
+        let normalized = iso.trim().replace(' ', 'T');
+        if (!/[zZ]|[+-]\d\d:?\d\d$/.test(normalized)) normalized += 'Z';
+        d = new Date(normalized);
+        if (!isNaN(d.getTime())) return d;
+    }
+    return null;
+}
+
 function formatRelativeTime(iso) {
-    const diff = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000));
+    const date = safeParseDate(iso);
+    if (!date) return '';
+    const diff = Math.max(0, Math.floor((Date.now() - date.getTime()) / 1000));
     if (diff < 60)   return diff < 5 ? "Just now" : `${diff}s ago`;
     if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
     if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
@@ -544,6 +569,51 @@ function setMobileChatOpen(open) {
         if (label) label.textContent = open ? 'Close' : 'Chat';
         toggle.setAttribute('aria-label', open ? 'Close chat' : 'Open chat');
     }
+
+    if (open) {
+        // Wait for the same reflow the scroll-to-bottom logic waits for,
+        // then measure the popup for real instead of guessing its height
+        // via a static CSS bottom offset.
+        requestAnimationFrame(() => {
+            requestAnimationFrame(positionMobileChatToggle);
+        });
+        window.addEventListener('resize', positionMobileChatToggle);
+        window.addEventListener('orientationchange', positionMobileChatToggle);
+    } else {
+        clearMobileChatTogglePosition();
+        window.removeEventListener('resize', positionMobileChatToggle);
+        window.removeEventListener('orientationchange', positionMobileChatToggle);
+    }
+}
+
+// Docks the floating toggle just below the popup by reading the popup's
+// actual on-screen bottom edge (getBoundingClientRect), rather than a
+// static CSS px offset. A static offset kept landing wrong on some
+// devices depending on their real dvh/safe-area values (it collided
+// with the send button on iPhone 12 Pro) — measuring the real box
+// guarantees the gap is correct no matter what the device reports.
+const MOBILE_CHAT_TOGGLE_GAP = 12; // px of breathing room below the popup
+
+function positionMobileChatToggle() {
+    const toggle = document.getElementById('mobileChatToggle');
+    const card = getVisibleChatCard();
+    if (!toggle || !card) return;
+    if (!card.classList.contains('chat-card--mobile-open')) return;
+    if (!window.matchMedia('(max-width: 720px)').matches) {
+        clearMobileChatTogglePosition();
+        return;
+    }
+
+    const rect = card.getBoundingClientRect();
+    toggle.style.bottom = 'auto';
+    toggle.style.top = `${Math.round(rect.bottom + MOBILE_CHAT_TOGGLE_GAP)}px`;
+}
+
+function clearMobileChatTogglePosition() {
+    const toggle = document.getElementById('mobileChatToggle');
+    if (!toggle) return;
+    toggle.style.top = '';
+    toggle.style.bottom = '';
 }
 
 document.getElementById('mobileChatToggle')?.addEventListener('click', () => {

@@ -2647,7 +2647,7 @@ body.modal-open {
     box-shadow: 0 10px 30px rgba(0,0,0,0.2);
     backdrop-filter: blur(10px);
     transform: translateY(0);
-    transition: bottom 0.24s cubic-bezier(0.22, 0.74, 0.2, 1), transform 0.22s cubic-bezier(0.22, 0.74, 0.2, 1), box-shadow 0.22s ease;
+    transition: bottom 0.24s cubic-bezier(0.22, 0.74, 0.2, 1), top 0.24s cubic-bezier(0.22, 0.74, 0.2, 1), transform 0.22s cubic-bezier(0.22, 0.74, 0.2, 1), box-shadow 0.22s ease;
   }
 
   .mobile-chat-toggle__icon {
@@ -2666,10 +2666,16 @@ body.modal-open {
      left visible, it gets dragged up along with the on-screen keyboard
      the moment the chat input is focused, which reads as a layout
      glitch. Hiding it for the duration the popup is open removes
-     anything that could jump. The floating chat toggle is handled
-     separately below: it stays on screen and docks to the bottom of
-     the popup instead of disappearing, since it doubles as the close
-     control. */
+     anything that could jump.
+
+     The floating toggle still stays visible and doubles as the close
+     control (icon flips to ✕) — chat.js docks it just below the popup
+     by reading the popup's actual on-screen position (getBoundingClientRect)
+     rather than guessing a static px offset here. A fixed CSS offset kept
+     landing wrong on some devices depending on their real dvh/safe-area
+     values (e.g. it collided with the send button on iPhone 12 Pro), so
+     the offset is computed live instead — see positionMobileChatToggle()
+     in chat.js. */
   body.mobile-chat-open #bottom_nav_wrapper {
     display: none;
   }
@@ -3498,16 +3504,6 @@ body.modal-open {
   .mobile-chat-toggle__label {
     font-size: 0.7rem;
     line-height: 1;
-  }
-
-  body.mobile-chat-open .mobile-chat-toggle {
-    bottom: calc(60px + env(safe-area-inset-bottom));
-  }
-}
-
-@media (min-width: 391px) and (max-width: 720px) {
-  body.mobile-chat-open .mobile-chat-toggle {
-    bottom: calc(60px + env(safe-area-inset-bottom));
   }
 }
 
