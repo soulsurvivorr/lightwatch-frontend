@@ -71,7 +71,7 @@
     /* ---- Profile card ---- */
     .profile-hero {
       text-align: center;
-      padding: 28px 20px 20px;
+      padding: 20px 20px 16px;
     }
 
     .profile-hero__avatar {
@@ -82,37 +82,44 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      overflow: hidden;
       font-family: var(--font-display);
-      font-size: 1.5rem;
+      font-size: 1.2rem;
       color: white;
       font-weight: 700;
       margin: 0 auto 14px;
       border: 3px solid var(--border-soft);
     }
 
+    .profile-hero__avatar svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
     .profile-hero__name {
       font-family: var(--font-display);
-      font-size: 1.15rem;
+      font-size: 1.05rem;
       font-weight: 600;
       color: var(--text-bright);
-      margin-bottom: 4px;
+      margin-bottom: 3px;
     }
 
     .profile-hero__handle {
-      font-size: 0.82rem;
+      font-size: 0.78rem;
       color: var(--text-faint);
-      margin-bottom: 16px;
+      margin-bottom: 10px;
     }
 
     .profile-hero__badge {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      padding: 5px 12px;
+      padding: 4px 10px;
       border-radius: 999px;
       background: var(--teal-dim);
       color: var(--teal);
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       font-weight: 600;
     }
 
@@ -128,7 +135,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 13px 0;
+      padding: 9px 0;
       border-bottom: 1px solid var(--border-soft);
       gap: 12px;
     }
@@ -350,9 +357,9 @@
     }
 
     .profile-hero__ring {
-      width: 88px;
-      height: 88px;
-      margin: 0 auto 14px;
+      width: 68px;
+      height: 68px;
+      margin: 0 auto 10px;
       border-radius: 50%;
       display: flex;
       align-items: center;
@@ -376,6 +383,7 @@
       display: flex;
       align-items: center;
       gap: 6px;
+      margin-bottom: 6px;
     }
 
     .profile-details-card .section-label::before {
@@ -392,14 +400,14 @@
     }
 
     .detail-row__icon {
-      width: 26px;
-      height: 26px;
-      border-radius: 8px;
+      width: 22px;
+      height: 22px;
+      border-radius: 7px;
       background: var(--bg-panel-raised, var(--bg-panel));
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.76rem;
+      font-size: 0.68rem;
       flex-shrink: 0;
     }
 
@@ -601,6 +609,63 @@
       padding: 10px 16px; font-size: 0.72rem; color: var(--text-faint);
       border-top: 1px solid var(--border-soft);
     }
+
+    /* ============================================================
+       NARROW PHONES (iPhone SE ~375px and similar)
+       Placed last on purpose: several rules above set the same
+       properties without a media query, so this block has to come
+       after them in source order to actually win the cascade at
+       these widths.
+       ============================================================ */
+    @media (max-width: 380px) {
+      .profile-hero {
+        padding: 14px 14px 12px;
+      }
+      .profile-hero__ring {
+        width: 54px;
+        height: 54px;
+        margin: 0 auto 8px;
+      }
+      .profile-hero__avatar {
+        font-size: 0.95rem;
+        border-width: 2px;
+      }
+      .profile-hero__name {
+        font-size: 0.92rem;
+        margin-bottom: 2px;
+      }
+      .profile-hero__handle {
+        font-size: 0.7rem;
+        margin-bottom: 8px;
+      }
+      .profile-hero__badge {
+        padding: 3px 8px;
+        font-size: 0.66rem;
+      }
+      .profile-details-card > div[style*="padding"] {
+        padding: 0 14px 12px !important;
+      }
+      .section-label {
+        font-size: 0.66rem;
+        margin-bottom: 5px;
+      }
+      .detail-row {
+        padding: 6px 0;
+        gap: 8px;
+      }
+      .detail-row__icon {
+        width: 18px;
+        height: 18px;
+        border-radius: 6px;
+        font-size: 0.6rem;
+      }
+      .detail-row__label {
+        font-size: 0.7rem;
+      }
+      .detail-row__value {
+        font-size: 0.76rem;
+      }
+    }
   </style>
 </head>
 <body class="page-data-loading" data-skeleton-managed="1" data-skeleton-key="account">
@@ -740,7 +805,7 @@
             </span>
           </div>
 
-          <div style="padding: 4px 20px 20px;">
+          <div style="padding: 0 18px 16px;">
             <div class="section-label">Account details</div>
             <div class="detail-list">
               <div class="detail-row">

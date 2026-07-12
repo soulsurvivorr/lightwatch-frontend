@@ -27,6 +27,87 @@ function getInitials(name) {
 
 
 // -----------------------------------------------------
+// SVG AVATARS — every user gets a distinct generated avatar
+// instead of a plain "initials on a gradient circle". It's
+// deterministic (hashed from the user's id, falling back to
+// their name) so the same person always gets the same avatar
+// across sessions and devices, rather than it changing on
+// every page load.
+// -----------------------------------------------------
+const AVATAR_PALETTES = [
+    ['#3DD9C2', '#1C8C7A'], // teal
+    ['#D6A24A', '#A66C14'], // amber
+    ['#8B7CF6', '#5B4BC4'], // violet
+    ['#F27A6B', '#C94C3D'], // coral
+    ['#4FA3E3', '#2A6CB0'], // sky
+    ['#6FCF6F', '#2E8B4F']  // emerald
+];
+
+// Small deterministic string hash (djb2 variant) — same input
+// always produces the same output, no external calls needed.
+function hashSeed(str) {
+    let hash = 5381;
+    for (let i = 0; i < str.length; i++) {
+        hash = ((hash << 5) + hash) + str.charCodeAt(i);
+        hash = hash & hash; // keep it inside a 32-bit int
+    }
+    return Math.abs(hash);
+}
+
+// Each pattern draws on top of a gradient-filled circle base.
+// Kept simple/abstract on purpose — these render at 24-56px,
+// so fine detail would just turn to mush.
+const AVATAR_PATTERNS = [
+    (gradId, c2) => `
+        <rect x="0" y="0" width="40" height="40" rx="8" fill="url(#${gradId})"/>
+        <circle cx="20" cy="20" r="13" fill="none" stroke="${c2}" stroke-width="2" opacity="0.45"/>
+        <circle cx="20" cy="20" r="7" fill="${c2}" opacity="0.55"/>
+    `,
+    (gradId, c2) => `
+        <rect x="0" y="0" width="40" height="40" rx="8" fill="url(#${gradId})"/>
+        <path d="M0 40 L40 0 L40 14 L14 40 Z" fill="${c2}" opacity="0.35"/>
+    `,
+    (gradId, c2) => `
+        <rect x="0" y="0" width="40" height="40" rx="8" fill="url(#${gradId})"/>
+        <circle cx="13" cy="13" r="2.4" fill="${c2}" opacity="0.55"/>
+        <circle cx="27" cy="13" r="2.4" fill="${c2}" opacity="0.4"/>
+        <circle cx="13" cy="27" r="2.4" fill="${c2}" opacity="0.4"/>
+        <circle cx="27" cy="27" r="2.4" fill="${c2}" opacity="0.55"/>
+    `,
+    (gradId, c2) => `
+        <rect x="0" y="0" width="40" height="40" rx="8" fill="url(#${gradId})"/>
+        <path d="M4 26 L20 14 L36 26" fill="none" stroke="${c2}" stroke-width="2.4" opacity="0.5"/>
+        <path d="M4 32 L20 20 L36 32" fill="none" stroke="${c2}" stroke-width="2.4" opacity="0.3"/>
+    `,
+    (gradId, c2) => `
+        <rect x="0" y="0" width="40" height="40" rx="8" fill="url(#${gradId})"/>
+        <path d="M20 8 L28 22 L12 22 Z" fill="${c2}" opacity="0.5"/>
+        <path d="M12 24 L20 34 L6 34 Z" fill="${c2}" opacity="0.3"/>
+    `,
+    (gradId, c2) => `
+        <rect x="0" y="0" width="40" height="40" rx="8" fill="url(#${gradId})"/>
+        <path d="M0 24 Q10 16 20 24 T40 24 V40 H0 Z" fill="${c2}" opacity="0.4"/>
+    `
+];
+
+// Returns a ready-to-insert <svg> string for a given seed
+// (pass user.id when you have it — falls back to name, then
+// a neutral "guest" look).
+function getAvatarSVG(seed) {
+    const safeSeed = String(seed || 'guest');
+    const hash = hashSeed(safeSeed);
+    const [c1, c2] = AVATAR_PALETTES[hash % AVATAR_PALETTES.length];
+    const patternFn = AVATAR_PATTERNS[Math.floor(hash / AVATAR_PALETTES.length) % AVATAR_PATTERNS.length];
+    const gradId = `lwAvatarGrad-${hash}`;
+
+    return `<svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="User avatar">` +
+        `<defs><linearGradient id="${gradId}" x1="0%" y1="0%" x2="100%" y2="100%">` +
+        `<stop offset="0%" stop-color="${c1}"/><stop offset="100%" stop-color="${c2}"/>` +
+        `</linearGradient></defs>${patternFn(gradId, c2)}</svg>`;
+}
+
+
+// -----------------------------------------------------
 // HELPER: mask contact info for display
 // (same logic as signup.js, kept in sync)
 // -----------------------------------------------------
@@ -58,6 +139,18 @@ function renderUserEverywhere(user) {
     const contactValue = user.emailPhone || user.email || "—";
     const displayLocation = [user.city, user.region].filter(Boolean).join(", ") || user.location || "—";
 
+    // A signed-out/guest state keeps the old plain "?" — the generated
+    // SVG look is reserved for an actual identity (id or name present).
+    const hasIdentity = Boolean(user.id || user.name);
+    const avatarMarkup = hasIdentity ? getAvatarSVG(user.id || user.name) : null;
+
+    function setAvatar(el) {
+        if (!el) return;
+        el.setAttribute("aria-label", hasIdentity ? `Avatar for ${initials}` : "Guest avatar");
+        if (avatarMarkup) el.innerHTML = avatarMarkup;
+        else el.textContent = "?";
+    }
+
     // --- chat handle display ---
     const chatHandleEl = document.getElementById("chatHandle");
     if (chatHandleEl) chatHandleEl.textContent = user.chatHandle || localStorage.getItem("chatHandle") || "anon";
@@ -66,7 +159,7 @@ function renderUserEverywhere(user) {
     const topbarUserName = document.getElementById("topbarUserName");
     const topbarAvatar = document.getElementById("topbarAvatar");
     if (topbarUserName) topbarUserName.textContent = user.name || "Guest";
-    if (topbarAvatar) topbarAvatar.textContent = initials;
+    setAvatar(topbarAvatar);
 
     // --- main profile card on the page ---
     const profileName = document.getElementById("profileName");
@@ -77,7 +170,7 @@ function renderUserEverywhere(user) {
     const profileLastLogin = document.getElementById("profileLastLogin");
 
     if (profileName) profileName.textContent = user.name || "Not signed in";
-    if (profileAvatar) profileAvatar.textContent = initials;
+    setAvatar(profileAvatar);
     if (profileContact) profileContact.textContent = contactValue;
     if (profileRegion) profileRegion.textContent = displayLocation;
     if (profileCity) profileCity.textContent = user.city || "—";
@@ -99,7 +192,7 @@ function renderUserEverywhere(user) {
     const sidebarLastLogin = document.getElementById("sidebarLastLogin");
 
     if (sidebarName) sidebarName.textContent = user.name || "Not signed in";
-    if (sidebarAvatar) sidebarAvatar.textContent = initials;
+    setAvatar(sidebarAvatar);
     if (sidebarContact) sidebarContact.textContent = contactValue;
     if (sidebarRegion) sidebarRegion.textContent = displayLocation;
     if (sidebarLastLogin) {
