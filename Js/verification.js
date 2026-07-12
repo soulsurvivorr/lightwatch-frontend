@@ -213,12 +213,12 @@ async function checkOTP() {
             localStorage.removeItem(k);
         });
 
-        // Small success moment, then the same branded overlay used
-        // everywhere else in the auth flow, before we hand off to home.html.
+        // Small success moment, then straight to home.html — its own
+        // skeleton screen (#pageSkeleton) is the transition visual now,
+        // so no separate branded overlay in between.
         verifyCard.classList.add('is-success');
         setTimeout(() => {
-            showPageTransitionOverlay('Verified — taking you in…');
-            setTimeout(() => window.location.replace('../pages/home.html'), 260);
+            window.location.replace('../pages/home.html');
         }, 700);
 
     } catch (err) {
