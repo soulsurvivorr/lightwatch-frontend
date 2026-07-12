@@ -18,9 +18,16 @@
     /* Paints dark from the very first frame, before any JS runs —
        closes the white flash iOS/Android show while parsing the
        rest of <head>, prior to the auth-check script deciding
-       whether to reveal the login form or the launch overlay. */
+       whether to reveal the login form or the launch overlay.
+       color-scheme is forced with !important because the theme
+       script above sets an inline `color-scheme:light` on <html>
+       for every mobile device (by design — the app itself is
+       light-themed on mobile) which would otherwise beat this and
+       let the browser paint its light UA-default canvas for a
+       frame before any of this CSS is even parsed. */
     html.auth-check {
       background: #1C1F26;
+      color-scheme: dark !important;
     }
 
     html.auth-check body {
@@ -47,20 +54,40 @@
       background: #1C1F26;
       pointer-events: none;
     }
+    /* Instant, not a fade — the canvas behind this is already the
+       same #1C1F26 (see html.auth-check above), so there is nothing
+       for a fade to cross-dissolve against except the page itself.
+       Snapping straight to visible removes that translucent window
+       entirely instead of just shortening it. */
     #appLaunchOverlay.is-active {
       visibility: visible;
       opacity: 1;
-      transition: opacity 0.16s ease;
+    }
+    @keyframes lwLaunchGlow {
+      0%   { opacity: 0;    transform: scale(0.55); }
+      100% { opacity: 0.4;  transform: scale(1); }
     }
     @keyframes lwLaunchIntro {
       0%   { transform: scale(0.86); opacity: 0; }
       100% { transform: scale(1);    opacity: 1; }
     }
+    #appLaunchOverlay__glow {
+      position: absolute;
+      inset: 0;
+      margin: auto;
+      width: 160px;
+      height: 160px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(240,172,61,0.4), rgba(74,144,217,0.2) 55%, transparent 75%);
+      filter: blur(8px);
+      animation: lwLaunchGlow 0.55s cubic-bezier(.16,.84,.44,1) both;
+    }
     #appLaunchOverlay__mark {
+      position: relative;
       width: 76px;
       height: 76px;
       border-radius: 20px;
-      animation: lwLaunchIntro 0.38s cubic-bezier(.16,.84,.44,1) both;
+      animation: lwLaunchIntro 0.4s cubic-bezier(.16,.84,.44,1) both;
     }
   </style>
   <link rel="manifest" href="/manifest.json?v=1.0.15" />
@@ -83,6 +110,7 @@
        above — this only ever becomes visible for an already-signed-in
        device that's about to be redirected to home.html. -->
   <div id="appLaunchOverlay" aria-hidden="true">
+    <div id="appLaunchOverlay__glow" aria-hidden="true"></div>
     <img id="appLaunchOverlay__mark" src="/images/dev-logo.png" alt="">
   </div>
 

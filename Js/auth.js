@@ -154,23 +154,28 @@ function showAppLaunchOverlay() {
     const overlay = document.createElement('div');
     overlay.id = 'lwAppLaunchOverlay';
     overlay.setAttribute('aria-hidden', 'true');
+    // No entrance animation on the backdrop itself — the canvas behind
+    // it is already #1C1F26 (painted pre-script by the html.lw-cold-boot
+    // rule in home.html's <head>), so fading this in just gave the real
+    // page a translucent window to show through for no visual benefit.
+    // Appearing instantly means there's genuinely nothing to "reflect"
+    // through during mount.
     overlay.style.cssText = `
         position: fixed; inset: 0; z-index: 100000;
         display: flex; align-items: center; justify-content: center;
         background: #1C1F26;
-        animation: lwLaunchFadeIn 0.16s ease both;
     `;
     overlay.innerHTML = `
         <style>
-            @keyframes lwLaunchFadeIn {
-                from { opacity: 0; }
-                to   { opacity: 1; }
+            /* Entrance: a soft glow blooms open behind the mark while it
+               settles in with one calm scale+fade — no bounce/overshoot,
+               a single confident motion. The glow is what makes this
+               read as more modern/deliberate than a bare logo popping
+               in, without being a distracting animated loop. */
+            @keyframes lwLaunchGlow {
+                0%   { opacity: 0;   transform: scale(0.55); }
+                100% { opacity: 0.4; transform: scale(1); }
             }
-            /* Entrance: one calm settle, no bounce/overshoot — a single
-               confident motion rather than something that reads as
-               "waiting" or playful. Matches the entrance used on
-               index.html's launch overlay so a hand-off between the
-               two never feels like two different animations. */
             @keyframes lwLaunchIntro {
                 0%   { transform: scale(0.86); opacity: 0; }
                 100% { transform: scale(1);    opacity: 1; }
@@ -185,26 +190,48 @@ function showAppLaunchOverlay() {
                mid-transition. The circle collapses down onto the logo's
                own position, so the last thing visible is the mark
                itself shrinking away before the page is already fully
-               revealed everywhere else around it. */
+               revealed everywhere else around it. The glow gets a quick
+               outward burst on the same clock, like a flash of light
+               right as the page opens up. */
             #lwAppLaunchOverlay {
                 clip-path: circle(150% at 50% 50%);
             }
             #lwAppLaunchOverlay.is-opening {
                 clip-path: circle(0% at 50% 50%);
-                transition: clip-path 0.46s cubic-bezier(.65,0,.35,1);
+                transition: clip-path 0.4s cubic-bezier(.65,0,.35,1);
             }
             @keyframes lwLaunchMarkOpen {
                 0%   { transform: scale(1);    opacity: 1; }
-                100% { transform: scale(1.18); opacity: 0; }
+                100% { transform: scale(1.15); opacity: 0; }
+            }
+            @keyframes lwLaunchGlowBurst {
+                0%   { opacity: 0.4; transform: scale(1); }
+                40%  { opacity: 0.65; transform: scale(1.35); }
+                100% { opacity: 0;   transform: scale(1.7); }
+            }
+            #lwAppLaunchOverlay .lw-launch-glow {
+                position: absolute;
+                inset: 0;
+                margin: auto;
+                width: 160px; height: 160px;
+                border-radius: 50%;
+                background: radial-gradient(circle, rgba(240,172,61,0.4), rgba(74,144,217,0.2) 55%, transparent 75%);
+                filter: blur(8px);
+                animation: lwLaunchGlow 0.55s cubic-bezier(.16,.84,.44,1) both;
             }
             #lwAppLaunchOverlay .lw-launch-mark {
+                position: relative;
                 width: 76px; height: 76px; border-radius: 20px;
-                animation: lwLaunchIntro 0.38s cubic-bezier(.16,.84,.44,1) both;
+                animation: lwLaunchIntro 0.4s cubic-bezier(.16,.84,.44,1) both;
+            }
+            #lwAppLaunchOverlay.is-opening .lw-launch-glow {
+                animation: lwLaunchGlowBurst 0.3s ease forwards;
             }
             #lwAppLaunchOverlay.is-opening .lw-launch-mark {
                 animation: lwLaunchMarkOpen 0.3s ease forwards;
             }
         </style>
+        <div class="lw-launch-glow" aria-hidden="true"></div>
         <img class="lw-launch-mark" src="/images/dev-logo.png" alt="LightWatch">
     `;
     document.body.appendChild(overlay);
@@ -213,7 +240,7 @@ function showAppLaunchOverlay() {
 }
 
 // Plays the reveal, then removes the overlay. Duration here must match
-// the .is-opening clip-path transition above (0.46s) — it's the same
+// the .is-opening clip-path transition above (0.4s) — it's the same
 // clock, just read from JS so we know when it's safe to remove the
 // element from the DOM.
 function dismissAppLaunchOverlay() {
@@ -222,7 +249,7 @@ function dismissAppLaunchOverlay() {
     appLaunchOverlayEl = null;
     el.classList.add('is-opening');
     document.documentElement.classList.remove('lw-cold-boot');
-    setTimeout(() => el.remove(), 460);
+    setTimeout(() => el.remove(), 400);
 }
 
 // Kept as its own name for readability at sign-out call sites; it's
