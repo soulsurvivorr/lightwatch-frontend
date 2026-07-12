@@ -455,7 +455,11 @@ function initSecondaryLocationForm() {
 // ------------------------------------------------------------
 async function loadAccountExtras() {
     const userId = localStorage.getItem('currentUserId');
-    if (!userId) return;
+    if (!userId) {
+        if (document.body) delete document.body.dataset.accountExtrasLoading;
+        document.body?.classList.remove('page-data-loading');
+        return;
+    }
 
     try {
         const res = await fetch(`${API_URL}/user/${userId}`);

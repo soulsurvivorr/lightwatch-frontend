@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="auth-check">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -29,6 +29,18 @@
   <link rel="stylesheet" href="../css/styles.css?v=1.0.14">
 </head>
 <body class="app-loading">
+  <script src="../Js/config.js?v=1.0.14"></script>
+  <script src="../Js/auth.js?v=1.0.14"></script>
+  <script>
+    // reports.html previously had no page-level session guard at all —
+    // a signed-out visitor could reach it directly and profile.js would
+    // just silently render "Guest" state instead of redirecting to
+    // sign-in like every other protected page does.
+    requireAuth();
+    if (!window.__lwAuthRedirecting) {
+      document.documentElement.classList.remove('auth-check');
+    }
+  </script>
 
   <div class="lw-boot-loader" id="lwBootLoader" aria-hidden="true">
     <div class="lw-loader-orbit">
@@ -159,8 +171,6 @@
   </div>
 
   <script src="../Js/theme.js?v=1.0.14"></script>
-  <script src="../Js/config.js?v=1.0.14"></script>
-  <script src="../Js/auth.js?v=1.0.14"></script>
   <script src="../Js/profile.js?v=1.0.14"></script>
   <script src="../Js/reports.js?v=1.0.14"></script>
   <script src="../Js/nav.js?v=1.0.14"></script>

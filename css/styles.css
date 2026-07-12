@@ -140,6 +140,28 @@ html, body {
   overflow-x: hidden;
 }
 
+/* ============================================================
+   Auth visibility gates — shared across every page (auth.js).
+
+   .auth-check: applied to <html> before the page's own auth
+   guard script has decided whether this visitor belongs here.
+   Removed (or the whole page redirected) synchronously by that
+   guard, so real content never paints for someone who shouldn't
+   see it — no flash of stale/guest data on load.
+
+   .lw-bfcache-hide: applied to <html> on 'pagehide' (auth.js),
+   right before the browser freezes the page for the
+   back/forward cache. If a back/forward gesture restores that
+   frozen frame for even a moment before the forced reload takes
+   over, this keeps it blank instead of showing whatever was on
+   screen the instant the user navigated away — which, right
+   after a sign-out, could be another account's data.
+   ============================================================ */
+html.auth-check body,
+html.lw-bfcache-hide body {
+  visibility: hidden !important;
+}
+
 @media (min-width: 721px) {
   /* Hard guarantee: vertical scrolling must always work at desktop
      widths. This overrides anything else in the cascade (short of an

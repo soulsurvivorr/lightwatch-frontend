@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="auth-check">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -55,9 +55,9 @@
   <script src="../Js/config.js?v=1.0.14"></script>
   <script src="../Js/auth.js?v=1.0.14"></script>
   <script>
-    const session = typeof getSession === 'function' ? getSession() : null;
-    if (!session) {
-      window.location.replace('../index.html');
+    requireAuth();
+    if (!window.__lwAuthRedirecting) {
+      document.documentElement.classList.remove('auth-check');
     }
   </script>
 

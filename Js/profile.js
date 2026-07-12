@@ -457,12 +457,16 @@ function renderSignedOutEverywhere() {
 let profileLoaderSafetyTimer = null;
 
 function showProfileLoader(maxDuration = 8000) {
-    const skeletonKey = document.body?.dataset.skeletonKey;
-    const seenKey = skeletonKey ? `lw_skeleton_seen_${skeletonKey}` : null;
-    if (seenKey && localStorage.getItem(seenKey) === '1') {
-        return;
-    }
-
+    // NOTE: this used to skip showing the loader entirely once a
+    // "lw_skeleton_seen_<key>" flag was set from a prior visit — the
+    // intent was to avoid re-flashing the skeleton for fast repeat
+    // visits. In practice it meant the skeleton NEVER showed again
+    // after the very first load: the raw/empty page painted instantly
+    // and real data popped in 1-2s later once the fetch resolved,
+    // which reads as broken/janky rather than fast. The loader is
+    // cheap to show and gets cleared the moment cached data (or a
+    // fresh fetch) is ready, so there's no real cost to always showing
+    // it — just remove the skip.
     const connectionType = navigator?.connection?.effectiveType || '';
     const isSlowConnection = /(^|-)2g$|^3g$/.test(connectionType) || connectionType === 'slow-2g';
     const safetyDuration = Math.max(maxDuration, isSlowConnection ? 20000 : 12000);
@@ -480,10 +484,6 @@ function showProfileLoader(maxDuration = 8000) {
 
 function hideProfileLoader() {
     clearTimeout(profileLoaderSafetyTimer);
-    const skeletonKey = document.body?.dataset.skeletonKey;
-    if (skeletonKey) {
-        localStorage.setItem(`lw_skeleton_seen_${skeletonKey}`, '1');
-    }
     if (document.body?.dataset.accountExtrasLoading !== '1') {
         document.body?.classList.remove('page-data-loading');
     }
