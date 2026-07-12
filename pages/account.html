@@ -1139,8 +1139,12 @@
               <span class="card__title">Edit city/town</span>
               <span class="card__meta" id="cityEditCardMeta">One-time correction only</span>
             </span>
+            <button type="button" class="card__collapse-btn" id="cityEditCollapseBtn" aria-expanded="true" aria-controls="cityEditCollapseBody" aria-label="Collapse edit city/town">
+              <svg class="card__collapse-chevron" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="m4 6 4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
           </div>
 
+          <div class="card__collapse-body" id="cityEditCollapseBody">
           <!-- Shown once the one-time edit has been used: a plain, clearly
                non-editable summary instead of a disabled-looking form. -->
           <div id="cityEditLockedView" class="locked-field" hidden>
@@ -1166,6 +1170,7 @@
               <button type="submit" class="btn btn--primary btn--block" id="cityEditSaveBtn" disabled>Save city/town</button>
               <p id="cityEditMessage" style="margin-top:8px;font-size:0.76rem;color:var(--text-faint);"></p>
             </form>
+          </div>
           </div>
         </div>
 
