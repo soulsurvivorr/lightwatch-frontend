@@ -150,6 +150,19 @@ function computeRepliedToIds(chats) {
     return ids;
 }
 
+// The "seen" eye is only ever eligible to appear on ONE bubble at a time:
+// the user's most recently sent message. Older own-messages never show
+// it, even if they were seen too — otherwise every bubble down the
+// thread ends up with an eye and it stops meaning "this is where the
+// conversation currently stands". `chats` is newest-first (API order),
+// so the first own message we hit IS the latest one.
+function getLatestOwnMessageId(chats, myId) {
+    if (!myId) return null;
+    const latest = chats.find(c => resolveUserId(c) === myId);
+    if (!latest) return null;
+    return String(latest._id || latest.id || '');
+}
+
 // Read-receipt bookkeeping: which message ids we've already told the
 // server we've seen, so polling every 5s doesn't re-POST the same ids
 // forever.
@@ -176,6 +189,8 @@ function markVisibleMessagesSeen(chats) {
 // messages that are already rendered.
 function syncSeenIndicators(chats) {
     const repliedToIds = computeRepliedToIds(chats);
+    const myId = getCurrentUserId();
+    const latestOwnId = getLatestOwnMessageId(chats, myId);
     const byId = new Map(chats.map(c => [String(c._id || c.id || ''), c]));
     chatThread?.querySelectorAll('.chat-message--own').forEach(el => {
         const id = el.dataset.chatId;
@@ -185,7 +200,8 @@ function syncSeenIndicators(chats) {
         const chat = byId.get(id);
         const hasBeenSeen = Boolean(chat?.seenBy && chat.seenBy.length > 0);
         const hasReply = repliedToIds.has(id);
-        seenEl.classList.toggle('is-visible', hasBeenSeen && !hasReply);
+        const isLatestOwn = id === latestOwnId;
+        seenEl.classList.toggle('is-visible', isLatestOwn && hasBeenSeen && !hasReply);
     });
 }
 
@@ -239,7 +255,7 @@ setInterval(refreshChatTimestamps, 30000);
 // -------------------------------------------------------
 // BUILD A MESSAGE ELEMENT
 // -------------------------------------------------------
-function buildMessageEl(chat, isOwn, enterAnimationClass, hasReply) {
+function buildMessageEl(chat, isOwn, enterAnimationClass, hasReply, isLatestOwn) {
     const el = document.createElement('div');
     el.className = isOwn ? "chat-message chat-message--own" : "chat-message";
     if (enterAnimationClass) el.classList.add(enterAnimationClass);
@@ -288,17 +304,23 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, hasReply) {
     footer.className = 'chat-message__footer';
     footer.appendChild(time);
 
-    // "Seen" eye — only shown on your own messages, and only until
-    // someone replies to it (see syncSeenIndicators, which keeps this
-    // in sync as new seenBy/reply data comes in from polling).
+    // "Seen" eye — lives OUTSIDE the bubble (bottom-left, overhanging the
+    // card) rather than inline with the timestamp, so it reads as a
+    // status pinned to the message rather than another piece of its
+    // content. Only ever shown on the single most recent own message
+    // (isLatestOwn), and only until someone replies to it — see
+    // syncSeenIndicators, which keeps this in sync as new seenBy/reply
+    // data comes in from polling, including moving it off this bubble
+    // onto a newer one once one exists.
     if (isOwn) {
         const seenEl = document.createElement('span');
         seenEl.className = 'chat-message__seen';
         seenEl.title = 'Seen';
-        seenEl.innerHTML = '<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M1 8S3.5 3 8 3s7 5 7 5-2.5 5-7 5-7-5-7-5Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><circle cx="8" cy="8" r="1.8" fill="currentColor"/></svg>';
+        seenEl.setAttribute('aria-hidden', 'true');
+        seenEl.textContent = '👀';
         const hasBeenSeen = Boolean(chat.seenBy && chat.seenBy.length > 0);
-        seenEl.classList.toggle('is-visible', hasBeenSeen && !hasReply);
-        footer.appendChild(seenEl);
+        seenEl.classList.toggle('is-visible', Boolean(isLatestOwn) && hasBeenSeen && !hasReply);
+        el.appendChild(seenEl);
     }
 
     const actions = document.createElement('div');
@@ -460,12 +482,12 @@ function scrollChatToBottom(smooth) {
 
 chatScrollBottomBtn?.addEventListener('click', () => scrollChatToBottom(true));
 
-function addToThread(chat, isOwn, scrollDown, animate, hasReply) {
+function addToThread(chat, isOwn, scrollDown, animate, hasReply, isLatestOwn) {
     // "Rise" for a message you just sent, "arrive" for one that just
     // came in from someone else — same idea (flows in from the bottom),
     // slightly different feel so sent vs. received still reads distinctly.
     const enterAnimationClass = animate ? (isOwn ? 'chat-message--sent-in' : 'chat-message--received-in') : null;
-    const el = buildMessageEl(chat, isOwn, enterAnimationClass, hasReply);
+    const el = buildMessageEl(chat, isOwn, enterAnimationClass, hasReply, isLatestOwn);
     chatThread.appendChild(el);
     if (scrollDown || isNearBottom) {
         chatThread.scrollTop = chatThread.scrollHeight;
@@ -508,11 +530,12 @@ function loadChatHistory() {
         .then(chats => {
             const myId = getCurrentUserId();
             const repliedToIds = computeRepliedToIds(chats);
+            const latestOwnId = getLatestOwnMessageId(chats, myId);
             // Reverse: API returns newest-first, we want oldest-first
             ;[...chats].reverse().forEach(chat => {
                 const id = chat._id || chat.id;
                 if (id) knownIds.add(id);
-                addToThread(chat, resolveUserId(chat) === myId, false, false, repliedToIds.has(id));
+                addToThread(chat, resolveUserId(chat) === myId, false, false, repliedToIds.has(id), String(id) === latestOwnId);
             });
             chatThread.scrollTop = chatThread.scrollHeight;
             focusTargetMessageIfPresent();
@@ -546,12 +569,13 @@ function startPolling() {
             const chats = await res.json();
             const myId  = getCurrentUserId();
             const repliedToIds = computeRepliedToIds(chats);
+            const latestOwnId = getLatestOwnMessageId(chats, myId);
 
             ;[...chats].reverse().forEach(chat => {
                 const id = chat._id || chat.id;
                 if (!id || knownIds.has(id)) return; // skip already-shown messages
                 knownIds.add(id);
-                addToThread(chat, resolveUserId(chat) === myId, false, true, repliedToIds.has(id));
+                addToThread(chat, resolveUserId(chat) === myId, false, true, repliedToIds.has(id), String(id) === latestOwnId);
                 focusTargetMessageIfPresent();
             });
 
@@ -964,7 +988,7 @@ chatForm?.addEventListener('submit', async (e) => {
 
         if (realId && !knownIds.has(realId)) {
             knownIds.add(realId);           // tell poll: skip this one
-            addToThread(saved, true, true, true); // show it now, scroll to it, animate it in
+            addToThread(saved, true, true, true, false, true); // show it now, scroll to it, animate it in; it's the newest own message so far
         }
 
         replyTarget = null;

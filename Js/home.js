@@ -73,9 +73,10 @@ function renderSecondaryLocationChip() {
     chip.hidden = false;
 
     document.getElementById('secondaryLocationPanelBadge').textContent = label;
-    const secTitle = [sec.city, sec.region].filter(Boolean).join(', ');
+    // Only the city (plus the label shown above, e.g. "Work"), never the
+    // region — the region is redundant here and just adds noise.
     const titleEl = document.getElementById('secondaryLocationPanelTitle');
-    if (titleEl) titleEl.textContent = secTitle || '—';
+    if (titleEl) titleEl.textContent = sec.city || '—';
 }
 
 // -----------------------------------------------------

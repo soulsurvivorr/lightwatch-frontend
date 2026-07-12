@@ -1455,11 +1455,18 @@
 .location-expand-overlay {
   position: fixed;
   inset: 0;
-  z-index: 45;
+  /* Above #bottom_nav_wrapper (z-index: 45, styles.css) — that wrapper
+     comes later in the DOM and shared that same z-index, so on mobile
+     it was painting on top of this panel's lower edge (its notify
+     toggle / action row) and covering the very controls the sheet
+     exists to show. */
+  z-index: 60;
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  padding: 0;
+  /* Keep the sheet's bottom clear of the floating bottom-nav pill
+     instead of letting it run underneath it. */
+  padding: 0 0 calc(env(safe-area-inset-bottom, 0px) + 92px);
   /* Lighter + no blur: blur() is expensive to composite on mid/low-end
      phones and was the main reason this felt sluggish to open. A plain
      translucent scrim is instant and still keeps the sheet readable
@@ -1480,8 +1487,9 @@
   max-width: 440px;
   background: linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(250,247,241,0.99) 100%);
   border: 1px solid rgba(214, 162, 74, 0.18);
-  border-bottom: none;
-  border-radius: 20px 20px 0 0;
+  /* Floats fully above the bottom nav now instead of being docked to
+     the screen edge, so all four corners round the same way. */
+  border-radius: 20px;
   box-shadow: 0 -20px 60px rgba(0,0,0,0.28);
   padding: 20px 22px 22px;
   /* Single-stage entrance: transform + opacity only. The old version
@@ -1494,7 +1502,10 @@
   transform: translateY(100%);
   opacity: 0;
   transition: transform 0.22s cubic-bezier(.22,.9,.32,1), opacity 0.18s ease;
-  max-height: 88vh;
+  /* Capped well under full-screen on small devices — this is a focused
+     status card, not a page takeover, and the cap also guarantees it
+     can never grow back down into the nav clearance above. */
+  max-height: min(64vh, 520px);
   overflow-y: auto;
 }
 .location-expand-overlay--open .location-expand-panel {
@@ -1503,15 +1514,33 @@
 }
 @media (min-width: 640px) {
   .location-expand-overlay { align-items: center; padding: 20px; }
-  .location-expand-panel { border-radius: 20px; border-bottom: 1px solid rgba(214, 162, 74, 0.18); transform: translateY(10px) scale(0.98); }
+  .location-expand-panel { transform: translateY(10px) scale(0.98); max-height: 78vh; }
   .location-expand-overlay--open .location-expand-panel { transform: translateY(0) scale(1); }
 }
+/* Small drag-handle affordance at the top — a light visual cue that this
+   is a sheet you can dismiss, and it fills the space above the title so
+   the panel doesn't open with its content pressed flush to the top edge. */
+.location-expand-panel::before {
+  content: "";
+  display: block;
+  width: 36px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.12);
+  margin: -6px auto 14px;
+}
+@media (min-width: 640px) {
+  .location-expand-panel::before { display: none; }
+}
+
 .location-expand-panel__head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
 }
 .location-expand-panel__eyebrow {
   display: block;
@@ -1554,10 +1583,11 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 14px;
+  padding: 14px 16px;
   border-radius: 14px;
-  background: rgba(28, 140, 122, 0.07);
-  border: 1px solid rgba(28, 140, 122, 0.16);
+  background: linear-gradient(135deg, rgba(28, 140, 122, 0.09), rgba(28, 140, 122, 0.03));
+  border: 1px solid rgba(28, 140, 122, 0.18);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
   margin-bottom: 14px;
 }
 .location-expand-status__dot {
@@ -1568,8 +1598,15 @@
   background: #9AA1AC;
   box-shadow: 0 0 0 4px rgba(154,161,172,0.18);
 }
-.location-expand-status__dot--on { background: #3DD9C2; box-shadow: 0 0 0 4px rgba(61,217,194,0.22); }
+.location-expand-status__dot--on { background: #3DD9C2; box-shadow: 0 0 0 4px rgba(61,217,194,0.22); animation: lwSecondaryDotPulse 2s ease-in-out infinite; }
 .location-expand-status__dot--off { background: #E5484D; box-shadow: 0 0 0 4px rgba(229,72,77,0.2); }
+@keyframes lwSecondaryDotPulse {
+  0%, 100% { box-shadow: 0 0 0 4px rgba(61,217,194,0.22); }
+  50% { box-shadow: 0 0 0 7px rgba(61,217,194,0.12); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .location-expand-status__dot--on { animation: none; }
+}
 .location-expand-status__label { font-size: 0.92rem; font-weight: 600; color: #1C1F26; }
 .location-expand-status__sub { font-size: 0.76rem; color: #6B7280; margin-top: 2px; }
 
@@ -1585,6 +1622,11 @@
   border-radius: 12px;
   background: rgba(0,0,0,0.03);
   border: 1px solid rgba(0,0,0,0.05);
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.location-expand-stat:hover {
+  background: rgba(28, 140, 122, 0.06);
+  border-color: rgba(28, 140, 122, 0.16);
 }
 .location-expand-stat strong {
   display: block;
@@ -1619,6 +1661,14 @@
   margin-bottom: 14px;
   cursor: pointer;
   user-select: none;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+}
+.location-expand-notify:hover {
+  background: rgba(74, 144, 217, 0.11);
+  border-color: rgba(74, 144, 217, 0.3);
+}
+.location-expand-notify:active {
+  transform: scale(0.99);
 }
 .location-expand-notify input {
   position: absolute;
@@ -2349,14 +2399,15 @@ body.modal-open {
   word-break: break-word;
 }
 
-/* Everyone/global audience: each handle gets its own consistent card
-   color (set via --msg-accent in chat.js) so a busy multi-person feed
-   reads at a glance instead of every bubble looking identical. Mixed
-   at strengths high enough to actually register as "this bubble looks
-   different," not just a faint suggestion of one. */
+/* Everyone/global audience: bubbles themselves stay a neutral gray
+   (same panel background/border every other message uses) so a busy
+   multi-person feed doesn't turn into a wall of random colors. The
+   per-handle identity (set via --msg-accent in chat.js) is carried
+   entirely by the author name below instead — enough to tell people
+   apart at a glance without tinting the whole card. */
 .chat-message--tinted {
-  border-color: color-mix(in srgb, var(--msg-accent) 65%, var(--border-soft));
-  background: color-mix(in srgb, var(--msg-accent) 26%, var(--bg-panel-raised));
+  border-color: var(--border-soft);
+  background: var(--bg-panel-raised);
 }
 
 .chat-message--tinted .chat-message__author {
@@ -2378,25 +2429,32 @@ body.modal-open {
   color: var(--text-faint);
 }
 
-/* "Seen" eye — sits next to the timestamp on your own bubbles once the
-   recipient's message-seen ping comes back, and disappears again the
-   moment someone replies to that message (see chat.js
-   syncSeenIndicators). Hidden by default rather than just transparent,
-   so it doesn't reserve empty space in every own-message bubble. */
+/* "Seen" eye — lives OUTSIDE the bubble, hanging off its bottom-left
+   corner, rather than inline with the timestamp inside the card. Only
+   ever appears on your single most recent message (see chat.js
+   syncSeenIndicators / getLatestOwnMessageId) and disappears again the
+   moment someone replies to it. Hidden by default rather than just
+   transparent, so it doesn't reserve empty space on every own-message
+   bubble. */
 .chat-message__seen {
   display: none;
+  position: absolute;
+  left: 6px;
+  bottom: -16px;
   align-items: center;
-  color: var(--teal);
+  justify-content: center;
+  font-size: 12px;
+  line-height: 1;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25));
   opacity: 0;
-  transition: opacity 0.2s ease;
+  transform: translateY(-2px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  pointer-events: none;
 }
 .chat-message__seen.is-visible {
   display: inline-flex;
   opacity: 1;
-}
-.chat-message__seen svg {
-  width: 10px;
-  height: 10px;
+  transform: translateY(0);
 }
 
 @keyframes chat-message-in {
@@ -2411,9 +2469,16 @@ body.modal-open {
 }
 
 .chat-message--own {
+  position: relative;
   margin-left: auto;
   border-color: color-mix(in srgb, var(--teal) 55%, var(--border-soft));
   background: color-mix(in srgb, var(--teal) 12%, var(--bg-panel-raised));
+}
+
+/* Reserve a little breathing room below the bubble so the outside eye
+   doesn't sit flush against (or overlap) whatever message comes next. */
+.chat-message--own:has(.chat-message__seen.is-visible) {
+  margin-bottom: 14px;
 }
 
 /* ---- Display preferences, applied live (Account → Display) ---- */
