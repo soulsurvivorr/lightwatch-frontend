@@ -608,18 +608,38 @@ async function loadAccountExtras() {
 }
 
 // ------------------------------------------------------------
-// COLLAPSIBLE CARDS — chevron beside "My locations" and
-// "Notifications" headers. Same measure-then-animate approach as
+// COLLAPSIBLE CARDS — chevron beside "My locations", "Notifications",
+// and "Display" headers. Same measure-then-animate approach as
 // initAccordions() above (max-height driven off scrollHeight), just
 // applied to a whole card body instead of a single accordion panel.
+//
+// My Locations, Notifications, and Display always start collapsed on
+// every page load (no memory of prior state) — the user opens whichever
+// section they need for that visit.
 // ------------------------------------------------------------
+// Cards that should always start collapsed on every page load, regardless
+// of whether the user opened them last time.
+const COLLAPSE_BY_DEFAULT_IDS = ['myLocationsCollapseBtn', 'notificationsCollapseBtn', 'displayPrefsCollapseBtn'];
+
 function initCollapsibleCards() {
     document.querySelectorAll('.card__collapse-btn').forEach(btn => {
         const body = document.getElementById(btn.getAttribute('aria-controls'));
         if (!body) return;
 
-        // Start fully open at natural height so nothing clips on load.
-        body.style.maxHeight = 'none';
+        if (COLLAPSE_BY_DEFAULT_IDS.includes(btn.id)) {
+            // Collapse instantly on load — no shrink animation on first
+            // paint, just start closed the way an already-collapsed card
+            // normally would.
+            body.style.transition = 'none';
+            body.style.maxHeight = '0px';
+            body.dataset.collapsed = 'true';
+            btn.setAttribute('aria-expanded', 'false');
+            btn.setAttribute('aria-label', btn.getAttribute('aria-label').replace('Collapse', 'Expand'));
+            requestAnimationFrame(() => { body.style.transition = ''; });
+        } else {
+            // Start fully open at natural height so nothing clips on load.
+            body.style.maxHeight = 'none';
+        }
 
         btn.addEventListener('click', () => {
             const isOpen = btn.getAttribute('aria-expanded') === 'true';
@@ -651,39 +671,6 @@ function initCollapsibleCards() {
             if (body && body.style.maxHeight !== 'none') body.style.maxHeight = body.scrollHeight + 'px';
         });
     });
-
-    // ---- Display preferences: collapsed by default, until opened once ----
-    // First-ever visit to Account: this card starts collapsed so the more
-    // frequently-used cards (locations, notifications) get the attention.
-    // The moment the user opens it themselves, that choice is remembered
-    // (DISPLAY_PREFS_OPENED_KEY) — every visit after that, it loads already
-    // expanded instead of going back to collapsed.
-    const DISPLAY_PREFS_OPENED_KEY = 'lw_display_prefs_opened';
-    const displayBtn = document.getElementById('displayPrefsCollapseBtn');
-    const displayBody = document.getElementById('displayPrefsCollapseBody');
-    if (displayBtn && displayBody) {
-        const everOpened = localStorage.getItem(DISPLAY_PREFS_OPENED_KEY) === '1';
-        if (!everOpened) {
-            // Collapse instantly on load — no shrink animation on first
-            // paint, just start closed the way an already-collapsed card
-            // normally would.
-            displayBody.style.transition = 'none';
-            displayBody.style.maxHeight = '0px';
-            displayBody.dataset.collapsed = 'true';
-            displayBtn.setAttribute('aria-expanded', 'false');
-            displayBtn.setAttribute('aria-label', 'Expand display preferences');
-            requestAnimationFrame(() => { displayBody.style.transition = ''; });
-        }
-
-        // Runs after the generic toggle listener above (attached earlier
-        // in this same querySelectorAll loop), so aria-expanded already
-        // reflects the post-click state by the time this checks it.
-        displayBtn.addEventListener('click', () => {
-            if (displayBtn.getAttribute('aria-expanded') === 'true') {
-                localStorage.setItem(DISPLAY_PREFS_OPENED_KEY, '1');
-            }
-        });
-    }
 }
 
 // ------------------------------------------------------------
