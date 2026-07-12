@@ -44,7 +44,9 @@ function getSession() {
 
 // ── Save session after successful verification ────────────────
 function saveSession(user, token, rememberMe) {
-    sessionStorage.removeItem('lw_home_reminder_seen');
+    // Note: 'lw_home_reminder_seen' is NOT touched here — it's a
+    // permanent per-device flag (localStorage, see home-reminder.js),
+    // not a per-session one, so signing in shouldn't reset it.
 
     if (rememberMe) {
         localStorage.setItem(AUTH_KEY,        token);
@@ -73,12 +75,16 @@ function saveSession(user, token, rememberMe) {
 
 // ── Wipe everything cleanly ───────────────────────────────────
 function clearSession() {
+    // Note: 'lw_home_reminder_seen' is deliberately NOT in this list —
+    // it's a permanent per-device "have they ever seen this" flag
+    // (localStorage, see home-reminder.js), not session state, so
+    // signing out shouldn't reset it either.
     [AUTH_KEY, USER_KEY, REMEMBER_KEY,
      TEMP_AUTH_KEY, TEMP_USER_KEY, TEMP_EXPIRES_KEY,
      'currentUserId', 'currentUserData', 'chatHandle',
      'maskedContact', 'signupUser', 'userIdentifier',
     'pendingUserId', 'rememberMePending',
-    'lw_home_reminder_seen', 'lw_skip_disclaimer_once'
+    'lw_skip_disclaimer_once'
     ].forEach(k => {
         localStorage.removeItem(k);
         sessionStorage.removeItem(k);
@@ -127,11 +133,161 @@ function showPageTransitionOverlay(message = 'Loading…') {
     return overlay;
 }
 
+// ── App "launch" overlay: same black full-bleed + logo as above, but
+//    wordless, with the logo doing a soft entrance and — when
+//    dismissed — an "opens wide" reveal (scales up and fades out over
+//    the real page underneath), instead of the pulsing loop used
+//    while waiting. Think of it as the app itself opening, X/Twitter-
+//    style, rather than a generic loading state.
+//
+//    This is ONLY for one scenario: someone already registered and
+//    already signed in on this device reopens the app after fully
+//    closing it. It is NOT used for signing in, signing up, or
+//    verification — those keep the ordinary showPageTransitionOverlay
+//    text version. See initColdStartLaunchOverlay() below for the
+//    actual trigger. ──
+let appLaunchOverlayEl = null;
+
+function showAppLaunchOverlay() {
+    if (appLaunchOverlayEl) return appLaunchOverlayEl;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'lwAppLaunchOverlay';
+    overlay.setAttribute('aria-hidden', 'true');
+    overlay.style.cssText = `
+        position: fixed; inset: 0; z-index: 100000;
+        display: flex; align-items: center; justify-content: center;
+        background: #1C1F26;
+        animation: lwLaunchFadeIn 0.16s ease both;
+    `;
+    overlay.innerHTML = `
+        <style>
+            @keyframes lwLaunchFadeIn {
+                from { opacity: 0; }
+                to   { opacity: 1; }
+            }
+            /* Entrance: logo settles in with a small overshoot, once —
+               no looping pulse, this isn't meant to read as "waiting". */
+            @keyframes lwLaunchIntro {
+                0%   { transform: scale(0.72); opacity: 0; }
+                60%  { transform: scale(1.06); opacity: 1; }
+                100% { transform: scale(1);    opacity: 1; }
+            }
+            /* Exit: logo blooms outward past the edges of the screen
+               while the black backdrop fades, so the real page reads
+               as being "opened into" rather than swapped underneath. */
+            @keyframes lwLaunchOpen {
+                0%   { transform: scale(1);    opacity: 1; }
+                35%  { transform: scale(1.18); opacity: 1; }
+                100% { transform: scale(16);   opacity: 0; }
+            }
+            #lwAppLaunchOverlay .lw-launch-mark {
+                width: 76px; height: 76px; border-radius: 20px;
+                animation: lwLaunchIntro 0.5s cubic-bezier(.2,.8,.2,1) both;
+            }
+            #lwAppLaunchOverlay.is-opening {
+                animation: none;
+                transition: opacity 0.5s ease 0.05s;
+                opacity: 0;
+            }
+            #lwAppLaunchOverlay.is-opening .lw-launch-mark {
+                animation: lwLaunchOpen 0.55s cubic-bezier(.4,0,.2,1) both;
+            }
+        </style>
+        <img class="lw-launch-mark" src="/images/dev-logo.png" alt="LightWatch">
+    `;
+    document.body.appendChild(overlay);
+    appLaunchOverlayEl = overlay;
+    return overlay;
+}
+
+// Plays the "opens wide" reveal, then removes the overlay.
+function dismissAppLaunchOverlay() {
+    if (!appLaunchOverlayEl) return;
+    const el = appLaunchOverlayEl;
+    appLaunchOverlayEl = null;
+    el.classList.add('is-opening');
+    setTimeout(() => el.remove(), 600);
+}
+
 // Kept as its own name for readability at sign-out call sites; it's
-// just the shared overlay with sign-out's copy.
+// just the shared overlay with sign-out's copy. (Sign-out does NOT use
+// the wordless launch overlay below — that one is reserved for the
+// cold-start-with-existing-session case only.)
 function showSignOutOverlay() {
     return showPageTransitionOverlay('Signing out…');
 }
+
+// ── Hand-off for the "opens wide" reveal across a real page
+//    navigation. A page load and the page it redirects to are two
+//    separate documents/JS contexts, so the overlay can't just
+//    animate straight through one continuous script — instead,
+//    whoever shows it right before redirecting to home.html marks the
+//    hand-off with markAppLaunchPending(). home.html then shows the
+//    overlay itself the instant auth.js runs there (before its
+//    skeleton can flash), and dismisses it with the opening animation
+//    once the real page content is ready. ──
+const LAUNCH_OVERLAY_PENDING_KEY = 'lw_launch_overlay_pending';
+
+function markAppLaunchPending() {
+    try { sessionStorage.setItem(LAUNCH_OVERLAY_PENDING_KEY, '1'); } catch {}
+}
+
+function consumeAppLaunchPending() {
+    try {
+        const pending = sessionStorage.getItem(LAUNCH_OVERLAY_PENDING_KEY) === '1';
+        sessionStorage.removeItem(LAUNCH_OVERLAY_PENDING_KEY);
+        return pending;
+    } catch {
+        return false;
+    }
+}
+
+// ── The actual trigger for the wordless splash lives in index.html
+//    itself, not here. index.html has its own inline auth-check
+//    script (in <head>, before this file even loads) that already
+//    redirects straight to home.html when a session exists — that's
+//    the correct place to show the overlay, since by the time this
+//    file's <script src> at the bottom of index.html's body would run,
+//    that earlier redirect has usually already fired. See index.html
+//    for the overlay markup + trigger. ──
+
+// On home.html itself: if a launch was just requested, show the
+// overlay immediately (before the skeleton can flash) and dismiss it
+// with the opening animation once the real page content is ready.
+(function initAppLaunchOverlayOnHome() {
+    if (!/\/home\.html$/i.test(window.location.pathname)) return;
+    if (!consumeAppLaunchPending()) return;
+
+    showAppLaunchOverlay();
+
+    let released = false;
+    let fallback;
+    const release = () => {
+        if (released) return;
+        released = true;
+        clearTimeout(fallback);
+        observer.disconnect();
+        dismissAppLaunchOverlay();
+    };
+
+    // Primary signal: the event the page-ready flow already dispatches
+    // once real content replaces the skeleton (see home.js).
+    window.addEventListener('lw-page-revealed', release, { once: true });
+
+    // Backup signal: same class-removal check home-reminder.js already
+    // relies on, in case the event above isn't dispatched in every path.
+    const observer = new MutationObserver(() => {
+        if (!document.body.classList.contains('app-loading') &&
+            !document.body.classList.contains('page-data-loading')) {
+            release();
+        }
+    });
+    observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+
+    // Last resort so the overlay can never get stuck up forever.
+    fallback = setTimeout(release, 2500);
+})();
 
 // ── Sign out — works from ANY page ───────────────────────────
 let signOutInProgress = false;

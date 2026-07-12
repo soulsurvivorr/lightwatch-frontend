@@ -1,3 +1,9 @@
+// Shown once per DEVICE, the first time home.html is ever reached —
+// not once per app session. Backed by localStorage (survives closing
+// the app/browser and signing out again), same pattern as
+// ONBOARDING_SEEN_KEY in onboarding.js. It deliberately does NOT get
+// cleared on sign-in/sign-out (see auth.js) — once a device has seen
+// it, it's seen it for good.
 const HOME_REMINDER_SEEN_KEY = 'lw_home_reminder_seen';
 let homeReminderDismissed = false;
 let homeReminderObserver = null;
@@ -17,7 +23,13 @@ function clearPendingReminderOpen() {
 function shouldShowHomeReminder() {
   if (typeof getSession === 'function' && !getSession()) return false;
 
-  return sessionStorage.getItem(HOME_REMINDER_SEEN_KEY) !== '1';
+  try {
+    return localStorage.getItem(HOME_REMINDER_SEEN_KEY) !== '1';
+  } catch {
+    // Storage blocked (e.g. private browsing) — fall back to showing
+    // it; that's a much smaller annoyance than a hard error.
+    return true;
+  }
 }
 
 function closeHomeReminder() {
@@ -28,7 +40,7 @@ function closeHomeReminder() {
   document.body.classList.remove('modal-open');
   overlay.hidden = true;
   overlay.classList.remove('is-open');
-  sessionStorage.setItem(HOME_REMINDER_SEEN_KEY, '1');
+  try { localStorage.setItem(HOME_REMINDER_SEEN_KEY, '1'); } catch {}
 }
 
 function openHomeReminder() {

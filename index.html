@@ -18,7 +18,67 @@
     html.auth-check body {
       visibility: hidden;
     }
+
+    /* Wordless "opens wide" launch splash — shown ONLY when the
+       auth-check script below finds an existing session and is about
+       to redirect straight to home.html (an already-registered user
+       reopening the app after closing it). It sits on top of the
+       hidden login form: visibility:visible here overrides the
+       html.auth-check body{visibility:hidden} rule above for this one
+       element, so the splash shows without ever letting the login
+       form flash first. Stays hidden/inert otherwise. */
+    #appLaunchOverlay {
+      visibility: hidden;
+      opacity: 0;
+      position: fixed;
+      inset: 0;
+      z-index: 100000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #1C1F26;
+      pointer-events: none;
+    }
+    #appLaunchOverlay.is-active {
+      visibility: visible;
+      opacity: 1;
+      transition: opacity 0.16s ease;
+    }
+    @keyframes lwLaunchIntro {
+      0%   { transform: scale(0.72); opacity: 0; }
+      60%  { transform: scale(1.06); opacity: 1; }
+      100% { transform: scale(1);    opacity: 1; }
+    }
+    #appLaunchOverlay__mark {
+      width: 76px;
+      height: 76px;
+      border-radius: 20px;
+      animation: lwLaunchIntro 0.5s cubic-bezier(.2,.8,.2,1) both;
+    }
   </style>
+  <link rel="manifest" href="/manifest.json?v=1.0.15" />
+  <script src="./Js/app-startup.js?v=1.0.15" defer></script>
+  <meta name="theme-color" content="#1C1F26" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/dev-logo.png?v=1.0.15" />
+  <link rel="apple-touch-icon" sizes="192x192" href="/images/dev-logo.png?v=1.0.15" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="LightWatch" />
+  <title>LightWatch - Sign In</title>
+  <link rel="icon" href="/images/dev-logo.png?v=1.0.15" type="image/png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./css/styles.css?v=1.0.15" />
+  <link rel="stylesheet" href="./css/login.css?v=1.0.15" />
+  <link rel="stylesheet" href="./css/onboarding.css?v=1.0.15" />
+</head>
+<body>
+  <!-- See #appLaunchOverlay CSS in <head> and the auth-check script
+       above — this only ever becomes visible for an already-signed-in
+       device that's about to be redirected to home.html. -->
+  <div id="appLaunchOverlay" aria-hidden="true">
+    <img id="appLaunchOverlay__mark" src="/images/dev-logo.png" alt="">
+  </div>
+
   <script>
     (function () {
       try {
@@ -51,7 +111,20 @@
         }
 
         if (hasSession) {
-          window.location.replace('./pages/home.html');
+          // This runs at the very top of <body>, right after the
+          // overlay markup above — html.auth-check still has body
+          // hidden at this point (that class is set from page load,
+          // not by JS), so activating the overlay here still shows it
+          // with zero flash of the login form underneath.
+          const overlay = document.getElementById('appLaunchOverlay');
+          if (overlay) overlay.classList.add('is-active');
+          try { sessionStorage.setItem('lw_launch_overlay_pending', '1'); } catch {}
+          // Brief pause so the entrance animation actually gets a
+          // frame to paint before navigation tears the page down —
+          // home.html picks the splash back up the instant it loads
+          // (see auth.js) and plays the "opens wide" reveal there
+          // once its real content is ready.
+          setTimeout(() => window.location.replace('./pages/home.html'), 180);
           return;
         }
       } catch {
@@ -61,22 +134,7 @@
       document.documentElement.classList.remove('auth-check');
     })();
   </script>
-  <link rel="manifest" href="/manifest.json?v=1.0.15" />
-  <script src="./Js/app-startup.js?v=1.0.15" defer></script>
-  <meta name="theme-color" content="#1C1F26" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/images/dev-logo.png?v=1.0.15" />
-  <link rel="apple-touch-icon" sizes="192x192" href="/images/dev-logo.png?v=1.0.15" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-title" content="LightWatch" />
-  <title>LightWatch - Sign In</title>
-  <link rel="icon" href="/images/dev-logo.png?v=1.0.15" type="image/png" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="./css/styles.css?v=1.0.15" />
-  <link rel="stylesheet" href="./css/login.css?v=1.0.15" />
-  <link rel="stylesheet" href="./css/onboarding.css?v=1.0.15" />
-</head>
-<body>
+
   <!-- First-visit walkthrough. Only ever seen by signed-out visitors,
        since the auth-check script above redirects anyone with a
        session straight to home.html before this page renders. Shown
