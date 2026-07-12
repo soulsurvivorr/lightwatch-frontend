@@ -3,31 +3,34 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <script>
-    (function () {
-      const key = 'lw_theme_pref';
-      const isLaptop = window.matchMedia('(min-width: 1024px)').matches;
-      const stored = localStorage.getItem(key);
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      const theme = isLaptop ? ((stored === 'dark' || stored === 'light') ? stored : (prefersDark ? 'dark' : 'light')) : 'light';
-      document.documentElement.setAttribute('data-theme', theme);
-      document.documentElement.style.setProperty('color-scheme', theme);
-    })();
-  </script>
   <style>
-    /* Paints dark from the very first frame, before any JS runs —
-       closes the white flash iOS/Android show while parsing the
-       rest of <head>, prior to the auth-check script deciding
-       whether to reveal the login form or the launch overlay.
-       color-scheme is forced with !important because the theme
-       script above sets an inline `color-scheme:light` on <html>
-       for every mobile device (by design — the app itself is
-       light-themed on mobile) which would otherwise beat this and
-       let the browser paint its light UA-default canvas for a
-       frame before any of this CSS is even parsed. */
+    /* MUST come before the theme-detection script below, and before
+       every other tag — this is what actually closes the iOS white
+       flash. The theme script sets an inline `color-scheme:light` on
+       <html> for every mobile device (by design — the app itself is
+       light-themed on mobile). Inline styles apply the instant that
+       line of JS runs, which is BEFORE a <style> block placed after
+       it has even been parsed. That left a real window — however
+       short — where <html> had no dark override active yet and the
+       browser was free to paint its light UA-default canvas: the
+       stray white frame. Putting this block first means the
+       `!important` override is already in the CSSOM before the
+       script ever gets to set that inline style, so there's no gap
+       for a light paint to land in. (`!important` still matters
+       here too, since !important in a stylesheet rule always beats
+       a plain inline style regardless of source order.) */
     html.auth-check {
       background: #1C1F26;
       color-scheme: dark !important;
+    }
+
+    html.auth-check,
+    html.auth-check body {
+      /* Locks the page underneath from scrolling for as long as the
+         auth-check overlay/hidden-body state is in effect — otherwise
+         the (invisible but still overflowing) content beneath the
+         overlay keeps the scrollbar track alive and visible. */
+      overflow: hidden !important;
     }
 
     html.auth-check body {
@@ -63,12 +66,20 @@
       visibility: visible;
       opacity: 1;
     }
-    @keyframes lwLaunchGlow {
-      0%   { opacity: 0;    transform: scale(0.55); }
-      100% { opacity: 0.4;  transform: scale(1); }
+    /* Entrance keyframes — kept in lockstep with auth.js's
+       showAppLaunchOverlay(), since that's where this same overlay
+       gets recreated fresh a moment later on home.html. Same names,
+       same curves, so the brief flash of it here and the fuller
+       playback there read as one motion instead of two different
+       animations stitched together. */
+    @keyframes lwLaunchGlowIn {
+      0%   { opacity: 0;    transform: scale(0.5); }
+      60%  { opacity: 0.45; transform: scale(1.08); }
+      100% { opacity: 0.35; transform: scale(1); }
     }
-    @keyframes lwLaunchIntro {
-      0%   { transform: scale(0.86); opacity: 0; }
+    @keyframes lwLaunchMarkIn {
+      0%   { transform: scale(0.7);  opacity: 0; }
+      65%  { transform: scale(1.08); opacity: 1; }
       100% { transform: scale(1);    opacity: 1; }
     }
     #appLaunchOverlay__glow {
@@ -80,16 +91,31 @@
       border-radius: 50%;
       background: radial-gradient(circle, rgba(240,172,61,0.4), rgba(74,144,217,0.2) 55%, transparent 75%);
       filter: blur(8px);
-      animation: lwLaunchGlow 0.55s cubic-bezier(.16,.84,.44,1) both;
+      animation: lwLaunchGlowIn 0.6s cubic-bezier(.16,.84,.44,1) both;
     }
     #appLaunchOverlay__mark {
       position: relative;
       width: 76px;
       height: 76px;
       border-radius: 20px;
-      animation: lwLaunchIntro 0.4s cubic-bezier(.16,.84,.44,1) both;
+      /* Back-out easing (overshoots slightly past 1 before settling)
+         is what reads as a confident "arrival" rather than a plain
+         fade — the same spirit as X's mark doing a quick decisive
+         snap into place on open. */
+      animation: lwLaunchMarkIn 0.5s cubic-bezier(.34,1.56,.64,1) both;
     }
   </style>
+  <script>
+    (function () {
+      const key = 'lw_theme_pref';
+      const isLaptop = window.matchMedia('(min-width: 1024px)').matches;
+      const stored = localStorage.getItem(key);
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const theme = isLaptop ? ((stored === 'dark' || stored === 'light') ? stored : (prefersDark ? 'dark' : 'light')) : 'light';
+      document.documentElement.setAttribute('data-theme', theme);
+      document.documentElement.style.setProperty('color-scheme', theme);
+    })();
+  </script>
   <link rel="manifest" href="/manifest.json?v=1.0.15" />
   <script src="./Js/app-startup.js?v=1.0.15" defer></script>
   <meta name="theme-color" content="#1C1F26" />

@@ -16,6 +16,27 @@
     html.lw-cold-boot body {
       background: #1C1F26 !important;
       color-scheme: dark !important;
+      /* Same scrollbar leak as index.html: the skeleton/real content
+         underneath the launch overlay is tall enough to scroll even
+         while it's not supposed to be interactive yet, which kept a
+         scrollbar track visible on the edge of the screen for the
+         whole time the overlay was up. Locked for exactly as long as
+         lw-cold-boot is on <html> — i.e. exactly as long as the
+         overlay itself is shown (see dismissAppLaunchOverlay() in
+         auth.js, which removes this class). */
+      overflow: hidden !important;
+    }
+
+    /* Content reveal — toggled by auth.js right as the launch overlay
+       starts its opening animation, so the real page doesn't just
+       "appear" the instant the overlay clears but settles into place
+       a beat behind it, like it's coming into focus as the app opens. */
+    @keyframes lwContentReveal {
+      0%   { opacity: 0.85; transform: scale(1.03); }
+      100% { opacity: 1;    transform: scale(1); }
+    }
+    #realPageContent.lw-content-reveal {
+      animation: lwContentReveal 0.5s cubic-bezier(.19,1,.22,1) both;
     }
   </style>
   <script>
