@@ -20,9 +20,13 @@ function maskValue(value) {
     if (!value) return '';
     if (value.includes('@')) {
         const [name, domain] = value.split('@');
-        return name[0] + '*****@' + domain;
+        const visible = name.slice(0, 3);
+        const hiddenLen = Math.max(name.length - visible.length, 3);
+        return visible + '*'.repeat(hiddenLen) + '@' + domain;
     }
-    return value[0] + '*******' + value[value.length - 1];
+    const visible = value.slice(0, 3);
+    const hiddenLen = Math.max(value.length - visible.length, 3);
+    return visible + '*'.repeat(hiddenLen);
 }
 
 const verifyCard    = document.getElementById('verifyCard');
@@ -60,6 +64,16 @@ function updateButtonState() {
     continueBtn.classList.toggle('active', isFull);
 }
 
+// Auto-submit once every box is filled — but give the button a brief
+// moment to visibly switch to its "active" (filled-in) color first,
+// instead of jumping straight from empty to the loading spinner.
+function autoSubmitWhenFull() {
+    updateButtonState();
+    if (getOtpValue().length === otpBoxes.length) {
+        setTimeout(checkOTP, 220);
+    }
+}
+
 function shakeOtpBoxes() {
     otpBoxesWrap.classList.remove('is-shaking');
     // Force reflow so the animation can re-trigger on repeated errors
@@ -85,8 +99,7 @@ otpBoxes.forEach((box, index) => {
             otpBoxes.forEach((b, i) => { b.value = digits[i] || ''; });
             const nextEmpty = otpBoxes.find(b => !b.value) || otpBoxes[otpBoxes.length - 1];
             nextEmpty.focus();
-            updateButtonState();
-            if (getOtpValue().length === otpBoxes.length) checkOTP();
+            autoSubmitWhenFull();
             return;
         }
 
@@ -96,11 +109,7 @@ otpBoxes.forEach((box, index) => {
             otpBoxes[index + 1].focus();
         }
 
-        updateButtonState();
-
-        if (getOtpValue().length === otpBoxes.length) {
-            checkOTP();
-        }
+        autoSubmitWhenFull();
     });
 
     box.addEventListener('keydown', (e) => {
@@ -119,22 +128,9 @@ otpBoxes.forEach((box, index) => {
         otpBoxes.forEach((b, i) => { b.value = digits[i] || ''; });
         const nextEmpty = otpBoxes.find(b => !b.value) || otpBoxes[otpBoxes.length - 1];
         nextEmpty.focus();
-        updateButtonState();
-
-        if (getOtpValue().length === otpBoxes.length) {
-            checkOTP();
-        }
+        autoSubmitWhenFull();
     });
 });
-
-// -----------------------------------------------------
-// Navigate away with the same soft fade-out used on signup,
-// so the hand-off between pages feels like one continuous flow.
-// -----------------------------------------------------
-function navigateTo(url, delay = 260) {
-    document.body.classList.add('lw-leaving');
-    setTimeout(() => window.location.replace(url), delay);
-}
 
 // -----------------------------------------------------
 // MAIN: verify the OTP code entered across the 4 boxes
@@ -217,9 +213,13 @@ async function checkOTP() {
             localStorage.removeItem(k);
         });
 
-        // Small success moment before we hand off to home.html.
+        // Small success moment, then the same branded overlay used
+        // everywhere else in the auth flow, before we hand off to home.html.
         verifyCard.classList.add('is-success');
-        navigateTo('../pages/home.html', 900);
+        setTimeout(() => {
+            showPageTransitionOverlay('Verified — taking you in…');
+            setTimeout(() => window.location.replace('../pages/home.html'), 260);
+        }, 700);
 
     } catch (err) {
         console.error('Verification failed:', err);

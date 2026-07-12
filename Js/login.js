@@ -93,8 +93,7 @@ async function handleSubmit() {
     // strings and would incorrectly reject valid phone numbers. We do our
     // own required + format check below instead of relying on those.
     if (!userInput.value) {
-        errorMsg.textContent = 'Enter your email or phone number';
-        userInput.focus();
+        userInput.reportValidity();
         return;
     }
 
@@ -136,7 +135,9 @@ async function handleSubmit() {
             sessionStorage.setItem('chatHandle', result.chatHandle);
         }
 
-        window.location.replace('./pages/verification.html');
+        showPageTransitionOverlay('Sending your code…');
+        setTimeout(() => window.location.replace('./pages/verification.html'), 260);
+        return;
 
     } catch (err) {
         console.error(err);
@@ -149,3 +150,12 @@ async function handleSubmit() {
 
 sendCodeBtn.addEventListener('click', e => { e.preventDefault(); handleSubmit(); });
 userInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); handleSubmit(); } });
+
+// ── Create account links — same branded hand-off as everywhere else ──
+document.querySelectorAll('a[href="./pages/signup.html"]').forEach(link => {
+    link.addEventListener('click', e => {
+        e.preventDefault();
+        showPageTransitionOverlay('Setting things up…');
+        setTimeout(() => window.location.href = link.href, 260);
+    });
+});

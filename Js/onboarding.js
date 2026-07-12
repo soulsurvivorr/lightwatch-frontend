@@ -1,9 +1,31 @@
 // =========================================================
 // onboarding.js
-// Full-screen walkthrough shown on every fresh visit to index.html.
-// It blocks interaction with the sign-in form until the final step
-// is acknowledged.
+// Full-screen walkthrough shown on the first fresh visit to
+// index.html only. It blocks interaction with the sign-in form
+// until the final step is acknowledged, then never shows again
+// on this device (localStorage-gated) — including when someone
+// navigates to sign-up and comes straight back to sign-in.
 // =========================================================
+
+const ONBOARDING_SEEN_KEY = 'lw_onboarding_seen';
+
+function hasSeenOnboarding() {
+  try {
+    return localStorage.getItem(ONBOARDING_SEEN_KEY) === '1';
+  } catch {
+    // Storage blocked (e.g. private browsing) — fall back to showing
+    // it; that's a much smaller annoyance than a hard error.
+    return false;
+  }
+}
+
+function markOnboardingSeen() {
+  try {
+    localStorage.setItem(ONBOARDING_SEEN_KEY, '1');
+  } catch {
+    // Ignore — nothing we can do if storage is blocked.
+  }
+}
 
 let onboardingCurrentSlide = 0;
 
@@ -41,9 +63,18 @@ function initOnboarding() {
   const overlay = document.getElementById('onboardingOverlay');
   if (!overlay) return;
 
+  // Already completed on this device — nothing to wire up, nothing to
+  // show. This is what makes it a true one-time walkthrough instead of
+  // reappearing on every trip back to the sign-in page.
+  if (hasSeenOnboarding()) {
+    overlay.remove();
+    return;
+  }
+
   document.getElementById('onboardingNextBtn')?.addEventListener('click', () => {
     const totalSlides = document.querySelectorAll('.onboarding-slide').length;
     if (onboardingCurrentSlide >= totalSlides - 1) {
+      markOnboardingSeen();
       closeOnboarding();
     } else {
       setOnboardingSlide(onboardingCurrentSlide + 1);

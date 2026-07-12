@@ -80,8 +80,9 @@
   <!-- First-visit walkthrough. Only ever seen by signed-out visitors,
        since the auth-check script above redirects anyone with a
        session straight to home.html before this page renders. Shown
-       once per device (localStorage-gated in onboarding.js). -->
-  <div class="onboarding-overlay is-open" id="onboardingOverlay">
+       once per device (localStorage-gated in onboarding.js) — starts
+       closed here so there's nothing to flash before that check runs. -->
+  <div class="onboarding-overlay" id="onboardingOverlay">
     <div class="onboarding-card" role="dialog" aria-modal="true" aria-label="Welcome to LightWatch">
       <div class="onboarding-slide is-active" data-slide="0">
         <span class="onboarding-slide__icon">
@@ -235,6 +236,10 @@
         </p>
 
       </div>
+
+      <footer class="login-footer">
+        <p>&copy; 2026 LightWatch GH · <a href="#">About us</a> · <a href="#">Privacy</a> · <a href="#">Terms</a></p>
+      </footer>
     </section>
   </main>
 

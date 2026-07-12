@@ -337,12 +337,17 @@ button#continueBtn:active {
 }
 
 button#continueBtn.active {
-    background-color: var(--brand);
+    background-color: color-mix(in srgb, var(--brand, #D6A24A) 78%, #1C1F26 22%);
+    box-shadow: 0 6px 16px color-mix(in srgb, var(--brand, #D6A24A) 30%, transparent);
 }
 
 button#continueBtn.active:hover {
     background-color: var(--brand-dim);
     box-shadow: 0 6px 16px color-mix(in srgb, var(--brand, #D6A24A) 35%, transparent);
+}
+
+button#continueBtn.active.is-loading {
+    background-color: var(--brand);
 }
 
 button#continueBtn:disabled {

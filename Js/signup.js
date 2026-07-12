@@ -129,8 +129,8 @@ async function handleSignup() {
         // User can still explicitly sign out at any time.
         localStorage.setItem("rememberMePending", "true");
 
-        document.body.classList.add('lw-leaving');
-        setTimeout(() => window.location.replace("../pages/verification.html"), 220);
+        showPageTransitionOverlay('Setting up verification…');
+        setTimeout(() => window.location.replace("../pages/verification.html"), 260);
 
     } catch (error) {
         console.error("Signup failed:", error);

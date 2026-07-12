@@ -85,16 +85,25 @@ function clearSession() {
     });
 }
 
-// ── Sign-out overlay: brief branded moment before we land back
-//    on the sign-in screen, instead of an abrupt blank flash ───
-let signOutOverlayEl = null;
+// ── Branded transition overlay: brief full-screen moment (logo +
+//    a status line) shown whenever the app hands off from one page
+//    to another — signing out, sending a code, moving from signup
+//    into verification, and verification succeeding into home —
+//    instead of an abrupt blank flash or an inconsistent fade.
+//    Shared across every page because auth.js loads on all of them. ──
+let pageTransitionOverlayEl = null;
 
-function showSignOutOverlay() {
-    if (signOutOverlayEl) return signOutOverlayEl;
+function showPageTransitionOverlay(message = 'Loading…') {
+    if (pageTransitionOverlayEl) {
+        const text = pageTransitionOverlayEl.querySelector('.lw-text');
+        if (text) text.textContent = message;
+        pageTransitionOverlayEl.setAttribute('aria-hidden', 'false');
+        return pageTransitionOverlayEl;
+    }
 
     const overlay = document.createElement('div');
-    overlay.id = 'lwSignOutOverlay';
-    overlay.setAttribute('aria-hidden', 'true');
+    overlay.id = 'lwPageTransitionOverlay';
+    overlay.setAttribute('aria-hidden', 'false');
     overlay.style.cssText = `
         position: fixed; inset: 0; z-index: 99999;
         display: flex; align-items: center; justify-content: center;
@@ -105,17 +114,23 @@ function showSignOutOverlay() {
         <style>
             @keyframes lwSignOutFadeIn { from { opacity: 0; } to { opacity: 1; } }
             @keyframes lwSignOutPulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(0.92); opacity: 0.7; } }
-            #lwSignOutOverlay .lw-mark { width: 64px; height: 64px; border-radius: 18px; animation: lwSignOutPulse 1.1s ease-in-out infinite; }
-            #lwSignOutOverlay .lw-text { margin-top: 14px; font-family: 'Manrope', sans-serif; font-size: 0.85rem; color: rgba(255,255,255,0.75); letter-spacing: 0.02em; }
+            #lwPageTransitionOverlay .lw-mark { width: 64px; height: 64px; border-radius: 18px; animation: lwSignOutPulse 1.1s ease-in-out infinite; }
+            #lwPageTransitionOverlay .lw-text { margin-top: 14px; font-family: 'Manrope', sans-serif; font-size: 0.85rem; color: rgba(255,255,255,0.75); letter-spacing: 0.02em; }
         </style>
         <div style="display:flex;flex-direction:column;align-items:center;">
             <img class="lw-mark" src="/images/dev-logo.png" alt="LightWatch">
-            <span class="lw-text">Signing out…</span>
+            <span class="lw-text">${message}</span>
         </div>
     `;
     document.body.appendChild(overlay);
-    signOutOverlayEl = overlay;
+    pageTransitionOverlayEl = overlay;
     return overlay;
+}
+
+// Kept as its own name for readability at sign-out call sites; it's
+// just the shared overlay with sign-out's copy.
+function showSignOutOverlay() {
+    return showPageTransitionOverlay('Signing out…');
 }
 
 // ── Sign out — works from ANY page ───────────────────────────

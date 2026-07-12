@@ -361,6 +361,32 @@
   color: var(--text-muted);
 }
 
+.login-footer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 14px;
+  text-align: center;
+  pointer-events: none;
+}
+
+.login-footer p {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--text-faint);
+  pointer-events: auto;
+}
+
+.login-footer a {
+  color: var(--text-faint);
+  text-decoration: none;
+}
+
+.login-footer a:hover {
+  color: var(--text-muted);
+  text-decoration: underline;
+}
+
 /* Phone layout: render only the form pane. */
 @media (max-width: 768px) {
   html,
