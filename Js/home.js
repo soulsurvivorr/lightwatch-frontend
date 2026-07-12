@@ -73,26 +73,135 @@ function renderSecondaryLocationChip() {
     chip.hidden = false;
 
     document.getElementById('secondaryLocationPanelBadge').textContent = label;
-    document.getElementById('secondaryLocationPanelLabel').textContent = label;
-    document.getElementById('secondaryLocationPanelCity').textContent = sec.city || '—';
-    document.getElementById('secondaryLocationPanelRegion').textContent = sec.region || '—';
+    const secTitle = [sec.city, sec.region].filter(Boolean).join(', ');
+    const titleEl = document.getElementById('secondaryLocationPanelTitle');
+    if (titleEl) titleEl.textContent = secTitle || '—';
+}
+
+// -----------------------------------------------------
+// SECOND LOCATION DETAIL PANEL — real status data
+// Fetches the same /lightstatus endpoint the primary location
+// card uses, scoped to the second location's city/region, so
+// the panel reflects genuine reports rather than placeholder
+// text. If nobody has ever reported for that location, it just
+// says so plainly instead of guessing.
+// -----------------------------------------------------
+function setSecondaryStatusDot(status) {
+    const dot = document.getElementById('secondaryLocationStatusDot');
+    if (!dot) return;
+    dot.classList.remove('location-expand-status__dot--on', 'location-expand-status__dot--off');
+    if (status === 'on') dot.classList.add('location-expand-status__dot--on');
+    else if (status === 'off') dot.classList.add('location-expand-status__dot--off');
+}
+
+function formatSecondaryDuration(ms) {
+    if (ms == null) return '—';
+    const totalMinutes = Math.round(ms / 60000);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    if (hours === 0) return `${minutes}m`;
+    return `${hours}h ${minutes}m`;
+}
+
+async function loadSecondaryLocationStatus(sec) {
+    const labelEl = document.getElementById('secondaryLocationStatusLabel');
+    const subEl = document.getElementById('secondaryLocationStatusSub');
+    const uptimeEl = document.getElementById('secondaryLocationUptime');
+    const contributorsEl = document.getElementById('secondaryLocationContributors');
+    const checksEl = document.getElementById('secondaryLocationChecks');
+    const noteEl = document.getElementById('secondaryLocationNote');
+
+    setSecondaryStatusDot('unknown');
+    if (labelEl) labelEl.textContent = 'Checking status…';
+    if (subEl) subEl.textContent = '—';
+    if (uptimeEl) uptimeEl.textContent = '—';
+    if (contributorsEl) contributorsEl.textContent = '—';
+    if (checksEl) checksEl.textContent = '—';
+
+    const loc = `${sec.city}, ${sec.region || ''}`.replace(/,\s*$/, '');
+
+    try {
+        const res = await fetch(`${API_URL}/lightstatus?location=${encodeURIComponent(loc)}`);
+        if (!res.ok) throw new Error('bad response');
+        const data = await res.json();
+
+        setSecondaryStatusDot(data.status);
+        if (labelEl) {
+            labelEl.textContent = data.status === 'on' ? 'Light is on'
+                : data.status === 'off' ? 'Light is off'
+                : 'No reports yet for this area';
+        }
+        if (subEl) {
+            subEl.textContent = data.reportedAt
+                ? `Last verified ${new Date(data.reportedAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}`
+                : 'Be the first to report here — set it as your primary location to check in.';
+        }
+
+        const stats = data.stats;
+        if (stats) {
+            if (uptimeEl) uptimeEl.textContent = stats.uptimePercent != null ? `${stats.uptimePercent}%` : '—';
+            if (contributorsEl) contributorsEl.textContent = String(stats.uniqueContributors ?? '—');
+            if (checksEl) checksEl.textContent = String(stats.totalChecks ?? '—');
+        }
+
+        if (noteEl) {
+            noteEl.textContent = stats && stats.totalChecks > 0
+                ? `Based on ${stats.totalChecks} community report${stats.totalChecks === 1 ? '' : 's'} for ${loc.split(',')[0]}, separate from your primary location above.`
+                : `No community reports for ${loc.split(',')[0]} yet — this is a second spot you're keeping an eye on, separate from your primary location above.`;
+        }
+    } catch (err) {
+        setSecondaryStatusDot('unknown');
+        if (labelEl) labelEl.textContent = 'Could not load status';
+        if (subEl) subEl.textContent = 'Check your connection and try again.';
+    }
+
+    // Re-measure the panel body now that real content has landed, so the
+    // "unfolding" expand animation ends at the right height instead of
+    // whatever the loading placeholder measured at.
+    const body = document.getElementById('secondaryLocationPanelBody');
+    const overlay = document.getElementById('secondaryLocationOverlay');
+    if (body && overlay?.classList.contains('location-expand-overlay--open')) {
+        body.style.maxHeight = body.scrollHeight + 'px';
+    }
 }
 
 function openSecondaryLocationPanel() {
-    document.getElementById('secondaryLocationPanel')?.classList.add('user-sidebar-panel--open');
-    document.getElementById('secondaryLocationOverlay')?.classList.add('sidebar-overlay--visible');
-    document.getElementById('secondaryLocationPanel')?.setAttribute('aria-hidden', 'false');
+    const overlay = document.getElementById('secondaryLocationOverlay');
+    const body = document.getElementById('secondaryLocationPanelBody');
+    const panel = document.getElementById('secondaryLocationPanel');
+    if (!overlay || !body || !panel) return;
+
+    overlay.classList.add('location-expand-overlay--open');
+    overlay.setAttribute('aria-hidden', 'false');
+
+    // Expand the body to its real content height — the "opens up" motion
+    // that replaces the old side-drawer slide.
+    requestAnimationFrame(() => {
+        body.style.maxHeight = body.scrollHeight + 'px';
+    });
+
+    const sec = getCachedUserForSecondaryLocation().secondaryLocation;
+    if (sec?.city) loadSecondaryLocationStatus(sec);
 }
 
 function closeSecondaryLocationPanel() {
-    document.getElementById('secondaryLocationPanel')?.classList.remove('user-sidebar-panel--open');
-    document.getElementById('secondaryLocationOverlay')?.classList.remove('sidebar-overlay--visible');
-    document.getElementById('secondaryLocationPanel')?.setAttribute('aria-hidden', 'true');
+    const overlay = document.getElementById('secondaryLocationOverlay');
+    const body = document.getElementById('secondaryLocationPanelBody');
+    if (!overlay || !body) return;
+
+    body.style.maxHeight = '0px';
+    overlay.classList.remove('location-expand-overlay--open');
+    overlay.setAttribute('aria-hidden', 'true');
 }
 
 document.getElementById('secondaryLocationChip')?.addEventListener('click', openSecondaryLocationPanel);
 document.getElementById('secondaryLocationClose')?.addEventListener('click', closeSecondaryLocationPanel);
-document.getElementById('secondaryLocationOverlay')?.addEventListener('click', closeSecondaryLocationPanel);
+// The panel now sits INSIDE the overlay backdrop (so it can be centered
+// over the page), so only close on a click that lands on the backdrop
+// itself — not one that bubbles up from inside the panel.
+document.getElementById('secondaryLocationOverlay')?.addEventListener('click', (e) => {
+    if (e.target.id === 'secondaryLocationOverlay') closeSecondaryLocationPanel();
+});
 
 // Cached data may still be stale on first paint — re-render once profile.js
 // has fetched the fresh copy and revealed the real page.

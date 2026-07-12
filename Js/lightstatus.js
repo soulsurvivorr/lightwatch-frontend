@@ -27,6 +27,26 @@
 
 const API_BASE = typeof API_URL !== 'undefined' ? API_URL : '';
 
+// -----------------------------------------------------
+// ICONS — small inline SVGs sized to sit exactly where the old
+// emoji characters (🟢/🔴/⚪, 👥, ⚡, ⚠️, ✔) used to sit, so no
+// layout or CSS elsewhere needs to change.
+// -----------------------------------------------------
+const ICON_DOT_ON = `<svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:0.85em;height:0.85em;vertical-align:middle;" aria-hidden="true"><circle cx="6" cy="6" r="5" fill="#3DD9C2" stroke="#1C8C7A" stroke-width="0.6"/></svg>`;
+const ICON_DOT_OFF = `<svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:0.85em;height:0.85em;vertical-align:middle;" aria-hidden="true"><circle cx="6" cy="6" r="5" fill="#E5484D" stroke="#A32E32" stroke-width="0.6"/></svg>`;
+const ICON_DOT_UNKNOWN = `<svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:0.85em;height:0.85em;vertical-align:middle;" aria-hidden="true"><circle cx="6" cy="6" r="5" fill="none" stroke="#9AA1AC" stroke-width="1.1"/></svg>`;
+const ICON_PEOPLE = `<svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:1em;height:1em;vertical-align:-0.15em;" aria-hidden="true"><circle cx="7" cy="6.8" r="2.4" stroke="currentColor" stroke-width="1.3"/><circle cx="14" cy="7.6" r="2" stroke="currentColor" stroke-width="1.3"/><path d="M2.3 16.4c.6-2.9 2.4-4.5 4.7-4.5s4.1 1.6 4.7 4.5M12 12.6c1.9.1 3.3 1.5 3.8 3.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>`;
+const ICON_BOLT = `<svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:1em;height:1em;" aria-hidden="true"><path d="M11.2 2.2 4.8 11.4a.8.8 0 0 0 .66 1.26h3.3l-.72 5.14a.8.8 0 0 0 1.44.58l6-8.3a.8.8 0 0 0-.65-1.27h-3.3l.72-5.13a.8.8 0 0 0-1.43-.58Z" fill="currentColor"/></svg>`;
+const ICON_WARNING = `<svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:1em;height:1em;" aria-hidden="true"><path d="M10 2.6 18.3 16.6H1.7L10 2.6Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M10 8v3.6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="10" cy="14" r="0.95" fill="currentColor"/></svg>`;
+const ICON_CHECK = `<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:0.85em;height:0.85em;" aria-hidden="true"><path d="M3 8.5 6.3 12 13 4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const STAR_PATH = "M9 1.3 11.2 6l5.1.5-3.9 3.4 1.2 5-4.6-2.7-4.6 2.7 1.2-5-3.9-3.4L6.8 6Z";
+const ICON_STAR_FILLED = `<svg viewBox="0 0 18 18" fill="#D6A24A" stroke="#D6A24A" stroke-width="0.6" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" style="width:0.9em;height:0.9em;" aria-hidden="true"><path d="${STAR_PATH}"/></svg>`;
+const ICON_STAR_EMPTY = `<svg viewBox="0 0 18 18" fill="none" stroke="#C7CBD3" stroke-width="0.9" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" style="width:0.9em;height:0.9em;" aria-hidden="true"><path d="${STAR_PATH}"/></svg>`;
+
+function dotIconForStatus(status) {
+    return status === 'on' ? ICON_DOT_ON : status === 'off' ? ICON_DOT_OFF : ICON_DOT_UNKNOWN;
+}
+
 // -- Elements this file owns / renders into --
 const reliabilityMeterValue = document.getElementById('reliabilityMeterValue');
 const reliabilityMeterFill = document.getElementById('reliabilityMeterFill');
@@ -217,14 +237,13 @@ function renderNearby(results) {
         const item = document.createElement('div');
         item.className = 'nearby-item';
 
-        const dotEmoji = area.status === 'on' ? '🟢' : area.status === 'off' ? '🔴' : '⚪';
         const metaText = area.reportedAt
             ? `Verified ${formatRelativeTime(new Date(area.reportedAt).getTime())}`
             : 'No reports yet';
 
         const nameRow = document.createElement('span');
         nameRow.className = 'nearby-item__name';
-        nameRow.innerHTML = `<span class="nearby-item__dot">${dotEmoji}</span>${area.name}`;
+        nameRow.innerHTML = `<span class="nearby-item__dot">${dotIconForStatus(area.status)}</span>${area.name}`;
 
         const meta = document.createElement('span');
         meta.className = 'nearby-item__meta';
@@ -247,9 +266,9 @@ function renderCommunityActivity() {
     const reportsToday = locationReports.filter(r => new Date(r.reportedAt).getTime() >= todayStart);
     const locationLabel = currentLocation ? currentLocation.split(',')[0].trim() : 'your area';
 
-    communityActivityHeadline.textContent = reportsToday.length > 0
-        ? `👥 ${reportsToday.length} report${reportsToday.length === 1 ? '' : 's'} checked in on ${locationLabel} today`
-        : `👥 No reports for ${locationLabel} yet today`;
+    communityActivityHeadline.innerHTML = reportsToday.length > 0
+        ? `${ICON_PEOPLE} ${reportsToday.length} report${reportsToday.length === 1 ? '' : 's'} checked in on ${locationLabel} today`
+        : `${ICON_PEOPLE} No reports for ${locationLabel} yet today`;
 
     if (communityActivityLastReport) {
         communityActivityLastReport.textContent = locationReports[0]
@@ -282,7 +301,7 @@ function updateTrendBanner() {
         const lastOff = locationReports.find(r => r.status === 'off');
         trendBanner.classList.remove('trend-banner--warning');
         trendBanner.classList.add('trend-banner--stable');
-        if (trendBannerIcon) trendBannerIcon.textContent = "⚡";
+        if (trendBannerIcon) trendBannerIcon.innerHTML = ICON_BOLT;
         if (trendBannerTitle) trendBannerTitle.textContent = "Stable today";
         if (trendBannerSub) {
             trendBannerSub.textContent = lastOff
@@ -292,7 +311,7 @@ function updateTrendBanner() {
     } else {
         trendBanner.classList.remove('trend-banner--stable');
         trendBanner.classList.add('trend-banner--warning');
-        if (trendBannerIcon) trendBannerIcon.textContent = "⚠️";
+        if (trendBannerIcon) trendBannerIcon.innerHTML = ICON_WARNING;
         if (trendBannerTitle) trendBannerTitle.textContent = "Frequent outages today";
         if (trendBannerSub) {
             trendBannerSub.textContent = `${outagesToday.length} outage${outagesToday.length === 1 ? '' : 's'} since this morning`;
@@ -369,7 +388,7 @@ function renderRecentReports() {
 
         const check = document.createElement('span');
         check.className = "report-item__check";
-        check.textContent = "✔";
+        check.innerHTML = ICON_CHECK;
 
         const body = document.createElement('div');
         body.className = "report-item__body";
@@ -444,7 +463,7 @@ function applyConfidenceValue(percent, isLocalEstimate) {
 
     if (heroStarsGraphic) {
         const starCount = Math.max(0, Math.min(5, Math.round(clamped / 20)));
-        heroStarsGraphic.textContent = "★".repeat(starCount) + "☆".repeat(5 - starCount);
+        heroStarsGraphic.innerHTML = ICON_STAR_FILLED.repeat(starCount) + ICON_STAR_EMPTY.repeat(5 - starCount);
     }
 }
 
@@ -490,7 +509,7 @@ function renderHeroMiniCard() {
     const badgeEl = document.getElementById('statusBadge');
     const isOn = badgeEl?.classList.contains('badge--on');
     const isOff = badgeEl?.classList.contains('badge--off');
-    heroMiniDot.textContent = isOn ? '🟢' : isOff ? '🔴' : '⚪';
+    heroMiniDot.innerHTML = isOn ? ICON_DOT_ON : isOff ? ICON_DOT_OFF : ICON_DOT_UNKNOWN;
 
     const lastVerifiedEl = document.getElementById('lastVerified');
     const verifiedText = lastVerifiedEl?.textContent?.trim();

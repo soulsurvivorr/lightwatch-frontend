@@ -450,6 +450,8 @@
       font-size: 0.95rem;
     }
 
+    .card__icon svg { width: 17px; height: 17px; color: var(--teal); }
+
     .card__head-text { display: flex; flex-direction: column; }
 
     /* ---- Toggle — slightly larger target + smoother knob ---- */
@@ -473,33 +475,127 @@
       font-weight: 700;
     }
 
-    /* ---- Locations list ---- */
-    .location-row {
+    /* ---- Accordion (About & support) ---- */
+    .accordion-list { display: flex; flex-direction: column; }
+    .accordion-item { border-bottom: 1px solid var(--border-soft); }
+    .accordion-item:last-child { border-bottom: none; }
+    .accordion-item__trigger {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 13px 2px;
+      font-size: 0.88rem;
+      font-weight: 500;
+      color: var(--text-bright);
+      text-align: left;
+    }
+    .accordion-item__trigger-text {
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 12px 0;
-      border-bottom: 1px solid var(--border-soft);
     }
-    .location-row:last-child { border-bottom: none; }
-    .location-row__dot {
-      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
-      background: var(--teal);
-      box-shadow: 0 0 0 4px var(--teal-dim);
+    .accordion-item__trigger-text svg {
+      width: 16px;
+      height: 16px;
+      color: var(--teal);
+      flex-shrink: 0;
     }
-    .location-row__dot--secondary { background: var(--text-faint); box-shadow: 0 0 0 4px var(--border-soft); }
+    .accordion-item__chevron {
+      width: 16px;
+      height: 16px;
+      color: var(--text-faint);
+      flex-shrink: 0;
+      transition: transform 0.25s ease;
+    }
+    .accordion-item__trigger[aria-expanded="true"] .accordion-item__chevron {
+      transform: rotate(180deg);
+      color: var(--teal);
+    }
+    .accordion-item__panel {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+    }
+    .accordion-item__panel-inner {
+      padding: 0 2px 16px 26px;
+      font-size: 0.82rem;
+      color: var(--text-faint);
+      line-height: 1.55;
+    }
+    .accordion-item__panel-inner p { margin: 0 0 10px; }
+    .accordion-item__panel-inner p:last-child { margin-bottom: 0; }
+    .accordion-item__panel-inner strong { color: var(--text-bright); }
+
+    /* ---- Locations list ---- */
+    .location-row-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .location-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      border-radius: var(--radius-md, 12px);
+      background: var(--bg-panel);
+      border: 1px solid var(--border-soft);
+      transition: border-color 0.15s ease;
+    }
+    .location-row:hover { border-color: var(--border-strong); }
+    .location-row__icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--teal-dim);
+      color: var(--teal);
+    }
+    .location-row__icon svg { width: 18px; height: 18px; }
+    .location-row__icon--secondary { background: var(--border-soft); color: var(--text-faint); }
     .location-row__body { flex: 1; min-width: 0; }
-    .location-row__name { font-size: 0.88rem; font-weight: 500; color: var(--text-bright); }
+    .location-row__name { font-size: 0.9rem; font-weight: 600; color: var(--text-bright); }
     .location-row__badge {
-      font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em;
-      color: var(--text-faint); margin-top: 1px;
+      display: inline-flex;
+      align-items: center;
+      margin-top: 4px;
+      padding: 2px 9px;
+      border-radius: 999px;
+      font-size: 0.66rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--teal);
+      background: var(--teal-dim);
     }
-    .location-row__actions { display: flex; gap: 6px; flex-shrink: 0; }
+    .location-row__badge--secondary { color: var(--text-faint); background: var(--border-soft); }
+    .location-row__actions { display: flex; gap: 4px; flex-shrink: 0; }
     .location-row__actions button {
-      background: none; border: none; color: var(--text-faint); font-size: 0.76rem;
-      cursor: pointer; padding: 4px 6px; border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: none;
+      border: 1px solid transparent;
+      color: var(--text-faint);
+      font-size: 0.76rem;
+      cursor: pointer;
+      padding: 6px 9px;
+      border-radius: 8px;
+      transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
     }
-    .location-row__actions button:hover { color: var(--text-bright); background: var(--border-soft); }
+    .location-row__actions button svg { width: 14px; height: 14px; }
+    .location-row__actions button:hover {
+      color: var(--text-bright);
+      background: var(--border-soft);
+      border-color: var(--border-strong);
+    }
 
     .secondary-location { margin-top: 12px; }
     .secondary-location__add {
@@ -809,27 +905,27 @@
             <div class="section-label">Account details</div>
             <div class="detail-list">
               <div class="detail-row">
-                <span class="detail-row__icon" aria-hidden="true">✉️</span>
+                <span class="detail-row__icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2.5" y="4.5" width="15" height="11" rx="1.8" stroke="currentColor" stroke-width="1.4"/><path d="m3.2 5.4 6.8 5.4 6.8-5.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
                 <span class="detail-row__label">Contact</span>
                 <span class="detail-row__value" id="profileContact">—</span>
               </div>
               <div class="detail-row">
-                <span class="detail-row__icon" aria-hidden="true">🗺️</span>
+                <span class="detail-row__icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 3.5 2.7 5v11.5L7 15m0-11.5 6 2m-6-2v11.5m6-9.5 4.3-1.5v11.5L13 17m0-11.5-6 2m6-2v11.5m-6-9.5v9.5" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg></span>
                 <span class="detail-row__label">Region</span>
                 <span class="detail-row__value" id="profileRegion">—</span>
               </div>
               <div class="detail-row">
-                <span class="detail-row__icon" aria-hidden="true">🏙️</span>
+                <span class="detail-row__icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.5 17V6.2L9 3v14M9 17V8.5l7.5 3V17" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M6 8h.01M6 11h.01M6 14h.01" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><rect x="3.5" y="17" width="13" height="0.01" stroke="currentColor"/></svg></span>
                 <span class="detail-row__label">City</span>
                 <span class="detail-row__value" id="profileCity">—</span>
               </div>
               <div class="detail-row">
-                <span class="detail-row__icon" aria-hidden="true">💬</span>
+                <span class="detail-row__icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 4.8h14a1 1 0 0 1 1 1V13a1 1 0 0 1-1 1H8.5L5 16.8V14H3a1 1 0 0 1-1-1V5.8a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg></span>
                 <span class="detail-row__label">Chat handle</span>
                 <span class="detail-row__value" id="profileChatHandle">—</span>
               </div>
               <div class="detail-row">
-                <span class="detail-row__icon" aria-hidden="true">🗓️</span>
+                <span class="detail-row__icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="4.2" width="14" height="12.3" rx="1.6" stroke="currentColor" stroke-width="1.4"/><path d="M3 7.8h14M6.4 2.8v3M13.6 2.8v3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span>
                 <span class="detail-row__label">Member since</span>
                 <span class="detail-row__value" id="profileLastLogin">—</span>
               </div>
@@ -851,13 +947,13 @@
 
         <div class="card">
           <div class="card__head">
-            <span class="card__icon" aria-hidden="true">📍</span>
+            <span class="card__icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 18s6-5.686 6-10a6 6 0 1 0-12 0c0 4.314 6 10 6 10Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="10" cy="8" r="2.2" stroke="currentColor" stroke-width="1.6"/></svg></span>
             <span class="card__head-text">
               <span class="card__title">My locations</span>
               <span class="card__meta">Areas you're monitoring</span>
             </span>
           </div>
-          <div id="myLocationsList" style="margin-bottom: 4px;">
+          <div id="myLocationsList" class="location-row-list" style="margin-bottom: 4px;">
             <div style="color: var(--text-faint); font-size: 0.85rem; padding: 8px 0;">Loading your locations…</div>
           </div>
 
@@ -892,7 +988,7 @@
 
         <div class="card">
           <div class="card__head">
-            <span class="card__icon" aria-hidden="true">🔔</span>
+            <span class="card__icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 2.5A4.2 4.2 0 0 0 5.8 6.7v2.2c0 .9-.35 1.77-.98 2.42L4 12.2V13h12v-.8l-.82-.86a3.42 3.42 0 0 1-.98-2.42V6.7A4.2 4.2 0 0 0 10 2.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M8.2 15.6a1.9 1.9 0 0 0 3.6 0" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span>
             <span class="card__head-text">
               <span class="card__title">Notifications</span>
               <span class="card__meta">What to alert you about</span>
@@ -945,7 +1041,7 @@
 
         <div class="card" id="cityEditCard">
           <div class="card__head">
-            <span class="card__icon" aria-hidden="true">✏️</span>
+            <span class="card__icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M13.4 3.5 16.5 6.6 7 16.1H3.9v-3.1L13.4 3.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg></span>
             <span class="card__head-text">
               <span class="card__title">Edit city/town</span>
               <span class="card__meta" id="cityEditCardMeta">One-time correction only</span>
@@ -955,7 +1051,7 @@
           <!-- Shown once the one-time edit has been used: a plain, clearly
                non-editable summary instead of a disabled-looking form. -->
           <div id="cityEditLockedView" class="locked-field" hidden>
-            <span class="locked-field__icon" aria-hidden="true">🔒</span>
+            <span class="locked-field__icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="4.5" y="9" width="11" height="8" rx="1.6" stroke="currentColor" stroke-width="1.4"/><path d="M6.8 9V6.5a3.2 3.2 0 0 1 6.4 0V9" stroke="currentColor" stroke-width="1.4"/><circle cx="10" cy="12.8" r="1.1" fill="currentColor"/></svg></span>
             <div>
               <div class="locked-field__value" id="cityEditLockedValue">—</div>
               <div class="locked-field__sub">City/town is locked and can't be changed again.</div>
@@ -982,7 +1078,7 @@
 
         <div class="card">
           <div class="card__head">
-            <span class="card__icon" aria-hidden="true">🎨</span>
+            <span class="card__icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 17a7 7 0 1 1 0-14c3.5 0 6.5 2.4 6.5 5.4 0 1.9-1.4 3-3 3h-1.4c-.9 0-1.4.9-.9 1.6.6.8.2 2-.9 2.3-.1 0-.2.1-.3.1Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><circle cx="7" cy="8.2" r="1" fill="currentColor"/><circle cx="10" cy="6.2" r="1" fill="currentColor"/><circle cx="13" cy="8.2" r="1" fill="currentColor"/><circle cx="7.5" cy="11.5" r="1" fill="currentColor"/></svg></span>
             <span class="card__head-text">
               <span class="card__title">Display</span>
               <span class="card__meta">Visual preferences</span>
@@ -1053,7 +1149,7 @@
 
         <div class="card">
           <div class="card__head">
-            <span class="card__icon" aria-hidden="true">💬</span>
+            <span class="card__icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 4.8h14a1 1 0 0 1 1 1V13a1 1 0 0 1-1 1H8.5L5 16.8V14H3a1 1 0 0 1-1-1V5.8a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg></span>
             <span class="card__head-text">
               <span class="card__title">Recent chat activity</span>
               <span class="card__meta">Your last messages</span>
@@ -1061,6 +1157,84 @@
           </div>
           <div id="recentChatList">
             <div style="color: var(--text-faint); font-size: 0.85rem; padding: 8px 0;">Loading activity…</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card__head">
+            <span class="card__icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="1.4"/><path d="M10 9v5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="10" cy="6.2" r="0.95" fill="currentColor"/></svg></span>
+            <span class="card__head-text">
+              <span class="card__title">About &amp; support</span>
+              <span class="card__meta">How LightWatch works, and how to get help</span>
+            </span>
+          </div>
+
+          <div class="accordion-list" id="accountAccordion">
+
+            <div class="accordion-item">
+              <button type="button" class="accordion-item__trigger" aria-expanded="false" aria-controls="acc-panel-about">
+                <span class="accordion-item__trigger-text">
+                  <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.5 17V6.2L9 3v14M9 17V8.5l7.5 3V17" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+                  How LightWatch works
+                </span>
+                <svg class="accordion-item__chevron" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="m6 8 4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+              <div class="accordion-item__panel" id="acc-panel-about">
+                <div class="accordion-item__panel-inner">
+                  <p>LightWatch is a crowd-sourced power-status tracker. Instead of waiting on official outage reports, people in your area flip a simple switch to confirm whether the light is currently on or off where they are — and the app rolls those individual reports up into a live status for the whole neighborhood.</p>
+                  <p>The more people who check in for a location, the more reliable that location's status becomes. That's what the "Reliability" and "Source confidence" numbers on your Home page reflect: how consistently recent reports agree with each other.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <button type="button" class="accordion-item__trigger" aria-expanded="false" aria-controls="acc-panel-privacy">
+                <span class="accordion-item__trigger-text">
+                  <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="4.5" y="9" width="11" height="8" rx="1.6" stroke="currentColor" stroke-width="1.4"/><path d="M6.8 9V6.5a3.2 3.2 0 0 1 6.4 0V9" stroke="currentColor" stroke-width="1.4"/></svg>
+                  Data &amp; privacy
+                </span>
+                <svg class="accordion-item__chevron" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="m6 8 4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+              <div class="accordion-item__panel" id="acc-panel-privacy">
+                <div class="accordion-item__panel-inner">
+                  <p>Your contact info is masked everywhere it's displayed in the app, and chat messages are posted under an anonymous handle (like <em>anon-glow-291</em>) rather than your name — other users never see who you are.</p>
+                  <p>Your city/town can only be changed once after signup, which keeps location-based status reports trustworthy for everyone else watching that area — see the note on the city edit card for details.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <button type="button" class="accordion-item__trigger" aria-expanded="false" aria-controls="acc-panel-guidelines">
+                <span class="accordion-item__trigger-text">
+                  <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 4.8h14a1 1 0 0 1 1 1V13a1 1 0 0 1-1 1H8.5L5 16.8V14H3a1 1 0 0 1-1-1V5.8a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+                  Community guidelines
+                </span>
+                <svg class="accordion-item__chevron" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="m6 8 4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+              <div class="accordion-item__panel" id="acc-panel-guidelines">
+                <div class="accordion-item__panel-inner">
+                  <p>Only flip the light switch or post a status update if you can <strong>actually see</strong> the area right now — reports feed directly into what your neighbors see, and bad data makes LightWatch less useful for everyone.</p>
+                  <p>In community chat, keep it local and practical: outage updates, generator/fuel tips, and questions for people nearby. Anything abusive or unrelated may be removed.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <button type="button" class="accordion-item__trigger" aria-expanded="false" aria-controls="acc-panel-help">
+                <span class="accordion-item__trigger-text">
+                  <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="10" cy="10" r="7.5" stroke="currentColor" stroke-width="1.4"/><path d="M7.8 8a2.2 2.2 0 1 1 3 2c-.6.3-.9.7-.9 1.4v.3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="10" cy="13.9" r="0.85" fill="currentColor"/></svg>
+                  Help &amp; support
+                </span>
+                <svg class="accordion-item__chevron" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="m6 8 4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+              <div class="accordion-item__panel" id="acc-panel-help">
+                <div class="accordion-item__panel-inner">
+                  <p>Status looks wrong for your area? Open community chat and ask — someone nearby can usually confirm within minutes. If notifications aren't arriving, check that they're enabled above and that your browser allows notifications for LightWatch.</p>
+                  <p>For anything else, reach the team at <strong>support@lightwatch.gh</strong>.</p>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
 
@@ -1075,7 +1249,7 @@
     <button type="button" class="user-sidebar__close" id="userSidebarClose" aria-label="Close profile panel">×</button>
     <div class="card profile-card profile-card--sidebar">
       <div class="card__head">
-        <span class="card__icon" aria-hidden="true">👤</span>
+        <span class="card__icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="10" cy="6.6" r="3.1" stroke="currentColor" stroke-width="1.4"/><path d="M3.8 17c.6-3.4 3.3-5.4 6.2-5.4s5.6 2 6.2 5.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span>
         <span class="card__head-text">
           <span class="card__title">Logged in as</span>
           <span class="card__meta">User profile</span>

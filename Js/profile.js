@@ -107,6 +107,22 @@ function getAvatarSVG(seed) {
 }
 
 
+// Neutral avatar shown when nobody is signed in yet. Kept visually
+// distinct from the generated per-user avatars above (grayscale,
+// geometric) so it never reads as "some user's real avatar" — it's a
+// simple pyramid mark instead of a plain "?" glyph.
+function getGuestAvatarSVG() {
+    return `<svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Guest avatar">` +
+        `<defs><linearGradient id="lwGuestGrad" x1="0%" y1="0%" x2="100%" y2="100%">` +
+        `<stop offset="0%" stop-color="#6B7280"/><stop offset="100%" stop-color="#3A404C"/>` +
+        `</linearGradient></defs>` +
+        `<rect x="0" y="0" width="40" height="40" rx="8" fill="url(#lwGuestGrad)"/>` +
+        `<path d="M20 9 L31 29 H9 Z" fill="none" stroke="#E4E7EC" stroke-width="2" stroke-linejoin="round" opacity="0.9"/>` +
+        `<path d="M20 9 L20 29 M14.5 19 H25.5" stroke="#E4E7EC" stroke-width="1.2" opacity="0.5"/>` +
+        `</svg>`;
+}
+
+
 // -----------------------------------------------------
 // HELPER: mask contact info for display
 // (same logic as signup.js, kept in sync)
@@ -139,16 +155,16 @@ function renderUserEverywhere(user) {
     const contactValue = user.emailPhone || user.email || "—";
     const displayLocation = [user.city, user.region].filter(Boolean).join(", ") || user.location || "—";
 
-    // A signed-out/guest state keeps the old plain "?" — the generated
-    // SVG look is reserved for an actual identity (id or name present).
+    // A signed-out/guest state gets the neutral pyramid mark instead of a
+    // plain "?" glyph — the generated per-user SVG is reserved for an
+    // actual identity (id or name present).
     const hasIdentity = Boolean(user.id || user.name);
-    const avatarMarkup = hasIdentity ? getAvatarSVG(user.id || user.name) : null;
+    const avatarMarkup = hasIdentity ? getAvatarSVG(user.id || user.name) : getGuestAvatarSVG();
 
     function setAvatar(el) {
         if (!el) return;
         el.setAttribute("aria-label", hasIdentity ? `Avatar for ${initials}` : "Guest avatar");
-        if (avatarMarkup) el.innerHTML = avatarMarkup;
-        else el.textContent = "?";
+        el.innerHTML = avatarMarkup;
     }
 
     // --- chat handle display ---
@@ -264,7 +280,7 @@ function setLightStatus(status) {
         statusBadge.textContent = "Checking status";
         statusPulse.classList.add("pulse--low");
         statusIcon.classList.add("status-hero__icon--unknown");
-        statusIcon.textContent = "⏳";
+        statusIcon.innerHTML = "<svg viewBox='0 0 20 20' fill='none' xmlns='http://www.w3.org/2000/svg' style='width:1.1em;height:1.1em;' aria-hidden='true'><path d='M6 3h8M6 17h8M6.5 3c0 4 3 4.5 3.5 5-0.5 0.5-3.5 1-3.5 5M13.5 3c0 4-3 4.5-3.5 5 0.5 0.5 3.5 1 3.5 5' stroke='currentColor' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/></svg>";
         statusPillText.textContent = "Checking live status";
         lightSwitch.classList.remove("light-switch--on", "light-switch--off");
         lightSwitchState.textContent = "CHECK";
@@ -274,7 +290,7 @@ function setLightStatus(status) {
         statusBadge.textContent = "Unconfirmed";
         statusPulse.classList.add("pulse--low");
         statusIcon.classList.add("status-hero__icon--unknown");
-        statusIcon.textContent = "❔";
+        statusIcon.innerHTML = "<svg viewBox='0 0 20 20' fill='none' xmlns='http://www.w3.org/2000/svg' style='width:1.1em;height:1.1em;' aria-hidden='true'><circle cx='10' cy='10' r='8.3' stroke='currentColor' stroke-width='1.4'/><path d='M7.6 8.1a2.4 2.4 0 1 1 3.3 2.2c-0.7 0.3-1 0.8-1 1.5v0.4' stroke='currentColor' stroke-width='1.4' stroke-linecap='round'/><circle cx='10' cy='14.6' r='0.9' fill='currentColor'/></svg>";
         statusPillText.textContent = "Flip if you can see the area";
         lightSwitch.classList.remove("light-switch--on", "light-switch--off");
         lightSwitchState.textContent = "CHECK";
@@ -496,6 +512,7 @@ function showLightConfirmPopup(nextStatus, onConfirm) {
             @keyframes lw-fade-in { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: scale(1); } }
             #lw-confirm-card { background: #fff; border-radius: 16px; padding: 28px 24px; max-width: 340px; width: 100%; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.25); }
             #lw-confirm-card .lw-icon { font-size: 2.4rem; margin-bottom: 12px; }
+            #lw-confirm-card .lw-icon svg { width: 1em; height: 1em; }
             #lw-confirm-card h3 { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 1.1rem; margin: 0 0 8px; color: #111; }
             #lw-confirm-card p { font-size: 0.88rem; color: #555; margin: 0 0 22px; line-height: 1.5; }
             .lw-confirm-btns { display: flex; gap: 10px; }
@@ -505,7 +522,10 @@ function showLightConfirmPopup(nextStatus, onConfirm) {
             .lw-btn-cancel { background: #f0f0f4; color: #444; }
         </style>
         <div id="lw-confirm-card">
-            <div class="lw-icon">${isOn ? "💡" : "🌑"}</div>
+            <div class="lw-icon">${isOn
+                ? "<svg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'><path d='M12 3a7 7 0 0 0-4 12.7c.6.44 1 1.16 1 1.95V19h6v-1.35c0-.79.4-1.51 1-1.95A7 7 0 0 0 12 3Z' stroke='#D6A24A' stroke-width='1.6' stroke-linejoin='round'/><path d='M10 21.5h4' stroke='#D6A24A' stroke-width='1.6' stroke-linecap='round'/></svg>"
+                : "<svg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'><path d='M20.5 14.5A8.5 8.5 0 1 1 9.5 3.5a7 7 0 0 0 11 11Z' fill='#5B6472' stroke='#5B6472' stroke-width='1.2' stroke-linejoin='round'/></svg>"
+            }</div>
             <h3>${isOn ? "Reporting light ON?" : "Reporting light OFF?"}</h3>
             <p>Please only confirm if you can <strong>actually see</strong> this area right now. Your report helps others in ${window.currentChatLocation || "this location"}.</p>
             <div class="lw-confirm-btns">

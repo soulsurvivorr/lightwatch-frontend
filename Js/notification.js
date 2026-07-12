@@ -29,7 +29,7 @@ function updateEnablePushButtonsVisibility() {
             btn.disabled = true;
             btn.classList.add('btn--enabled-state');
             btn.setAttribute('aria-disabled', 'true');
-            btn.innerHTML = '<span class="btn__check" aria-hidden="true">✓</span> Notifications enabled';
+            btn.innerHTML = '<span class="btn__check" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:0.85em;height:0.85em;"><path d="M3 8.5 6.3 12 13 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span> Notifications enabled';
         } else {
             btn.disabled = false;
             btn.classList.remove('btn--enabled-state');

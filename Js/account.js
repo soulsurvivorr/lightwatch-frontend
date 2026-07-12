@@ -105,40 +105,109 @@ function initDisplayPrefsUI() {
 }
 
 // ------------------------------------------------------------
-// COMPACT CHAT PREVIEW POPUP
-// Shell UI for now — placeholder bubbles, no live data yet.
-// Wired up so chat.js can later drop real thread rendering in
-// here (the toggle, overlay, and compact/normal sizing all
-// already work end to end).
+// ACCORDION — generic expand/collapse for the "About & support"
+// card (and anywhere else `.accordion-item` shows up). Panels
+// expand to their real, measured content height rather than a
+// guessed max-height, so long or short answers both animate
+// cleanly and nothing gets clipped.
 // ------------------------------------------------------------
-const DUMMY_PREVIEW_MESSAGES = [
-    { mine: false, author: "Ama K.", text: "Light just came back on near the market.", time: "2:14 PM" },
-    { mine: true,  author: "You",    text: "Thanks for the update!", time: "2:15 PM" },
-    { mine: false, author: "Kojo B.", text: "Still off on my street though.", time: "2:17 PM" }
-];
+function initAccordions() {
+    document.querySelectorAll('.accordion-item__trigger').forEach(trigger => {
+        trigger.addEventListener('click', () => {
+            const panel = document.getElementById(trigger.getAttribute('aria-controls'));
+            if (!panel) return;
+            const isOpen = trigger.getAttribute('aria-expanded') === 'true';
 
-// Reuses the exact same markup/classes the live community chat renders
-// with (.chat-message, .chat-message--own, etc.) instead of a separate
-// "chat-bubble" style. That way this preview isn't just a lookalike —
-// it's driven by the same [data-compact-chat]/[data-large-chat-text]/
-// [data-reduce-motion] attributes already applied to <html>, so toggling
-// a preference here updates the preview exactly the way it'll actually
-// look in chat, live, with nothing to keep in sync by hand.
-function openChatPreviewPopup() {
+            if (isOpen) {
+                panel.style.maxHeight = panel.scrollHeight + 'px';
+                requestAnimationFrame(() => { panel.style.maxHeight = '0px'; });
+                trigger.setAttribute('aria-expanded', 'false');
+            } else {
+                trigger.setAttribute('aria-expanded', 'true');
+                panel.style.maxHeight = panel.scrollHeight + 'px';
+                // Once the open transition lands, let it track content
+                // that changes size later (e.g. a window resize).
+                panel.addEventListener('transitionend', function onEnd() {
+                    if (trigger.getAttribute('aria-expanded') === 'true') {
+                        panel.style.maxHeight = 'none';
+                    }
+                    panel.removeEventListener('transitionend', onEnd);
+                });
+            }
+        });
+    });
+
+    // Re-measure any panel currently open when the viewport resizes
+    // (text reflow changes scrollHeight at narrower widths).
+    window.addEventListener('resize', () => {
+        document.querySelectorAll('.accordion-item__trigger[aria-expanded="true"]').forEach(trigger => {
+            const panel = document.getElementById(trigger.getAttribute('aria-controls'));
+            if (panel) panel.style.maxHeight = panel.scrollHeight + 'px';
+        });
+    });
+}
+
+// ------------------------------------------------------------
+// COMPACT CHAT PREVIEW POPUP
+// Pulls real, recent messages for the signed-in user's location
+// (same /chats endpoint the live community chat uses) instead of
+// placeholder bubbles, with real loading/empty/error states —
+// the same pattern notification.js uses for its network calls.
+// Reuses the exact same markup/classes the live community chat
+// renders with (.chat-message, .chat-message--own, etc.), driven
+// by the same [data-compact-chat]/[data-large-chat-text]/
+// [data-reduce-motion] attributes already applied to <html>, so
+// toggling a preference here updates the preview exactly the way
+// it'll actually look in chat, live.
+// ------------------------------------------------------------
+function escapeHtml(str) {
+    return String(str ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+async function openChatPreviewPopup() {
     const overlay = el('chatPopupOverlay');
     const popup = el('chatPopup');
     const body = el('chatPopupBody');
     if (!overlay || !popup || !body) return;
 
-    body.innerHTML = `<div class="chat-thread">${DUMMY_PREVIEW_MESSAGES.map(m => `
-        <div class="chat-message${m.mine ? ' chat-message--own' : ''}">
-          <span class="chat-message__author">${m.author}</span>
-          <span class="chat-message__text">${m.text}</span>
-          <span class="chat-message__time">${m.time}</span>
-        </div>`).join('')}</div>`;
-
     overlay.classList.add('chat-popup-overlay--open');
     overlay.setAttribute('aria-hidden', 'false');
+    body.innerHTML = `<div style="color:var(--text-faint);font-size:0.85rem;padding:14px 0;text-align:center;">Loading recent messages…</div>`;
+
+    const userId = localStorage.getItem('currentUserId');
+    const userObj = JSON.parse(localStorage.getItem('currentUserData') || '{}');
+    const loc = userObj.city ? `${userObj.city}, ${userObj.region || ''}`.replace(/,\s*$/, '') : (userObj.region || userObj.location);
+    const myHandle = userObj.chatHandle || localStorage.getItem('chatHandle') || null;
+
+    if (!loc) {
+        body.innerHTML = `<div style="color:var(--text-faint);font-size:0.85rem;padding:14px 0;text-align:center;">Set a city/town to preview your community chat.</div>`;
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API_URL}/chats?location=${encodeURIComponent(loc)}`);
+        if (!res.ok) throw new Error('bad response');
+        const chats = await res.json();
+        const recent = chats.slice(0, 8).reverse(); // oldest -> newest, like a real thread
+
+        if (recent.length === 0) {
+            body.innerHTML = `<div style="color:var(--text-faint);font-size:0.85rem;padding:14px 0;text-align:center;">No messages in ${escapeHtml(loc.split(',')[0])} yet — be the first to say something on Home.</div>`;
+            return;
+        }
+
+        body.innerHTML = `<div class="chat-thread">${recent.map(m => {
+            const isMine = myHandle && m.handle === myHandle;
+            const time = m.createdAt ? new Date(m.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
+            return `
+                <div class="chat-message${isMine ? ' chat-message--own' : ''}">
+                  <span class="chat-message__author">${isMine ? 'You' : escapeHtml(m.handle || 'anon')}</span>
+                  <span class="chat-message__text">${escapeHtml(m.text)}</span>
+                  <span class="chat-message__time">${time}</span>
+                </div>`;
+        }).join('')}</div>`;
+    } catch (err) {
+        body.innerHTML = `<div style="color:var(--text-faint);font-size:0.85rem;padding:14px 0;text-align:center;">Could not load chat preview right now.</div>`;
+    }
 }
 
 function closeChatPreviewPopup() {
@@ -313,12 +382,16 @@ function renderLocationsList(user) {
     const listEl = el('myLocationsList');
     if (!listEl) return;
 
+    const pinIcon = `<svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 18s6-5.686 6-10a6 6 0 1 0-12 0c0 4.314 6 10 6 10Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="10" cy="8" r="2.2" stroke="currentColor" stroke-width="1.6"/></svg>`;
+    const pencilIcon = `<svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M13.4 3.5 16.5 6.6 7 16.1H3.9v-3.1L13.4 3.5Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
+    const trashIcon = `<svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 6h12M8 6V4.5A1.5 1.5 0 0 1 9.5 3h1A1.5 1.5 0 0 1 12 4.5V6M6 6v9a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
     const rows = [];
     const primary = user.city ? `${user.city}, ${user.region || ''}`.replace(/,\s*$/, '') : user.region || null;
     if (primary) {
         rows.push(`
             <div class="location-row">
-                <span class="location-row__dot"></span>
+                <span class="location-row__icon" aria-hidden="true">${pinIcon}</span>
                 <div class="location-row__body">
                     <div class="location-row__name">${primary}</div>
                     <div class="location-row__badge">Primary</div>
@@ -331,14 +404,14 @@ function renderLocationsList(user) {
         const secLabel = [sec.city, sec.region].filter(Boolean).join(', ');
         rows.push(`
             <div class="location-row">
-                <span class="location-row__dot location-row__dot--secondary"></span>
+                <span class="location-row__icon location-row__icon--secondary" aria-hidden="true">${pinIcon}</span>
                 <div class="location-row__body">
                     <div class="location-row__name">${secLabel}</div>
-                    <div class="location-row__badge">${sec.label || 'Second location'}</div>
+                    <div class="location-row__badge location-row__badge--secondary">${sec.label || 'Second location'}</div>
                 </div>
                 <div class="location-row__actions">
-                    <button type="button" id="secondaryLocationEditBtn">Edit</button>
-                    <button type="button" id="secondaryLocationRemoveBtn">Remove</button>
+                    <button type="button" id="secondaryLocationEditBtn">${pencilIcon} Edit</button>
+                    <button type="button" id="secondaryLocationRemoveBtn">${trashIcon} Remove</button>
                 </div>
             </div>`);
     }
@@ -537,4 +610,5 @@ initDisplayPrefsUI();
 initChatPreviewPopup();
 initNotificationPrefToggles();
 initSecondaryLocationForm();
+initAccordions();
 loadAccountExtras();
