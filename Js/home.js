@@ -150,11 +150,9 @@ async function loadSecondaryLocationStatus(sec) {
                 : `No community reports for ${loc.split(',')[0]} yet — this is a second spot you're keeping an eye on, separate from your primary location above.`;
         }
 
-        // Feed the same status into the notify-on-change watcher so the
-        // very first known status (whatever it is right now) is recorded
-        // as the baseline instead of triggering a false "changed" alert
-        // the next time the watcher runs.
-        recordSecondaryLocationStatus(sec, data.status);
+        // (Status-change alerts are now handled server-side — see the
+        // NOTIFY-ME-HERE section below — so there's nothing to record
+        // here beyond the display update above.)
     } catch (err) {
         setSecondaryStatusDot('unknown');
         if (labelEl) labelEl.textContent = 'Could not load status';
@@ -186,92 +184,24 @@ function closeSecondaryLocationPanel() {
 }
 
 // -----------------------------------------------------
-// NOTIFY-ME-HERE — lets the user opt in to a local alert
-// whenever their second location's power status flips. This
-// piggybacks on the same push permission/service worker
-// notification.js already sets up (so we reuse
-// enableLightWatchPush() for the permission prompt), but the
-// "did it change" check itself just runs a lightweight poll of
-// /lightstatus while the app is open, since there's no per-user
-// server-side watch for secondary locations yet.
+// NOTIFY-ME-HERE — lets the user opt in to a push alert whenever
+// their second location's power status flips. This is real Web
+// Push, not a client-side poll: the toggle just writes a
+// secondaryLocationKey onto this device's push subscription
+// (see setSecondaryLocationNotifyPreference in notification.js),
+// and the server's POST /lightstatus handler looks up and pushes
+// to anyone watching that key the moment a status actually
+// changes — works even if this tab/app is closed, same as the
+// primary-location and chat push notifications already do.
 // -----------------------------------------------------
-const SECONDARY_NOTIFY_PREF_PREFIX = 'lw_secondary_notify_';
-const SECONDARY_LAST_STATUS_PREFIX = 'lw_secondary_last_status_';
-const SECONDARY_WATCH_INTERVAL_MS = 60000;
-let secondaryWatchTimer = null;
-
-function secondaryLocationKey(sec) {
-    return `${sec.city || ''}|${sec.region || ''}`.toLowerCase().trim();
+function secondaryLocationLabelFor(sec) {
+    return `${sec.city || ''}, ${sec.region || ''}`.replace(/,\s*$/, '').replace(/^,\s*/, '');
 }
 
-function isSecondaryNotifyEnabled(sec) {
-    return localStorage.getItem(SECONDARY_NOTIFY_PREF_PREFIX + secondaryLocationKey(sec)) === '1';
-}
-
-function setSecondaryNotifyEnabled(sec, enabled) {
-    localStorage.setItem(SECONDARY_NOTIFY_PREF_PREFIX + secondaryLocationKey(sec), enabled ? '1' : '0');
-}
-
-function recordSecondaryLocationStatus(sec, status) {
-    if (!status) return;
-    const key = SECONDARY_LAST_STATUS_PREFIX + secondaryLocationKey(sec);
-    const prev = localStorage.getItem(key);
-    if (prev && prev !== status && prev !== 'unknown' && status !== 'unknown' && isSecondaryNotifyEnabled(sec)) {
-        notifySecondaryLocationChanged(sec, status);
-    }
-    localStorage.setItem(key, status);
-}
-
-async function notifySecondaryLocationChanged(sec, status) {
-    if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
-    if (!('serviceWorker' in navigator)) return;
-
-    const cityLabel = sec.city || 'Your second location';
-    const statusText = status === 'on' ? 'Light is back on' : 'Light just went off';
-
-    try {
-        const registration = await navigator.serviceWorker.ready;
-        await registration.showNotification(`${cityLabel}: ${statusText}`, {
-            body: `Power status for ${cityLabel} changed to "${status}".`,
-            icon: new URL('/images/dev-logo.png', window.location.origin).href,
-            tag: 'lw-secondary-location-change',
-            renotify: true,
-            vibrate: [140, 60, 140],
-            data: { url: '/pages/home.html' }
-        });
-    } catch (err) {
-        console.error('Could not show secondary location notification:', err);
-    }
-}
-
-async function pollSecondaryLocationForChanges() {
-    const sec = getCachedUserForSecondaryLocation().secondaryLocation;
-    if (!sec?.city || !isSecondaryNotifyEnabled(sec)) return;
-
-    const loc = `${sec.city}, ${sec.region || ''}`.replace(/,\s*$/, '');
-    try {
-        const res = await fetch(`${API_URL}/lightstatus?location=${encodeURIComponent(loc)}`);
-        if (!res.ok) return;
-        const data = await res.json();
-        recordSecondaryLocationStatus(sec, data.status);
-    } catch {
-        // silent — retries next tick
-    }
-}
-
-function startSecondaryLocationWatch() {
-    clearInterval(secondaryWatchTimer);
-    const sec = getCachedUserForSecondaryLocation().secondaryLocation;
-    if (!sec?.city || !isSecondaryNotifyEnabled(sec)) return;
-    secondaryWatchTimer = setInterval(pollSecondaryLocationForChanges, SECONDARY_WATCH_INTERVAL_MS);
-}
-
-function initSecondaryLocationNotifyToggle(sec) {
+async function initSecondaryLocationNotifyToggle(sec) {
     const toggle = document.getElementById('secondaryLocationNotifyToggle');
     const subEl = document.getElementById('secondaryLocationNotifySub');
     if (!toggle) return;
-
-    toggle.checked = isSecondaryNotifyEnabled(sec);
 
     // Replace the node rather than tracking a "was this already bound"
     // flag — the panel can reopen for a different second location across
@@ -280,32 +210,60 @@ function initSecondaryLocationNotifyToggle(sec) {
     const freshToggle = toggle.cloneNode(true);
     toggle.parentNode.replaceChild(freshToggle, toggle);
 
+    // Read the real current state from the server rather than assuming —
+    // this device's subscription is the source of truth, not localStorage.
+    freshToggle.disabled = true;
+    if (typeof window.getChatPushPreferences === 'function') {
+        try {
+            const prefs = await window.getChatPushPreferences();
+            freshToggle.checked = Boolean(prefs?.secondaryLocationKey);
+        } catch {
+            freshToggle.checked = false;
+        }
+    }
+    freshToggle.disabled = false;
+
     freshToggle.addEventListener('change', async () => {
+        freshToggle.disabled = true;
+
         if (freshToggle.checked) {
             if (typeof Notification !== 'undefined' && Notification.permission !== 'granted' && typeof window.enableLightWatchPush === 'function') {
                 await window.enableLightWatchPush();
             }
-            if (typeof Notification !== 'undefined' && Notification.permission !== 'granted') {
+            if (typeof Notification === 'undefined' || Notification.permission !== 'granted') {
                 // Permission wasn't granted — don't silently claim it's on.
                 freshToggle.checked = false;
+                freshToggle.disabled = false;
                 if (subEl) subEl.textContent = 'Notifications are blocked for this browser — enable them in your device settings.';
                 return;
             }
-            setSecondaryNotifyEnabled(sec, true);
-            if (subEl) subEl.textContent = "You'll be alerted here if this location's status changes.";
-            startSecondaryLocationWatch();
+
+            const result = typeof window.setSecondaryLocationNotifyPreference === 'function'
+                ? await window.setSecondaryLocationNotifyPreference(secondaryLocationLabelFor(sec))
+                : { success: false };
+
+            freshToggle.disabled = false;
+            if (result.success) {
+                if (subEl) subEl.textContent = "You'll get a push alert here if this location's status changes.";
+            } else {
+                freshToggle.checked = false;
+                if (subEl) subEl.textContent = result.error || 'Could not save this preference — try again.';
+            }
         } else {
-            setSecondaryNotifyEnabled(sec, false);
+            const result = typeof window.setSecondaryLocationNotifyPreference === 'function'
+                ? await window.setSecondaryLocationNotifyPreference(null)
+                : { success: false };
+
+            freshToggle.disabled = false;
+            if (!result.success) {
+                freshToggle.checked = true;
+                if (subEl) subEl.textContent = result.error || 'Could not save this preference — try again.';
+                return;
+            }
             if (subEl) subEl.textContent = "Get an alert if this location's power status changes";
-            clearInterval(secondaryWatchTimer);
         }
     });
 }
-
-// Kick the watcher off on page load too (not just while the panel is
-// open) so a status flip is caught even if the user never reopens the
-// panel this session.
-window.addEventListener('lw-page-revealed', startSecondaryLocationWatch, { once: true });
 
 document.getElementById('secondaryLocationChip')?.addEventListener('click', openSecondaryLocationPanel);
 document.getElementById('secondaryLocationClose')?.addEventListener('click', closeSecondaryLocationPanel);

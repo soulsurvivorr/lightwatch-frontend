@@ -354,6 +354,43 @@ async function setChatMentionsPreference(chatMentionsEnabled) {
 
 window.setChatMentionsPreference = setChatMentionsPreference;
 
+// ── Secondary-location "notify me here" preference ───────────────────
+// Stores which second location (if any) this device's push subscription
+// should be alerted about when its status changes. Server-side, the
+// /lightstatus report handler looks up subscriptions by
+// secondaryLocationKey and pushes to them directly — this function just
+// writes/clears that field on the current device's subscription.
+// Pass a location string (e.g. "Bantama, Ashanti") to turn watching on,
+// or null/empty to turn it off.
+async function setSecondaryLocationNotifyPreference(secondaryLocation) {
+    const session = typeof getSession === 'function' ? getSession() : null;
+    const userId = session?.user?.id || localStorage.getItem('currentUserId');
+    if (!userId) return { success: false, error: 'No signed-in user' };
+
+    const endpoint = await getCurrentPushEndpoint();
+    if (!endpoint) {
+        return { success: false, error: 'No active push subscription on this device' };
+    }
+
+    try {
+        const res = await fetch(`${API_URL}/subscribe/preferences`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId, endpoint, secondaryLocation: secondaryLocation || null })
+        });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            return { success: false, error: data.error || 'Could not save secondary location preference' };
+        }
+        const data = await res.json();
+        return { success: true, secondaryLocationKey: data.secondaryLocationKey || null };
+    } catch (err) {
+        return { success: false, error: err.message || 'Could not save secondary location preference' };
+    }
+}
+
+window.setSecondaryLocationNotifyPreference = setSecondaryLocationNotifyPreference;
+
 // ── Fetch saved mute/mentions prefs for this device so the account
 //    page can reflect the real server state instead of only localStorage.
 // ───────────────────────────────────────────────────────────
