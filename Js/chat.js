@@ -633,8 +633,8 @@ window.addEventListener('focus', () => pollChatsOnce());
 // Rendered as the last bubble in the thread (see render
 // function below) rather than as a separate UI element.
 // -------------------------------------------------------
-const TYPING_PING_INTERVAL_MS = 2000; // min gap between our own heartbeats
-const TYPING_POLL_INTERVAL_MS = 2000; // how often we check who else is typing
+const TYPING_PING_INTERVAL_MS = 900;  // min gap between our own heartbeats
+const TYPING_POLL_INTERVAL_MS = 800;  // how often we check who else is typing
 const TYPING_STOP_DELAY_MS    = 3000; // no keystrokes for this long = "stopped"
 const TYPING_MAX_HANDLES_SHOWN = 3;
 

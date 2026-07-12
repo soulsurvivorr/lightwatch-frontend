@@ -108,16 +108,19 @@ async function loadSecondaryLocationStatus(sec) {
     const labelEl = document.getElementById('secondaryLocationStatusLabel');
     const subEl = document.getElementById('secondaryLocationStatusSub');
     const uptimeEl = document.getElementById('secondaryLocationUptime');
-    const contributorsEl = document.getElementById('secondaryLocationContributors');
-    const checksEl = document.getElementById('secondaryLocationChecks');
+    const avgOutageEl = document.getElementById('secondaryLocationAvgOutage');
+    const outageFreqEl = document.getElementById('secondaryLocationOutageFreq');
+    const lastOutageRowEl = document.getElementById('secondaryLocationLastOutageRow');
+    const lastOutageEl = document.getElementById('secondaryLocationLastOutage');
     const noteEl = document.getElementById('secondaryLocationNote');
 
     setSecondaryStatusDot('unknown');
     if (labelEl) labelEl.textContent = 'Checking status…';
     if (subEl) subEl.textContent = '—';
     if (uptimeEl) uptimeEl.textContent = '—';
-    if (contributorsEl) contributorsEl.textContent = '—';
-    if (checksEl) checksEl.textContent = '—';
+    if (avgOutageEl) avgOutageEl.textContent = '—';
+    if (outageFreqEl) outageFreqEl.textContent = '—';
+    if (lastOutageRowEl) lastOutageRowEl.hidden = true;
 
     const loc = `${sec.city}, ${sec.region || ''}`.replace(/,\s*$/, '');
 
@@ -138,11 +141,20 @@ async function loadSecondaryLocationStatus(sec) {
                 : 'Be the first to report here — set it as your primary location to check in.';
         }
 
+        // Real outage-history stats the backend already computes
+        // (getLightStatusStats in server.js) — this is what actually
+        // matters to someone deciding whether to head over to this
+        // location, unlike a raw contributor/check count.
         const stats = data.stats;
         if (stats) {
             if (uptimeEl) uptimeEl.textContent = stats.uptimePercent != null ? `${stats.uptimePercent}%` : '—';
-            if (contributorsEl) contributorsEl.textContent = String(stats.uniqueContributors ?? '—');
-            if (checksEl) checksEl.textContent = String(stats.totalChecks ?? '—');
+            if (avgOutageEl) avgOutageEl.textContent = stats.avgOutageMs != null ? formatSecondaryDuration(stats.avgOutageMs) : 'No data';
+            if (outageFreqEl) outageFreqEl.textContent = stats.outageFreq != null ? String(stats.outageFreq) : '—';
+
+            if (lastOutageRowEl && lastOutageEl && stats.lastOutageMs != null) {
+                lastOutageEl.textContent = formatSecondaryDuration(stats.lastOutageMs);
+                lastOutageRowEl.hidden = false;
+            }
         }
 
         if (noteEl) {

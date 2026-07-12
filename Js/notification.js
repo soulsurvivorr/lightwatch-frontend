@@ -58,40 +58,106 @@ function unlockForegroundAudio() {
     resume();
 }
 
-function triggerForegroundSignal() {
+function triggerForegroundSignal(tone) {
     unlockForegroundAudio();
     if (navigator.vibrate) {
-        navigator.vibrate([90, 40, 90]);
+        // Chat stays a light single tap; power changes get the slightly
+        // heavier double-pulse so they read as "more important" by feel
+        // alone, even before the sound registers.
+        navigator.vibrate(tone === 'chat' ? [70] : [90, 40, 90]);
     }
-    playDewDropsTone();
+    playToneForType(tone);
 }
 
+// ── LightWatch sound identity ─────────────────────────────────
+// One shared "instrument" (soft sine/triangle blips, quick fade
+// in, exponential fade out) across all three tones so they read
+// as one family — but each event is still tellable apart:
+//
+//   ⚡ Power ON:  low pulse → bright chime      "doom … ting"
+//   🌑 Power OFF: same low pulse → dull low tone "doom … dum"
+//   💬 Chat:      single soft glass "plink"
+//
+// playDewDropsTone() is kept as the fallback for any push that
+// arrives without a recognized `tone` (e.g. an older cached
+// service worker, or an admin test push that didn't set one).
+function playToneForType(tone) {
+    switch (tone) {
+        case 'power-on':  playPowerOnTone();  break;
+        case 'power-off': playPowerOffTone(); break;
+        case 'chat':      playChatPlinkTone(); break;
+        default:          playDewDropsTone();
+    }
+}
+
+// Single oscillator "note" — the shared building block every
+// LightWatch tone is made from, so they all share one timbre.
+function playNote(ctx, { freq, start, duration, type = 'sine', peakGain = 0.14, attack = 0.015 }) {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = type;
+    osc.frequency.value = freq;
+
+    const end = start + duration;
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.exponentialRampToValueAtTime(peakGain, start + attack);
+    gain.gain.exponentialRampToValueAtTime(0.0001, end);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(start);
+    osc.stop(end + 0.02);
+}
+
+function canPlayTone(ctx) {
+    return ctx && (lwAudioReady || ctx.state === 'running');
+}
+
+// ⚡ Power ON — low pulse resolving UP into a bright two-note chime.
+function playPowerOnTone() {
+    const ctx = ensureAudioContext();
+    if (!canPlayTone(ctx)) return;
+    const now = ctx.currentTime;
+
+    playNote(ctx, { freq: 165, start: now, duration: 0.16, type: 'sine', peakGain: 0.16 }); // "doom"
+    // "ting" — fundamental + a quiet high overtone for sparkle
+    playNote(ctx, { freq: 1318.5, start: now + 0.20, duration: 0.24, type: 'sine', peakGain: 0.13, attack: 0.008 });
+    playNote(ctx, { freq: 1975.5, start: now + 0.20, duration: 0.18, type: 'sine', peakGain: 0.045, attack: 0.008 });
+}
+
+// 🌑 Power OFF — same low pulse, resolving DOWN into a duller low tone.
+function playPowerOffTone() {
+    const ctx = ensureAudioContext();
+    if (!canPlayTone(ctx)) return;
+    const now = ctx.currentTime;
+
+    playNote(ctx, { freq: 165, start: now, duration: 0.16, type: 'sine', peakGain: 0.16 }); // "doom"
+    // "dum" — lower + triangle wave + slower attack = duller than "ting"
+    playNote(ctx, { freq: 116, start: now + 0.20, duration: 0.26, type: 'triangle', peakGain: 0.13, attack: 0.025 });
+}
+
+// 💬 Chat — a single soft glass "plink", no second note.
+function playChatPlinkTone() {
+    const ctx = ensureAudioContext();
+    if (!canPlayTone(ctx)) return;
+    const now = ctx.currentTime;
+
+    playNote(ctx, { freq: 1568, start: now, duration: 0.13, type: 'sine', peakGain: 0.11, attack: 0.005 });
+    playNote(ctx, { freq: 3136, start: now, duration: 0.08, type: 'sine', peakGain: 0.03, attack: 0.005 }); // glassy overtone
+}
+
+// Legacy/unrecognized-tone fallback — the original three-note run-up.
 function playDewDropsTone() {
     const ctx = ensureAudioContext();
-    if (!ctx || (!lwAudioReady && ctx.state !== 'running')) return;
+    if (!canPlayTone(ctx)) return;
 
     const now = ctx.currentTime;
     const notes = [880, 1046, 1174];
 
     notes.forEach((freq, i) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-
-        osc.type = 'sine';
-        osc.frequency.value = freq;
-
-        const start = now + (i * 0.12);
-        const end = start + 0.16;
-
-        gain.gain.setValueAtTime(0.0001, start);
-        gain.gain.exponentialRampToValueAtTime(0.12, start + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.0001, end);
-
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-
-        osc.start(start);
-        osc.stop(end + 0.01);
+        playNote(ctx, { freq, start: now + (i * 0.12), duration: 0.16, type: 'sine', peakGain: 0.12, attack: 0.02 });
     });
 }
 
@@ -250,7 +316,7 @@ document.addEventListener('DOMContentLoaded', updateEnablePushButtonsVisibility)
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.addEventListener('message', (event) => {
         if (event?.data?.type === 'LW_PUSH_RECEIVED') {
-            triggerForegroundSignal();
+            triggerForegroundSignal(event.data.tone);
         }
     });
 }
