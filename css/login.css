@@ -529,7 +529,7 @@
 
   .field {
     gap: 4px;
-    margin-bottom: 6px;
+    margin-bottom: 0px;
   }
 
   .field__label {
