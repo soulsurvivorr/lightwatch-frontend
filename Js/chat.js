@@ -193,15 +193,20 @@ function syncSeenIndicators(chats) {
     const latestOwnId = getLatestOwnMessageId(chats, myId);
     const byId = new Map(chats.map(c => [String(c._id || c.id || ''), c]));
     chatThread?.querySelectorAll('.chat-message--own').forEach(el => {
-        const id = el.dataset.chatId;
-        if (!id) return;
-        const seenEl = el.querySelector('.chat-message__seen');
-        if (!seenEl) return;
-        const chat = byId.get(id);
-        const hasBeenSeen = Boolean(chat?.seenBy && chat.seenBy.length > 0);
-        const hasReply = repliedToIds.has(id);
-        const isLatestOwn = id === latestOwnId;
-        seenEl.classList.toggle('is-visible', isLatestOwn && hasBeenSeen && !hasReply);
+        try {
+            const id = el.dataset.chatId;
+            if (!id) return;
+            const seenEl = el.querySelector('.chat-message__seen');
+            if (!seenEl) return;
+            const chat = byId.get(id);
+            const hasBeenSeen = Boolean(chat?.seenBy && chat.seenBy.length > 0);
+            const hasReply = repliedToIds.has(id);
+            const isLatestOwn = id === latestOwnId;
+            seenEl.classList.toggle('is-visible', isLatestOwn && hasBeenSeen && !hasReply);
+        } catch (syncErr) {
+            // Don't let one malformed bubble stop the rest of the thread
+            // from getting its eye state updated on this tick.
+        }
     });
 }
 
@@ -576,16 +581,27 @@ async function pollChatsOnce() {
         const latestOwnId = getLatestOwnMessageId(chats, myId);
 
         ;[...chats].reverse().forEach(chat => {
-            const id = chat._id || chat.id;
-            if (!id || knownIds.has(id)) return; // skip already-shown messages
-            knownIds.add(id);
-            addToThread(chat, resolveUserId(chat) === myId, false, true, repliedToIds.has(id), String(id) === latestOwnId);
-            focusTargetMessageIfPresent();
+            // Isolated per-message: if rendering one new bubble throws for
+            // any reason, it must not take down syncSeenIndicators/
+            // markVisibleMessagesSeen below with it — those are what
+            // actually clear a stale eye, and skipping them silently every
+            // tick is exactly how an eye ends up looking permanently stuck
+            // instead of just one tick behind.
+            try {
+                const id = chat._id || chat.id;
+                if (!id || knownIds.has(id)) return; // skip already-shown messages
+                knownIds.add(id);
+                addToThread(chat, resolveUserId(chat) === myId, false, true, repliedToIds.has(id), String(id) === latestOwnId);
+                focusTargetMessageIfPresent();
+            } catch (renderErr) {
+                // silent — this message gets another shot next tick
+            }
         });
 
         // Existing bubbles can still change: a reply might land on an
         // older message, or someone else's seenBy might grow — keep
         // every own-message eye icon current, not just newly-added ones.
+        // Always runs, independent of the per-message loop above.
         syncSeenIndicators(chats);
         markVisibleMessagesSeen(chats);
     } catch (e) {
