@@ -196,22 +196,31 @@ document.addEventListener('DOMContentLoaded', () => {
 //    a stale frame from painting on a restore, because none of this
 //    file's top-level code executes again on restore.
 //
-//    Fix: hide the page the instant it's about to be frozen (pagehide),
-//    so whatever gets captured into bfcache is already invisible. On
-//    restore, that hidden state is what paints first — then pageshow
-//    re-checks the session and either reveals the page (still signed
-//    in) or lets requireAuth()'s redirect carry on hidden (signed out),
-//    instead of ever showing stale signed-in content or "Guest"
-//    placeholders on the way to sign-in.
+//    That frozen snapshot isn't just "possibly stale" — it can be
+//    genuinely incomplete. If the page was navigated away from before
+//    profile.js finished its fetch (a very normal thing to do), bfcache
+//    just freezes it mid-load: some sections still showing skeleton
+//    placeholders, others already showing raw/unstyled content,
+//    permanently, because nothing ever re-runs to finish the job on
+//    restore. Hiding-then-revealing that snapshot (an earlier version
+//    of this fix) still meant showing that broken half-loaded state
+//    once revealed.
+//
+//    So instead: hide the page the instant it's about to be frozen
+//    (pagehide), so there's nothing stale to flash on the way back —
+//    and on restore, don't trust the snapshot at all. Just reload for
+//    real, so profile.js and everything else runs fresh and complete,
+//    same as any normal visit.
+let lwBfcacheReloading = false;
+
 window.addEventListener('pagehide', () => {
     document.documentElement.classList.add('lw-bfcache-hide');
 });
 
 window.addEventListener('pageshow', (event) => {
-    if (event.persisted && typeof requireAuth === 'function') {
-        requireAuth();
-    }
-    if (!window.__lwAuthRedirecting) {
-        document.documentElement.classList.remove('lw-bfcache-hide');
+    if (event.persisted) {
+        if (lwBfcacheReloading) return;
+        lwBfcacheReloading = true;
+        window.location.reload();
     }
 });
