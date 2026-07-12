@@ -32,6 +32,10 @@ function shouldShowHomeReminder() {
   }
 }
 
+function markHomeReminderSeen() {
+  try { localStorage.setItem(HOME_REMINDER_SEEN_KEY, '1'); } catch {}
+}
+
 function closeHomeReminder() {
   const overlay = document.getElementById('homeReminderOverlay');
   if (!overlay) return;
@@ -40,12 +44,17 @@ function closeHomeReminder() {
   document.body.classList.remove('modal-open');
   overlay.hidden = true;
   overlay.classList.remove('is-open');
-  try { localStorage.setItem(HOME_REMINDER_SEEN_KEY, '1'); } catch {}
 }
 
 function openHomeReminder() {
   const overlay = document.getElementById('homeReminderOverlay');
   if (!overlay || homeReminderDismissed) return;
+  // Marked seen the moment it's actually shown — not on dismiss. If we
+  // waited for dismiss, closing/reloading the app mid-modal (very easy
+  // to do while testing, or just by habit) would mean it never gets
+  // marked and shows again on every future open. Matches how
+  // onboarding.js's openOnboarding() marks itself seen.
+  markHomeReminderSeen();
   overlay.hidden = false;
   overlay.classList.add('is-open');
   document.body.classList.add('modal-open');

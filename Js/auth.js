@@ -173,25 +173,30 @@ function showAppLaunchOverlay() {
                 60%  { transform: scale(1.06); opacity: 1; }
                 100% { transform: scale(1);    opacity: 1; }
             }
-            /* Exit: logo blooms outward past the edges of the screen
-               while the black backdrop fades, so the real page reads
-               as being "opened into" rather than swapped underneath. */
-            @keyframes lwLaunchOpen {
+            /* Exit: backdrop and logo fade together on the exact same
+               clock — one animation, one duration, started on the
+               same frame. The logo eases back slightly as it goes,
+               like an aperture closing, rather than blowing up past
+               the viewport. Keeping both motions tied to one timeline
+               is what stops the page underneath from showing through
+               while the logo is still mid-animation. */
+            @keyframes lwLaunchOverlayOpen {
+                0%   { opacity: 1; }
+                100% { opacity: 0; }
+            }
+            @keyframes lwLaunchMarkOpen {
                 0%   { transform: scale(1);    opacity: 1; }
-                35%  { transform: scale(1.18); opacity: 1; }
-                100% { transform: scale(16);   opacity: 0; }
+                100% { transform: scale(0.82); opacity: 0; }
             }
             #lwAppLaunchOverlay .lw-launch-mark {
                 width: 76px; height: 76px; border-radius: 20px;
-                animation: lwLaunchIntro 0.5s cubic-bezier(.2,.8,.2,1) both;
+                animation: lwLaunchIntro 0.45s cubic-bezier(.2,.8,.2,1) both;
             }
             #lwAppLaunchOverlay.is-opening {
-                animation: none;
-                transition: opacity 0.5s ease 0.05s;
-                opacity: 0;
+                animation: lwLaunchOverlayOpen 0.4s ease forwards;
             }
             #lwAppLaunchOverlay.is-opening .lw-launch-mark {
-                animation: lwLaunchOpen 0.55s cubic-bezier(.4,0,.2,1) both;
+                animation: lwLaunchMarkOpen 0.4s ease forwards;
             }
         </style>
         <img class="lw-launch-mark" src="/images/dev-logo.png" alt="LightWatch">
@@ -201,13 +206,16 @@ function showAppLaunchOverlay() {
     return overlay;
 }
 
-// Plays the "opens wide" reveal, then removes the overlay.
+// Plays the reveal, then removes the overlay. Duration here must match
+// the .is-opening animation durations above (0.4s) — it's the same
+// clock, just read from JS so we know when it's safe to remove the
+// element from the DOM.
 function dismissAppLaunchOverlay() {
     if (!appLaunchOverlayEl) return;
     const el = appLaunchOverlayEl;
     appLaunchOverlayEl = null;
     el.classList.add('is-opening');
-    setTimeout(() => el.remove(), 600);
+    setTimeout(() => el.remove(), 420);
 }
 
 // Kept as its own name for readability at sign-out call sites; it's
@@ -271,6 +279,10 @@ function consumeAppLaunchPending() {
         dismissAppLaunchOverlay();
     };
 
+    const isStillLoading = () =>
+        document.body.classList.contains('app-loading') ||
+        document.body.classList.contains('page-data-loading');
+
     // Primary signal: the event the page-ready flow already dispatches
     // once real content replaces the skeleton (see home.js).
     window.addEventListener('lw-page-revealed', release, { once: true });
@@ -278,15 +290,25 @@ function consumeAppLaunchPending() {
     // Backup signal: same class-removal check home-reminder.js already
     // relies on, in case the event above isn't dispatched in every path.
     const observer = new MutationObserver(() => {
-        if (!document.body.classList.contains('app-loading') &&
-            !document.body.classList.contains('page-data-loading')) {
-            release();
-        }
+        if (!isStillLoading()) release();
     });
     observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
 
-    // Last resort so the overlay can never get stuck up forever.
-    fallback = setTimeout(release, 2500);
+    // Covers the (unlikely but possible) case where loading already
+    // finished before this script even ran — a MutationObserver only
+    // fires on FUTURE changes, so without this check we'd sit waiting
+    // on a mutation that already happened, and only recover via the
+    // fallback below — i.e. the splash would hang around for seconds
+    // after the real page was already sitting there ready underneath.
+    if (!isStillLoading()) {
+        release();
+    } else {
+        // Genuine last resort only — kept long on purpose so a slower
+        // connection never gets its skeleton exposed by an overlay
+        // that dismissed too early. Real loads should always finish
+        // via one of the two signals above well before this fires.
+        fallback = setTimeout(release, 7000);
+    }
 })();
 
 // ── Sign out — works from ANY page ───────────────────────────
