@@ -1482,6 +1482,13 @@
   visibility: visible;
   pointer-events: auto;
 }
+/* Applied to <html> and <body> by home.js while the panel is open
+   (setLocationPanelScrollLock) so the page behind it can't scroll. */
+html.lw-location-panel-open,
+body.lw-location-panel-open {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
 .location-expand-panel {
   width: 100%;
   /* This is a status card, not a document — cap it to a width that
@@ -1493,7 +1500,7 @@
      the screen edge, so all four corners round the same way. */
   border-radius: 20px;
   box-shadow: 0 -20px 60px rgba(0,0,0,0.28);
-  padding: 16px 18px 18px;
+  padding: 14px 16px 16px;
   /* Single-stage entrance: transform + opacity only. The old version
      also animated the body's max-height from 0 on a separate timer
      (see home.js), which meant the sheet visually opened twice —
@@ -1501,27 +1508,30 @@
      stage only fired after the status fetch resolved. That's what
      made it feel slow. Now everything (including skeleton copy) is
      visible the instant the panel slides in. */
-  transform: translateY(100%);
+  transform: translateY(100%) scale(0.98);
   opacity: 0;
-  transition: transform 0.22s cubic-bezier(.22,.9,.32,1), opacity 0.18s ease;
+  transition: transform 0.26s cubic-bezier(.22,.9,.32,1), opacity 0.2s ease;
   /* The card's real content (head + status row + 3 stats + last-outage
-     callout + note + notify toggle + button) tops out around ~470px —
-     a fixed cap sized to that, rather than a viewport-percentage cap,
-     is what keeps this feeling like a card instead of ballooning into
-     mostly-empty space on tall/large screens. */
-  max-height: min(72vh, 470px);
+     callout + note + notify toggle + button) comfortably fits under
+     ~530px once spacing is tightened — capped there, rather than to a
+     viewport-percentage, so it reads as a card instead of ballooning
+     into mostly-empty space on tall/large screens. `dvh` (where
+     supported) accounts for mobile browser chrome the way plain `vh`
+     doesn't, which is what was pushing this into needing an internal
+     scrollbar on shorter real-device viewports like a Galaxy S8 even
+     though the content itself fits — the second declaration below
+     simply overrides the vh one wherever dvh is supported. */
+  max-height: min(82vh, 530px);
+  max-height: min(82dvh, 530px);
   overflow-y: auto;
 }
 .location-expand-overlay--open .location-expand-panel {
-  transform: translateY(0);
+  transform: translateY(0) scale(1);
   opacity: 1;
 }
 @media (min-width: 640px) {
   .location-expand-overlay { align-items: center; padding: 20px; }
-  /* Desktop previously let this grow to 78vh, which on a tall monitor
-     left the card mostly empty below its actual content — same fixed
-     cap as mobile keeps it sized to what's really in it. */
-  .location-expand-panel { transform: translateY(10px) scale(0.98); max-height: 470px; }
+  .location-expand-panel { transform: translateY(10px) scale(0.98); max-height: 530px; }
   .location-expand-overlay--open .location-expand-panel { transform: translateY(0) scale(1); }
 }
 /* Small drag-handle affordance at the top — a light visual cue that this
@@ -1534,7 +1544,7 @@
   height: 4px;
   border-radius: 999px;
   background: rgba(0, 0, 0, 0.12);
-  margin: -6px auto 14px;
+  margin: -4px auto 10px;
 }
 @media (min-width: 640px) {
   .location-expand-panel::before { display: none; }
@@ -1545,8 +1555,8 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 12px;
-  padding-bottom: 12px;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.06);
 }
 .location-expand-panel__eyebrow {
@@ -1564,6 +1574,14 @@
   font-weight: 700;
   color: #1C1F26;
 }
+.location-expand-panel__region {
+  display: block;
+  font-size: 0.74rem;
+  font-weight: 500;
+  color: #8A8F98;
+  margin-top: 1px;
+}
+.location-expand-panel__region:empty { display: none; }
 .location-expand-panel__close {
   flex-shrink: 0;
   width: 30px;
@@ -1595,7 +1613,7 @@
   background: linear-gradient(135deg, rgba(28, 140, 122, 0.09), rgba(28, 140, 122, 0.03));
   border: 1px solid rgba(28, 140, 122, 0.18);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-  margin-bottom: 12px;
+  margin-bottom: 9px;
 }
 .location-expand-status__dot {
   width: 12px;
@@ -1621,7 +1639,7 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 .location-expand-stat {
   text-align: center;
@@ -1683,7 +1701,7 @@
   border-radius: 12px;
   background: rgba(199, 127, 59, 0.08);
   border: 1px solid rgba(199, 127, 59, 0.18);
-  margin-bottom: 12px;
+  margin-bottom: 9px;
   font-size: 0.78rem;
   color: #6B7280;
 }
@@ -1700,7 +1718,7 @@
   font-size: 0.76rem;
   color: #6B7280;
   line-height: 1.45;
-  margin: 0 0 12px;
+  margin: 0 0 9px;
 }
 
 /* ---- Notify-me checkbox row on the second-location panel ---- */
@@ -1712,7 +1730,7 @@
   border-radius: 14px;
   background: rgba(74, 144, 217, 0.07);
   border: 1px solid rgba(74, 144, 217, 0.18);
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   cursor: pointer;
   user-select: none;
   transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
@@ -3302,7 +3320,41 @@ body.modal-open {
   }
 
   .mobile-chat-toggle__icon {
+    position: relative;
+    display: inline-block;
+    width: 1.05rem;
+    height: 1.05rem;
     font-size: 1.05rem;
+  }
+
+  /* Both icons stay mounted at all times and cross-fade + rotate into
+     one another, instead of the old innerHTML swap which cut instantly
+     from one glyph to the other with nothing in between. */
+  .mobile-chat-toggle__icon-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    transition: opacity 0.22s ease, transform 0.26s cubic-bezier(.22,.9,.32,1);
+  }
+  .mobile-chat-toggle__icon-svg--chat {
+    opacity: 1;
+    transform: rotate(0deg) scale(1);
+  }
+  .mobile-chat-toggle__icon-svg--close {
+    opacity: 0;
+    transform: rotate(-45deg) scale(0.6);
+  }
+  .mobile-chat-toggle--open .mobile-chat-toggle__icon-svg--chat {
+    opacity: 0;
+    transform: rotate(45deg) scale(0.6);
+  }
+  .mobile-chat-toggle--open .mobile-chat-toggle__icon-svg--close {
+    opacity: 1;
+    transform: rotate(0deg) scale(1);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .mobile-chat-toggle__icon-svg { transition: opacity 0.12s linear; transform: none !important; }
   }
 
   html.mobile-chat-open,

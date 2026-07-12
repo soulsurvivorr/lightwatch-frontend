@@ -454,6 +454,32 @@
 
     .card__head-text { display: flex; flex-direction: column; }
 
+    /* ---- Collapse chevron on a card header (My locations, Notifications) ---- */
+    .card__head { position: relative; }
+    .card__collapse-btn {
+      margin-left: auto;
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 1px solid var(--border-soft);
+      background: none;
+      color: var(--text-faint);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    }
+    .card__collapse-btn:hover { background: var(--border-soft); color: var(--text-bright); }
+    .card__collapse-chevron { width: 15px; height: 15px; transition: transform 0.25s ease; }
+    .card__collapse-btn[aria-expanded="false"] .card__collapse-chevron { transform: rotate(-90deg); }
+    .card__collapse-body {
+      overflow: hidden;
+      transition: max-height 0.3s ease, opacity 0.2s ease;
+    }
+    .card__collapse-body[data-collapsed="true"] { opacity: 0; }
+
     /* ---- Toggle — slightly larger target + smoother knob ---- */
     .toggle { width: 44px; height: 25px; }
     .toggle__track::after { width: 19px; height: 19px; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
@@ -561,7 +587,12 @@
       color: var(--teal);
     }
     .location-row__icon svg { width: 18px; height: 18px; }
-    .location-row__icon--secondary { background: var(--border-soft); color: var(--text-faint); }
+    /* Warm amber accent (matches the second-location panel on Home)
+       instead of flat gray, so a saved second spot reads as its own
+       clearly-styled thing rather than a muted/disabled variant. */
+    .location-row__icon--secondary { background: rgba(214, 162, 74, 0.14); color: #C77F3B; }
+    .location-row--secondary { border-color: rgba(214, 162, 74, 0.22); background: linear-gradient(135deg, rgba(214,162,74,0.05), transparent 60%); }
+    .location-row--secondary:hover { border-color: rgba(214, 162, 74, 0.4); }
     .location-row__body {
       flex: 1 1 160px;
       min-width: 0;
@@ -589,7 +620,7 @@
       color: var(--teal);
       background: var(--teal-dim);
     }
-    .location-row__badge--secondary { color: var(--text-faint); background: var(--border-soft); }
+    .location-row__badge--secondary { color: #C77F3B; background: rgba(214, 162, 74, 0.14); }
     .location-row__actions {
       display: flex;
       gap: 6px;
@@ -986,37 +1017,60 @@
               <span class="card__title">My locations</span>
               <span class="card__meta">Areas you're monitoring</span>
             </span>
-          </div>
-          <div id="myLocationsList" class="location-row-list" style="margin-bottom: 4px;">
-            <div style="color: var(--text-faint); font-size: 0.85rem; padding: 8px 0;">Loading your locations…</div>
-          </div>
-
-          <div id="secondaryLocationBlock" class="secondary-location">
-            <button type="button" class="secondary-location__add" id="secondaryLocationAddBtn" hidden>
-              + Add another location, like Work
+            <button type="button" class="card__collapse-btn" id="myLocationsCollapseBtn" aria-expanded="true" aria-controls="myLocationsCollapseBody" aria-label="Collapse my locations">
+              <svg class="card__collapse-chevron" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="m4 6 4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </button>
+          </div>
+          <div class="card__collapse-body" id="myLocationsCollapseBody">
+            <div id="myLocationsList" class="location-row-list" style="margin-bottom: 4px;">
+              <div style="color: var(--text-faint); font-size: 0.85rem; padding: 8px 0;">Loading your locations…</div>
+            </div>
 
-            <form id="secondaryLocationForm" class="secondary-location__form" hidden action="javascript:void(0)">
-              <label class="form-field">
-                <span>Label</span>
-                <input type="text" id="secondaryLocationLabel" placeholder="e.g. Work" maxlength="40" />
-              </label>
-              <div class="secondary-location__row">
+            <div id="secondaryLocationBlock" class="secondary-location">
+              <button type="button" class="secondary-location__add" id="secondaryLocationAddBtn" hidden>
+                + Add another location, like Work
+              </button>
+
+              <form id="secondaryLocationForm" class="secondary-location__form" hidden action="javascript:void(0)">
                 <label class="form-field">
-                  <span>City / Town</span>
-                  <input type="text" id="secondaryLocationCity" placeholder="City or town" maxlength="60" required />
+                  <span>Label</span>
+                  <input type="text" id="secondaryLocationLabel" placeholder="e.g. Work" maxlength="40" />
                 </label>
-                <label class="form-field">
-                  <span>Region</span>
-                  <input type="text" id="secondaryLocationRegion" placeholder="Region" maxlength="60" required />
-                </label>
-              </div>
-              <p id="secondaryLocationMessage" style="font-size:0.76rem;color:var(--text-faint);margin:0;"></p>
-              <div class="secondary-location__actions">
-                <button type="button" class="btn btn--ghost" id="secondaryLocationCancelBtn">Cancel</button>
-                <button type="submit" class="btn btn--primary" id="secondaryLocationSaveBtn">Save location</button>
-              </div>
-            </form>
+                <div class="secondary-location__row">
+                  <label class="form-field">
+                    <span>City / Town</span>
+                    <input type="text" id="secondaryLocationCity" placeholder="City or town" maxlength="60" required />
+                  </label>
+                  <label class="form-field">
+                    <span>Region</span>
+                    <select id="secondaryLocationRegion" required>
+                      <option value="">Choose a region</option>
+                      <option value="Greater Accra">Greater Accra</option>
+                      <option value="Ashanti">Ashanti</option>
+                      <option value="Eastern">Eastern</option>
+                      <option value="Western">Western</option>
+                      <option value="Volta">Volta</option>
+                      <option value="Central">Central</option>
+                      <option value="Northern">Northern</option>
+                      <option value="Upper East">Upper East</option>
+                      <option value="Upper West">Upper West</option>
+                      <option value="Bono">Bono</option>
+                      <option value="Bono East">Bono East</option>
+                      <option value="Ahafo">Ahafo</option>
+                      <option value="Oti">Oti</option>
+                      <option value="Savannah">Savannah</option>
+                      <option value="North East">North East</option>
+                      <option value="Western North">Western North</option>
+                    </select>
+                  </label>
+                </div>
+                <p id="secondaryLocationMessage" style="font-size:0.76rem;color:var(--text-faint);margin:0;"></p>
+                <div class="secondary-location__actions">
+                  <button type="button" class="btn btn--ghost" id="secondaryLocationCancelBtn">Cancel</button>
+                  <button type="submit" class="btn btn--primary" id="secondaryLocationSaveBtn">Save location</button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
 
@@ -1027,49 +1081,54 @@
               <span class="card__title">Notifications</span>
               <span class="card__meta">What to alert you about</span>
             </span>
+            <button type="button" class="card__collapse-btn" id="notificationsCollapseBtn" aria-expanded="true" aria-controls="notificationsCollapseBody" aria-label="Collapse notifications">
+              <svg class="card__collapse-chevron" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="m4 6 4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
           </div>
-          <button type="button" data-enable-push-btn onclick="enableLightWatchPush()" class="btn btn--ghost btn--block" style="margin-bottom: 12px; border-color: var(--brand); color: var(--brand);">
-            Enable notifications
-          </button>
-          <div class="pref-row">
-            <div class="pref-row__info">
-              <div class="pref-row__title">Outage alerts in my area</div>
-              <div class="pref-row__sub">Get notified when light goes off at your location</div>
+          <div class="card__collapse-body" id="notificationsCollapseBody">
+            <button type="button" data-enable-push-btn onclick="enableLightWatchPush()" class="btn btn--ghost btn--block" style="margin-bottom: 12px; border-color: var(--brand); color: var(--brand);">
+              Enable notifications
+            </button>
+            <div class="pref-row">
+              <div class="pref-row__info">
+                <div class="pref-row__title">Outage alerts in my area</div>
+                <div class="pref-row__sub">Get notified when light goes off at your location</div>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" checked id="prefOutageAlerts">
+                <span class="toggle__track"></span>
+              </label>
             </div>
-            <label class="toggle">
-              <input type="checkbox" checked id="prefOutageAlerts">
-              <span class="toggle__track"></span>
-            </label>
-          </div>
-          <div class="pref-row">
-            <div class="pref-row__info">
-              <div class="pref-row__title">Power restored alerts</div>
-              <div class="pref-row__sub">Know the moment power comes back on</div>
+            <div class="pref-row">
+              <div class="pref-row__info">
+                <div class="pref-row__title">Power restored alerts</div>
+                <div class="pref-row__sub">Know the moment power comes back on</div>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" checked id="prefRestoredAlerts">
+                <span class="toggle__track"></span>
+              </label>
             </div>
-            <label class="toggle">
-              <input type="checkbox" checked id="prefRestoredAlerts">
-              <span class="toggle__track"></span>
-            </label>
-          </div>
-          <div class="pref-row">
-            <div class="pref-row__info">
-              <div class="pref-row__title">Community chat mentions</div>
-              <div class="pref-row__sub">When someone replies to a message in your location</div>
+            <div class="pref-row">
+              <div class="pref-row__info">
+                <div class="pref-row__title">Community chat mentions</div>
+                <div class="pref-row__sub">When someone replies to a message in your location</div>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" id="prefChatMentions">
+                <span class="toggle__track"></span>
+              </label>
             </div>
-            <label class="toggle">
-              <input type="checkbox" id="prefChatMentions">
-              <span class="toggle__track"></span>
-            </label>
-          </div>
-          <div class="pref-row">
-            <div class="pref-row__info">
-              <div class="pref-row__title">Mute everyone-audience chat alerts</div>
-              <div class="pref-row__sub">Stops push notifications from messages sent to Everyone audience</div>
+            <div class="pref-row">
+              <div class="pref-row__info">
+                <div class="pref-row__title">Mute everyone-audience chat alerts</div>
+                <div class="pref-row__sub">Stops push notifications from messages sent to Everyone audience</div>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" id="prefMuteGlobalChat">
+                <span class="toggle__track"></span>
+              </label>
             </div>
-            <label class="toggle">
-              <input type="checkbox" id="prefMuteGlobalChat">
-              <span class="toggle__track"></span>
-            </label>
           </div>
         </div>
 

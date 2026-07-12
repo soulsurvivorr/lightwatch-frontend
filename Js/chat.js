@@ -885,11 +885,12 @@ function setMobileChatOpen(open) {
 
     const toggle = document.getElementById('mobileChatToggle');
     if (toggle) {
-        const icon = toggle.querySelector('.mobile-chat-toggle__icon');
+        // Both the chat and close glyphs stay in the DOM (see home.html) and
+        // CSS cross-fades/rotates between them off this class — smoother
+        // than the old innerHTML swap, which cut instantly from one icon
+        // to the other with no transition in between.
         const label = toggle.querySelector('.mobile-chat-toggle__label');
-        if (icon) icon.innerHTML = open
-            ? '<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:1em;height:1em;" aria-hidden="true"><path d="M3 3l10 10M13 3 3 13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>'
-            : '<svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:1em;height:1em;" aria-hidden="true"><path d="M3 4.8h14a1 1 0 0 1 1 1V13a1 1 0 0 1-1 1H8.5L5 16.8V14H3a1 1 0 0 1-1-1V5.8a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>';
+        toggle.classList.toggle('mobile-chat-toggle--open', open);
         if (label) label.textContent = open ? 'Close' : 'Chat';
         toggle.setAttribute('aria-label', open ? 'Close chat' : 'Open chat');
     }

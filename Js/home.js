@@ -73,10 +73,12 @@ function renderSecondaryLocationChip() {
     chip.hidden = false;
 
     document.getElementById('secondaryLocationPanelBadge').textContent = label;
-    // Only the city (plus the label shown above, e.g. "Work"), never the
-    // region — the region is redundant here and just adds noise.
     const titleEl = document.getElementById('secondaryLocationPanelTitle');
     if (titleEl) titleEl.textContent = sec.city || '—';
+    // Region shown as a small line under the city so the panel reads as
+    // a specific place ("Kumasi, Ashanti"), not just a bare town name.
+    const regionEl = document.getElementById('secondaryLocationPanelRegion');
+    if (regionEl) regionEl.textContent = sec.region || '';
 }
 
 // -----------------------------------------------------
@@ -173,6 +175,33 @@ async function loadSecondaryLocationStatus(sec) {
     }
 }
 
+// Same "freeze the page in place" technique used for the mobile chat
+// popup (see setMobileScrollLock in chat.js), but applied at every
+// viewport width — this panel opens as a centered modal on desktop too,
+// and the page behind it shouldn't scroll there either.
+let lwLocationPanelLockedScrollY = 0;
+function setLocationPanelScrollLock(locked) {
+    if (locked) {
+        lwLocationPanelLockedScrollY = window.scrollY || window.pageYOffset || 0;
+        document.documentElement.classList.add('lw-location-panel-open');
+        document.body.classList.add('lw-location-panel-open');
+        document.body.style.position = 'fixed';
+        document.body.style.top = `-${lwLocationPanelLockedScrollY}px`;
+        document.body.style.left = '0';
+        document.body.style.right = '0';
+        document.body.style.width = '100%';
+    } else {
+        document.documentElement.classList.remove('lw-location-panel-open');
+        document.body.classList.remove('lw-location-panel-open');
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.left = '';
+        document.body.style.right = '';
+        document.body.style.width = '';
+        window.scrollTo(0, lwLocationPanelLockedScrollY);
+    }
+}
+
 function openSecondaryLocationPanel() {
     const overlay = document.getElementById('secondaryLocationOverlay');
     const panel = document.getElementById('secondaryLocationPanel');
@@ -180,6 +209,7 @@ function openSecondaryLocationPanel() {
 
     overlay.classList.add('location-expand-overlay--open');
     overlay.setAttribute('aria-hidden', 'false');
+    setLocationPanelScrollLock(true);
 
     const sec = getCachedUserForSecondaryLocation().secondaryLocation;
     if (sec?.city) {
@@ -194,6 +224,7 @@ function closeSecondaryLocationPanel() {
 
     overlay.classList.remove('location-expand-overlay--open');
     overlay.setAttribute('aria-hidden', 'true');
+    setLocationPanelScrollLock(false);
 }
 
 // -----------------------------------------------------

@@ -383,6 +383,10 @@ function renderLocationsList(user) {
     if (!listEl) return;
 
     const pinIcon = `<svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 18s6-5.686 6-10a6 6 0 1 0-12 0c0 4.314 6 10 6 10Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="10" cy="8" r="2.2" stroke="currentColor" stroke-width="1.6"/></svg>`;
+    // A distinct flag icon (rather than the same pin recolored) so a saved
+    // second spot is visually its own thing at a glance, not a muted
+    // variant of the primary location.
+    const flagIcon = `<svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 17V3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M5 4.2c1.4-1 3-1 4.4 0 1.5 1 3.1 1 4.6 0v6.6c-1.5 1-3.1 1-4.6 0-1.4-1-3-1-4.4 0V4.2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
     const pencilIcon = `<svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M13.4 3.5 16.5 6.6 7 16.1H3.9v-3.1L13.4 3.5Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
     const trashIcon = `<svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 6h12M8 6V4.5A1.5 1.5 0 0 1 9.5 3h1A1.5 1.5 0 0 1 12 4.5V6M6 6v9a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
@@ -403,8 +407,8 @@ function renderLocationsList(user) {
     if (sec?.city) {
         const secLabel = [sec.city, sec.region].filter(Boolean).join(', ');
         rows.push(`
-            <div class="location-row">
-                <span class="location-row__icon location-row__icon--secondary" aria-hidden="true">${pinIcon}</span>
+            <div class="location-row location-row--secondary">
+                <span class="location-row__icon location-row__icon--secondary" aria-hidden="true">${flagIcon}</span>
                 <div class="location-row__body">
                     <div class="location-row__name">${secLabel}</div>
                     <div class="location-row__badge location-row__badge--secondary">${sec.label || 'Second location'}</div>
@@ -604,6 +608,52 @@ async function loadAccountExtras() {
 }
 
 // ------------------------------------------------------------
+// COLLAPSIBLE CARDS — chevron beside "My locations" and
+// "Notifications" headers. Same measure-then-animate approach as
+// initAccordions() above (max-height driven off scrollHeight), just
+// applied to a whole card body instead of a single accordion panel.
+// ------------------------------------------------------------
+function initCollapsibleCards() {
+    document.querySelectorAll('.card__collapse-btn').forEach(btn => {
+        const body = document.getElementById(btn.getAttribute('aria-controls'));
+        if (!body) return;
+
+        // Start fully open at natural height so nothing clips on load.
+        body.style.maxHeight = 'none';
+
+        btn.addEventListener('click', () => {
+            const isOpen = btn.getAttribute('aria-expanded') === 'true';
+
+            if (isOpen) {
+                body.style.maxHeight = body.scrollHeight + 'px';
+                requestAnimationFrame(() => { body.style.maxHeight = '0px'; });
+                body.dataset.collapsed = 'true';
+                btn.setAttribute('aria-expanded', 'false');
+                btn.setAttribute('aria-label', btn.getAttribute('aria-label').replace('Collapse', 'Expand'));
+            } else {
+                body.dataset.collapsed = 'false';
+                btn.setAttribute('aria-expanded', 'true');
+                btn.setAttribute('aria-label', btn.getAttribute('aria-label').replace('Expand', 'Collapse'));
+                body.style.maxHeight = body.scrollHeight + 'px';
+                body.addEventListener('transitionend', function onEnd() {
+                    if (btn.getAttribute('aria-expanded') === 'true') body.style.maxHeight = 'none';
+                    body.removeEventListener('transitionend', onEnd);
+                });
+            }
+        });
+    });
+
+    // Re-measure open bodies on resize/content change (e.g. the locations
+    // list re-rendering after a save) so they don't clip.
+    window.addEventListener('resize', () => {
+        document.querySelectorAll('.card__collapse-btn[aria-expanded="true"]').forEach(btn => {
+            const body = document.getElementById(btn.getAttribute('aria-controls'));
+            if (body && body.style.maxHeight !== 'none') body.style.maxHeight = body.scrollHeight + 'px';
+        });
+    });
+}
+
+// ------------------------------------------------------------
 // INIT
 // ------------------------------------------------------------
 initDisplayPrefsUI();
@@ -611,4 +661,5 @@ initChatPreviewPopup();
 initNotificationPrefToggles();
 initSecondaryLocationForm();
 initAccordions();
+initCollapsibleCards();
 loadAccountExtras();
