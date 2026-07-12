@@ -6,6 +6,7 @@
   <link rel="manifest" href="/manifest.json?v=1.0.14">
   <script src="../Js/app-startup.js?v=1.0.14" defer></script>
   <meta name="theme-color" content="#1C1F26">
+  <link rel="icon" href="/images/dev-logo.png?v=1.0.14" type="image/png">
   <link rel="apple-touch-icon" sizes="180x180" href="/images/dev-logo.png?v=1.0.14">
   <link rel="apple-touch-icon" sizes="192x192" href="/images/dev-logo.png?v=1.0.14">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -21,68 +22,617 @@
       document.documentElement.style.setProperty('color-scheme', theme);
     })();
   </script>
-  <title>LightWatch — Home</title>
-  <link rel="icon" href="/images/dev-logo.png?v=1.0.14" type="image/png">
+  <title>Account — LightWatch</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/home.css?v=1.0.14" />
   <link rel="stylesheet" href="../css/styles.css?v=1.0.14">
-  <!-- Warms the cache for the pages reachable from the bottom/top nav so
-       tapping Home, Reports, or Account feels instant instead of doing a
-       full fresh load each time. -->
-  <link rel="prefetch" href="./areas.html">
-  <link rel="prefetch" href="./reports.html">
-  <link rel="prefetch" href="./account.html">
-</head>
-<body class="page-data-loading" data-skeleton-managed="1">
   <script src="../Js/config.js?v=1.0.14"></script>
   <script src="../Js/auth.js?v=1.0.14"></script>
   <script>
-    // requireAuth() (auth.js) redirects to index.html if there's no
-    // session AND sets window.__lwAuthRedirecting = true first — that
-    // flag is what tells profile.js to skip rendering anything (even
-    // "Guest" placeholders) while the redirect is in flight. A hand-
-    // rolled check here that skipped that flag was the root cause of
-    // the account/home page briefly flashing stale or Guest content
-    // after sign-out + back navigation.
+    // Runs before ANY of this page's markup paints (unlike the old guard,
+    // which sat 1000+ lines into the body). requireAuth() (auth.js) sets
+    // window.__lwAuthRedirecting = true before redirecting a signed-out
+    // visitor — that flag is what stops profile.js from rendering "Guest"
+    // placeholders into the page while the redirect is still in flight.
     requireAuth();
     if (!window.__lwAuthRedirecting) {
       document.documentElement.classList.remove('auth-check');
     }
   </script>
+  <style>
+    html.auth-check body { visibility: hidden; }
+  </style>
+  <style>
+    .account-grid {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      gap: 20px;
+      align-items: start;
+    }
 
-  <!-- Notification toast -->
-  <div id="lw-toast"></div>
+    #accountSkeleton {
+      display: none;
+    }
 
-  <div class="home-reminder-overlay" id="homeReminderOverlay" hidden>
-    <div class="home-reminder-card" role="dialog" aria-modal="true" aria-labelledby="homeReminderTitle">
-      <div class="card__head">
-        <span class="home-reminder-card__icon" aria-hidden="true">⚠️</span>
-        <div>
-          <span class="card__title" id="homeReminderTitle">LightWatch reminder</span>
-          <span class="card__meta">Read before you post</span>
-        </div>
-      </div>
-      <div class="home-reminder-copy">
-        <p class="home-reminder-copy__lead">People make real movement and business decisions from this page. Treat every report as a public responsibility, not a guess.</p>
-        <ul class="home-reminder-points">
-          <li>Submit updates only after personally confirming power status in your area.</li>
-          <li>Wrong or outdated reports can waste transport cost, time, and business opportunities.</li>
-          <li>LightWatch is independent and not affiliated with ECG or any government agency.</li>
-        </ul>
-      </div>
-      <div class="home-reminder-actions">
-        <button type="button" class="btn btn--primary" id="homeReminderCloseBtn">Understood</button>
-      </div>
-    </div>
-  </div>
+    .page-data-loading #accountSkeleton {
+      display: block;
+    }
+
+    .page-data-loading #accountRealContent {
+      display: none;
+    }
+
+    .page-data-loading .topbar,
+    .page-data-loading #bottom_nav_wrapper {
+      pointer-events: none;
+    }
+
+    /* ---- Profile card ---- */
+    .profile-hero {
+      text-align: center;
+      padding: 28px 20px 20px;
+    }
+
+    .profile-hero__avatar {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--teal), var(--teal-dim));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      color: white;
+      font-weight: 700;
+      margin: 0 auto 14px;
+      border: 3px solid var(--border-soft);
+    }
+
+    .profile-hero__name {
+      font-family: var(--font-display);
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--text-bright);
+      margin-bottom: 4px;
+    }
+
+    .profile-hero__handle {
+      font-size: 0.82rem;
+      color: var(--text-faint);
+      margin-bottom: 16px;
+    }
+
+    .profile-hero__badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: 999px;
+      background: var(--teal-dim);
+      color: var(--teal);
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    /* ---- Detail rows ---- */
+    .detail-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      margin-top: 4px;
+    }
+
+    .detail-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 13px 0;
+      border-bottom: 1px solid var(--border-soft);
+      gap: 12px;
+    }
+
+    .detail-row:last-child { border-bottom: none; }
+
+    .detail-row__label {
+      font-size: 0.82rem;
+      color: var(--text-faint);
+      flex-shrink: 0;
+    }
+
+    .detail-row__value {
+      font-size: 0.88rem;
+      color: var(--text-bright);
+      font-weight: 500;
+      text-align: right;
+    }
+
+    /* ---- Stats row ---- */
+    .account-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .account-stat {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      text-align: center;
+    }
+
+    .account-stat__value {
+      font-family: var(--font-display);
+      font-size: 1.4rem;
+      font-weight: 600;
+      color: var(--text-bright);
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .account-stat__label {
+      font-size: 0.72rem;
+      color: var(--text-faint);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* ---- Section headings inside right column ---- */
+    .section-label {
+      font-size: 0.72rem;
+      color: var(--text-faint);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 10px;
+      margin-top: 4px;
+    }
+
+    /* ---- Preference toggles ---- */
+    .pref-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 13px 0;
+      border-bottom: 1px solid var(--border-soft);
+      gap: 16px;
+    }
+
+    .pref-row:last-child { border-bottom: none; }
+
+    .pref-row__info { flex: 1; }
+
+    .pref-row__title {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--text-bright);
+      margin-bottom: 2px;
+    }
+
+    .pref-row__sub {
+      font-size: 0.78rem;
+      color: var(--text-faint);
+    }
+
+    /* Toggle switch */
+    .toggle {
+      position: relative;
+      width: 42px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+
+    .toggle input { opacity: 0; width: 0; height: 0; }
+
+    .toggle__track {
+      position: absolute;
+      inset: 0;
+      border-radius: 999px;
+      background: var(--border-strong);
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .toggle__track::after {
+      content: "";
+      position: absolute;
+      left: 3px;
+      top: 3px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: white;
+      transition: transform 0.2s ease;
+    }
+
+    .toggle input:checked + .toggle__track {
+      background: var(--teal);
+    }
+
+    .toggle input:checked + .toggle__track::after {
+      transform: translateX(18px);
+    }
+
+    /* ---- Danger zone ---- */
+    .danger-zone {
+      border: 1px solid var(--red-dim);
+      border-radius: var(--radius-lg);
+      padding: 18px 20px;
+      margin-top: 20px;
+    }
+
+    .danger-zone__title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--red);
+      margin-bottom: 4px;
+    }
+
+    .danger-zone__sub {
+      font-size: 0.8rem;
+      color: var(--text-faint);
+      margin-bottom: 14px;
+    }
+
+    @media (max-width: 720px) {
+      .account-grid {
+        grid-template-columns: 1fr;
+      }
+      .account-stats {
+        grid-template-columns: 1fr 1fr;
+      }
+      /* Mobile only: flatten the two grid columns so every card becomes
+         a direct grid item and can be reordered independently. Desktop
+         keeps the original two-column layout untouched. */
+      .account-grid > div {
+        display: contents;
+      }
+      #accountSignOutZone {
+        order: 99;
+        margin-top: 0;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .account-stats {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 430px) {
+      .account-stat {
+        padding: 10px 12px;
+      }
+
+      .account-stat__value {
+        font-size: 1.05rem;
+      }
+
+      .account-stat__label,
+      .section-label,
+      .detail-row__label,
+      .pref-row__sub,
+      .danger-zone__sub {
+        font-size: 0.72rem;
+      }
+
+      .detail-row__value,
+      .pref-row__title,
+      .danger-zone__title {
+        font-size: 0.82rem;
+      }
+
+      .detail-row,
+      .pref-row {
+        padding: 9px 0;
+      }
+    }
+
+    /* ============================================================
+       MODERN ACCOUNT UI — visual pass over the structure above.
+       Keeps the same design tokens (--teal, --bg-panel, etc.) so it
+       stays on-brand with the rest of the app, just more considered:
+       icon badges, softer elevation, clearer empty/locked states.
+       ============================================================ */
+
+    .account-grid .card {
+      border-radius: var(--radius-lg, 16px);
+      box-shadow: 0 1px 0 rgba(255,255,255,0.02) inset, 0 10px 24px -18px rgba(0,0,0,0.5);
+      transition: box-shadow 0.2s ease;
+    }
+
+    .profile-hero {
+      position: relative;
+      background:
+        radial-gradient(120% 140% at 50% -10%, color-mix(in srgb, var(--teal) 22%, transparent), transparent 60%);
+    }
+
+    .profile-hero__ring {
+      width: 88px;
+      height: 88px;
+      margin: 0 auto 14px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: conic-gradient(from 200deg, var(--teal), var(--brand), var(--teal));
+      padding: 3px;
+    }
+
+    .profile-hero__ring .profile-hero__avatar {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      border: 3px solid var(--bg-panel);
+    }
+
+    .profile-hero__avatar {
+      box-shadow: 0 8px 22px -8px color-mix(in srgb, var(--teal) 60%, transparent);
+    }
+
+    .profile-details-card .section-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .profile-details-card .section-label::before {
+      content: "";
+      width: 12px;
+      height: 2px;
+      border-radius: 2px;
+      background: var(--teal);
+      display: inline-block;
+    }
+
+    .detail-row {
+      gap: 10px;
+    }
+
+    .detail-row__icon {
+      width: 26px;
+      height: 26px;
+      border-radius: 8px;
+      background: var(--bg-panel-raised, var(--bg-panel));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.76rem;
+      flex-shrink: 0;
+    }
+
+    .detail-row__label {
+      flex: 1;
+    }
+
+    #cityEditCard {
+      overflow: hidden;
+      transition: opacity 0.25s ease, max-height 0.3s ease, margin 0.3s ease, padding 0.3s ease;
+    }
+
+    #cityEditCard.card--collapsed {
+      opacity: 0;
+      max-height: 0;
+      margin-top: 0 !important;
+      margin-bottom: 0 !important;
+      padding-top: 0;
+      padding-bottom: 0;
+      border-width: 0;
+      pointer-events: none;
+    }
+
+    .card__head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .card__icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      flex-shrink: 0;
+      border-radius: 10px;
+      background: var(--teal-dim);
+      font-size: 0.95rem;
+    }
+
+    .card__head-text { display: flex; flex-direction: column; }
+
+    /* ---- Toggle — slightly larger target + smoother knob ---- */
+    .toggle { width: 44px; height: 25px; }
+    .toggle__track::after { width: 19px; height: 19px; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+    .toggle input:checked + .toggle__track::after { transform: translateX(19px); }
+    .toggle__track { transition: background 0.2s ease, box-shadow 0.2s ease; }
+    .toggle input:focus-visible + .toggle__track { box-shadow: 0 0 0 3px color-mix(in srgb, var(--teal) 35%, transparent); }
+
+    /* ---- Notifications: "enabled" resting state ---- */
+    .btn--enabled-state {
+      background: var(--teal-dim) !important;
+      border-color: transparent !important;
+      color: var(--teal) !important;
+      cursor: default;
+      opacity: 1 !important;
+    }
+    .btn__check {
+      display: inline-flex;
+      margin-right: 4px;
+      font-weight: 700;
+    }
+
+    /* ---- Locations list ---- */
+    .location-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border-soft);
+    }
+    .location-row:last-child { border-bottom: none; }
+    .location-row__dot {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+      background: var(--teal);
+      box-shadow: 0 0 0 4px var(--teal-dim);
+    }
+    .location-row__dot--secondary { background: var(--text-faint); box-shadow: 0 0 0 4px var(--border-soft); }
+    .location-row__body { flex: 1; min-width: 0; }
+    .location-row__name { font-size: 0.88rem; font-weight: 500; color: var(--text-bright); }
+    .location-row__badge {
+      font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em;
+      color: var(--text-faint); margin-top: 1px;
+    }
+    .location-row__actions { display: flex; gap: 6px; flex-shrink: 0; }
+    .location-row__actions button {
+      background: none; border: none; color: var(--text-faint); font-size: 0.76rem;
+      cursor: pointer; padding: 4px 6px; border-radius: 6px;
+    }
+    .location-row__actions button:hover { color: var(--text-bright); background: var(--border-soft); }
+
+    .secondary-location { margin-top: 12px; }
+    .secondary-location__add {
+      width: 100%;
+      border: 1px dashed var(--border-strong);
+      background: transparent;
+      color: var(--text-faint);
+      border-radius: var(--radius-md);
+      padding: 11px;
+      font-size: 0.84rem;
+      cursor: pointer;
+      transition: border-color 0.15s ease, color 0.15s ease;
+    }
+    .secondary-location__add:hover { border-color: var(--teal); color: var(--teal); }
+    .secondary-location__form {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 10px;
+      padding: 14px;
+      border-radius: var(--radius-md);
+      background: var(--bg-panel);
+      border: 1px solid var(--border-soft);
+    }
+    .secondary-location__row { display: flex; gap: 8px; }
+    .secondary-location__row .form-field { flex: 1; }
+    .secondary-location__actions { display: flex; gap: 8px; margin-top: 2px; }
+    .secondary-location__actions .btn { flex: 1; }
+
+    /* ---- Locked city state ---- */
+    .locked-field {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      border-radius: var(--radius-md);
+      background: var(--bg-panel);
+      border: 1px solid var(--border-soft);
+    }
+    .locked-field__icon {
+      width: 30px; height: 30px; border-radius: 9px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--border-soft); color: var(--text-faint); font-size: 0.9rem;
+    }
+    .locked-field__value { font-size: 0.9rem; color: var(--text-bright); font-weight: 500; }
+    .locked-field__sub { font-size: 0.74rem; color: var(--text-faint); margin-top: 2px; }
+
+    /* ---- Display prefs: extra controls ---- */
+    .swatch-row { display: flex; gap: 8px; margin-top: 4px; }
+    .swatch {
+      width: 26px; height: 26px; border-radius: 50%; cursor: pointer;
+      border: 2px solid transparent; padding: 0;
+    }
+    .swatch[aria-pressed="true"] { border-color: var(--text-bright); }
+    .density-select {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-soft);
+      color: var(--text-bright);
+      border-radius: var(--radius-md);
+      padding: 8px 10px;
+      font-size: 0.82rem;
+    }
+
+    /* ---- Compact chat popup preview ---- */
+    .chat-popup-overlay {
+      position: fixed; inset: 0; z-index: 9998;
+      background: rgba(0,0,0,0.4);
+      display: flex; align-items: flex-end; justify-content: center;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.18s ease;
+    }
+    .chat-popup-overlay--open { opacity: 1; pointer-events: auto; }
+    .chat-popup {
+      width: 100%; max-width: 420px;
+      background: var(--bg-panel, #20242c);
+      border: 1px solid var(--border-soft);
+      border-radius: 18px 18px 0 0;
+      max-height: 72vh;
+      display: flex; flex-direction: column;
+      transform: translateY(16px);
+      transition: transform 0.2s ease;
+    }
+    .chat-popup-overlay--open .chat-popup { transform: translateY(0); }
+    @media (min-width: 640px) {
+      .chat-popup-overlay { align-items: center; }
+      .chat-popup { border-radius: 18px; max-height: 80vh; }
+    }
+    .chat-popup__head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 16px; border-bottom: 1px solid var(--border-soft);
+    }
+    .chat-popup__title { font-size: 0.92rem; font-weight: 600; color: var(--text-bright); }
+    .chat-popup__close { background: none; border: none; color: var(--text-faint); font-size: 1.1rem; cursor: pointer; }
+    .chat-popup__body { padding: 14px 16px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 8px; }
+    .chat-bubble {
+      max-width: 78%;
+      padding: 8px 12px;
+      border-radius: 14px;
+      font-size: 0.82rem;
+      color: var(--text-bright);
+      background: var(--border-soft);
+      align-self: flex-start;
+    }
+    .chat-bubble--mine { align-self: flex-end; background: var(--teal-dim); color: var(--teal); }
+    .chat-popup--compact .chat-bubble { padding: 5px 10px; font-size: 0.76rem; border-radius: 10px; }
+    .chat-popup__note {
+      padding: 10px 16px; font-size: 0.72rem; color: var(--text-faint);
+      border-top: 1px solid var(--border-soft);
+    }
+  </style>
+</head>
+<body class="page-data-loading" data-skeleton-managed="1" data-skeleton-key="account">
+  <script>
+    // The skeleton is now applied unconditionally via the "page-data-loading"
+    // class already on <body> in the raw HTML (see above), so it covers the
+    // very first paint on every visit — first-time or returning. The old
+    // version of this script skipped adding that class entirely on repeat
+    // visits (once "lw_skeleton_seen_account" was set), on the theory that
+    // returning users didn't need it. In practice the page still had to wait
+    // on the same network fetches either way, so skipping the skeleton just
+    // meant the raw, dash-filled content sat on screen for a second or two
+    // before real data filled in — that was the "skeleton isn't working"
+    // flash. Always covering the wait, however brief, reads better than ever
+    // showing an unfinished page.
+    //
+    // Tell profile.js's hideProfileLoader() to leave the skeleton up even
+    // after the base profile finishes loading — account.js clears this once
+    // locations/chat-handle/city extras are actually in the DOM too.
+    document.body.dataset.accountExtrasLoading = '1';
+  </script>
 
   <header class="topbar">
     <div class="topbar__inner">
-       <div class="topbar__brand">
-          <img src="../images/dev-logo.png" alt="LightWatch Logo" width="32" height="32">
-          <p>LightWatch GH</p>
-        </div>
+    <!--<div class="brand">
+        <span class="brand__mark">LW</span>
+        <span>LightWatch</span>
+      </div>-->
+      <div class="topbar__brand">
+        <img src="../images/dev-logo.png" alt="LightWatch Logo" width="32" height="32">
+        <p>LightWatch GH</p>
+      </div>
       <input type="checkbox" id="nav-toggle" class="nav-toggle" />
       <label for="nav-toggle" class="nav-toggle-label" aria-label="Toggle navigation">
         <span class="bar"></span><span class="bar"></span><span class="bar"></span>
@@ -100,419 +650,371 @@
     </div>
   </header>
 
-  <!-- Full-screen skeleton, shown while .app-loading is on <body>.
-       Built from the same layout classes as the real content below
-       (hero-banner, card, location-page-grid...) so it lines up
-       exactly, just filled with .skel shimmer blocks instead of
-       real text. home.js removes .app-loading once data is ready,
-       which hides this and reveals #realPageContent. -->
-  <div class="page" id="pageSkeleton" aria-hidden="true">
-
-    <div class="hero-banner">
-      <div class="hero-banner__location">
-        <span class="skel skel-dot"></span>
-        <span class="skel skel-line" style="width:110px;"></span>
-      </div>
-      <span class="skel skel-line" style="width:150px;height:11px;margin-top:14px;"></span>
-      <span class="skel skel-line" style="width:60%;height:28px;margin-top:10px;"></span>
-      <span class="skel skel-line" style="width:85%;height:13px;margin-top:10px;"></span>
-      <div class="hero-banner__stats">
-        <div class="hero-stat">
-          <span class="skel skel-line" style="width:60%;height:20px;"></span>
-          <span class="skel skel-line" style="width:80%;height:10px;margin-top:6px;"></span>
-        </div>
-        <div class="hero-stat">
-          <span class="skel skel-line" style="width:60%;height:20px;"></span>
-          <span class="skel skel-line" style="width:80%;height:10px;margin-top:6px;"></span>
-        </div>
-        <div class="hero-stat">
-          <span class="skel skel-line" style="width:60%;height:20px;"></span>
-          <span class="skel skel-line" style="width:80%;height:10px;margin-top:6px;"></span>
-        </div>
+  <div class="page" id="accountSkeleton" aria-hidden="true">
+    <div class="page__header">
+      <div>
+        <span class="skel skel-line" style="width:110px;height:10px;margin-bottom:8px;"></span>
+        <span class="skel skel-line" style="width:210px;height:24px;"></span>
+        <span class="skel skel-line" style="width:300px;max-width:86vw;height:12px;margin-top:10px;"></span>
       </div>
     </div>
 
-    <div class="location-page-grid">
-      <section class="location-primary">
-
-        <div class="card location-card">
-          <div class="card__head">
-            <div style="flex:1;">
-              <span class="skel skel-line" style="width:55%;height:16px;"></span>
-              <span class="skel skel-line" style="width:35%;height:11px;margin-top:8px;"></span>
-            </div>
-            <span class="skel skel-pill"></span>
-          </div>
-
-          <div class="status-hero">
-            <span class="skel skel-circle"></span>
-            <div class="status-hero__text" style="width:100%;">
-              <span class="skel skel-line" style="width:65%;height:17px;"></span>
-              <span class="skel skel-line" style="width:45%;height:11px;margin-top:8px;"></span>
-            </div>
-          </div>
-
-          <div class="location-card__top">
-            <div class="location-card__info">
-              <div class="location-card__row"><span class="skel skel-line" style="width:55%;"></span></div>
-              <div class="location-card__row"><span class="skel skel-line" style="width:55%;"></span></div>
-              <div class="location-card__row"><span class="skel skel-line" style="width:55%;"></span></div>
-            </div>
-            <div class="location-card__meta-panel">
-              <span class="skel skel-block" style="height:34px;"></span>
-              <span class="skel skel-block" style="height:34px;margin-top:8px;"></span>
-            </div>
-          </div>
-
-          <span class="skel skel-block" style="height:46px;margin-top:6px;"></span>
-          <span class="skel skel-block" style="height:130px;margin-top:14px;"></span>
-        </div>
-
-        <div class="card chat-card">
-          <div class="card__head chat-card__head">
-            <span class="skel skel-line" style="width:130px;height:15px;"></span>
-          </div>
-          <span class="skel skel-block" style="height:150px;margin-top:10px;"></span>
-          <span class="skel skel-block" style="height:42px;margin-top:10px;"></span>
-        </div>
-
-      </section>
-
-      <aside class="location-sidebar">
-        <div class="card profile-card">
+    <div class="account-grid">
+      <div>
+        <div class="card" style="padding: 0; overflow: hidden;">
+          <div style="padding: 28px 20px 20px; text-align:center;">
           <span class="skel skel-circle skel-circle--lg" style="margin:0 auto;"></span>
-          <span class="skel skel-line" style="width:60%;height:15px;margin:12px auto 0;"></span>
-          <span class="skel skel-line" style="width:75%;height:11px;margin:8px auto 0;"></span>
-          <span class="skel skel-line" style="width:65%;height:11px;margin:6px auto 0;"></span>
-          <span class="skel skel-block" style="height:38px;margin-top:14px;"></span>
+          <span class="skel skel-line" style="width:70%;height:16px;margin:12px auto 0;"></span>
+          <span class="skel skel-line" style="width:50%;height:12px;margin:8px auto 0;"></span>
+          <span class="skel skel-pill" style="margin:12px auto 0;"></span>
+          </div>
+          <div style="padding: 0 20px 20px;">
+            <span class="skel skel-line" style="width:110px;height:10px;margin-bottom:12px;"></span>
+            <span class="skel skel-line" style="width:100%;height:13px;margin-top:10px;"></span>
+            <span class="skel skel-line" style="width:100%;height:13px;margin-top:12px;"></span>
+            <span class="skel skel-line" style="width:100%;height:13px;margin-top:12px;"></span>
+            <span class="skel skel-line" style="width:100%;height:13px;margin-top:12px;"></span>
+            <span class="skel skel-line" style="width:100%;height:13px;margin-top:12px;"></span>
+          </div>
         </div>
+        <div class="card" style="margin-top: 16px;">
+          <span class="skel skel-line" style="width:90px;height:14px;"></span>
+          <span class="skel skel-line" style="width:100%;height:12px;margin-top:8px;"></span>
+          <span class="skel skel-block" style="height:38px;margin-top:12px;"></span>
+        </div>
+      </div>
 
-        <div class="card add-location-card">
-          <span class="skel skel-line" style="width:50%;height:15px;"></span>
-          <span class="skel skel-block" style="height:38px;margin-top:14px;"></span>
-          <span class="skel skel-block" style="height:38px;margin-top:10px;"></span>
-          <span class="skel skel-block" style="height:40px;margin-top:14px;"></span>
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div class="card">
+          <span class="skel skel-line" style="width:120px;height:14px;"></span>
+          <span class="skel skel-line" style="width:170px;height:10px;margin-top:8px;"></span>
+          <span class="skel skel-block" style="height:34px;margin-top:12px;"></span>
+          <span class="skel skel-block" style="height:34px;margin-top:10px;"></span>
+          <span class="skel skel-block" style="height:34px;margin-top:10px;"></span>
         </div>
-      </aside>
+        <div class="card">
+          <span class="skel skel-line" style="width:100px;height:14px;"></span>
+          <span class="skel skel-line" style="width:150px;height:10px;margin-top:8px;"></span>
+          <span class="skel skel-block" style="height:46px;margin-top:12px;"></span>
+          <span class="skel skel-block" style="height:38px;margin-top:12px;"></span>
+        </div>
+        <div class="card">
+          <span class="skel skel-line" style="width:70px;height:14px;"></span>
+          <span class="skel skel-line" style="width:130px;height:10px;margin-top:8px;"></span>
+          <span class="skel skel-block" style="height:34px;margin-top:12px;"></span>
+          <span class="skel skel-block" style="height:34px;margin-top:10px;"></span>
+        </div>
+        <div class="card">
+          <span class="skel skel-line" style="width:140px;height:14px;"></span>
+          <span class="skel skel-line" style="width:130px;height:10px;margin-top:8px;"></span>
+          <span class="skel skel-block" style="height:96px;margin-top:12px;"></span>
+        </div>
+      </div>
     </div>
-
   </div>
 
-  <main class="page" id="realPageContent">
+  <main class="page" id="accountRealContent">
 
-    <!-- Hero banner: greeting + quick stats -->
-    <div class="hero-banner">
-      <div class="hero-banner__location">
-        <span class="pulse pulse--on" style="width:8px;height:8px;"></span>
-        <span id="locationName" data-skel="line">Your location</span>
-      </div>
-      <div class="hero-banner__eyebrow">LightWatch · Live status</div>
-      <div class="hero-banner__greeting" id="pageGreeting" data-skel="line">Welcome back</div>
-      <div class="hero-banner__sub" id="locationSubtitle" data-skel="line">Real-time power reporting for your area.</div>
-
-      <!-- Shown only when the user has added a second location on the
-           Account page. Tapping it opens a side panel — kept out of the
-           main content flow rather than adding a whole new card here. -->
-      <button type="button" class="secondary-location-chip" id="secondaryLocationChip" hidden>
-        <span class="secondary-location-chip__dot" aria-hidden="true"></span>
-        <span id="secondaryLocationChipLabel">Second location</span>
-        <span class="secondary-location-chip__arrow" aria-hidden="true">›</span>
-      </button>
-
-      <div class="hero-banner__stats">
-        <div class="hero-stat">
-          <span class="hero-stat__value" id="heroContributors" data-skel="line"></span>
-          <span class="hero-stat__label">Contributors</span>
-        </div>
-        <div class="hero-stat">
-          <span class="hero-stat__value" id="heroChecks" data-skel="line"></span>
-          <span class="hero-stat__label">Total checks</span>
-        </div>
-        <div class="hero-stat">
-          <span class="hero-stat__value" id="heroUptime" data-skel="line"></span>
-          <span class="hero-stat__label">Uptime this week</span>
-        </div>
+    <div class="page__header">
+      <div>
+        <div class="page__eyebrow">Your account</div>
+        <h1 class="page__title" id="pageGreeting">Account</h1>
+        <p class="page__subtitle">Manage your profile, preferences, and locations.</p>
       </div>
     </div>
 
-    <div class="location-page-grid">
-      <section class="location-primary">
+    <div class="account-grid">
 
-        <!-- Main status card -->
-        <div class="card location-card">
+      <!-- Left: profile card -->
+      <div>
+        <div class="card profile-details-card" style="padding: 0; overflow: hidden;">
+          <div class="profile-hero">
+            <div class="profile-hero__ring">
+              <div class="profile-hero__avatar" id="profileAvatar">?</div>
+            </div>
+            <div class="profile-hero__name" id="profileName">Not signed in</div>
+            <div class="profile-hero__handle" id="profileHandle">—</div>
+            <span class="profile-hero__badge" id="profileBadge">
+              <span class="pulse pulse--on" style="width:8px;height:8px;"></span>
+              <span id="profileBadgeText">Community member</span>
+            </span>
+          </div>
+
+          <div style="padding: 4px 20px 20px;">
+            <div class="section-label">Account details</div>
+            <div class="detail-list">
+              <div class="detail-row">
+                <span class="detail-row__icon" aria-hidden="true">✉️</span>
+                <span class="detail-row__label">Contact</span>
+                <span class="detail-row__value" id="profileContact">—</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-row__icon" aria-hidden="true">🗺️</span>
+                <span class="detail-row__label">Region</span>
+                <span class="detail-row__value" id="profileRegion">—</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-row__icon" aria-hidden="true">🏙️</span>
+                <span class="detail-row__label">City</span>
+                <span class="detail-row__value" id="profileCity">—</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-row__icon" aria-hidden="true">💬</span>
+                <span class="detail-row__label">Chat handle</span>
+                <span class="detail-row__value" id="profileChatHandle">—</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-row__icon" aria-hidden="true">🗓️</span>
+                <span class="detail-row__label">Member since</span>
+                <span class="detail-row__value" id="profileLastLogin">—</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="danger-zone" id="accountSignOutZone" style="margin-top: 16px;">
+          <div class="danger-zone__title">Sign out</div>
+          <div class="danger-zone__sub">You'll need to verify your contact to sign back in.</div>
+          <button type="button" class="btn btn--ghost" id="profileSignOutBtn" data-action="signout" style="border-color: var(--red); color: var(--red); width:100%;">
+            Log out of LightWatch
+          </button>
+        </div>
+      </div>
+
+      <!-- Right: settings & preferences -->
+      <div style="display: flex; flex-direction: column; gap: 16px;">
+
+        <div class="card">
           <div class="card__head">
-            <div>
-              <span class="card__title" id="locationNameCard" data-skel="line">Your chosen location</span>
-              <p class="card__meta" id="locationMeta" data-skel="line">Location set by you</p>
-            </div>
-            <span class="badge badge--low" id="statusBadge" data-skel="pill"></span>
+            <span class="card__icon" aria-hidden="true">📍</span>
+            <span class="card__head-text">
+              <span class="card__title">My locations</span>
+              <span class="card__meta">Areas you're monitoring</span>
+            </span>
+          </div>
+          <div id="myLocationsList" style="margin-bottom: 4px;">
+            <div style="color: var(--text-faint); font-size: 0.85rem; padding: 8px 0;">Loading your locations…</div>
           </div>
 
-          <!-- Status hero row -->
-          <div class="status-hero">
-            <div class="status-hero__icon status-hero__icon--unknown" id="statusIcon">❔</div>
-            <div class="status-hero__text">
-              <!--Checking Live Status-->
-              <div class="status-hero__title" id="statusPillText" data-skel="line">unconfirmed light status</div>
-              <div class="status-hero__sub">
-                Last verified: <strong id="lastVerified" data-skel="line">—</strong>
-                &nbsp;·&nbsp;
-                <span class="pulse pulse--low" id="statusPulse" style="display:inline-block;width:8px;height:8px;vertical-align:middle;margin-right:8px;margin-left:8px;"></span>
-                Live
-              </div>
-            </div>
-          </div>
-
-          
-          <!-- Light toggle -->
-          <div class="light-toggle-row">
-            <div class="light-toggle-row__label">
-              <span class="light-toggle-row__title">Report current status</span>
-              <span class="light-toggle-row__sub">Flip this only if you can actually see the area right now</span>
-            </div>
-            <button type="button" class="light-switch" id="lightSwitch" role="switch" aria-checked="false" aria-label="Toggle light status">
-              <span class="light-switch__track">
-                <span class="light-switch__thumb"></span>
-              </span>
-              <span class="light-switch__state" id="lightSwitchState">CHECK</span>
+          <div id="secondaryLocationBlock" class="secondary-location">
+            <button type="button" class="secondary-location__add" id="secondaryLocationAddBtn" hidden>
+              + Add another location, like Work
             </button>
+
+            <form id="secondaryLocationForm" class="secondary-location__form" hidden action="javascript:void(0)">
+              <label class="form-field">
+                <span>Label</span>
+                <input type="text" id="secondaryLocationLabel" placeholder="e.g. Work" maxlength="40" />
+              </label>
+              <div class="secondary-location__row">
+                <label class="form-field">
+                  <span>City / Town</span>
+                  <input type="text" id="secondaryLocationCity" placeholder="City or town" maxlength="60" required />
+                </label>
+                <label class="form-field">
+                  <span>Region</span>
+                  <input type="text" id="secondaryLocationRegion" placeholder="Region" maxlength="60" required />
+                </label>
+              </div>
+              <p id="secondaryLocationMessage" style="font-size:0.76rem;color:var(--text-faint);margin:0;"></p>
+              <div class="secondary-location__actions">
+                <button type="button" class="btn btn--ghost" id="secondaryLocationCancelBtn">Cancel</button>
+                <button type="submit" class="btn btn--primary" id="secondaryLocationSaveBtn">Save location</button>
+              </div>
+            </form>
           </div>
-
-          <div class="location-card__top">
-            <div class="location-card__info">
-              <div class="location-card__row">
-                <span class="location-card__label">Average outage length</span>
-                <strong id="avgOutage" data-skel="line">—</strong>
-              </div>
-              <div class="location-card__row">
-                <span class="location-card__label">Outage frequency</span>
-                <strong id="outageFreq" data-skel="line">—</strong>
-              </div>
-              <div class="location-card__row location-card__row--confidence">
-                <span class="location-card__label">Source confidence</span>
-                <div class="confidence-bar" role="img" id="confidenceBarLabel" aria-label="Source confidence">
-                  <span class="confidence-bar__track">
-                    <span class="confidence-bar__fill" id="confidenceBarFill"></span>
-                  </span>
-                  <strong class="confidence-bar__value" id="confidenceBarValue">—</strong>
-                </div>
-              </div>
-              <p class="confidence-bar__caption" id="confidenceCaption">—</p>
-              <!-- Hidden data source — profile.js keeps writing the raw
-                   numbers here (used elsewhere too); confidenceBarFill above
-                   and the hero mini-card both read from these via
-                   lightstatus.js instead of duplicating the fetch. -->
-              <strong id="sourceConfidence" data-skel="line" hidden>—</strong>
-              <span id="heroContributorsPill" hidden>— contributors</span>
-              <span id="heroChecksPill" hidden>— total checks</span>
-            </div>
-            <div class="location-card__meta-panel">
-              <div class="hero-mini-card" id="heroMiniCard">
-                <div class="hero-mini-card__status">
-                  <span class="hero-mini-card__dot" id="heroMiniDot">🟢</span>
-                  <div>
-                    <strong>Current status</strong>
-                    <span id="heroMiniVerified">Verified —</span>
-                  </div>
-                </div>
-                <div class="hero-mini-card__row">
-                  <span>👥</span>
-                  <span id="heroPeopleHelped">— people helped today</span>
-                </div>
-                <div class="hero-mini-card__row hero-mini-card__stars">
-                  <span class="hero-mini-card__stars-graphic" id="heroStarsGraphic">☆☆☆☆☆</span>
-                  <span class="hero-mini-card__stars-label">Community reliability</span>
-                </div>
-              </div>
-            </div>
-          </div>
-                <!-- Status insight panel — outer shell/classes left as-is
-               (status-insight-panel / __header / __title / __sub) so the
-               existing responsive + dark-theme rules for this card keep
-               working untouched. Only the inner body was redesigned:
-               a reliability meter, a trend banner, a same-day timeline,
-               and a recent-reports feed, in place of the old grid mosaic. -->
-          <div class="status-insight-panel">
-            <div class="status-insight__header">
-              <div>
-                <span class="status-insight__title">Live status pulse</span>
-                <p class="status-insight__sub" id="communityPulseLine">A quick read on your area, at a glance.</p>
-              </div>
-              <span class="badge badge--low">Live</span>
-            </div>
-
-            <div class="pulse-panel">
-
-              <!-- Community activity: how many reports this location has
-                   gotten today, plus how fresh the latest one is. Built
-                   from real /reports data (see lightstatus.js), scoped to
-                   just this location. -->
-              <div class="community-activity" id="communityActivity">
-                <span class="community-activity__headline" id="communityActivityHeadline">👥 Gathering today's activity…</span>
-                <div class="community-activity__meta">
-                  <span id="communityActivityLastReport">Last report —</span>
-                  <span id="communityActivityNow"><span class="community-activity__live-dot"></span> —</span>
-                </div>
-              </div>
-
-              <!-- Reliability meter: mirrors whatever confidence value ends
-                   up in #sourceConfidence above; falls back to a locally
-                   computed estimate from this device's report history until
-                   that's wired up. See lightstatus.js: syncReliabilityMeter(). -->
-              <div class="reliability-meter">
-                <div class="reliability-meter__head">
-                  <span class="reliability-meter__label">Reliability</span>
-                  <span class="reliability-meter__value" id="reliabilityMeterValue">—</span>
-                </div>
-                <div class="reliability-meter__track" role="progressbar" aria-label="Reliability" aria-valuemin="0" aria-valuemax="100" id="reliabilityMeterTrack">
-                  <div class="reliability-meter__fill" id="reliabilityMeterFill"></div>
-                </div>
-                <span class="reliability-meter__caption" id="reliabilityMeterCaption">Calculating from recent reports…</span>
-              </div>
-
-              <!-- Trend banner: "stable" vs "frequent outages", computed from
-                   the last 24h of the status log. -->
-              <div class="trend-banner trend-banner--stable" id="trendBanner">
-                <span class="trend-banner__icon" id="trendBannerIcon">⚡</span>
-                <div class="trend-banner__text">
-                  <strong id="trendBannerTitle">Checking today's trend…</strong>
-                  <span id="trendBannerSub">—</span>
-                </div>
-              </div>
-
-              <!-- Today's activity timeline -->
-              <div class="pulse-section">
-                <span class="pulse-section__title">Today's activity</span>
-                <ul class="status-timeline" id="statusTimeline">
-                  <li class="status-timeline__empty">No status changes yet today.</li>
-                </ul>
-              </div>
-
-              <!-- Latest community reports, with a friendly display name per
-                   report (see GHANA_NAMES in lightstatus.js) rather than the
-                   raw anonymous chat handle — same spirit as the anon-*
-                   handle system, just warmer for a reports feed. -->
-              <div class="pulse-section">
-                <span class="pulse-section__title">Latest community reports</span>
-                <div class="report-list report-list--compact" id="recentReportsList"></div>
-              </div>
-
-              <!-- Nearby areas: live status pulled from /lightstatus for
-                   each neighboring location, using a hardcoded adjacency
-                   map since we don't have geocoding yet (see NEARBY_MAP in
-                   lightstatus.js). Statuses shown are real; "nearby" itself
-                   is an approximation worth double-checking against how you
-                   actually think about area groupings. -->
-              <div class="pulse-section">
-                <span class="pulse-section__title">Nearby</span>
-                <div class="nearby-list" id="nearbyList">
-                  <span class="nearby-list__empty">Loading nearby areas…</span>
-                </div>
-              </div>
-
-            </div>
-          </div>
-
         </div>
 
-        <!-- Community chat -->
-        <div class="card chat-card">
-          <div class="card__head chat-card__head">
-            <div>
-              <span class="card__title">Community chat</span>
-              <span class="card__meta">Posting as <strong id="chatHandle" data-skel="line">anon-glow-291</strong></span>
-            </div>
-            <button type="button" id="mobileChatClose" class="chat-close-btn" aria-label="Close chat">✕</button>
-          </div>
-          <div class="chat-scope-row" aria-label="Chat visibility scope">
-            <span class="chat-scope-label">Audience</span>
-            <div class="chat-scope-options" role="tablist" aria-label="Chat audience">
-              <button type="button" class="chat-scope-option is-active" id="chatScopeLocalBtn" data-scope="local" role="tab" aria-selected="true">Only your location</button>
-              <button type="button" class="chat-scope-option" id="chatScopeGlobalBtn" data-scope="global" role="tab" aria-selected="false">Everyone</button>
-            </div>
-          </div>
-          <div class="chat-thread-wrap">
-            <div class="chat-thread" id="chatThread"></div>
-            <button type="button" class="chat-scroll-bottom-btn" id="chatScrollBottomBtn" aria-label="Scroll to latest messages" hidden>
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M12 4v16M6 14l6 6 6-6"/>
-              </svg>
-            </button>
-          </div>
-          <form class="chat-form" id="chatForm" action="javascript:void(0)">
-            <div class="chat-reply-preview" id="chatReplyPreview" hidden>
-              <span class="chat-reply-preview__label">Replying to <strong id="chatReplyHandle">someone</strong></span>
-              <p class="chat-reply-preview__text" id="chatReplyText"></p>
-              <button type="button" class="chat-reply-preview__cancel" id="chatReplyCancel" aria-label="Cancel reply">×</button>
-            </div>
-            <textarea class="chat-form__input" id="chatInput" placeholder="Share an update..." maxlength="240" data-skel="input" rows="1" enterkeyhint="send"></textarea>
-            <button type="submit" class="btn btn--primary" id="chatSendBtn" disabled>Send</button>
-          </form>
-        </div>
-
-      </section>
-
-      <aside class="location-sidebar">
-
-        <div class="card profile-card">
+        <div class="card">
           <div class="card__head">
-            <span class="card__title">Logged in as</span>
-            <span class="card__meta" id="profileLastLogin" data-skel="line">—</span>
+            <span class="card__icon" aria-hidden="true">🔔</span>
+            <span class="card__head-text">
+              <span class="card__title">Notifications</span>
+              <span class="card__meta">What to alert you about</span>
+            </span>
           </div>
-          <div class="profile-card__avatar">
-            <span class="avatar avatar--large" id="profileAvatar">?</span>
+          <button type="button" data-enable-push-btn onclick="enableLightWatchPush()" class="btn btn--ghost btn--block" style="margin-bottom: 12px; border-color: var(--brand); color: var(--brand);">
+            Enable notifications
+          </button>
+          <div class="pref-row">
+            <div class="pref-row__info">
+              <div class="pref-row__title">Outage alerts in my area</div>
+              <div class="pref-row__sub">Get notified when light goes off at your location</div>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" checked id="prefOutageAlerts">
+              <span class="toggle__track"></span>
+            </label>
           </div>
-          <div class="profile-card__info">
-            <div class="profile-card__name" id="profileName" data-skel="line">Not signed in</div>
+          <div class="pref-row">
+            <div class="pref-row__info">
+              <div class="pref-row__title">Power restored alerts</div>
+              <div class="pref-row__sub">Know the moment power comes back on</div>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" checked id="prefRestoredAlerts">
+              <span class="toggle__track"></span>
+            </label>
           </div>
-          <div class="profile-card__details">
-            <div><span>Contact</span><strong id="profileContact" data-skel="line">—</strong></div>
-            <div><span>Location</span><strong id="profileRegion" data-skel="line">—</strong></div>
+          <div class="pref-row">
+            <div class="pref-row__info">
+              <div class="pref-row__title">Community chat mentions</div>
+              <div class="pref-row__sub">When someone replies to a message in your location</div>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="prefChatMentions">
+              <span class="toggle__track"></span>
+            </label>
           </div>
-          <a href="../index.html"><button type="button" class="btn btn--ghost" id="profileSignOutBtn">Log out</button></a>
+          <div class="pref-row">
+            <div class="pref-row__info">
+              <div class="pref-row__title">Mute everyone-audience chat alerts</div>
+              <div class="pref-row__sub">Stops push notifications from messages sent to Everyone audience</div>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="prefMuteGlobalChat">
+              <span class="toggle__track"></span>
+            </label>
+          </div>
         </div>
 
-        <!-- "Add a location" moved off Home — it's a setup/management action,
-             not something people need in their 15-second daily check-in.
-             Belongs on the Areas page now. (Not touching the loading
-             skeleton above on purpose, per instructions.) -->
-
-        <!-- Achievements: real numbers from /user/:id (reportCount) and
-             /reports?userId=... (this week's reports) — see lightstatus.js.
-             "Points" is a simple, transparent formula (3 pts / report
-             today), not a hidden score. -->
-        <div class="card achievement-card" id="achievementCard" hidden>
-          <div class="achievement-card__head">
-            <span class="achievement-card__badge">🏅</span>
-            <span class="achievement-card__title" id="achievementHeadline">You helped today</span>
+        <div class="card" id="cityEditCard">
+          <div class="card__head">
+            <span class="card__icon" aria-hidden="true">✏️</span>
+            <span class="card__head-text">
+              <span class="card__title">Edit city/town</span>
+              <span class="card__meta" id="cityEditCardMeta">One-time correction only</span>
+            </span>
           </div>
-          <div class="achievement-card__points" id="achievementPoints">+0 <span>points</span></div>
-          <div class="achievement-card__stats">
-            <div class="achievement-card__stat">
-              <strong id="achievementWeekReports">—</strong>
-              <span>Reports this week</span>
+
+          <!-- Shown once the one-time edit has been used: a plain, clearly
+               non-editable summary instead of a disabled-looking form. -->
+          <div id="cityEditLockedView" class="locked-field" hidden>
+            <span class="locked-field__icon" aria-hidden="true">🔒</span>
+            <div>
+              <div class="locked-field__value" id="cityEditLockedValue">—</div>
+              <div class="locked-field__sub">City/town is locked and can't be changed again.</div>
             </div>
-            <div class="achievement-card__stat">
-              <strong id="achievementTotalReports">—</strong>
-              <span>Total reports</span>
+          </div>
+
+          <div id="cityEditFormWrap">
+            <p style="font-size:0.8rem;color:var(--text-faint);margin-bottom:10px;line-height:1.45;">
+              Disclaimer: You can change your city/town only once. After saving, it cannot be changed again.
+            </p>
+            <form id="cityEditForm" action="javascript:void(0)">
+              <label class="form-field" style="margin-bottom:10px;">
+                <span>City / Town</span>
+                <div style="display:flex;gap:8px;align-items:stretch;">
+                  <input type="text" id="cityEditInput" placeholder="Enter your correct city or town" maxlength="60" disabled style="flex:1;" />
+                  <button type="button" class="btn btn--ghost" id="cityEditToggleBtn" style="flex-shrink:0;white-space:nowrap;">Edit</button>
+                </div>
+              </label>
+              <button type="submit" class="btn btn--primary btn--block" id="cityEditSaveBtn" disabled>Save city/town</button>
+              <p id="cityEditMessage" style="margin-top:8px;font-size:0.76rem;color:var(--text-faint);"></p>
+            </form>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card__head">
+            <span class="card__icon" aria-hidden="true">🎨</span>
+            <span class="card__head-text">
+              <span class="card__title">Display</span>
+              <span class="card__meta">Visual preferences</span>
+            </span>
+          </div>
+          <div class="pref-row">
+            <div class="pref-row__info">
+              <div class="pref-row__title">Compact chat bubbles</div>
+              <div class="pref-row__sub">Show smaller message cards in community chat</div>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="prefCompactChat">
+              <span class="toggle__track"></span>
+            </label>
+          </div>
+          <div class="pref-row">
+            <div class="pref-row__info">
+              <div class="pref-row__title">Show outage stats on home</div>
+              <div class="pref-row__sub">Display average outage length and frequency</div>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" checked id="prefShowStats">
+              <span class="toggle__track"></span>
+            </label>
+          </div>
+          <div class="pref-row">
+            <div class="pref-row__info">
+              <div class="pref-row__title">Reduce motion</div>
+              <div class="pref-row__sub">Turn off page transitions and pulse animations</div>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="prefReduceMotion">
+              <span class="toggle__track"></span>
+            </label>
+          </div>
+          <div class="pref-row">
+            <div class="pref-row__info">
+              <div class="pref-row__title">Larger chat text</div>
+              <div class="pref-row__sub">Increase font size in community chat</div>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="prefLargeChatText">
+              <span class="toggle__track"></span>
+            </label>
+          </div>
+          <div class="pref-row">
+            <div class="pref-row__info">
+              <div class="pref-row__title">Home layout density</div>
+              <div class="pref-row__sub">How tightly packed the home screen cards are</div>
+            </div>
+            <select class="density-select" id="prefDensity">
+              <option value="comfortable">Comfortable</option>
+              <option value="compact">Compact</option>
+            </select>
+          </div>
+          <div class="pref-row">
+            <div class="pref-row__info">
+              <div class="pref-row__title">Accent color</div>
+              <div class="pref-row__sub">Used for buttons, badges, and highlights</div>
+              <div class="swatch-row" id="accentSwatchRow">
+                <button type="button" class="swatch" data-accent="teal" style="background:#3DD9C2;" aria-label="Teal accent" aria-pressed="true"></button>
+                <button type="button" class="swatch" data-accent="amber" style="background:#D6A24A;" aria-label="Amber accent" aria-pressed="false"></button>
+                <button type="button" class="swatch" data-accent="violet" style="background:#8B7CF6;" aria-label="Violet accent" aria-pressed="false"></button>
+              </div>
             </div>
           </div>
         </div>
 
-      </aside>
+        <div class="card">
+          <div class="card__head">
+            <span class="card__icon" aria-hidden="true">💬</span>
+            <span class="card__head-text">
+              <span class="card__title">Recent chat activity</span>
+              <span class="card__meta">Your last messages</span>
+            </span>
+          </div>
+          <div id="recentChatList">
+            <div style="color: var(--text-faint); font-size: 0.85rem; padding: 8px 0;">Loading activity…</div>
+          </div>
+        </div>
+
+      </div>
     </div>
 
     <p class="footnote">LightWatch — meter &amp; grid status monitoring</p>
   </main>
 
-  <!-- Sidebar overlay + panel -->
   <div class="sidebar-overlay" id="sidebarOverlay"></div>
   <aside class="user-sidebar-panel" id="userSidebarPanel" aria-hidden="true">
     <button type="button" class="user-sidebar__close" id="userSidebarClose" aria-label="Close profile panel">×</button>
     <div class="card profile-card profile-card--sidebar">
       <div class="card__head">
-        <span class="card__title">Logged in as</span>
-        <span class="card__meta">User profile</span>
+        <span class="card__icon" aria-hidden="true">👤</span>
+        <span class="card__head-text">
+          <span class="card__title">Logged in as</span>
+          <span class="card__meta">User profile</span>
+        </span>
       </div>
       <div class="profile-card__avatar">
         <span class="avatar avatar--large" id="sidebarAvatar">?</span>
@@ -525,37 +1027,10 @@
         <div><span>Location</span><strong id="sidebarRegion">—</strong></div>
         <div><span>Last login</span><strong id="sidebarLastLogin">—</strong></div>
       </div>
-      <button type="button" class="btn btn--primary btn--block" onclick="window.location.href='./account.html'">Manage account</button>
-      <a href="../index.html"><button type="button" class="btn btn--ghost btn--block" id="sidebarSignOutBtn">Log out</button></a>
+      <button type="button" class="btn btn--primary btn--block" onclick="window.location.href='account.html'">Manage account</button>
+      <button type="button" class="btn btn--ghost btn--block" id="sidebarSignOutBtn" data-action="signout">Log out</button>
     </div>
   </aside>
-
-  <!-- Secondary location panel — opened from the hero-banner chip above.
-       Its own overlay so it doesn't fight the profile sidebar's state. -->
-  <div class="sidebar-overlay" id="secondaryLocationOverlay"></div>
-  <aside class="user-sidebar-panel" id="secondaryLocationPanel" aria-hidden="true">
-    <button type="button" class="user-sidebar__close" id="secondaryLocationClose" aria-label="Close location panel">×</button>
-    <div class="card profile-card profile-card--sidebar">
-      <div class="card__head">
-        <span class="card__title">Second location</span>
-        <span class="card__meta" id="secondaryLocationPanelBadge">—</span>
-      </div>
-      <div class="profile-card__details" style="margin-top:6px;">
-        <div><span>Label</span><strong id="secondaryLocationPanelLabel">—</strong></div>
-        <div><span>City</span><strong id="secondaryLocationPanelCity">—</strong></div>
-        <div><span>Region</span><strong id="secondaryLocationPanelRegion">—</strong></div>
-      </div>
-      <p style="font-size:0.78rem;color:var(--text-faint);margin-top:12px;line-height:1.5;">
-        This is a second spot you're keeping an eye on, separate from your primary location above.
-      </p>
-      <button type="button" class="btn btn--primary btn--block" onclick="window.location.href='./account.html'">Manage in Account</button>
-    </div>
-  </aside>
-
-  <button type="button" id="mobileChatToggle" class="mobile-chat-toggle" aria-label="Open chat">
-    <span class="mobile-chat-toggle__icon">💬</span>
-    <span class="mobile-chat-toggle__label">Chat</span>
-  </button>
 
   <div id="bottom_nav_wrapper">
     <div class="bottom-icons-container">
@@ -589,25 +1064,26 @@
       </button>
     </div>
   </div>
-  
-  <script src="../Js/theme.js?v=1.0.14" defer></script>
-  <script src="../Js/profile.js?v=1.0.14" defer></script>
-  <script src="../Js/home-reminder.js?v=1.0.14" defer></script>
-  <script src="../Js/notification.js?v=1.0.14" defer></script>
-  <script src="../Js/chat.js?v=1.0.14" defer></script>
-  <script src="../Js/home.js?v=1.0.14" defer></script>
-  <script src="../Js/lightstatus.js?v=1.0.14" defer></script>
-  <script src="../Js/nav.js?v=1.0.14" defer></script>
-  <script defer>
-    // ---- Toast notification system ----
-    // Other pages/features call window.lwToast("message") to show a toast
-    window.lwToast = function(msg, duration) {
-      const el = document.getElementById('lw-toast');
-      if (!el) return;
-      el.textContent = msg;
-      el.classList.add('show');
-      setTimeout(() => el.classList.remove('show'), duration || 3500);
-    };
-  </script>
+
+  <!-- Compact chat bubbles preview popup — shell only for now. Built so
+       chat.js can later feed it real thread data; today it just proves
+       out the compact-vs-normal bubble sizing the toggle controls. -->
+  <div class="chat-popup-overlay" id="chatPopupOverlay" aria-hidden="true">
+    <div class="chat-popup" id="chatPopup">
+      <div class="chat-popup__head">
+        <span class="chat-popup__title">Community chat preview</span>
+        <button type="button" class="chat-popup__close" id="chatPopupCloseBtn" aria-label="Close chat preview">×</button>
+      </div>
+      <div class="chat-popup__body" id="chatPopupBody"></div>
+      <div class="chat-popup__note">This preview matches your saved display settings — open Home to chat live.</div>
+    </div>
+  </div>
+
+
+  <script src="../Js/theme.js?v=1.0.14"></script>
+  <script src="../Js/notification.js?v=1.0.14"></script>
+  <script src="../Js/profile.js?v=1.0.14"></script>
+  <script src="../Js/nav.js?v=1.0.14"></script>
+  <script src="../Js/account.js?v=1.0.14"></script>
 </body>
 </html>
