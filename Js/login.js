@@ -136,7 +136,7 @@ async function handleSubmit() {
         }
 
         showPageTransitionOverlay('Sending your code…');
-        setTimeout(() => window.location.replace('./pages/verification.html'), 260);
+        setTimeout(() => { window.location.href = './pages/verification.html'; }, 260);
         return;
 
     } catch (err) {
@@ -155,7 +155,7 @@ userInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventD
 document.querySelectorAll('a[href="./pages/signup.html"]').forEach(link => {
     link.addEventListener('click', e => {
         e.preventDefault();
-        showPageTransitionOverlay('Setting things up…');
+        showPageTransitionOverlay('Taking you to sign up…');
         setTimeout(() => window.location.href = link.href, 260);
     });
 });

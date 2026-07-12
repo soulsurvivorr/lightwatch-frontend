@@ -56,6 +56,7 @@ function openOnboarding() {
   const overlay = document.getElementById('onboardingOverlay');
   if (!overlay) return;
   setOnboardingSlide(0);
+  markOnboardingSeen();
   requestAnimationFrame(() => overlay.classList.add('is-open'));
 }
 
@@ -74,7 +75,6 @@ function initOnboarding() {
   document.getElementById('onboardingNextBtn')?.addEventListener('click', () => {
     const totalSlides = document.querySelectorAll('.onboarding-slide').length;
     if (onboardingCurrentSlide >= totalSlides - 1) {
-      markOnboardingSeen();
       closeOnboarding();
     } else {
       setOnboardingSlide(onboardingCurrentSlide + 1);
