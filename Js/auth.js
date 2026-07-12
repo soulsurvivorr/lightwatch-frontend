@@ -151,9 +151,17 @@ function requireAuth() {
 
     if (!getSession()) {
         const path = window.location.pathname.toLowerCase();
-        // Avoid redirecting index -> index forever when this guard is
-        // accidentally loaded on the public login/landing page.
-        if (path.endsWith('/index.html') || path === '/' || path === '') {
+        // Pages that are meant to be reachable WITHOUT a session — signing
+        // in/up is, by definition, done before one exists. Redirecting any
+        // of these away just because there's no session yet would break
+        // the flow that creates the session in the first place (this bit
+        // us on verification.html: mid-OTP-entry, there's no session, so
+        // an unscoped check would bounce the page back to index.html).
+        const isPublicAuthPage =
+            path.endsWith('/index.html') || path === '/' || path === '' ||
+            path.endsWith('/verification.html') ||
+            path.endsWith('/signup.html');
+        if (isPublicAuthPage) {
             return;
         }
 
@@ -172,15 +180,6 @@ function requireAuth() {
         window.location.replace(prefix + 'index.html');
     }
 }
-
-// ── Run the guard immediately, as soon as auth.js itself parses.
-//    auth.js loads early (non-deferred) on every protected page, well
-//    before profile.js/notification.js (which are deferred and render
-//    content). Checking here — instead of relying on each page's own
-//    script (home.js/account.js) to call requireAuth() later in the
-//    load order — closes the window where a signed-out visitor could
-//    briefly see a page's real content before being bounced to sign-in.
-requireAuth();
 
 // ── Wire all [data-action="signout"] buttons on the page ──────
 document.addEventListener('DOMContentLoaded', () => {

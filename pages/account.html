@@ -1067,6 +1067,22 @@
   <script src="../Js/theme.js?v=1.0.14"></script>
   <script src="../Js/config.js?v=1.0.14"></script>
   <script src="../Js/auth.js?v=1.0.14"></script>
+  <script>
+    // Mirrors the same early guard home.html already has right after its
+    // own auth.js tag. account.html didn't have this — its only auth
+    // check was requireAuth() at the top of account.js, which loads
+    // AFTER notification.js/profile.js. profile.js runs itself the
+    // moment it loads, so a signed-out visitor briefly got "Guest"
+    // rendered into the page (behind the skeleton, if the skeleton was
+    // still up, but visible immediately otherwise) before account.js's
+    // later check could redirect. Running the check here, right after
+    // auth.js defines it and before any other script on this page,
+    // closes that gap.
+    const __accountSession = typeof getSession === 'function' ? getSession() : null;
+    if (!__accountSession && window.location.protocol !== 'file:') {
+      window.location.replace('../index.html');
+    }
+  </script>
   <script src="../Js/notification.js?v=1.0.14"></script>
   <script src="../Js/profile.js?v=1.0.14"></script>
   <script src="../Js/nav.js?v=1.0.14"></script>
