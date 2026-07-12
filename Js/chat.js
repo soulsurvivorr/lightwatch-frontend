@@ -551,44 +551,63 @@ function loadChatHistory() {
 }
 
 // -------------------------------------------------------
-// POLLING — every 5 seconds, fetch all chats for this
-// location and display any IDs we haven't seen yet.
-// Uses chatLocation (set at load) so the query string is
-// identical between the initial load and all polls.
+// POLLING — fetches all chats for this location and displays
+// any IDs we haven't seen yet, plus keeps every existing
+// bubble's "seen" eye current (a reply or a new seenBy entry
+// can land on a message that's already on screen).
+//
+// Runs on a fast interval so seen/reply state basically never
+// looks stale, AND fires immediately whenever the tab regains
+// focus/visibility — mobile browsers throttle background
+// setInterval timers hard (sometimes to once a minute), so
+// without this a phone that was locked or tab-switched could
+// sit showing an out-of-date eye for a long time even though
+// the interval "should" have ticked.
 // -------------------------------------------------------
+async function pollChatsOnce() {
+    try {
+        const url = buildChatsUrl();
+        if (!url) return;
+        const res = await fetch(url);
+        if (!res.ok) return;
+        const chats = await res.json();
+        const myId  = getCurrentUserId();
+        const repliedToIds = computeRepliedToIds(chats);
+        const latestOwnId = getLatestOwnMessageId(chats, myId);
+
+        ;[...chats].reverse().forEach(chat => {
+            const id = chat._id || chat.id;
+            if (!id || knownIds.has(id)) return; // skip already-shown messages
+            knownIds.add(id);
+            addToThread(chat, resolveUserId(chat) === myId, false, true, repliedToIds.has(id), String(id) === latestOwnId);
+            focusTargetMessageIfPresent();
+        });
+
+        // Existing bubbles can still change: a reply might land on an
+        // older message, or someone else's seenBy might grow — keep
+        // every own-message eye icon current, not just newly-added ones.
+        syncSeenIndicators(chats);
+        markVisibleMessagesSeen(chats);
+    } catch (e) {
+        // silent — retries next tick
+    }
+}
+
 function startPolling() {
     if (pollInterval) clearInterval(pollInterval);
     if (chatScope === CHAT_SCOPE_LOCAL && !chatLocation) return;
 
-    pollInterval = setInterval(async () => {
-        try {
-            const url = buildChatsUrl();
-            if (!url) return;
-            const res = await fetch(url);
-            if (!res.ok) return;
-            const chats = await res.json();
-            const myId  = getCurrentUserId();
-            const repliedToIds = computeRepliedToIds(chats);
-            const latestOwnId = getLatestOwnMessageId(chats, myId);
-
-            ;[...chats].reverse().forEach(chat => {
-                const id = chat._id || chat.id;
-                if (!id || knownIds.has(id)) return; // skip already-shown messages
-                knownIds.add(id);
-                addToThread(chat, resolveUserId(chat) === myId, false, true, repliedToIds.has(id), String(id) === latestOwnId);
-                focusTargetMessageIfPresent();
-            });
-
-            // Existing bubbles can still change: a reply might land on an
-            // older message, or someone else's seenBy might grow — keep
-            // every own-message eye icon current, not just newly-added ones.
-            syncSeenIndicators(chats);
-            markVisibleMessagesSeen(chats);
-        } catch(e) {
-            // silent — retries next tick
-        }
-    }, 5000);
+    pollInterval = setInterval(pollChatsOnce, 1500);
 }
+
+// Force a fresh fetch the instant the tab/app comes back into view,
+// instead of waiting on a throttled background timer to eventually
+// catch up — this is what makes the eye feel instant rather than
+// stuck when you switch back to check it.
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') pollChatsOnce();
+});
+window.addEventListener('focus', () => pollChatsOnce());
 
 // -------------------------------------------------------
 // TYPING INDICATOR

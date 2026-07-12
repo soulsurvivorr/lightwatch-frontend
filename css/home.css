@@ -2429,32 +2429,34 @@ body.modal-open {
   color: var(--text-faint);
 }
 
-/* "Seen" eye — lives OUTSIDE the bubble, hanging off its bottom-left
-   corner, rather than inline with the timestamp inside the card. Only
-   ever appears on your single most recent message (see chat.js
-   syncSeenIndicators / getLatestOwnMessageId) and disappears again the
-   moment someone replies to it. Hidden by default rather than just
-   transparent, so it doesn't reserve empty space on every own-message
-   bubble. */
+/* "Seen" eye — lives OUTSIDE the bubble, just off its bottom-left
+   corner horizontally (not underneath it), rather than inline with the
+   timestamp inside the card. Only ever appears on your single most
+   recent message (see chat.js syncSeenIndicators /
+   getLatestOwnMessageId) and disappears again the moment someone
+   replies to it. Hidden by default rather than just transparent, so it
+   doesn't reserve empty space on every own-message bubble. */
 .chat-message__seen {
   display: none;
   position: absolute;
-  left: 6px;
-  bottom: -16px;
+  right: 100%;
+  bottom: 2px;
+  margin-right: 6px;
   align-items: center;
   justify-content: center;
   font-size: 12px;
   line-height: 1;
   filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25));
   opacity: 0;
-  transform: translateY(-2px);
+  transform: translateX(2px);
   transition: opacity 0.2s ease, transform 0.2s ease;
   pointer-events: none;
+  white-space: nowrap;
 }
 .chat-message__seen.is-visible {
   display: inline-flex;
   opacity: 1;
-  transform: translateY(0);
+  transform: translateX(0);
 }
 
 @keyframes chat-message-in {
@@ -2473,12 +2475,6 @@ body.modal-open {
   margin-left: auto;
   border-color: color-mix(in srgb, var(--teal) 55%, var(--border-soft));
   background: color-mix(in srgb, var(--teal) 12%, var(--bg-panel-raised));
-}
-
-/* Reserve a little breathing room below the bubble so the outside eye
-   doesn't sit flush against (or overlap) whatever message comes next. */
-.chat-message--own:has(.chat-message__seen.is-visible) {
-  margin-bottom: 14px;
 }
 
 /* ---- Display preferences, applied live (Account → Display) ---- */
