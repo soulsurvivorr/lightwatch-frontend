@@ -3,8 +3,8 @@
     "short_name": "LightWatch",
     "start_url": "/index.html",
     "display": "standalone",
-    "background_color": "#ffffff",
-    "theme_color": "#000000",
+    "background_color": "#1C1F26",
+    "theme_color": "#1C1F26",
     "orientation": "portrait",
     "icons": [
         {

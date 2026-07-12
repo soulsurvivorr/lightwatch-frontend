@@ -15,6 +15,14 @@
     })();
   </script>
   <style>
+    /* Paints dark from the very first frame, before any JS runs —
+       closes the white flash iOS/Android show while parsing the
+       rest of <head>, prior to the auth-check script deciding
+       whether to reveal the login form or the launch overlay. */
+    html.auth-check {
+      background: #1C1F26;
+    }
+
     html.auth-check body {
       visibility: hidden;
     }
@@ -45,15 +53,14 @@
       transition: opacity 0.16s ease;
     }
     @keyframes lwLaunchIntro {
-      0%   { transform: scale(0.72); opacity: 0; }
-      60%  { transform: scale(1.06); opacity: 1; }
+      0%   { transform: scale(0.86); opacity: 0; }
       100% { transform: scale(1);    opacity: 1; }
     }
     #appLaunchOverlay__mark {
       width: 76px;
       height: 76px;
       border-radius: 20px;
-      animation: lwLaunchIntro 0.5s cubic-bezier(.2,.8,.2,1) both;
+      animation: lwLaunchIntro 0.38s cubic-bezier(.16,.84,.44,1) both;
     }
   </style>
   <link rel="manifest" href="/manifest.json?v=1.0.15" />

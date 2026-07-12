@@ -3,6 +3,33 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <style>
+    /* Must be the very first thing in <head>, ahead of every other
+       tag, so it applies before the browser's first paint. When
+       index.html hands off to home.html for a signed-in user (see
+       auth.js), this keeps the screen dark from frame one instead of
+       showing the page's normal light background for a beat before
+       auth.js gets a chance to mount the launch overlay on top of it —
+       that beat was the "home page reflecting" flash. Removed again by
+       auth.js once the overlay is actually dismissed. */
+    html.lw-cold-boot,
+    html.lw-cold-boot body {
+      background: #1C1F26 !important;
+    }
+  </style>
+  <script>
+    (function () {
+      try {
+        // The launch overlay only ever fires here as a hand-off from
+        // index.html, flagged via sessionStorage right before its
+        // location.replace() into this page. Gating on that same flag
+        // here closes the pre-script paint gap on that navigation.
+        if (sessionStorage.getItem('lw_launch_overlay_pending') === '1') {
+          document.documentElement.classList.add('lw-cold-boot');
+        }
+      } catch (e) {}
+    })();
+  </script>
   <link rel="manifest" href="/manifest.json?v=1.0.15">
   <script src="../Js/app-startup.js?v=1.0.15" defer></script>
   <meta name="theme-color" content="#1C1F26">

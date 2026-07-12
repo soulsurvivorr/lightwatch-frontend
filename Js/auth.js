@@ -166,37 +166,43 @@ function showAppLaunchOverlay() {
                 from { opacity: 0; }
                 to   { opacity: 1; }
             }
-            /* Entrance: logo settles in with a small overshoot, once —
-               no looping pulse, this isn't meant to read as "waiting". */
+            /* Entrance: one calm settle, no bounce/overshoot — a single
+               confident motion rather than something that reads as
+               "waiting" or playful. Matches the entrance used on
+               index.html's launch overlay so a hand-off between the
+               two never feels like two different animations. */
             @keyframes lwLaunchIntro {
-                0%   { transform: scale(0.72); opacity: 0; }
-                60%  { transform: scale(1.06); opacity: 1; }
+                0%   { transform: scale(0.86); opacity: 0; }
                 100% { transform: scale(1);    opacity: 1; }
             }
-            /* Exit: backdrop and logo fade together on the exact same
-               clock — one animation, one duration, started on the
-               same frame. The logo eases back slightly as it goes,
-               like an aperture closing, rather than blowing up past
-               the viewport. Keeping both motions tied to one timeline
-               is what stops the page underneath from showing through
-               while the logo is still mid-animation. */
-            @keyframes lwLaunchOverlayOpen {
-                0%   { opacity: 1; }
-                100% { opacity: 0; }
+            /* Exit: a hard-edged iris/spotlight collapse via clip-path,
+               NOT an opacity fade. Opacity fading meant the real page
+               underneath was visibly blended through the overlay for
+               the whole exit duration — a translucent double-exposure
+               that read as the home page "flashing"/"reflecting"
+               through the logo. clip-path never blends: every pixel is
+               either overlay or page, so there's nothing to see-through
+               mid-transition. The circle collapses down onto the logo's
+               own position, so the last thing visible is the mark
+               itself shrinking away before the page is already fully
+               revealed everywhere else around it. */
+            #lwAppLaunchOverlay {
+                clip-path: circle(150% at 50% 50%);
+            }
+            #lwAppLaunchOverlay.is-opening {
+                clip-path: circle(0% at 50% 50%);
+                transition: clip-path 0.46s cubic-bezier(.65,0,.35,1);
             }
             @keyframes lwLaunchMarkOpen {
                 0%   { transform: scale(1);    opacity: 1; }
-                100% { transform: scale(0.82); opacity: 0; }
+                100% { transform: scale(1.18); opacity: 0; }
             }
             #lwAppLaunchOverlay .lw-launch-mark {
                 width: 76px; height: 76px; border-radius: 20px;
-                animation: lwLaunchIntro 0.45s cubic-bezier(.2,.8,.2,1) both;
-            }
-            #lwAppLaunchOverlay.is-opening {
-                animation: lwLaunchOverlayOpen 0.4s ease forwards;
+                animation: lwLaunchIntro 0.38s cubic-bezier(.16,.84,.44,1) both;
             }
             #lwAppLaunchOverlay.is-opening .lw-launch-mark {
-                animation: lwLaunchMarkOpen 0.4s ease forwards;
+                animation: lwLaunchMarkOpen 0.3s ease forwards;
             }
         </style>
         <img class="lw-launch-mark" src="/images/dev-logo.png" alt="LightWatch">
@@ -207,7 +213,7 @@ function showAppLaunchOverlay() {
 }
 
 // Plays the reveal, then removes the overlay. Duration here must match
-// the .is-opening animation durations above (0.4s) — it's the same
+// the .is-opening clip-path transition above (0.46s) — it's the same
 // clock, just read from JS so we know when it's safe to remove the
 // element from the DOM.
 function dismissAppLaunchOverlay() {
@@ -215,7 +221,8 @@ function dismissAppLaunchOverlay() {
     const el = appLaunchOverlayEl;
     appLaunchOverlayEl = null;
     el.classList.add('is-opening');
-    setTimeout(() => el.remove(), 420);
+    document.documentElement.classList.remove('lw-cold-boot');
+    setTimeout(() => el.remove(), 460);
 }
 
 // Kept as its own name for readability at sign-out call sites; it's
