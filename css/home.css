@@ -1460,12 +1460,15 @@
   align-items: flex-end;
   justify-content: center;
   padding: 0;
-  background: rgba(10, 12, 20, 0.42);
-  backdrop-filter: blur(3px);
+  /* Lighter + no blur: blur() is expensive to composite on mid/low-end
+     phones and was the main reason this felt sluggish to open. A plain
+     translucent scrim is instant and still keeps the sheet readable
+     while letting the page underneath stay visible. */
+  background: rgba(10, 12, 20, 0.28);
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  transition: opacity 0.2s ease, visibility 0.2s ease;
+  transition: opacity 0.16s ease, visibility 0.16s ease;
 }
 .location-expand-overlay--open {
   opacity: 1;
@@ -1481,9 +1484,16 @@
   border-radius: 20px 20px 0 0;
   box-shadow: 0 -20px 60px rgba(0,0,0,0.28);
   padding: 20px 22px 22px;
-  transform: translateY(24px);
+  /* Single-stage entrance: transform + opacity only. The old version
+     also animated the body's max-height from 0 on a separate timer
+     (see home.js), which meant the sheet visually opened twice —
+     once for the panel, then again for its content — and the second
+     stage only fired after the status fetch resolved. That's what
+     made it feel slow. Now everything (including skeleton copy) is
+     visible the instant the panel slides in. */
+  transform: translateY(100%);
   opacity: 0;
-  transition: transform 0.28s cubic-bezier(.2,.8,.3,1), opacity 0.22s ease;
+  transition: transform 0.22s cubic-bezier(.22,.9,.32,1), opacity 0.18s ease;
   max-height: 88vh;
   overflow-y: auto;
 }
@@ -1534,14 +1544,10 @@
 .location-expand-panel__close svg { width: 14px; height: 14px; }
 .location-expand-panel__close:hover { background: rgba(0,0,0,0.07); }
 
-/* The body content itself expands from 0 -> its real measured height
-   once the panel opens (see home.js), rather than just relying on the
-   panel's own translateY/opacity entrance — this is what gives the
-   "unfolds open" feel the chip/flyout version didn't have. */
 .location-expand-panel__body {
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height 0.32s ease;
+  /* No longer animates its own height — the panel's slide-up already
+     carries the "opening" motion, and content is visible the moment
+     it lands instead of waiting on a second, fetch-dependent reveal. */
 }
 
 .location-expand-status {
@@ -1599,6 +1605,74 @@
   color: #6B7280;
   line-height: 1.5;
   margin: 0 0 14px;
+}
+
+/* ---- Notify-me checkbox row on the second-location panel ---- */
+.location-expand-notify {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(74, 144, 217, 0.07);
+  border: 1px solid rgba(74, 144, 217, 0.18);
+  margin-bottom: 14px;
+  cursor: pointer;
+  user-select: none;
+}
+.location-expand-notify input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+.location-expand-notify__box {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
+  border-radius: 6px;
+  border: 1.5px solid rgba(74, 144, 217, 0.45);
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.location-expand-notify__box svg {
+  width: 12px;
+  height: 12px;
+  opacity: 0;
+  transform: scale(0.6);
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+.location-expand-notify input:checked + .location-expand-notify__box {
+  background: var(--blue, #4A90D9);
+  border-color: var(--blue, #4A90D9);
+}
+.location-expand-notify input:checked + .location-expand-notify__box svg {
+  opacity: 1;
+  transform: scale(1);
+}
+.location-expand-notify input:focus-visible + .location-expand-notify__box {
+  outline: 2px solid var(--blue, #4A90D9);
+  outline-offset: 2px;
+}
+.location-expand-notify__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.location-expand-notify__text strong {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #1C1F26;
+}
+.location-expand-notify__text span {
+  font-size: 0.72rem;
+  color: #6B7280;
+  line-height: 1.4;
 }
 
 .home-reminder-overlay {
@@ -2292,10 +2366,37 @@ body.modal-open {
   color: color-mix(in srgb, var(--msg-accent) 70%, var(--text-bright));
 }
 
+.chat-message__footer {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  justify-self: start;
+}
+
 .chat-message__time {
   font-size: 0.58rem;
   color: var(--text-faint);
-  justify-self: start;
+}
+
+/* "Seen" eye — sits next to the timestamp on your own bubbles once the
+   recipient's message-seen ping comes back, and disappears again the
+   moment someone replies to that message (see chat.js
+   syncSeenIndicators). Hidden by default rather than just transparent,
+   so it doesn't reserve empty space in every own-message bubble. */
+.chat-message__seen {
+  display: none;
+  align-items: center;
+  color: var(--teal);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.chat-message__seen.is-visible {
+  display: inline-flex;
+  opacity: 1;
+}
+.chat-message__seen svg {
+  width: 10px;
+  height: 10px;
 }
 
 @keyframes chat-message-in {

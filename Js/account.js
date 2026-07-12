@@ -410,8 +410,8 @@ function renderLocationsList(user) {
                     <div class="location-row__badge location-row__badge--secondary">${sec.label || 'Second location'}</div>
                 </div>
                 <div class="location-row__actions">
-                    <button type="button" id="secondaryLocationEditBtn">${pencilIcon} Edit</button>
-                    <button type="button" id="secondaryLocationRemoveBtn">${trashIcon} Remove</button>
+                    <button type="button" id="secondaryLocationEditBtn" aria-label="Edit second location">${pencilIcon}<span>Edit</span></button>
+                    <button type="button" id="secondaryLocationRemoveBtn" aria-label="Remove second location">${trashIcon}<span>Remove</span></button>
                 </div>
             </div>`);
     }

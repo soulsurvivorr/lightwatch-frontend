@@ -569,6 +569,17 @@
 
         <p class="location-expand-panel__note" id="secondaryLocationNote">This is a second spot you're keeping an eye on, separate from your primary location above. Status comes from the same community reports as Home.</p>
 
+        <label class="location-expand-notify" for="secondaryLocationNotifyToggle">
+          <input type="checkbox" id="secondaryLocationNotifyToggle" />
+          <span class="location-expand-notify__box" aria-hidden="true">
+            <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 8.5 6.3 12 13 4.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+          <span class="location-expand-notify__text">
+            <strong>Notify me here</strong>
+            <span id="secondaryLocationNotifySub">Get an alert if this location's power status changes</span>
+          </span>
+        </label>
+
         <button type="button" class="btn btn--primary btn--block" onclick="window.location.href='./account.html'">Manage in Account</button>
       </div>
     </div>

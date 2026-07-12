@@ -124,21 +124,69 @@ function getCurrentChatLocation() {
 // Deterministic accent per handle, used to tint message cards in both
 // the "Only <location>" (local) and "Everyone" (global) audiences so a
 // busy multi-user feed is easy to scan by author at a glance. Same
-// handle -> same shade, every time. Grayscale on purpose (zero
-// saturation) rather than colorful hues — distinct without turning the
-// thread into a rainbow. Fixed, widely-spaced steps rather than a
-// continuous range: two different handles hashing close together on a
-// continuum can end up looking like the same shade, which defeats the
-// point. A small fixed palette guarantees real separation instead.
-const MESSAGE_ACCENT_STEPS = [30, 42, 54, 66, 78, 90]; // % lightness, evenly spread
+// handle -> same color, every time. Fixed, widely-spaced hue steps
+// (not a continuous 0-360 range) so two different handles never hash
+// close enough together to look like the same color — a real rainbow
+// of distinct, evenly-separated hues rather than a near-miss.
+const MESSAGE_ACCENT_HUES = [4, 28, 48, 96, 152, 176, 200, 224, 262, 292, 322, 344]; // degrees, evenly spread
 function handleAccentColor(handle) {
     const str = handle || '';
     let hash = 0;
     for (let i = 0; i < str.length; i += 1) {
         hash = (hash * 31 + str.charCodeAt(i)) | 0;
     }
-    const lightness = MESSAGE_ACCENT_STEPS[Math.abs(hash) % MESSAGE_ACCENT_STEPS.length];
-    return `hsl(0, 0%, ${lightness}%)`;
+    const hue = MESSAGE_ACCENT_HUES[Math.abs(hash) % MESSAGE_ACCENT_HUES.length];
+    return `hsl(${hue}, 62%, 52%)`;
+}
+
+// Ids of messages that already have at least one reply pointed at them.
+// Once a message has been replied to, its "seen" eye disappears — the
+// reply itself is the stronger signal, so we don't keep both.
+function computeRepliedToIds(chats) {
+    const ids = new Set();
+    chats.forEach(c => {
+        if (c.replyTo && c.replyTo.chatId) ids.add(String(c.replyTo.chatId));
+    });
+    return ids;
+}
+
+// Read-receipt bookkeeping: which message ids we've already told the
+// server we've seen, so polling every 5s doesn't re-POST the same ids
+// forever.
+const markedSeenIds = new Set();
+function markVisibleMessagesSeen(chats) {
+    const myId = getCurrentUserId();
+    if (!myId) return;
+    const toMark = chats
+        .filter(c => resolveUserId(c) !== myId)
+        .map(c => c._id || c.id)
+        .filter(id => id && !markedSeenIds.has(id));
+    if (!toMark.length) return;
+    toMark.forEach(id => markedSeenIds.add(id));
+    fetch(`${API_URL}/chats/seen`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: myId, chatIds: toMark })
+    }).catch(() => {}); // best-effort — a missed read receipt isn't worth retry noise
+}
+
+// Updates the little "seen" eye on every own-message bubble currently in
+// the thread, based on the latest fetch. Needed on every poll (not just
+// when a message is first added) because seenBy/replies both change on
+// messages that are already rendered.
+function syncSeenIndicators(chats) {
+    const repliedToIds = computeRepliedToIds(chats);
+    const byId = new Map(chats.map(c => [String(c._id || c.id || ''), c]));
+    chatThread?.querySelectorAll('.chat-message--own').forEach(el => {
+        const id = el.dataset.chatId;
+        if (!id) return;
+        const seenEl = el.querySelector('.chat-message__seen');
+        if (!seenEl) return;
+        const chat = byId.get(id);
+        const hasBeenSeen = Boolean(chat?.seenBy && chat.seenBy.length > 0);
+        const hasReply = repliedToIds.has(id);
+        seenEl.classList.toggle('is-visible', hasBeenSeen && !hasReply);
+    });
 }
 
 function resolveUserId(chat) {
@@ -191,7 +239,7 @@ setInterval(refreshChatTimestamps, 30000);
 // -------------------------------------------------------
 // BUILD A MESSAGE ELEMENT
 // -------------------------------------------------------
-function buildMessageEl(chat, isOwn, enterAnimationClass) {
+function buildMessageEl(chat, isOwn, enterAnimationClass, hasReply) {
     const el = document.createElement('div');
     el.className = isOwn ? "chat-message chat-message--own" : "chat-message";
     if (enterAnimationClass) el.classList.add(enterAnimationClass);
@@ -236,6 +284,23 @@ function buildMessageEl(chat, isOwn, enterAnimationClass) {
     time.className   = "chat-message__time";
     time.textContent = formatRelativeTime(chat.createdAt);
 
+    const footer = document.createElement('div');
+    footer.className = 'chat-message__footer';
+    footer.appendChild(time);
+
+    // "Seen" eye — only shown on your own messages, and only until
+    // someone replies to it (see syncSeenIndicators, which keeps this
+    // in sync as new seenBy/reply data comes in from polling).
+    if (isOwn) {
+        const seenEl = document.createElement('span');
+        seenEl.className = 'chat-message__seen';
+        seenEl.title = 'Seen';
+        seenEl.innerHTML = '<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M1 8S3.5 3 8 3s7 5 7 5-2.5 5-7 5-7-5-7-5Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><circle cx="8" cy="8" r="1.8" fill="currentColor"/></svg>';
+        const hasBeenSeen = Boolean(chat.seenBy && chat.seenBy.length > 0);
+        seenEl.classList.toggle('is-visible', hasBeenSeen && !hasReply);
+        footer.appendChild(seenEl);
+    }
+
     const actions = document.createElement('div');
     actions.className = 'chat-message__actions';
     const replyBtn = document.createElement('button');
@@ -257,7 +322,7 @@ function buildMessageEl(chat, isOwn, enterAnimationClass) {
 
     el.appendChild(author);
     el.appendChild(body);
-    el.appendChild(time);
+    el.appendChild(footer);
     el.appendChild(actions);
     return el;
 }
@@ -395,12 +460,12 @@ function scrollChatToBottom(smooth) {
 
 chatScrollBottomBtn?.addEventListener('click', () => scrollChatToBottom(true));
 
-function addToThread(chat, isOwn, scrollDown, animate) {
+function addToThread(chat, isOwn, scrollDown, animate, hasReply) {
     // "Rise" for a message you just sent, "arrive" for one that just
     // came in from someone else — same idea (flows in from the bottom),
     // slightly different feel so sent vs. received still reads distinctly.
     const enterAnimationClass = animate ? (isOwn ? 'chat-message--sent-in' : 'chat-message--received-in') : null;
-    const el = buildMessageEl(chat, isOwn, enterAnimationClass);
+    const el = buildMessageEl(chat, isOwn, enterAnimationClass, hasReply);
     chatThread.appendChild(el);
     if (scrollDown || isNearBottom) {
         chatThread.scrollTop = chatThread.scrollHeight;
@@ -442,15 +507,17 @@ function loadChatHistory() {
         .then(r => r.json())
         .then(chats => {
             const myId = getCurrentUserId();
+            const repliedToIds = computeRepliedToIds(chats);
             // Reverse: API returns newest-first, we want oldest-first
             ;[...chats].reverse().forEach(chat => {
                 const id = chat._id || chat.id;
                 if (id) knownIds.add(id);
-                addToThread(chat, resolveUserId(chat) === myId, false);
+                addToThread(chat, resolveUserId(chat) === myId, false, false, repliedToIds.has(id));
             });
             chatThread.scrollTop = chatThread.scrollHeight;
             focusTargetMessageIfPresent();
             markChatReady();
+            markVisibleMessagesSeen(chats);
             startPolling();
             startTypingPoll();
         })
@@ -478,14 +545,21 @@ function startPolling() {
             if (!res.ok) return;
             const chats = await res.json();
             const myId  = getCurrentUserId();
+            const repliedToIds = computeRepliedToIds(chats);
 
             ;[...chats].reverse().forEach(chat => {
                 const id = chat._id || chat.id;
                 if (!id || knownIds.has(id)) return; // skip already-shown messages
                 knownIds.add(id);
-                addToThread(chat, resolveUserId(chat) === myId, false, true);
+                addToThread(chat, resolveUserId(chat) === myId, false, true, repliedToIds.has(id));
                 focusTargetMessageIfPresent();
             });
+
+            // Existing bubbles can still change: a reply might land on an
+            // older message, or someone else's seenBy might grow — keep
+            // every own-message eye icon current, not just newly-added ones.
+            syncSeenIndicators(chats);
+            markVisibleMessagesSeen(chats);
         } catch(e) {
             // silent — retries next tick
         }

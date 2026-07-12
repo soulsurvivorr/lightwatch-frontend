@@ -540,8 +540,9 @@
     .location-row {
       display: flex;
       align-items: center;
-      gap: 12px;
-      padding: 12px 14px;
+      flex-wrap: wrap;
+      gap: 10px 12px;
+      padding: 14px 16px;
       border-radius: var(--radius-md, 12px);
       background: var(--bg-panel);
       border: 1px solid var(--border-soft);
@@ -549,8 +550,8 @@
     }
     .location-row:hover { border-color: var(--border-strong); }
     .location-row__icon {
-      width: 36px;
-      height: 36px;
+      width: 38px;
+      height: 38px;
       border-radius: 10px;
       flex-shrink: 0;
       display: flex;
@@ -561,40 +562,73 @@
     }
     .location-row__icon svg { width: 18px; height: 18px; }
     .location-row__icon--secondary { background: var(--border-soft); color: var(--text-faint); }
-    .location-row__body { flex: 1; min-width: 0; }
-    .location-row__name { font-size: 0.9rem; font-weight: 600; color: var(--text-bright); }
+    .location-row__body {
+      flex: 1 1 160px;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .location-row__name {
+      font-size: 0.95rem;
+      font-weight: 600;
+      line-height: 1.35;
+      color: var(--text-bright);
+      overflow-wrap: break-word;
+    }
     .location-row__badge {
       display: inline-flex;
       align-items: center;
-      margin-top: 4px;
-      padding: 2px 9px;
+      align-self: flex-start;
+      padding: 3px 10px;
       border-radius: 999px;
-      font-size: 0.66rem;
+      font-size: 0.68rem;
+      line-height: 1.6;
       text-transform: uppercase;
       letter-spacing: 0.05em;
       color: var(--teal);
       background: var(--teal-dim);
     }
     .location-row__badge--secondary { color: var(--text-faint); background: var(--border-soft); }
-    .location-row__actions { display: flex; gap: 4px; flex-shrink: 0; }
+    .location-row__actions {
+      display: flex;
+      gap: 6px;
+      flex-shrink: 0;
+      margin-left: auto;
+    }
     .location-row__actions button {
       display: inline-flex;
       align-items: center;
-      gap: 4px;
+      gap: 5px;
       background: none;
-      border: 1px solid transparent;
+      border: 1px solid var(--border-soft);
       color: var(--text-faint);
-      font-size: 0.76rem;
+      font-size: 0.78rem;
+      line-height: 1.4;
       cursor: pointer;
-      padding: 6px 9px;
+      padding: 7px 11px;
       border-radius: 8px;
+      white-space: nowrap;
       transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
     }
-    .location-row__actions button svg { width: 14px; height: 14px; }
+    .location-row__actions button svg { width: 14px; height: 14px; flex-shrink: 0; }
     .location-row__actions button:hover {
       color: var(--text-bright);
       background: var(--border-soft);
       border-color: var(--border-strong);
+    }
+    /* Below ~380px the icon+label buttons crowd the row and force awkward
+       wraps — drop to icon-only with an accessible label instead of
+       letting text clip or the row balloon in height. */
+    @media (max-width: 380px) {
+      .location-row { padding: 12px 12px; }
+      .location-row__actions button span { display: none; }
+      .location-row__actions button {
+        padding: 7px;
+        width: 32px;
+        height: 32px;
+        justify-content: center;
+      }
     }
 
     .secondary-location { margin-top: 12px; }
