@@ -136,7 +136,7 @@ async function handleSubmit() {
         }
 
         showPageTransitionOverlay('Sending your code…');
-        setTimeout(() => { window.location.href = './pages/verification.html'; }, 260);
+        setTimeout(() => { window.location.href = './pages/verification.html'; }, 500);
         return;
 
     } catch (err) {
@@ -156,6 +156,6 @@ document.querySelectorAll('a[href="./pages/signup.html"]').forEach(link => {
     link.addEventListener('click', e => {
         e.preventDefault();
         showPageTransitionOverlay('Taking you to sign up…');
-        setTimeout(() => window.location.href = link.href, 260);
+        setTimeout(() => window.location.href = link.href, 500);
     });
 });
