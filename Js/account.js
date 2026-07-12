@@ -651,6 +651,39 @@ function initCollapsibleCards() {
             if (body && body.style.maxHeight !== 'none') body.style.maxHeight = body.scrollHeight + 'px';
         });
     });
+
+    // ---- Display preferences: collapsed by default, until opened once ----
+    // First-ever visit to Account: this card starts collapsed so the more
+    // frequently-used cards (locations, notifications) get the attention.
+    // The moment the user opens it themselves, that choice is remembered
+    // (DISPLAY_PREFS_OPENED_KEY) — every visit after that, it loads already
+    // expanded instead of going back to collapsed.
+    const DISPLAY_PREFS_OPENED_KEY = 'lw_display_prefs_opened';
+    const displayBtn = document.getElementById('displayPrefsCollapseBtn');
+    const displayBody = document.getElementById('displayPrefsCollapseBody');
+    if (displayBtn && displayBody) {
+        const everOpened = localStorage.getItem(DISPLAY_PREFS_OPENED_KEY) === '1';
+        if (!everOpened) {
+            // Collapse instantly on load — no shrink animation on first
+            // paint, just start closed the way an already-collapsed card
+            // normally would.
+            displayBody.style.transition = 'none';
+            displayBody.style.maxHeight = '0px';
+            displayBody.dataset.collapsed = 'true';
+            displayBtn.setAttribute('aria-expanded', 'false');
+            displayBtn.setAttribute('aria-label', 'Expand display preferences');
+            requestAnimationFrame(() => { displayBody.style.transition = ''; });
+        }
+
+        // Runs after the generic toggle listener above (attached earlier
+        // in this same querySelectorAll loop), so aria-expanded already
+        // reflects the post-click state by the time this checks it.
+        displayBtn.addEventListener('click', () => {
+            if (displayBtn.getAttribute('aria-expanded') === 'true') {
+                localStorage.setItem(DISPLAY_PREFS_OPENED_KEY, '1');
+            }
+        });
+    }
 }
 
 // ------------------------------------------------------------
