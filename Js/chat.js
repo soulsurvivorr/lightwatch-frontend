@@ -170,18 +170,41 @@ const markedSeenIds = new Set();
 
 // A message being *loaded* (fetched into memory so the thread is ready)
 // is not the same as a message being *seen* (actually on the user's
-// screen). On desktop the chat lives on-page, so loaded == visible. On
-// mobile it's a popup that's closed by default, so loading the history
-// in the background must NOT count as seeing it — only mark messages
-// seen when the popup is actually open (or there's no mobile popup at
-// all, i.e. desktop).
+// screen). Two separate ways that gap shows up:
+//  - mobile: chat lives in a popup that's closed by default
+//  - desktop/website: the chat card is on the home page, but "on the
+//    page" isn't "on screen" — it can be below the fold, or the window
+//    itself might not even have focus. Just loading the home page must
+//    not count as seeing it in either case.
+let chatCardIntersecting = false;
+let chatVisibilityObserver = null;
+function setupChatVisibilityObserver() {
+    const card = getVisibleChatCard();
+    if (!card || !('IntersectionObserver' in window)) return;
+    if (chatVisibilityObserver) chatVisibilityObserver.disconnect();
+    chatVisibilityObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            const wasIntersecting = chatCardIntersecting;
+            chatCardIntersecting = entry.isIntersecting;
+            if (chatCardIntersecting && !wasIntersecting) pollChatsOnce();
+        });
+    }, { threshold: 0.4 });
+    chatVisibilityObserver.observe(card);
+}
+
 function isChatVisibleToUser() {
     if (document.hidden) return false;
+    if (typeof document.hasFocus === 'function' && !document.hasFocus()) return false;
     const card = getVisibleChatCard();
     if (!card) return false;
     const onMobile = window.matchMedia('(max-width: 720px)').matches;
-    if (!onMobile) return true;
-    return card.classList.contains('chat-card--mobile-open');
+    if (onMobile) return card.classList.contains('chat-card--mobile-open');
+    // Desktop/website: only counts once the card is actually scrolled
+    // into view. If this browser has no IntersectionObserver support,
+    // fall back to the old "on-page" assumption rather than never
+    // marking anything seen.
+    if (!('IntersectionObserver' in window)) return true;
+    return chatCardIntersecting;
 }
 
 function markVisibleMessagesSeen(chats) {
@@ -834,7 +857,9 @@ if (window.currentChatLocation) loadChatHistory();
 
 window.addEventListener('locationReady', () => {
     updateScopeButtons();
+    setupChatVisibilityObserver();
 });
+setupChatVisibilityObserver();
 
 function setChatScope(nextScope) {
     const picked = nextScope === CHAT_SCOPE_GLOBAL ? CHAT_SCOPE_GLOBAL : CHAT_SCOPE_LOCAL;
@@ -915,7 +940,7 @@ function setMobileChatOpen(open) {
         // to the other with no transition in between.
         const label = toggle.querySelector('.mobile-chat-toggle__label');
         toggle.classList.toggle('mobile-chat-toggle--open', open);
-        if (label) label.textContent = open ? 'Close' : 'Chat';
+        if (label) label.textContent = open ? 'Close' : 'Report';
         toggle.setAttribute('aria-label', open ? 'Close chat' : 'Open chat');
     }
 
