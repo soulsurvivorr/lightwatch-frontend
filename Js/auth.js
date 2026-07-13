@@ -256,7 +256,6 @@ function dismissAppLaunchOverlay() {
     const el = appLaunchOverlayEl;
     appLaunchOverlayEl = null;
     el.classList.add('is-opening');
-    document.documentElement.classList.remove('lw-cold-boot');
     // Let the real content settle into place a beat behind the
     // overlay opening, instead of just sitting there already fully
     // formed the instant the overlay clears (see .lw-content-reveal
@@ -301,7 +300,24 @@ function dismissAppLaunchOverlay() {
     // Must match the #lwAppLaunchOverlay.is-opening clip-path
     // transition duration above (0.48s) — same clock, just read from
     // JS so we know when it's safe to remove the element from the DOM.
-    setTimeout(() => el.remove(), 480);
+    //
+    // lw-cold-boot (which forces html/body to a matching #1C1F26
+    // background — see home.html's <head>) is removed here too, in
+    // the SAME tick as el.remove(), rather than back at the top of
+    // this function. The overlay's clip-path close is a real 480ms
+    // animation, not instant — removing lw-cold-boot at the start of
+    // that animation exposed the real underlying background (a light
+    // gray on mobile, since theme is forced 'light' there) well
+    // before the overlay had actually finished collapsing, which is
+    // what read as the page "reflecting"/flashing white right after
+    // the overlay. Keeping the forced-dark background matched to the
+    // still-visible overlay for the animation's full duration, and
+    // only dropping it once the overlay is truly gone, removes that
+    // mismatch.
+    setTimeout(() => {
+        el.remove();
+        document.documentElement.classList.remove('lw-cold-boot');
+    }, 480);
 }
 
 // Kept as its own name for readability at sign-out call sites; it's
