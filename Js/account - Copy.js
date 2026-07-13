@@ -1,0 +1,685 @@
+// ============================================================
+//  ACCOUNT.JS — Account page logic
+//  Load this on account.html only, after auth.js / notification.js /
+//  profile.js / nav.js. Handles everything specific to this page:
+//  extra profile fields, locations, city-lock UI, notification
+//  preference toggles, display preferences, and the compact-chat
+//  preview popup.
+//
+//  Why a separate file: this logic doesn't belong on any other page,
+//  so keeping it out of profile.js/auth.js keeps those files reusable
+//  across the whole app, while everything account-only lives here in
+//  one place.
+// ============================================================
+
+requireAuth(); // redirects to login if no session — defined in auth.js
+
+const el = (id) => document.getElementById(id);
+
+// ------------------------------------------------------------
+// DISPLAY PREFERENCES
+// A small shared store other pages can read from later — call
+// window.LWDisplayPrefs.get() for the current values, or listen
+// for the 'lw-display-prefs-changed' event to react live.
+// ------------------------------------------------------------
+const DISPLAY_PREF_KEYS = {
+    compactChat:   'lw_pref_compact_chat',
+    reduceMotion:  'lw_pref_reduce_motion',
+    largeChatText: 'lw_pref_large_chat_text',
+    density:       'lw_pref_density',   // 'comfortable' | 'compact'
+    accent:        'lw_pref_accent'     // 'teal' | 'amber' | 'violet'
+};
+
+function readDisplayPrefs() {
+    return {
+        compactChat:   localStorage.getItem(DISPLAY_PREF_KEYS.compactChat) === '1',
+        reduceMotion:  localStorage.getItem(DISPLAY_PREF_KEYS.reduceMotion) === '1',
+        largeChatText: localStorage.getItem(DISPLAY_PREF_KEYS.largeChatText) === '1',
+        density:       localStorage.getItem(DISPLAY_PREF_KEYS.density) || 'comfortable',
+        accent:        localStorage.getItem(DISPLAY_PREF_KEYS.accent) || 'teal'
+    };
+}
+
+function applyDisplayPrefsToDocument(prefs) {
+    const root = document.documentElement;
+    root.setAttribute('data-compact-chat', prefs.compactChat ? '1' : '0');
+    root.setAttribute('data-reduce-motion', prefs.reduceMotion ? '1' : '0');
+    root.setAttribute('data-large-chat-text', prefs.largeChatText ? '1' : '0');
+    root.setAttribute('data-density', prefs.density);
+    root.setAttribute('data-accent', prefs.accent);
+}
+
+function setDisplayPref(key, value) {
+    localStorage.setItem(DISPLAY_PREF_KEYS[key], typeof value === 'boolean' ? (value ? '1' : '0') : value);
+    const prefs = readDisplayPrefs();
+    applyDisplayPrefsToDocument(prefs);
+    window.dispatchEvent(new CustomEvent('lw-display-prefs-changed', { detail: prefs }));
+    return prefs;
+}
+
+window.LWDisplayPrefs = {
+    get: readDisplayPrefs,
+    set: setDisplayPref
+};
+
+function initDisplayPrefsUI() {
+    const prefs = readDisplayPrefs();
+    applyDisplayPrefsToDocument(prefs);
+
+    const compactToggle = el('prefCompactChat');
+    const reduceMotionToggle = el('prefReduceMotion');
+    const largeTextToggle = el('prefLargeChatText');
+    const densitySelect = el('prefDensity');
+    const swatches = document.querySelectorAll('#accentSwatchRow .swatch');
+
+    if (compactToggle) compactToggle.checked = prefs.compactChat;
+    if (reduceMotionToggle) reduceMotionToggle.checked = prefs.reduceMotion;
+    if (largeTextToggle) largeTextToggle.checked = prefs.largeChatText;
+    if (densitySelect) densitySelect.value = prefs.density;
+    swatches.forEach(btn => btn.setAttribute('aria-pressed', btn.dataset.accent === prefs.accent ? 'true' : 'false'));
+
+    compactToggle?.addEventListener('change', () => {
+        setDisplayPref('compactChat', compactToggle.checked);
+        openChatPreviewPopup();
+    });
+
+    reduceMotionToggle?.addEventListener('change', () => {
+        setDisplayPref('reduceMotion', reduceMotionToggle.checked);
+    });
+
+    largeTextToggle?.addEventListener('change', () => {
+        setDisplayPref('largeChatText', largeTextToggle.checked);
+        openChatPreviewPopup();
+    });
+
+    densitySelect?.addEventListener('change', () => {
+        setDisplayPref('density', densitySelect.value);
+    });
+
+    swatches.forEach(btn => {
+        btn.addEventListener('click', () => {
+            setDisplayPref('accent', btn.dataset.accent);
+            swatches.forEach(b => b.setAttribute('aria-pressed', b === btn ? 'true' : 'false'));
+        });
+    });
+}
+
+// ------------------------------------------------------------
+// ACCORDION — generic expand/collapse for the "About & support"
+// card (and anywhere else `.accordion-item` shows up). Panels
+// expand to their real, measured content height rather than a
+// guessed max-height, so long or short answers both animate
+// cleanly and nothing gets clipped.
+// ------------------------------------------------------------
+function initAccordions() {
+    document.querySelectorAll('.accordion-item__trigger').forEach(trigger => {
+        trigger.addEventListener('click', () => {
+            const panel = document.getElementById(trigger.getAttribute('aria-controls'));
+            if (!panel) return;
+            const isOpen = trigger.getAttribute('aria-expanded') === 'true';
+
+            if (isOpen) {
+                panel.style.maxHeight = panel.scrollHeight + 'px';
+                requestAnimationFrame(() => { panel.style.maxHeight = '0px'; });
+                trigger.setAttribute('aria-expanded', 'false');
+            } else {
+                trigger.setAttribute('aria-expanded', 'true');
+                panel.style.maxHeight = panel.scrollHeight + 'px';
+                // Once the open transition lands, let it track content
+                // that changes size later (e.g. a window resize).
+                panel.addEventListener('transitionend', function onEnd() {
+                    if (trigger.getAttribute('aria-expanded') === 'true') {
+                        panel.style.maxHeight = 'none';
+                    }
+                    panel.removeEventListener('transitionend', onEnd);
+                });
+            }
+        });
+    });
+
+    // Re-measure any panel currently open when the viewport resizes
+    // (text reflow changes scrollHeight at narrower widths).
+    window.addEventListener('resize', () => {
+        document.querySelectorAll('.accordion-item__trigger[aria-expanded="true"]').forEach(trigger => {
+            const panel = document.getElementById(trigger.getAttribute('aria-controls'));
+            if (panel) panel.style.maxHeight = panel.scrollHeight + 'px';
+        });
+    });
+}
+
+// ------------------------------------------------------------
+// COMPACT CHAT PREVIEW POPUP
+// Pulls real, recent messages for the signed-in user's location
+// (same /chats endpoint the live community chat uses) instead of
+// placeholder bubbles, with real loading/empty/error states —
+// the same pattern notification.js uses for its network calls.
+// Reuses the exact same markup/classes the live community chat
+// renders with (.chat-message, .chat-message--own, etc.), driven
+// by the same [data-compact-chat]/[data-large-chat-text]/
+// [data-reduce-motion] attributes already applied to <html>, so
+// toggling a preference here updates the preview exactly the way
+// it'll actually look in chat, live.
+// ------------------------------------------------------------
+function escapeHtml(str) {
+    return String(str ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+async function openChatPreviewPopup() {
+    const overlay = el('chatPopupOverlay');
+    const popup = el('chatPopup');
+    const body = el('chatPopupBody');
+    if (!overlay || !popup || !body) return;
+
+    overlay.classList.add('chat-popup-overlay--open');
+    overlay.setAttribute('aria-hidden', 'false');
+    body.innerHTML = `<div style="color:var(--text-faint);font-size:0.85rem;padding:14px 0;text-align:center;">Loading recent messages…</div>`;
+
+    const userId = localStorage.getItem('currentUserId');
+    const userObj = JSON.parse(localStorage.getItem('currentUserData') || '{}');
+    const loc = userObj.city ? `${userObj.city}, ${userObj.region || ''}`.replace(/,\s*$/, '') : (userObj.region || userObj.location);
+    const myHandle = userObj.chatHandle || localStorage.getItem('chatHandle') || null;
+
+    if (!loc) {
+        body.innerHTML = `<div style="color:var(--text-faint);font-size:0.85rem;padding:14px 0;text-align:center;">Set a city/town to preview your community chat.</div>`;
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API_URL}/chats?location=${encodeURIComponent(loc)}`);
+        if (!res.ok) throw new Error('bad response');
+        const chats = await res.json();
+        const recent = chats.slice(0, 8).reverse(); // oldest -> newest, like a real thread
+
+        if (recent.length === 0) {
+            body.innerHTML = `<div style="color:var(--text-faint);font-size:0.85rem;padding:14px 0;text-align:center;">No messages in ${escapeHtml(loc.split(',')[0])} yet — be the first to say something on Home.</div>`;
+            return;
+        }
+
+        body.innerHTML = `<div class="chat-thread">${recent.map(m => {
+            const isMine = myHandle && m.handle === myHandle;
+            const time = m.createdAt ? new Date(m.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
+            return `
+                <div class="chat-message${isMine ? ' chat-message--own' : ''}">
+                  <span class="chat-message__author">${isMine ? 'You' : escapeHtml(m.handle || 'anon')}</span>
+                  <span class="chat-message__text">${escapeHtml(m.text)}</span>
+                  <span class="chat-message__time">${time}</span>
+                </div>`;
+        }).join('')}</div>`;
+    } catch (err) {
+        body.innerHTML = `<div style="color:var(--text-faint);font-size:0.85rem;padding:14px 0;text-align:center;">Could not load chat preview right now.</div>`;
+    }
+}
+
+function closeChatPreviewPopup() {
+    const overlay = el('chatPopupOverlay');
+    if (!overlay) return;
+    overlay.classList.remove('chat-popup-overlay--open');
+    overlay.setAttribute('aria-hidden', 'true');
+}
+
+function initChatPreviewPopup() {
+    el('chatPopupCloseBtn')?.addEventListener('click', closeChatPreviewPopup);
+    el('chatPopupOverlay')?.addEventListener('click', (e) => {
+        if (e.target === el('chatPopupOverlay')) closeChatPreviewPopup();
+    });
+}
+
+// ------------------------------------------------------------
+// NOTIFICATION PREFERENCE TOGGLES (mute everyone chat / mentions)
+// ------------------------------------------------------------
+function initNotificationPrefToggles() {
+    const muteGlobalToggle = el('prefMuteGlobalChat');
+    const chatMentionsToggle = el('prefChatMentions');
+
+    // Seed from localStorage immediately (fast paint), then reconcile
+    // with the server's saved state once the push subscription is ready.
+    if (muteGlobalToggle) muteGlobalToggle.checked = localStorage.getItem('lw_mute_global_chat') === '1';
+    if (chatMentionsToggle) chatMentionsToggle.checked = localStorage.getItem('lw_chat_mentions') !== '0'; // default ON
+
+    (async () => {
+        if (typeof window.getChatPushPreferences !== 'function') return;
+        const prefs = await window.getChatPushPreferences();
+        if (!prefs) return;
+        if (muteGlobalToggle) {
+            muteGlobalToggle.checked = Boolean(prefs.muteGlobalChat);
+            localStorage.setItem('lw_mute_global_chat', muteGlobalToggle.checked ? '1' : '0');
+        }
+        if (chatMentionsToggle) {
+            chatMentionsToggle.checked = prefs.chatMentionsEnabled !== false;
+            localStorage.setItem('lw_chat_mentions', chatMentionsToggle.checked ? '1' : '0');
+        }
+    })();
+
+    muteGlobalToggle?.addEventListener('change', async () => {
+        if (typeof window.setGlobalChatMutePreference !== 'function') {
+            window.lwToast?.('Notification service is not ready yet.');
+            muteGlobalToggle.checked = !muteGlobalToggle.checked;
+            return;
+        }
+        const result = await window.setGlobalChatMutePreference(muteGlobalToggle.checked);
+        if (!result.success) {
+            muteGlobalToggle.checked = !muteGlobalToggle.checked;
+            window.lwToast?.(result.error || 'Could not save mute setting.');
+            return;
+        }
+        localStorage.setItem('lw_mute_global_chat', muteGlobalToggle.checked ? '1' : '0');
+        window.lwToast?.(muteGlobalToggle.checked
+            ? 'Everyone chat alerts are muted. Replies and @mentions will still notify you if Community chat mentions is on.'
+            : 'Everyone chat alerts are active.');
+    });
+
+    chatMentionsToggle?.addEventListener('change', async () => {
+        if (typeof window.setChatMentionsPreference !== 'function') {
+            window.lwToast?.('Notification service is not ready yet.');
+            chatMentionsToggle.checked = !chatMentionsToggle.checked;
+            return;
+        }
+        const result = await window.setChatMentionsPreference(chatMentionsToggle.checked);
+        if (!result.success) {
+            chatMentionsToggle.checked = !chatMentionsToggle.checked;
+            window.lwToast?.(result.error || 'Could not save mentions setting.');
+            return;
+        }
+        localStorage.setItem('lw_chat_mentions', chatMentionsToggle.checked ? '1' : '0');
+        window.lwToast?.(chatMentionsToggle.checked
+            ? 'You will be notified when someone replies to you or @mentions you, even with Everyone chat muted.'
+            : 'Replies and @mentions will no longer send notifications.');
+    });
+}
+
+// ------------------------------------------------------------
+// CITY / TOWN EDIT — one-time only, with a real locked state
+// once it's been used (no more disabled-looking form).
+// ------------------------------------------------------------
+function showCityLockedView(city, region, animate = true) {
+    // The one-time edit has been used — there's nothing left for the user
+    // to do here, so the whole card collapses out of the page rather than
+    // sticking around in a disabled/locked state.
+    const card = el('cityEditCard');
+    if (!card) return;
+
+    if (!animate) {
+        card.hidden = true;
+        return;
+    }
+
+    requestAnimationFrame(() => card.classList.add('card--collapsed'));
+    setTimeout(() => { card.hidden = true; }, 320);
+}
+
+function initCityEditForm(user) {
+    if (user?.cityChangeLocked) {
+        showCityLockedView(user.city, user.region, false);
+        return;
+    }
+
+    const input = el('cityEditInput');
+    const toggleBtn = el('cityEditToggleBtn');
+    if (input) input.value = user?.city || '';
+
+    toggleBtn?.addEventListener('click', () => {
+        if (!input || input.disabled === false) return;
+        input.disabled = false;
+        input.focus();
+        input.select();
+        const saveBtn = el('cityEditSaveBtn');
+        if (saveBtn) saveBtn.disabled = false;
+        toggleBtn.textContent = 'Editing…';
+        toggleBtn.disabled = true;
+    });
+
+    el('cityEditForm')?.addEventListener('submit', async () => {
+        const messageEl = el('cityEditMessage');
+        const saveBtn = el('cityEditSaveBtn');
+        const city = String(input?.value || '').trim();
+        const userId = localStorage.getItem('currentUserId');
+        if (!userId || !city) {
+            if (messageEl) messageEl.textContent = 'Please enter a city/town first.';
+            return;
+        }
+
+        saveBtn.disabled = true;
+        if (messageEl) messageEl.textContent = 'Saving...';
+
+        try {
+            const res = await fetch(`${API_URL}/user/${userId}/city`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ city })
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                if (messageEl) messageEl.textContent = data.error || 'Could not save city/town.';
+                saveBtn.disabled = false;
+                return;
+            }
+
+            const finalCity = data.user?.city || city;
+            const finalRegion = data.user?.region || el('profileRegion')?.textContent;
+
+            if (el('profileCity')) el('profileCity').textContent = finalCity;
+            if (el('profileRegion')) el('profileRegion').textContent = finalRegion;
+
+            const cachedUser = JSON.parse(localStorage.getItem('currentUserData') || '{}');
+            cachedUser.city = finalCity;
+            if (finalRegion) cachedUser.region = finalRegion;
+            localStorage.setItem('currentUserData', JSON.stringify(cachedUser));
+
+            window.lwToast?.('City/town updated successfully.');
+            showCityLockedView(finalCity, finalRegion);
+        } catch (err) {
+            if (messageEl) messageEl.textContent = 'Could not save city/town right now.';
+            saveBtn.disabled = false;
+        }
+    });
+}
+
+// ------------------------------------------------------------
+// MY LOCATIONS — primary (read-only) + one optional secondary
+// location the user can add, edit, or remove (e.g. "Work").
+// ------------------------------------------------------------
+function renderLocationsList(user) {
+    const listEl = el('myLocationsList');
+    if (!listEl) return;
+
+    const pinIcon = `<svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 18s6-5.686 6-10a6 6 0 1 0-12 0c0 4.314 6 10 6 10Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="10" cy="8" r="2.2" stroke="currentColor" stroke-width="1.6"/></svg>`;
+    // A distinct flag icon (rather than the same pin recolored) so a saved
+    // second spot is visually its own thing at a glance, not a muted
+    // variant of the primary location.
+    const flagIcon = `<svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 17V3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M5 4.2c1.4-1 3-1 4.4 0 1.5 1 3.1 1 4.6 0v6.6c-1.5 1-3.1 1-4.6 0-1.4-1-3-1-4.4 0V4.2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
+    const pencilIcon = `<svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M13.4 3.5 16.5 6.6 7 16.1H3.9v-3.1L13.4 3.5Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
+    const trashIcon = `<svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 6h12M8 6V4.5A1.5 1.5 0 0 1 9.5 3h1A1.5 1.5 0 0 1 12 4.5V6M6 6v9a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+    const rows = [];
+    const primary = user.city ? `${user.city}, ${user.region || ''}`.replace(/,\s*$/, '') : user.region || null;
+    if (primary) {
+        rows.push(`
+            <div class="location-row">
+                <span class="location-row__icon" aria-hidden="true">${pinIcon}</span>
+                <div class="location-row__body">
+                    <div class="location-row__name">${primary}</div>
+                    <div class="location-row__badge">Primary</div>
+                </div>
+            </div>`);
+    }
+
+    const sec = user.secondaryLocation;
+    if (sec?.city) {
+        const secLabel = [sec.city, sec.region].filter(Boolean).join(', ');
+        rows.push(`
+            <div class="location-row location-row--secondary">
+                <span class="location-row__icon location-row__icon--secondary" aria-hidden="true">${flagIcon}</span>
+                <div class="location-row__body">
+                    <div class="location-row__name">${secLabel}</div>
+                    <div class="location-row__badge location-row__badge--secondary">${sec.label || 'Second location'}</div>
+                </div>
+                <div class="location-row__actions">
+                    <button type="button" id="secondaryLocationEditBtn" aria-label="Edit second location">${pencilIcon}<span>Edit</span></button>
+                    <button type="button" id="secondaryLocationRemoveBtn" aria-label="Remove second location">${trashIcon}<span>Remove</span></button>
+                </div>
+            </div>`);
+    }
+
+    listEl.innerHTML = rows.length
+        ? rows.join('')
+        : `<div style="color:var(--text-faint);font-size:0.85rem;padding:8px 0;">No locations set yet.</div>`;
+
+    wireSecondaryLocationActions(sec);
+}
+
+function setSecondaryFormVisible(visible, sec) {
+    const addBtn = el('secondaryLocationAddBtn');
+    const form = el('secondaryLocationForm');
+    if (!addBtn || !form) return;
+    addBtn.hidden = visible;
+    form.hidden = !visible;
+    if (visible) {
+        el('secondaryLocationLabel').value = sec?.label && sec.label !== 'Second location' ? sec.label : (sec ? sec.label || '' : '');
+        el('secondaryLocationCity').value = sec?.city || '';
+        el('secondaryLocationRegion').value = sec?.region || '';
+        el('secondaryLocationMessage').textContent = '';
+    }
+}
+
+function wireSecondaryLocationActions(sec) {
+    const addBtn = el('secondaryLocationAddBtn');
+    const cancelBtn = el('secondaryLocationCancelBtn');
+    const editBtn = el('secondaryLocationEditBtn');
+    const removeBtn = el('secondaryLocationRemoveBtn');
+
+    // Show the "+ Add" button only when there's no secondary location yet.
+    if (addBtn) addBtn.hidden = Boolean(sec?.city);
+
+    addBtn?.addEventListener('click', () => setSecondaryFormVisible(true, null), { once: true });
+    cancelBtn?.addEventListener('click', () => setSecondaryFormVisible(false));
+    editBtn?.addEventListener('click', () => setSecondaryFormVisible(true, sec));
+
+    removeBtn?.addEventListener('click', async () => {
+        const userId = localStorage.getItem('currentUserId');
+        if (!userId) return;
+        removeBtn.disabled = true;
+        try {
+            const res = await fetch(`${API_URL}/user/${userId}/secondary-location`, { method: 'DELETE' });
+            if (!res.ok) throw new Error('failed');
+            const cachedUser = JSON.parse(localStorage.getItem('currentUserData') || '{}');
+            cachedUser.secondaryLocation = null;
+            localStorage.setItem('currentUserData', JSON.stringify(cachedUser));
+            window.lwToast?.('Location removed.');
+            renderLocationsList({ ...cachedUser });
+        } catch {
+            window.lwToast?.('Could not remove that location right now.');
+            removeBtn.disabled = false;
+        }
+    });
+}
+
+function initSecondaryLocationForm() {
+    el('secondaryLocationForm')?.addEventListener('submit', async () => {
+        const userId = localStorage.getItem('currentUserId');
+        const label = String(el('secondaryLocationLabel')?.value || '').trim();
+        const city = String(el('secondaryLocationCity')?.value || '').trim();
+        const region = String(el('secondaryLocationRegion')?.value || '').trim();
+        const messageEl = el('secondaryLocationMessage');
+        const saveBtn = el('secondaryLocationSaveBtn');
+
+        if (!city || !region) {
+            if (messageEl) messageEl.textContent = 'City and region are both required.';
+            return;
+        }
+        if (!userId) return;
+
+        saveBtn.disabled = true;
+        if (messageEl) messageEl.textContent = 'Saving...';
+
+        try {
+            const res = await fetch(`${API_URL}/user/${userId}/secondary-location`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ label, city, region })
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                if (messageEl) messageEl.textContent = data.error || 'Could not save that location.';
+                saveBtn.disabled = false;
+                return;
+            }
+
+            const cachedUser = JSON.parse(localStorage.getItem('currentUserData') || '{}');
+            cachedUser.secondaryLocation = data.secondaryLocation;
+            localStorage.setItem('currentUserData', JSON.stringify(cachedUser));
+
+            window.lwToast?.('Location saved.');
+            setSecondaryFormVisible(false);
+            renderLocationsList({ ...cachedUser });
+        } catch {
+            if (messageEl) messageEl.textContent = 'Could not reach the server — try again.';
+        } finally {
+            saveBtn.disabled = false;
+        }
+    });
+}
+
+// ------------------------------------------------------------
+// MAIN LOAD
+// Fetches the extra fields this page needs beyond what profile.js
+// already renders, and fills the locations / city-lock / chat-
+// activity sections. Each section shows its own lightweight
+// "Loading…" placeholder and fills in independently — none of
+// this blocks or extends the full-page skeleton, which is
+// controlled solely by profile.js now (core profile + light
+// status data only). That's what used to make the page feel slow:
+// the whole skeleton used to wait on these secondary fetches too.
+// ------------------------------------------------------------
+async function loadAccountExtras() {
+    const userId = localStorage.getItem('currentUserId');
+    if (!userId) {
+        if (document.body) delete document.body.dataset.accountExtrasLoading;
+        document.body?.classList.remove('page-data-loading');
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API_URL}/user/${userId}`);
+        if (!res.ok) return;
+        const user = await res.json();
+
+        if (el('profileCity')) el('profileCity').textContent = user.city || '—';
+        if (el('profileRegion')) el('profileRegion').textContent = user.region || '—';
+
+        // The badge used to say "Active contributor" for everyone, whether
+        // or not they'd ever done anything — swap it for something true:
+        // the area LightWatch is actually watching for them.
+        const badgeTextEl = el('profileBadgeText');
+        if (badgeTextEl) {
+            badgeTextEl.textContent = user.city ? `Monitoring ${user.city}` : 'Community member';
+        }
+
+        const chatHandleValue = user.chatHandle || localStorage.getItem('chatHandle') || '—';
+        if (el('profileChatHandle')) el('profileChatHandle').textContent = chatHandleValue;
+        if (el('profileHandle')) el('profileHandle').textContent = user.chatHandle || localStorage.getItem('chatHandle') || '';
+
+        if (user.createdAt && el('profileLastLogin')) {
+            el('profileLastLogin').textContent = new Date(user.createdAt).toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric' });
+        }
+
+        const hour = new Date().getHours();
+        const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+        const firstName = (user.name || '').trim().split(/\s+/)[0] || 'there';
+        if (el('pageGreeting')) el('pageGreeting').textContent = `${greeting}, ${firstName}`;
+
+        renderLocationsList(user);
+        initCityEditForm(user);
+
+        // Cache the fuller object so the locations UI still has it after
+        // an edit without needing another round trip.
+        const cachedUser = JSON.parse(localStorage.getItem('currentUserData') || '{}');
+        localStorage.setItem('currentUserData', JSON.stringify({ ...cachedUser, ...user }));
+    } catch (e) { /* silent — page still works from profile.js's cached data */ }
+
+    // Recent chat messages load independently and don't hold up anything else.
+    try {
+        const userObj = JSON.parse(localStorage.getItem('currentUserData') || '{}');
+        const loc = userObj.city ? `${userObj.city}, ${userObj.region}` : userObj.region || userObj.location;
+        if (loc) {
+            const res = await fetch(`${API_URL}/chats?location=${encodeURIComponent(loc)}`);
+            if (res.ok) {
+                const chats = await res.json();
+                const mineAll = chats.filter(c => (c.userId?._id || c.userId) === userId);
+                const mine = mineAll.slice(0, 5);
+                const listEl = el('recentChatList');
+                if (listEl) {
+                    listEl.innerHTML = mine.length === 0
+                        ? `<div style="color:var(--text-faint);font-size:0.85rem;padding:8px 0;">No chat messages yet.</div>`
+                        : mine.map(c => `
+                            <div style="padding:10px 0;border-bottom:1px solid var(--border-soft);">
+                                <div style="font-size:0.84rem;color:var(--text-bright);">"${c.text}"</div>
+                                <div style="font-size:0.74rem;color:var(--text-faint);margin-top:3px;">${c.location} · ${new Date(c.createdAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</div>
+                            </div>`).join('') + (mineAll.length > 5 ? `<div style="font-size:0.78rem;color:var(--text-faint);padding-top:8px;">Showing 5 most recent</div>` : '');
+                }
+            }
+        }
+    } catch (e) { /* silent */ }
+
+    // Whatever happened above (success or failure), the extras are done
+    // loading now — release the flag profile.js's hideProfileLoader() was
+    // respecting, and reveal the real content if the skeleton is still up.
+    if (document.body) delete document.body.dataset.accountExtrasLoading;
+    document.body?.classList.remove('page-data-loading');
+}
+
+// ------------------------------------------------------------
+// COLLAPSIBLE CARDS — chevron beside "My locations", "Notifications",
+// and "Display" headers. Same measure-then-animate approach as
+// initAccordions() above (max-height driven off scrollHeight), just
+// applied to a whole card body instead of a single accordion panel.
+//
+// My Locations, Notifications, and Display always start collapsed on
+// every page load (no memory of prior state) — the user opens whichever
+// section they need for that visit.
+// ------------------------------------------------------------
+// Cards that should always start collapsed on every page load, regardless
+// of whether the user opened them last time.
+const COLLAPSE_BY_DEFAULT_IDS = ['myLocationsCollapseBtn', 'notificationsCollapseBtn', 'displayPrefsCollapseBtn'];
+
+function initCollapsibleCards() {
+    document.querySelectorAll('.card__collapse-btn').forEach(btn => {
+        const body = document.getElementById(btn.getAttribute('aria-controls'));
+        if (!body) return;
+
+        if (COLLAPSE_BY_DEFAULT_IDS.includes(btn.id)) {
+            // Collapse instantly on load — no shrink animation on first
+            // paint, just start closed the way an already-collapsed card
+            // normally would.
+            body.style.transition = 'none';
+            body.style.maxHeight = '0px';
+            body.dataset.collapsed = 'true';
+            btn.setAttribute('aria-expanded', 'false');
+            btn.setAttribute('aria-label', btn.getAttribute('aria-label').replace('Collapse', 'Expand'));
+            requestAnimationFrame(() => { body.style.transition = ''; });
+        } else {
+            // Start fully open at natural height so nothing clips on load.
+            body.style.maxHeight = 'none';
+        }
+
+        btn.addEventListener('click', () => {
+            const isOpen = btn.getAttribute('aria-expanded') === 'true';
+
+            if (isOpen) {
+                body.style.maxHeight = body.scrollHeight + 'px';
+                requestAnimationFrame(() => { body.style.maxHeight = '0px'; });
+                body.dataset.collapsed = 'true';
+                btn.setAttribute('aria-expanded', 'false');
+                btn.setAttribute('aria-label', btn.getAttribute('aria-label').replace('Collapse', 'Expand'));
+            } else {
+                body.dataset.collapsed = 'false';
+                btn.setAttribute('aria-expanded', 'true');
+                btn.setAttribute('aria-label', btn.getAttribute('aria-label').replace('Expand', 'Collapse'));
+                body.style.maxHeight = body.scrollHeight + 'px';
+                body.addEventListener('transitionend', function onEnd() {
+                    if (btn.getAttribute('aria-expanded') === 'true') body.style.maxHeight = 'none';
+                    body.removeEventListener('transitionend', onEnd);
+                });
+            }
+        });
+    });
+
+    // Re-measure open bodies on resize/content change (e.g. the locations
+    // list re-rendering after a save) so they don't clip.
+    window.addEventListener('resize', () => {
+        document.querySelectorAll('.card__collapse-btn[aria-expanded="true"]').forEach(btn => {
+            const body = document.getElementById(btn.getAttribute('aria-controls'));
+            if (body && body.style.maxHeight !== 'none') body.style.maxHeight = body.scrollHeight + 'px';
+        });
+    });
+}
+
+// ------------------------------------------------------------
+// INIT
+// ------------------------------------------------------------
+initDisplayPrefsUI();
+initChatPreviewPopup();
+initNotificationPrefToggles();
+initSecondaryLocationForm();
+initAccordions();
+initCollapsibleCards();
+loadAccountExtras();

@@ -261,7 +261,30 @@ function dismissAppLaunchOverlay() {
     // overlay opening, instead of just sitting there already fully
     // formed the instant the overlay clears (see .lw-content-reveal
     // in home.html's <head>).
-    document.getElementById('realPageContent')?.classList.add('lw-content-reveal');
+    const realContent = document.getElementById('realPageContent');
+    realContent?.classList.add('lw-content-reveal');
+    // lwContentReveal's fill-mode is `both`, so its final keyframe
+    // (transform: scale(1)) stays applied to #realPageContent forever
+    // if we never remove the class — and ANY non-`none` transform on
+    // an ancestor creates a new containing block for position:fixed
+    // descendants. .chat-card (the mobile chat popup) lives inside
+    // #realPageContent, so a stuck transform here silently detaches
+    // its "fixed" positioning from the viewport and re-anchors it to
+    // #realPageContent's (much taller, scrollable) box instead — the
+    // popup opens off-screen while the scroll-lock still applies,
+    // which reads as "chat opens (locks the page) but never appears".
+    // Strip the class once the animation finishes; the end state
+    // (opacity 1, scale 1) is visually identical to no class at all,
+    // so this causes zero visible change but removes the transform.
+    if (realContent) {
+        realContent.addEventListener('animationend', () => {
+            realContent.classList.remove('lw-content-reveal');
+        }, { once: true });
+        // Fallback in case animationend doesn't fire (e.g. tab was
+        // backgrounded mid-animation) — matches the animation's own
+        // 0.5s duration plus a small buffer.
+        setTimeout(() => realContent.classList.remove('lw-content-reveal'), 600);
+    }
     // Must match the #lwAppLaunchOverlay.is-opening clip-path
     // transition duration above (0.48s) — same clock, just read from
     // JS so we know when it's safe to remove the element from the DOM.
