@@ -3210,6 +3210,7 @@ body.modal-open {
     margin: 0 auto;
     width: auto;
     max-width: 420px;
+    height: clamp(38rem, 90vh, 44rem);
     height: clamp(38rem, 90dvh, 44rem);
     border-radius: 20px;
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.18);
@@ -4184,6 +4185,7 @@ body.modal-open {
 
 @media (max-width: 390px) {
   .chat-card--mobile-open {
+    height: clamp(35rem, 84vh, 39rem);
     height: clamp(35rem, 84dvh, 39rem);
   }
 
