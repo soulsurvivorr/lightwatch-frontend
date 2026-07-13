@@ -68,20 +68,47 @@ function closeOnboarding() {
   setTimeout(() => overlay.remove(), 250);
 }
 
-function openOnboarding() {
+// The login form/page underneath sits behind html.auth-check (hidden)
+// until this runs — see index.html's inline auth-check script. Every
+// exit path in initOnboarding() must call this exactly once, and must
+// call it only AFTER it's safe (i.e. either the overlay is already
+// fully opaque, or there's no overlay to hide behind at all).
+function revealAuthCheckBody() {
+  document.documentElement.classList.remove('auth-check');
+}
+
+function openOnboardingInstant() {
   const overlay = document.getElementById('onboardingOverlay');
   if (!overlay) return;
   setOnboardingSlide(0);
-  requestAnimationFrame(() => overlay.classList.add('is-open'));
+  // No backdrop fade-in on this first mount — the login page underneath
+  // is still hidden (auth-check) at the moment this runs, so a 220ms
+  // opacity transition would just let it "reflect" through for that
+  // whole window instead of removing the flash. Snap straight to fully
+  // opaque, THEN reveal the page underneath, so there's genuinely
+  // nothing to peek through at any point. Same reasoning as auth.js's
+  // showAppLaunchOverlay(). The card's own entrance animation (text
+  // fade/slide) is untouched — only the overlay backdrop's transition
+  // is disabled, and only for this one mount.
+  overlay.style.transition = 'none';
+  overlay.classList.add('is-open');
+  void overlay.offsetHeight; // force the instant state to actually paint
+  overlay.style.transition = '';
+  revealAuthCheckBody();
 }
 
 function initOnboarding() {
   const overlay = document.getElementById('onboardingOverlay');
-  if (!overlay) return;
+  if (!overlay) {
+    revealAuthCheckBody();
+    return;
+  }
 
   // A valid session was just found — this device is about to be
   // redirected straight to home.html. Don't open onboarding underneath
-  // that hand-off; just drop the overlay from the DOM.
+  // that hand-off; just drop the overlay from the DOM. Body stays
+  // hidden (not revealed) since a navigation is already in flight —
+  // nothing should paint here at all before that redirect lands.
   if (isSessionRedirectPending()) {
     overlay.remove();
     return;
@@ -89,8 +116,10 @@ function initOnboarding() {
 
   // Coming straight from tapping "Sign out" — skip the walkthrough this
   // one time only. The next fresh visit to index.html shows it again.
+  // No overlay will cover the login form, so reveal it now.
   if (consumeSkipOnboardingOnce()) {
     overlay.remove();
+    revealAuthCheckBody();
     return;
   }
 
@@ -110,23 +139,25 @@ function initOnboarding() {
   // Don't show the walkthrough on top of the boot loader — wait until
   // it clears (body loses .app-loading), same signal home.js waits on.
   // A short fallback timeout covers the case where that class is
-  // already gone by the time we get here.
+  // already gone by the time we get here. In practice index.html's
+  // <body> never carries .app-loading, so this resolves immediately —
+  // kept as a guard in case that ever changes.
   if (!document.body.classList.contains('app-loading')) {
-    openOnboarding();
+    openOnboardingInstant();
     return;
   }
 
   const observer = new MutationObserver(() => {
     if (!document.body.classList.contains('app-loading')) {
       observer.disconnect();
-      openOnboarding();
+      openOnboardingInstant();
     }
   });
   observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
 
   setTimeout(() => {
     observer.disconnect();
-    openOnboarding();
+    openOnboardingInstant();
   }, 1200);
 }
 

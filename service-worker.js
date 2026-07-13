@@ -8,7 +8,7 @@
 // Bump this ONE string on every deploy. Everything else (cache
 // names, asset URLs pulled in below) derives from it, and the
 // activate handler wipes any cache that doesn't match it.
-const APP_VERSION   = '1.0.15';
+const APP_VERSION   = '1.0.16';
 const STATIC_CACHE  = `lightwatch-static-v${APP_VERSION}`;
 const HTML_CACHE     = `lightwatch-html-v${APP_VERSION}`;
 const CURRENT_CACHES = [STATIC_CACHE, HTML_CACHE];

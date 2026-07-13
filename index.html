@@ -116,11 +116,11 @@
       document.documentElement.style.setProperty('color-scheme', theme);
     })();
   </script>
-  <link rel="manifest" href="/manifest.json?v=1.0.15" />
-  <script src="./Js/app-startup.js?v=1.0.15" defer></script>
+  <link rel="manifest" href="/manifest.json?v=1.0.16" />
+  <script src="./Js/app-startup.js?v=1.0.16" defer></script>
   <meta name="theme-color" content="#1C1F26" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/images/dev-logo.png?v=1.0.15" />
-  <link rel="apple-touch-icon" sizes="192x192" href="/images/dev-logo.png?v=1.0.15" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/dev-logo.png?v=1.0.16" />
+  <link rel="apple-touch-icon" sizes="192x192" href="/images/dev-logo.png?v=1.0.16" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="LightWatch" />
@@ -140,14 +140,27 @@
        comment rather than fake filenames so nothing 404s until that's
        run. -->
   <!-- START: paste output of generate-ios-splash.js here -->
+  <link rel="apple-touch-startup-image" href="/images/splash/splash-1290x2796.png" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="/images/splash/splash-1179x2556.png" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="/images/splash/splash-1284x2778.png" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="/images/splash/splash-1170x2532.png" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="/images/splash/splash-1125x2436.png" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="/images/splash/splash-1242x2688.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="/images/splash/splash-828x1792.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="/images/splash/splash-750x1334.png" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="/images/splash/splash-640x1136.png" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="/images/splash/splash-1488x2266.png" media="(device-width: 744px) and (device-height: 1133px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="/images/splash/splash-1640x2360.png" media="(device-width: 820px) and (device-height: 1180px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="/images/splash/splash-1668x2388.png" media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+  <link rel="apple-touch-startup-image" href="/images/splash/splash-2048x2732.png" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
   <!-- END: apple-touch-startup-image tags -->
   <title>LightWatch - Sign In</title>
-  <link rel="icon" href="/images/dev-logo.png?v=1.0.15" type="image/png" />
+  <link rel="icon" href="/images/dev-logo.png?v=1.0.16" type="image/png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="./css/styles.css?v=1.0.15" />
-  <link rel="stylesheet" href="./css/login.css?v=1.0.15" />
-  <link rel="stylesheet" href="./css/onboarding.css?v=1.0.15" />
+  <link rel="stylesheet" href="./css/styles.css?v=1.0.16" />
+  <link rel="stylesheet" href="./css/login.css?v=1.0.16" />
+  <link rel="stylesheet" href="./css/onboarding.css?v=1.0.16" />
 </head>
 <body>
   <!-- See #appLaunchOverlay CSS in <head> and the auth-check script
@@ -210,7 +223,19 @@
         // If storage is blocked, fall back to normal sign-in rendering.
       }
 
-      document.documentElement.classList.remove('auth-check');
+      // Deliberately NOT removing 'auth-check' here. Body stays hidden
+      // until onboarding.js (deferred, runs on DOMContentLoaded) has
+      // synchronously decided what to show — and, if it's opening the
+      // walkthrough, snapped the overlay fully opaque FIRST. Revealing
+      // the login form before that decision was made is exactly what
+      // caused it to flash/"reflect" through while the overlay was
+      // still fading in. See revealAuthCheckBody() in onboarding.js.
+      //
+      // Safety net only, in case onboarding.js fails to load for any
+      // reason — don't leave the page hidden forever.
+      setTimeout(() => {
+        document.documentElement.classList.remove('auth-check');
+      }, 2500);
     })();
   </script>
 
@@ -265,7 +290,7 @@
 
       <div class="onboarding-slide onboarding-slide--areas" data-slide="3">
         <span class="onboarding-slide__icon">
-          <img src="./images/areas.png?v=1.0.15" alt="" aria-hidden="true" width="24" height="24" />
+          <img src="./images/areas.png?v=1.0.16" alt="" aria-hidden="true" width="24" height="24" />
         </span>
         <h2>Before you continue</h2>
         <ul class="onboarding-slide__points onboarding-slide__points--disclaimer">
@@ -380,10 +405,10 @@
     </section>
   </main>
 
-  <script src="./Js/theme.js?v=1.0.15"></script>
-  <script src="./Js/config.js?v=1.0.15"></script>
-  <script src="./Js/auth.js?v=1.0.15"></script>
-  <script src="./Js/login.js?v=1.0.15"></script>
-  <script src="./Js/onboarding.js?v=1.0.15"></script>
+  <script src="./Js/theme.js?v=1.0.16"></script>
+  <script src="./Js/config.js?v=1.0.16"></script>
+  <script src="./Js/auth.js?v=1.0.16"></script>
+  <script src="./Js/login.js?v=1.0.16"></script>
+  <script src="./Js/onboarding.js?v=1.0.16"></script>
 </body>
 </html>
