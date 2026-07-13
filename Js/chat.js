@@ -167,7 +167,25 @@ function getLatestOwnMessageId(chats, myId) {
 // server we've seen, so polling every 5s doesn't re-POST the same ids
 // forever.
 const markedSeenIds = new Set();
+
+// A message being *loaded* (fetched into memory so the thread is ready)
+// is not the same as a message being *seen* (actually on the user's
+// screen). On desktop the chat lives on-page, so loaded == visible. On
+// mobile it's a popup that's closed by default, so loading the history
+// in the background must NOT count as seeing it — only mark messages
+// seen when the popup is actually open (or there's no mobile popup at
+// all, i.e. desktop).
+function isChatVisibleToUser() {
+    if (document.hidden) return false;
+    const card = getVisibleChatCard();
+    if (!card) return false;
+    const onMobile = window.matchMedia('(max-width: 720px)').matches;
+    if (!onMobile) return true;
+    return card.classList.contains('chat-card--mobile-open');
+}
+
 function markVisibleMessagesSeen(chats) {
+    if (!isChatVisibleToUser()) return;
     const myId = getCurrentUserId();
     if (!myId) return;
     const toMark = chats
@@ -872,6 +890,12 @@ function setMobileChatOpen(open) {
     if (!card) return;
     card.classList.toggle('chat-card--mobile-open', open);
     setMobileScrollLock(open);
+
+    // The popup going from closed -> open is the actual "seen" moment on
+    // mobile. isChatVisibleToUser() only returns true once the class
+    // above is applied, so fire a poll right now rather than waiting for
+    // the next 1.5s tick to catch up.
+    if (open) pollChatsOnce();
 
     // Jump straight to the latest message on open, unless we're mid a
     // deep-link to a specific message (focusTargetMessageIfPresent
