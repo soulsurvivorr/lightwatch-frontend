@@ -1489,6 +1489,15 @@ body.lw-location-panel-open {
   overflow: hidden;
   overscroll-behavior: none;
 }
+/* The floating "Report"/"Close" chat toggle (.mobile-chat-toggle) sits
+   at z-index: 82, above this panel's overlay (z-index: 60), so it was
+   floating on top of the second-location sheet whenever both could be
+   on screen at once. Hide it for as long as the panel is open -- the
+   panel has its own close button/backdrop-tap, so the chat toggle has
+   nothing useful to do here anyway. */
+body.lw-location-panel-open .mobile-chat-toggle {
+  display: none;
+}
 .location-expand-panel {
   width: 100%;
   /* This is a status card, not a document — cap it to a width that
@@ -1533,6 +1542,99 @@ body.lw-location-panel-open {
   .location-expand-overlay { align-items: center; padding: 20px; }
   .location-expand-panel { transform: translateY(10px) scale(0.98); max-height: 530px; }
   .location-expand-overlay--open .location-expand-panel { transform: translateY(0) scale(1); }
+}
+
+/* Compact tuning for narrow phones (Samsung S8, iPhone SE width range).
+   Without this the panel ran flush edge-to-edge (no side inset) and
+   reused the same padding/font sizes as the roomier default, which
+   read as an oversized, out-of-place slab on a ~360px-wide screen --
+   the same "too big" problem the other cards on this page already got
+   compact tuning for (see the 430px tier above). Mirrors that pattern. */
+@media (max-width: 400px) {
+  .location-expand-overlay {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+  .location-expand-panel {
+    padding: 12px 13px 13px;
+    border-radius: 16px;
+    max-height: min(76vh, 470px);
+    max-height: min(76dvh, 470px);
+  }
+  .location-expand-panel__head {
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+  }
+  .location-expand-panel__eyebrow {
+    font-size: 0.64rem;
+  }
+  .location-expand-panel__title {
+    font-size: 1.02rem;
+  }
+  .location-expand-panel__region {
+    font-size: 0.7rem;
+  }
+  .location-expand-panel__close {
+    width: 26px;
+    height: 26px;
+  }
+  .location-expand-status {
+    padding: 10px 12px;
+    gap: 10px;
+    margin-bottom: 7px;
+  }
+  .location-expand-status__dot {
+    width: 10px;
+    height: 10px;
+  }
+  .location-expand-status__label {
+    font-size: 0.86rem;
+  }
+  .location-expand-status__sub {
+    font-size: 0.7rem;
+  }
+  .location-expand-stats {
+    gap: 6px;
+    margin-bottom: 7px;
+  }
+  .location-expand-stat {
+    padding: 8px 4px 7px;
+  }
+  .location-expand-stat__icon {
+    width: 18px;
+    height: 18px;
+    margin-bottom: 3px;
+  }
+  .location-expand-stat strong {
+    font-size: 0.92rem;
+  }
+  .location-expand-stat__label {
+    font-size: 0.58rem;
+  }
+  .location-expand-last-outage {
+    padding: 8px 10px;
+    font-size: 0.72rem;
+    margin-bottom: 7px;
+  }
+  .location-expand-panel__note {
+    font-size: 0.72rem;
+    margin-bottom: 7px;
+  }
+  .location-expand-notify {
+    padding: 9px 12px;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .location-expand-notify__box {
+    width: 18px;
+    height: 18px;
+  }
+  .location-expand-notify__text strong {
+    font-size: 0.8rem;
+  }
+  .location-expand-notify__text span {
+    font-size: 0.68rem;
+  }
 }
 /* Small drag-handle affordance at the top — a light visual cue that this
    is a sheet you can dismiss, and it fills the space above the title so
@@ -3198,10 +3300,6 @@ body.modal-open {
     gap: 12px;
   }
 
-  .chat-thread {
-    max-height: 240px;
-  }
-
   .chat-card {
     position: fixed;
     left: 10px;
@@ -3262,12 +3360,23 @@ body.modal-open {
     padding-bottom: calc(8px + env(safe-area-inset-bottom));
   }
 
-  .chat-card--mobile-open .chat-thread-wrap {
+  /* Same fix as the head/form comment above: apply this sizing
+     unconditionally instead of scoping it to --mobile-open. It used to
+     be scoped, which meant the thread's max-height snapped from "none"
+     back to a fixed 240px the instant the open class was removed on
+     close -- while the card was still visibly sliding/fading away --
+     so the messages list visibly collapsed mid-animation. That made
+     closing look jarring and asymmetric compared to opening (which
+     never had this problem, since the card is invisible until its box
+     model is already correct). Applying it unconditionally means the
+     box model never changes at open/close time -- only the outer
+     transform/opacity/visibility do -- so closing now mirrors opening. */
+  .chat-card .chat-thread-wrap {
     flex: 1 1 auto;
     min-height: 0;
   }
 
-  .chat-card--mobile-open .chat-thread {
+  .chat-card .chat-thread {
     flex: 1 1 auto;
     min-height: 0;
     height: 100%;
