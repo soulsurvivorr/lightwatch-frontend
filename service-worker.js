@@ -147,8 +147,19 @@ self.addEventListener('push', event => {
         renotify: true,
         vibrate: Array.isArray(data.vibrate) ? data.vibrate : [200, 100, 200],
         requireInteraction: data.requireInteraction !== false,
+        // `silent` is the ONLY real lever the Notification API exposes for
+        // sound — true/false, nothing in between. There has never been a
+        // `sound` option in the spec (confirmed against Apple's own dev
+        // forum: iOS 17 discussion thread, June 2026 recheck), on any
+        // platform — Chrome, Firefox, and Safari all ignore it silently.
+        // A `sound: 'default'` field here did nothing at all; it wasn't
+        // "choosing" the default over something else, there was never a
+        // choice to make. Removed rather than leave code that implies a
+        // control that doesn't exist. When this fires while the page is
+        // open, the actual audible cue is the Web Audio tone played by
+        // notification.js's triggerForegroundSignal() — that's the only
+        // sound we can genuinely author ourselves.
         silent: false,
-        sound: data.sound || 'default',
         actions: [
             {
                 action: "open",

@@ -11,6 +11,14 @@ const PUSH_WELCOME_KEY = 'lw_push_welcome_shown';
 let pushInitPromise = null;
 let lwAudioCtx = null;
 let lwAudioReady = false;
+// Every tone's notes route through this single compressor rather than
+// straight to the speakers. It exists because of the volume increase
+// below (issue 4): once individual notes get louder and the "doom" +
+// chime notes briefly overlap, that overlap could clip/distort at the
+// top of the range. This gently caps the combined peak instead of us
+// having to keep every tone quiet just to leave headroom for the worst
+// case overlap.
+let lwMasterBus = null;
 
 function updateEnablePushButtonsVisibility() {
     const isEnabled = Notification.permission === 'granted';
@@ -44,6 +52,20 @@ function ensureAudioContext() {
     const Ctx = window.AudioContext || window.webkitAudioContext;
     if (!Ctx) return null;
     lwAudioCtx = new Ctx();
+
+    lwMasterBus = lwAudioCtx.createDynamicsCompressor();
+    // Starts clamping fairly early (-18dB) and fairly hard (12:1) with a
+    // near-instant attack — appropriate for short percussive blips like
+    // these rather than sustained music, so it catches the very first
+    // overlapping instant instead of letting a peak through before it
+    // reacts.
+    lwMasterBus.threshold.setValueAtTime(-18, lwAudioCtx.currentTime);
+    lwMasterBus.knee.setValueAtTime(12, lwAudioCtx.currentTime);
+    lwMasterBus.ratio.setValueAtTime(12, lwAudioCtx.currentTime);
+    lwMasterBus.attack.setValueAtTime(0.002, lwAudioCtx.currentTime);
+    lwMasterBus.release.setValueAtTime(0.15, lwAudioCtx.currentTime);
+    lwMasterBus.connect(lwAudioCtx.destination);
+
     return lwAudioCtx;
 }
 
@@ -92,7 +114,7 @@ function playToneForType(tone) {
 
 // Single oscillator "note" — the shared building block every
 // LightWatch tone is made from, so they all share one timbre.
-function playNote(ctx, { freq, start, duration, type = 'sine', peakGain = 0.14, attack = 0.015 }) {
+function playNote(ctx, { freq, start, duration, type = 'sine', peakGain = 0.32, attack = 0.015 }) {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
 
@@ -105,7 +127,11 @@ function playNote(ctx, { freq, start, duration, type = 'sine', peakGain = 0.14, 
     gain.gain.exponentialRampToValueAtTime(0.0001, end);
 
     osc.connect(gain);
-    gain.connect(ctx.destination);
+    // Through the shared compressor bus (see ensureAudioContext), not
+    // straight to destination — that's what lets these run louder
+    // without overlapping notes clipping. Falls back to destination
+    // directly only if something upstream failed to set the bus up.
+    gain.connect(lwMasterBus || ctx.destination);
 
     osc.start(start);
     osc.stop(end + 0.02);
@@ -121,10 +147,10 @@ function playPowerOnTone() {
     if (!canPlayTone(ctx)) return;
     const now = ctx.currentTime;
 
-    playNote(ctx, { freq: 165, start: now, duration: 0.16, type: 'sine', peakGain: 0.16 }); // "doom"
+    playNote(ctx, { freq: 165, start: now, duration: 0.16, type: 'sine', peakGain: 0.34 }); // "doom"
     // "ting" — fundamental + a quiet high overtone for sparkle
-    playNote(ctx, { freq: 1318.5, start: now + 0.20, duration: 0.24, type: 'sine', peakGain: 0.13, attack: 0.008 });
-    playNote(ctx, { freq: 1975.5, start: now + 0.20, duration: 0.18, type: 'sine', peakGain: 0.045, attack: 0.008 });
+    playNote(ctx, { freq: 1318.5, start: now + 0.20, duration: 0.24, type: 'sine', peakGain: 0.30, attack: 0.008 });
+    playNote(ctx, { freq: 1975.5, start: now + 0.20, duration: 0.18, type: 'sine', peakGain: 0.10, attack: 0.008 });
 }
 
 // 🌑 Power OFF — same low pulse, resolving DOWN into a duller low tone.
@@ -133,9 +159,18 @@ function playPowerOffTone() {
     if (!canPlayTone(ctx)) return;
     const now = ctx.currentTime;
 
-    playNote(ctx, { freq: 165, start: now, duration: 0.16, type: 'sine', peakGain: 0.16 }); // "doom"
-    // "dum" — lower + triangle wave + slower attack = duller than "ting"
-    playNote(ctx, { freq: 116, start: now + 0.20, duration: 0.26, type: 'triangle', peakGain: 0.13, attack: 0.025 });
+    playNote(ctx, { freq: 165, start: now, duration: 0.16, type: 'sine', peakGain: 0.34 }); // "doom"
+    // "dum" — was 116Hz, which sits below the range most phone speakers
+    // can reproduce at any real volume (small speakers typically roll
+    // off sharply under ~150-200Hz). That's very likely why this tone
+    // read as "no sound at all": the note meant to make power-off
+    // recognizable was probably inaudible on real hardware even though
+    // it plays correctly in code. Raised to 196Hz — still clearly lower
+    // than the "ting" in the power-on tone (keeps the duller/lower
+    // feel), but comfortably inside typical phone speaker range. Gain
+    // raised to match the shared "doom" note so this note doesn't trail
+    // off quieter than its counterpart in the on-tone.
+    playNote(ctx, { freq: 196, start: now + 0.20, duration: 0.28, type: 'triangle', peakGain: 0.34, attack: 0.02 });
 }
 
 // 💬 Chat — a single soft glass "plink", no second note.
@@ -144,8 +179,8 @@ function playChatPlinkTone() {
     if (!canPlayTone(ctx)) return;
     const now = ctx.currentTime;
 
-    playNote(ctx, { freq: 1568, start: now, duration: 0.13, type: 'sine', peakGain: 0.11, attack: 0.005 });
-    playNote(ctx, { freq: 3136, start: now, duration: 0.08, type: 'sine', peakGain: 0.03, attack: 0.005 }); // glassy overtone
+    playNote(ctx, { freq: 1568, start: now, duration: 0.13, type: 'sine', peakGain: 0.26, attack: 0.005 });
+    playNote(ctx, { freq: 3136, start: now, duration: 0.08, type: 'sine', peakGain: 0.07, attack: 0.005 }); // glassy overtone
 }
 
 // Legacy/unrecognized-tone fallback — the original three-note run-up.
@@ -157,7 +192,7 @@ function playDewDropsTone() {
     const notes = [880, 1046, 1174];
 
     notes.forEach((freq, i) => {
-        playNote(ctx, { freq, start: now + (i * 0.12), duration: 0.16, type: 'sine', peakGain: 0.12, attack: 0.02 });
+        playNote(ctx, { freq, start: now + (i * 0.12), duration: 0.16, type: 'sine', peakGain: 0.28, attack: 0.02 });
     });
 }
 
@@ -342,7 +377,6 @@ async function maybeShowPushWelcome(registration) {
             renotify: false,
             silent: false,
             vibrate: [120, 40, 120],
-            sound: 'default',
             data: { url: '/pages/home.html' }
         });
         localStorage.setItem(PUSH_WELCOME_KEY, '1');

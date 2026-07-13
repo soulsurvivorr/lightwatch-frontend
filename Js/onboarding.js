@@ -1,29 +1,45 @@
 // =========================================================
 // onboarding.js
-// Full-screen walkthrough shown on the first fresh visit to
-// index.html only. It blocks interaction with the sign-in form
-// until the final step is acknowledged, then never shows again
-// on this device (localStorage-gated) — including when someone
-// navigates to sign-up and comes straight back to sign-in.
+// Full-screen walkthrough shown EVERY time a signed-out visitor
+// lands on index.html (not just the first-ever visit). It blocks
+// interaction with the sign-in form until the final step is
+// acknowledged.
+//
+// Two deliberate exceptions, both one-shot flags consumed here:
+//  1. lw_launch_overlay_pending — set by index.html's own
+//     auth-check script the instant it finds a valid session and
+//     is about to redirect straight to home.html. If that's set,
+//     a redirect is already in flight, so there's no point opening
+//     onboarding underneath it (and doing so was the source of the
+//     home-page transition flash — this overlay competing with the
+//     launch overlay for a frame before the navigation actually
+//     tears the page down).
+//  2. lw_skip_onboarding_once — set by auth.js's signOut() right
+//     before it redirects here, so coming back from "Sign out" on
+//     the account page doesn't immediately re-run the walkthrough.
 // =========================================================
 
-const ONBOARDING_SEEN_KEY = 'lw_onboarding_seen';
+const SKIP_ONBOARDING_ONCE_KEY = 'lw_skip_onboarding_once';
+const LAUNCH_PENDING_KEY = 'lw_launch_overlay_pending';
 
-function hasSeenOnboarding() {
+function consumeSkipOnboardingOnce() {
   try {
-    return localStorage.getItem(ONBOARDING_SEEN_KEY) === '1';
+    const skip = sessionStorage.getItem(SKIP_ONBOARDING_ONCE_KEY) === '1';
+    sessionStorage.removeItem(SKIP_ONBOARDING_ONCE_KEY);
+    return skip;
   } catch {
-    // Storage blocked (e.g. private browsing) — fall back to showing
-    // it; that's a much smaller annoyance than a hard error.
     return false;
   }
 }
 
-function markOnboardingSeen() {
+function isSessionRedirectPending() {
   try {
-    localStorage.setItem(ONBOARDING_SEEN_KEY, '1');
+    // Deliberately NOT consumed here — home.html's own launch-overlay
+    // code (auth.js) is what consumes this key. We only need to peek
+    // at it to know whether to bother opening onboarding at all.
+    return sessionStorage.getItem(LAUNCH_PENDING_KEY) === '1';
   } catch {
-    // Ignore — nothing we can do if storage is blocked.
+    return false;
   }
 }
 
@@ -56,7 +72,6 @@ function openOnboarding() {
   const overlay = document.getElementById('onboardingOverlay');
   if (!overlay) return;
   setOnboardingSlide(0);
-  markOnboardingSeen();
   requestAnimationFrame(() => overlay.classList.add('is-open'));
 }
 
@@ -64,10 +79,17 @@ function initOnboarding() {
   const overlay = document.getElementById('onboardingOverlay');
   if (!overlay) return;
 
-  // Already completed on this device — nothing to wire up, nothing to
-  // show. This is what makes it a true one-time walkthrough instead of
-  // reappearing on every trip back to the sign-in page.
-  if (hasSeenOnboarding()) {
+  // A valid session was just found — this device is about to be
+  // redirected straight to home.html. Don't open onboarding underneath
+  // that hand-off; just drop the overlay from the DOM.
+  if (isSessionRedirectPending()) {
+    overlay.remove();
+    return;
+  }
+
+  // Coming straight from tapping "Sign out" — skip the walkthrough this
+  // one time only. The next fresh visit to index.html shows it again.
+  if (consumeSkipOnboardingOnce()) {
     overlay.remove();
     return;
   }

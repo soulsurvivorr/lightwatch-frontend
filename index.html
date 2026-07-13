@@ -122,7 +122,25 @@
   <link rel="apple-touch-icon" sizes="180x180" href="/images/dev-logo.png?v=1.0.15" />
   <link rel="apple-touch-icon" sizes="192x192" href="/images/dev-logo.png?v=1.0.15" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="LightWatch" />
+  <!-- iOS-only white flash on cold launch (see notes below and in
+       generate-ios-splash.js): iOS paints its own launch screen BEFORE
+       any HTML/CSS/JS on this page runs, so nothing here can touch that
+       very first frame directly. iOS tries to auto-derive a dark splash
+       from manifest.json (background_color is already #1C1F26, correct),
+       but that derivation is unreliable in practice and gets CACHED at
+       "Add to Home Screen" time — anyone who added the icon before this
+       was set right stays stuck on white until they remove + re-add it.
+       Explicit apple-touch-startup-image tags are the deterministic fix
+       Apple documents, since iOS reads these directly instead of relying
+       on manifest derivation. Run `node generate-ios-splash.js` (repo
+       root) to generate real per-device PNGs from images/dev-logo.png
+       and paste the resulting <link> tags here. Left as a placeholder
+       comment rather than fake filenames so nothing 404s until that's
+       run. -->
+  <!-- START: paste output of generate-ios-splash.js here -->
+  <!-- END: apple-touch-startup-image tags -->
   <title>LightWatch - Sign In</title>
   <link rel="icon" href="/images/dev-logo.png?v=1.0.15" type="image/png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />

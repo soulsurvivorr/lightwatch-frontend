@@ -371,6 +371,11 @@ function signOut() {
     signOutInProgress = true;
 
     clearSession();
+    // Onboarding now shows on every fresh visit to index.html (see
+    // onboarding.js) — except this one, since the person was just using
+    // the app a second ago. Consumed once by onboarding.js and never
+    // set again until the next sign-out.
+    try { sessionStorage.setItem('lw_skip_onboarding_once', '1'); } catch {}
     showSignOutOverlay();
 
     // Figure out the correct path back to index.html from wherever we are

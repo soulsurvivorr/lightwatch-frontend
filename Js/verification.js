@@ -213,10 +213,15 @@ async function checkOTP() {
             localStorage.removeItem(k);
         });
 
-        // Small success moment, then straight to home.html — its own
-        // skeleton screen (#pageSkeleton) is the transition visual now,
-        // so no separate branded overlay in between.
+        // Small success moment on this card, then hand off to home.html's
+        // branded launch overlay — same mechanism index.html uses for a
+        // cold-start sign-in (see markAppLaunchPending()/auth.js). That
+        // overlay shows the instant home.html's <head> script runs (no
+        // gap for the skeleton or a blank frame to flash through) and
+        // only dismisses once home.html's real content actually replaces
+        // its skeleton, however long that takes.
         verifyCard.classList.add('is-success');
+        if (typeof markAppLaunchPending === 'function') markAppLaunchPending();
         setTimeout(() => {
             window.location.replace('../pages/home.html');
         }, 700);
