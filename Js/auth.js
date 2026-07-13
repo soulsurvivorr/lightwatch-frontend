@@ -277,9 +277,22 @@ function dismissAppLaunchOverlay() {
     // (opacity 1, scale 1) is visually identical to no class at all,
     // so this causes zero visible change but removes the transform.
     if (realContent) {
-        realContent.addEventListener('animationend', () => {
+        // animationend BUBBLES — home.html has several other one-shot
+        // animations nested inside #realPageContent (chat messages
+        // fading in via chat-message-in, cards via fadeInUp, etc. — see
+        // home.css). Any of those finishing first would otherwise fire
+        // this listener early and yank the reveal class off mid-
+        // transition, snapping the page from its "still settling" state
+        // straight to final instead of easing there — that's the visual
+        // shake. Filtering to the event's own target/animation name
+        // makes sure only the actual lwContentReveal animation on
+        // #realPageContent triggers the cleanup.
+        const onRevealAnimationEnd = (event) => {
+            if (event.target !== realContent || event.animationName !== 'lwContentReveal') return;
             realContent.classList.remove('lw-content-reveal');
-        }, { once: true });
+            realContent.removeEventListener('animationend', onRevealAnimationEnd);
+        };
+        realContent.addEventListener('animationend', onRevealAnimationEnd);
         // Fallback in case animationend doesn't fire (e.g. tab was
         // backgrounded mid-animation) — matches the animation's own
         // 0.5s duration plus a small buffer.
