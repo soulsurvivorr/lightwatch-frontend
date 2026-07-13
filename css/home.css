@@ -3235,13 +3235,24 @@ body.modal-open {
   }
 
   /* Header and form stay fixed height; the thread fills whatever
-     space is left between them. */
-  .chat-card--mobile-open .chat-card__head,
-  .chat-card--mobile-open .chat-form {
+     space is left between them.
+
+     IMPORTANT: these live on the bare .chat-card selector, not gated
+     behind .chat-card--mobile-open. The form's sticky positioning,
+     border, and padding used to only apply once --mobile-open was
+     added — which meant they snapped in (unanimated) in the exact
+     same frame the popup opened, showing up as the input/send button
+     visibly settling ~2px down right after tapping Report. Since the
+     card is fully hidden (visibility: hidden) while closed, applying
+     these unconditionally has no visible effect until it opens, but
+     it means the form's box model is already correct *before* it
+     becomes visible, so nothing shifts at open time. */
+  .chat-card__head,
+  .chat-form {
     flex-shrink: 0;
   }
 
-  .chat-card--mobile-open .chat-form {
+  .chat-form {
     position: sticky;
     bottom: 0;
     z-index: 2;
