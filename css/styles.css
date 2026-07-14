@@ -123,25 +123,7 @@
   }
 }
 
-    /* =============== FULL SCREEN + SAFE AREA FIX =============== */
-    html, body {
-        height: 100dvh !important;     /* Modern devices + notches */
-        height: 100svh !important;     /* iOS fallback */
-        min-height: 100dvh !important;
-        overflow-x: hidden;
-        overscroll-behavior: none;
-    }
 
-    /* Safe area insets for notches + home indicator */
-    body {
-        padding-top: env(safe-area-inset-top, 0px) !important;
-        padding-bottom: env(safe-area-inset-bottom, 0px) !important;
-    }
-
-    /* Bottom nav respects safe area */
-    #bottom_nav_wrapper {
-        bottom: calc(env(safe-area-inset-bottom, 0px) + 14px) !important;
-    }
 
 /* ============================================================
    Reset
