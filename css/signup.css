@@ -544,15 +544,9 @@ footer {
     body {
         min-height: 100svh;
         min-height: 100dvh;
-        align-items: center;
-        justify-content: center;
-        padding: clamp(8px, 2vh, 18px) 10px;
-        /* .lw-ambient's blobs are position:fixed so they still cover
-           the full viewport under the notch regardless; this only
-           pushes the centered `section` card down so its content
-           (brand row, form) clears it. Requires viewport-fit=cover in
-           the page's <meta name="viewport"> tag. */
-        padding-top: calc(clamp(8px, 2vh, 18px) + env(safe-area-inset-top, 0px));
+        align-items: stretch;
+        justify-content: stretch;
+        padding: 0;
     }
 
     #main-content_wrapper {
@@ -565,13 +559,22 @@ footer {
     }
 
     section {
-        max-width: 560px;
-        max-height: calc(100svh - clamp(16px, 4vh, 36px));
-        max-height: calc(100dvh - clamp(16px, 4vh, 36px));
-        border-radius: 16px;
-        box-shadow: 0 14px 32px rgba(0, 0, 0, 0.14);
+        width: 100%;
+        max-width: 100%;
+        height: 100svh;
+        height: 100dvh;
+        max-height: 100svh;
+        max-height: 100dvh;
+        border-radius: 0;
+        box-shadow: none;
         overflow-y: auto;
         padding: .85rem 1rem 1rem;
+        /* Full-bleed, edge-to-edge like index.html's .login-form-side —
+           the card itself now carries the safe-area clearance instead
+           of leaving a visible gap above/below it. Requires
+           viewport-fit=cover in the page's <meta name="viewport"> tag. */
+        padding-top: calc(.85rem + env(safe-area-inset-top, 0px));
+        padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
     }
 
     .brand-row {
@@ -652,8 +655,9 @@ footer {
    small-phone sizing. */
 @media (min-width: 421px) and (max-width: 700px) {
     section {
-        max-width: 640px;
         padding: 1.15rem 1.3rem 1.3rem;
+        padding-top: calc(1.15rem + env(safe-area-inset-top, 0px));
+        padding-bottom: calc(1.3rem + env(safe-area-inset-bottom, 0px));
     }
 
     #input-field-section {
@@ -730,9 +734,10 @@ footer {
    catch Pro Max-class devices and made them look cramped — narrowed
    to 400px so it's reserved for actually small screens). */
 @media (max-width: 400px) {
-    body {
-        padding: clamp(8px, 1.8vh, 14px) 8px;
-        padding-top: calc(clamp(8px, 1.8vh, 14px) + env(safe-area-inset-top, 0px));
+    section {
+        padding: .7rem .85rem .85rem;
+        padding-top: calc(.7rem + env(safe-area-inset-top, 0px));
+        padding-bottom: calc(.85rem + env(safe-area-inset-bottom, 0px));
     }
 
     #input-field-section {
