@@ -1013,7 +1013,19 @@
 
 .page {
   animation: fadeInUp 0.34s cubic-bezier(0.22, 0.61, 0.36, 1) both;
-  will-change: opacity;
+  /* was: will-change: opacity;
+     will-change with an opacity/transform/filter value makes the browser
+     create a new stacking context for the element -- permanently, not
+     just during the animation. #realPageContent has class="page", and
+     .chat-card--mobile-open lives *inside* #realPageContent. That meant
+     no z-index on the popup, however high, could ever paint above
+     .home-reminder-overlay (a sibling of #realPageContent, z-index:
+     12000): the popup was sealed inside its parent's stacking context
+     and could only ever stack against other elements inside .page.
+     This is why bumping the popup's z-index to 12001 changed nothing.
+     Dropping will-change here (a one-off 0.34s fade doesn't need the
+     hint anyway) removes that trap and lets the popup's z-index apply
+     against the whole page for real. */
 }
 
 .report-list {
