@@ -1665,18 +1665,23 @@ body.lw-location-panel-open .mobile-chat-toggle {
 }
 
 /* Short-viewport tier, independent of width — catches devices like the
-   Galaxy S8 (360x740) on the height axis too. A 76dvh cap is still
-   ~560px on a 740px-tall screen, which is most of the visible page;
-   this pulls the cap down further and shrinks the reserved bottom-nav
-   clearance so the sheet reads as a compact card instead of a
-   near-full-screen takeover on genuinely short screens. */
-@media (max-height: 720px) {
+   Galaxy S8 on the height axis too.
+
+   This threshold was previously 720px, which is LESS than the ~740-760px
+   CSS viewport height a Galaxy S8-class phone actually reports — so this
+   tier never fired on the exact device it was written for, and that
+   device kept falling back to the 82dvh/530px (or, with the width tier,
+   76dvh/470px) cap, still reading as an oversized slab. Raised to 800px
+   so S8-class phones (and anything shorter) are actually caught, and the
+   cap itself is pulled down further so it reads as a clearly compact
+   card rather than a near-full-screen sheet. */
+@media (max-height: 800px) {
   .location-expand-overlay {
-    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 64px);
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 56px);
   }
   .location-expand-panel {
-    max-height: min(68vh, 420px);
-    max-height: min(68dvh, 420px);
+    max-height: min(58vh, 380px);
+    max-height: min(58dvh, 380px);
   }
 }
 /* Small drag-handle affordance at the top — a light visual cue that this
