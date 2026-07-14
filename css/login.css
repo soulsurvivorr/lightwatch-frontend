@@ -394,6 +394,8 @@
     height: 100svh;
     height: 100dvh; /* tracks the real viewport once mobile browser chrome collapses */
     overflow: hidden;
+    overscroll-behavior: none;
+    touch-action: none; /* kills pull-to-refresh + the vertical/horizontal rubber-band drag — no legit pan gesture lives on this page, form fields/checkbox handle their own input fine without it */
   }
 
   .login-shell {

@@ -27,10 +27,13 @@ body {
     display: flex;
     flex-direction: column;
     min-height: 100svh;
+    min-height: 100dvh;
     background-color: var(--bg-deep);
     color: var(--text-bright);
     font-family: var(--font-body);
     overflow: hidden;
+    overscroll-behavior: none;
+    touch-action: none; /* kills pull-to-refresh + the vertical/horizontal rubber-band drag — no legit pan gesture on this page, OTP boxes handle their own touch input fine without it */
     position: relative;
     transition: opacity .28s ease;
 }

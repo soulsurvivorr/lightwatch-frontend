@@ -24,6 +24,7 @@ body {
 body {
     margin: 0;
     min-height: 100svh;
+    min-height: 100dvh;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -31,6 +32,8 @@ body {
     background: var(--bg-deep);
     color: var(--text-bright);
     overflow: hidden;
+    overscroll-behavior: none;
+    touch-action: none; /* kills pull-to-refresh + the vertical/horizontal rubber-band drag — no legit pan gesture on this page, inputs/select handle their own touch input fine without it */
     position: relative;
     transition: opacity .26s ease;
 }
@@ -105,6 +108,7 @@ section {
     width: 100%;
     max-width: 940px;
     max-height: 100svh;
+    max-height: 100dvh;
     background: color-mix(in srgb, var(--bg-panel) 60%, transparent);
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
@@ -535,6 +539,7 @@ footer {
 @media (max-width: 700px) {
     body {
         min-height: 100svh;
+        min-height: 100dvh;
         align-items: center;
         justify-content: center;
         padding: clamp(8px, 2vh, 18px) 10px;
@@ -558,6 +563,7 @@ footer {
     section {
         max-width: 560px;
         max-height: calc(100svh - clamp(16px, 4vh, 36px));
+        max-height: calc(100dvh - clamp(16px, 4vh, 36px));
         border-radius: 16px;
         box-shadow: 0 14px 32px rgba(0, 0, 0, 0.14);
         overflow-y: auto;
