@@ -4,48 +4,49 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <style>
-        /* Force dark from frame ZERO on cold-boot (most important change) */
-      html {
-        background: #1C1F26;
-      }
-      /* Light fallback only when NOT cold-booting */
-      html:not(.lw-cold-boot) {
-        background: #eeedf1;
-      }
+     /* Force solid dark from the absolute first paint */
+  html {
+    background: #1C1F26 !important;
+  }
 
-      @media (min-width: 1024px) and (prefers-color-scheme: dark) {
-        html:not([data-theme="light"]):not(.lw-cold-boot) {
-          background: #0f1318;
-        }
-      }
+  /* Only use light when NOT in cold-boot */
+  html:not(.lw-cold-boot) {
+    background: #eeedf1;
+  }
 
-      /* Cold-boot lock — guaranteed from first paint */
-      html.lw-cold-boot,
-      html.lw-cold-boot body {
-        background: #1C1F26 !important;
-        color-scheme: dark !important;
-        overflow: hidden !important;
-      }
+  @media (min-width: 1024px) and (prefers-color-scheme: dark) {
+    html:not([data-theme="light"]):not(.lw-cold-boot) {
+      background: #0f1318;
+    }
+  }
 
-      /* Skeleton + content reveal (unchanged but now safer) */
-      #pageSkeleton {
-        transition: opacity 0.22s ease;
-      }
-      #pageSkeleton.lw-skel-fading {
-        opacity: 0;
-      }
+  html.lw-cold-boot,
+  html.lw-cold-boot body {
+    background: #1C1F26 !important;
+    color-scheme: dark !important;
+    overflow: hidden !important;
+  }
 
-      @keyframes lwContentReveal {
-        0%   { opacity: 0; transform: translateY(12px); }
-        100% { opacity: 1; transform: translateY(0); }
-      }
-      #realPageContent.lw-content-reveal {
-        animation: lwContentReveal 0.42s cubic-bezier(0.23, 1, 0.32, 1) both;
-        will-change: opacity, transform;
-      }
-      @media (prefers-reduced-motion: reduce) {
-        #realPageContent.lw-content-reveal { animation: none; }
-      }
+  /* Skeleton */
+  #pageSkeleton {
+    transition: opacity 0.25s ease;
+  }
+  #pageSkeleton.lw-skel-fading {
+    opacity: 0;
+  }
+
+  /* Clean reveal — no scale, minimal movement */
+  @keyframes lwContentReveal {
+    0%   { opacity: 0; transform: translateY(10px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  #realPageContent.lw-content-reveal {
+    animation: lwContentReveal 0.45s cubic-bezier(0.25, 0.1, 0.25, 1) both;
+    will-change: opacity, transform;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #realPageContent.lw-content-reveal { animation: none; }
+  }
   </style>
   <script>
     (function () {

@@ -599,19 +599,20 @@ function hideProfileLoader() {
   clearTimeout(profileLoaderSafetyTimer);
 
   const skeleton = document.getElementById('pageSkeleton');
-  const realContent = document.getElementById('realPageContent');
+  if (skeleton) skeleton.classList.add('lw-skel-fading');
 
-  if (skeleton) {
-    skeleton.classList.add('lw-skel-fading');
-    setTimeout(() => {
-      document.body.classList.remove('page-data-loading', 'app-loading');
-      if (realContent) realContent.classList.add('lw-content-reveal');
-      window.dispatchEvent(new CustomEvent('lw-page-revealed'));
-    }, 220);
-  } else {
-    document.body.classList.remove('page-data-loading', 'app-loading');
-    window.dispatchEvent(new CustomEvent('lw-page-revealed'));
+  // Force one final dark paint before reveal
+  if (document.documentElement.classList.contains('lw-cold-boot')) {
+    document.documentElement.style.background = '#1C1F26';
   }
+
+  setTimeout(() => {
+    document.body.classList.remove('page-data-loading', 'app-loading');
+    const realContent = document.getElementById('realPageContent');
+    if (realContent) realContent.classList.add('lw-content-reveal');
+
+    window.dispatchEvent(new CustomEvent('lw-page-revealed'));
+  }, 180);
 }
 
 function waitForChatReady(maxWait = 700) {

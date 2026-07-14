@@ -260,20 +260,15 @@ function dismissAppLaunchOverlay() {
 
   const realContent = document.getElementById('realPageContent');
   if (realContent) {
+    // Force dark background one last time before reveal
+    document.documentElement.style.background = '#1C1F26';
     realContent.classList.add('lw-content-reveal');
-    const onEnd = (e) => {
-      if (e.target === realContent && e.animationName === 'lwContentReveal') {
-        realContent.classList.remove('lw-content-reveal');
-        realContent.removeEventListener('animationend', onEnd);
-      }
-    };
-    realContent.addEventListener('animationend', onEnd, { once: true });
-    setTimeout(() => realContent.classList.remove('lw-content-reveal'), 600);
   }
 
   setTimeout(() => {
     el.remove();
     document.documentElement.classList.remove('lw-cold-boot');
+    document.documentElement.style.background = ''; // let CSS take over
     window.dispatchEvent(new CustomEvent('lw-page-revealed'));
   }, 480);
 }
