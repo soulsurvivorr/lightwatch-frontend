@@ -252,72 +252,30 @@ function showAppLaunchOverlay() {
 // clock, just read from JS so we know when it's safe to remove the
 // element from the DOM.
 function dismissAppLaunchOverlay() {
-    if (!appLaunchOverlayEl) return;
-    const el = appLaunchOverlayEl;
-    appLaunchOverlayEl = null;
-    el.classList.add('is-opening');
-    // Let the real content settle into place a beat behind the
-    // overlay opening, instead of just sitting there already fully
-    // formed the instant the overlay clears (see .lw-content-reveal
-    // in home.html's <head>).
-    const realContent = document.getElementById('realPageContent');
-    realContent?.classList.add('lw-content-reveal');
-    // lwContentReveal's fill-mode is `both`, so its final keyframe
-    // (transform: scale(1)) stays applied to #realPageContent forever
-    // if we never remove the class — and ANY non-`none` transform on
-    // an ancestor creates a new containing block for position:fixed
-    // descendants. .chat-card (the mobile chat popup) lives inside
-    // #realPageContent, so a stuck transform here silently detaches
-    // its "fixed" positioning from the viewport and re-anchors it to
-    // #realPageContent's (much taller, scrollable) box instead — the
-    // popup opens off-screen while the scroll-lock still applies,
-    // which reads as "chat opens (locks the page) but never appears".
-    // Strip the class once the animation finishes; the end state
-    // (opacity 1, scale 1) is visually identical to no class at all,
-    // so this causes zero visible change but removes the transform.
-    if (realContent) {
-        // animationend BUBBLES — home.html has several other one-shot
-        // animations nested inside #realPageContent (chat messages
-        // fading in via chat-message-in, cards via fadeInUp, etc. — see
-        // home.css). Any of those finishing first would otherwise fire
-        // this listener early and yank the reveal class off mid-
-        // transition, snapping the page from its "still settling" state
-        // straight to final instead of easing there — that's the visual
-        // shake. Filtering to the event's own target/animation name
-        // makes sure only the actual lwContentReveal animation on
-        // #realPageContent triggers the cleanup.
-        const onRevealAnimationEnd = (event) => {
-            if (event.target !== realContent || event.animationName !== 'lwContentReveal') return;
-            realContent.classList.remove('lw-content-reveal');
-            realContent.removeEventListener('animationend', onRevealAnimationEnd);
-        };
-        realContent.addEventListener('animationend', onRevealAnimationEnd);
-        // Fallback in case animationend doesn't fire (e.g. tab was
-        // backgrounded mid-animation) — matches the animation's own
-        // 0.5s duration plus a small buffer.
-        setTimeout(() => realContent.classList.remove('lw-content-reveal'), 600);
-    }
-    // Must match the #lwAppLaunchOverlay.is-opening clip-path
-    // transition duration above (0.48s) — same clock, just read from
-    // JS so we know when it's safe to remove the element from the DOM.
-    //
-    // lw-cold-boot (which forces html/body to a matching #1C1F26
-    // background — see home.html's <head>) is removed here too, in
-    // the SAME tick as el.remove(), rather than back at the top of
-    // this function. The overlay's clip-path close is a real 480ms
-    // animation, not instant — removing lw-cold-boot at the start of
-    // that animation exposed the real underlying background (a light
-    // gray on mobile, since theme is forced 'light' there) well
-    // before the overlay had actually finished collapsing, which is
-    // what read as the page "reflecting"/flashing white right after
-    // the overlay. Keeping the forced-dark background matched to the
-    // still-visible overlay for the animation's full duration, and
-    // only dropping it once the overlay is truly gone, removes that
-    // mismatch.
-    setTimeout(() => {
-        el.remove();
-        document.documentElement.classList.remove('lw-cold-boot');
-    }, 480);
+  if (!appLaunchOverlayEl) return;
+  const el = appLaunchOverlayEl;
+  appLaunchOverlayEl = null;
+
+  el.classList.add('is-opening');
+
+  const realContent = document.getElementById('realPageContent');
+  if (realContent) {
+    realContent.classList.add('lw-content-reveal');
+    const onEnd = (e) => {
+      if (e.target === realContent && e.animationName === 'lwContentReveal') {
+        realContent.classList.remove('lw-content-reveal');
+        realContent.removeEventListener('animationend', onEnd);
+      }
+    };
+    realContent.addEventListener('animationend', onEnd, { once: true });
+    setTimeout(() => realContent.classList.remove('lw-content-reveal'), 600);
+  }
+
+  setTimeout(() => {
+    el.remove();
+    document.documentElement.classList.remove('lw-cold-boot');
+    window.dispatchEvent(new CustomEvent('lw-page-revealed'));
+  }, 480);
 }
 
 // Kept as its own name for readability at sign-out call sites; it's

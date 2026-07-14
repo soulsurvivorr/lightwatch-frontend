@@ -4,81 +4,41 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <style>
-    /* Applies from frame one, before styles.css has even started
-       loading — closes the plain white flash that could otherwise
-       show for a beat on a slow/cold load (the "home page blinks
-       white" report), independent of the cold-boot launch-overlay
-       path below (which handles the separate case of arriving via
-       the branded splash). Matches --bg-deep's light value; dark
-       falls back to the system preference before theme.js/the inline
-       theme script (right below) has run. */
     html {
       background: #eeedf1;
     }
-    /* min-width: 1024px here has to mirror the inline theme script's
-       own `isLaptop` check below — theme is forced 'light' on every
-       phone/tablet regardless of the OS dark-mode setting, only
-       desktop widths ever actually go dark. Without that same width
-       gate, a phone with OS dark mode on would paint this black
-       fallback for the brief moment before the inline script runs and
-       sets data-theme="light" a few lines down — which is exactly the
-       new "black flash" this caused before the min-width was added. */
     @media (min-width: 1024px) and (prefers-color-scheme: dark) {
       html:not([data-theme="light"]) {
         background: #0f1318;
       }
     }
-    /* Must be the very first thing in <head>, ahead of every other
-       tag, so it applies before the browser's first paint. When
-       index.html hands off to home.html for a signed-in user (see
-       auth.js), this keeps the screen dark from frame one instead of
-       showing the page's normal light background for a beat before
-       auth.js gets a chance to mount the launch overlay on top of it —
-       that beat was the "home page reflecting" flash. Removed again by
-       auth.js once the overlay is actually dismissed. */
+
+    /* Cold-boot lock — must be first paint */
     html.lw-cold-boot,
     html.lw-cold-boot body {
       background: #1C1F26 !important;
       color-scheme: dark !important;
-      /* Same scrollbar leak as index.html: the skeleton/real content
-         underneath the launch overlay is tall enough to scroll even
-         while it's not supposed to be interactive yet, which kept a
-         scrollbar track visible on the edge of the screen for the
-         whole time the overlay was up. Locked for exactly as long as
-         lw-cold-boot is on <html> — i.e. exactly as long as the
-         overlay itself is shown (see dismissAppLaunchOverlay() in
-         auth.js, which removes this class). */
       overflow: hidden !important;
     }
 
-    /* Content reveal — toggled by auth.js right as the launch overlay
-       starts its opening animation, so the real page doesn't just
-       "appear" the instant the overlay clears but settles into place
-       a beat behind it, like it's coming into focus as the app opens.
+    /* Skeleton fade-out + content reveal */
+    #pageSkeleton {
+      transition: opacity 0.22s ease;
+    }
+    #pageSkeleton.lw-skel-fading {
+      opacity: 0;
+    }
 
-       Was `transform: scale(1.03 -> 1)`. scale() moves every
-       descendant by an amount proportional to its distance from the
-       transform origin (center) — on a wide desktop layout that meant
-       elements near the edges (e.g. the chat card's send button,
-       which sits far right) visibly shifted a couple of pixels while
-       centered elements barely moved, which read as the page "being
-       forced" or shaking. translateY moves every element by the exact
-       same amount regardless of position, so the whole page settles
-       as one piece with no differential shift. Also now the same
-       animation this element uses when the skeleton hands off to real
-       content on an ordinary (non-cold-boot) load — see #pageSkeleton
-       crossfade rules in home.css. */
     @keyframes lwContentReveal {
-      0%   { opacity: 0; transform: translateY(8px); }
+      0%   { opacity: 0; transform: translateY(12px); }
       100% { opacity: 1; transform: translateY(0); }
     }
     #realPageContent.lw-content-reveal {
-      animation: lwContentReveal 0.4s cubic-bezier(.19,1,.22,1) both;
+      animation: lwContentReveal 0.42s cubic-bezier(0.23, 1, 0.32, 1) both;
+      will-change: opacity, transform;
     }
     @media (prefers-reduced-motion: reduce) {
-      #realPageContent.lw-content-reveal {
-        animation: none;
-      }
+      #realPageContent.lw-content-reveal { animation: none; }
     }
   </style>
   <script>
