@@ -4,55 +4,57 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <style>
-    html {
-      background: #eeedf1;
-    }
-    @media (min-width: 1024px) and (prefers-color-scheme: dark) {
-      html:not([data-theme="light"]) {
-        background: #0f1318;
+        /* Force dark from frame ZERO on cold-boot (most important change) */
+      html {
+        background: #1C1F26;
       }
-    }
+      /* Light fallback only when NOT cold-booting */
+      html:not(.lw-cold-boot) {
+        background: #eeedf1;
+      }
 
-    /* Cold-boot lock — must be first paint */
-    html.lw-cold-boot,
-    html.lw-cold-boot body {
-      background: #1C1F26 !important;
-      color-scheme: dark !important;
-      overflow: hidden !important;
-    }
+      @media (min-width: 1024px) and (prefers-color-scheme: dark) {
+        html:not([data-theme="light"]):not(.lw-cold-boot) {
+          background: #0f1318;
+        }
+      }
 
-    /* Skeleton fade-out + content reveal */
-    #pageSkeleton {
-      transition: opacity 0.22s ease;
-    }
-    #pageSkeleton.lw-skel-fading {
-      opacity: 0;
-    }
+      /* Cold-boot lock — guaranteed from first paint */
+      html.lw-cold-boot,
+      html.lw-cold-boot body {
+        background: #1C1F26 !important;
+        color-scheme: dark !important;
+        overflow: hidden !important;
+      }
 
-    @keyframes lwContentReveal {
-      0%   { opacity: 0; transform: translateY(12px); }
-      100% { opacity: 1; transform: translateY(0); }
-    }
-    #realPageContent.lw-content-reveal {
-      animation: lwContentReveal 0.42s cubic-bezier(0.23, 1, 0.32, 1) both;
-      will-change: opacity, transform;
-    }
-    @media (prefers-reduced-motion: reduce) {
-      #realPageContent.lw-content-reveal { animation: none; }
-    }
+      /* Skeleton + content reveal (unchanged but now safer) */
+      #pageSkeleton {
+        transition: opacity 0.22s ease;
+      }
+      #pageSkeleton.lw-skel-fading {
+        opacity: 0;
+      }
+
+      @keyframes lwContentReveal {
+        0%   { opacity: 0; transform: translateY(12px); }
+        100% { opacity: 1; transform: translateY(0); }
+      }
+      #realPageContent.lw-content-reveal {
+        animation: lwContentReveal 0.42s cubic-bezier(0.23, 1, 0.32, 1) both;
+        will-change: opacity, transform;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #realPageContent.lw-content-reveal { animation: none; }
+      }
   </style>
   <script>
-    (function () {
-      try {
-        // The launch overlay only ever fires here as a hand-off from
-        // index.html, flagged via sessionStorage right before its
-        // location.replace() into this page. Gating on that same flag
-        // here closes the pre-script paint gap on that navigation.
-        if (sessionStorage.getItem('lw_launch_overlay_pending') === '1') {
-          document.documentElement.classList.add('lw-cold-boot');
-        }
-      } catch (e) {}
-    })();
+   (function () {
+    try {
+      if (sessionStorage.getItem('lw_launch_overlay_pending') === '1') {
+        document.documentElement.classList.add('lw-cold-boot');
+      }
+    } catch (e) {}
+  })();
   </script>
   <link rel="manifest" href="/manifest.json?v=1.0.18">
   <script src="../Js/app-startup.js?v=1.0.18" defer></script>
