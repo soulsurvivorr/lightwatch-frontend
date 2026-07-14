@@ -83,9 +83,10 @@
   <link rel="prefetch" href="./reports.html">
   <link rel="prefetch" href="./account.html">
 </head>
-<body class="page-data-loading" data-skeleton-managed="1">
+<body class="page-data-loading" data-skeleton-managed="1" data-screen="home">
   <script src="../Js/config.js?v=1.0.18"></script>
   <script src="../Js/auth.js?v=1.0.18"></script>
+  <script src="../Js/analytics.js?v=1.0.18"></script>
   <script>
     const session = typeof getSession === 'function' ? getSession() : null;
     if (!session && window.location.protocol !== 'file:') {

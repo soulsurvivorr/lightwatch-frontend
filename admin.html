@@ -81,15 +81,7 @@
   .login-btn:disabled { opacity:0.6; cursor:not-allowed; transform:none; box-shadow:none; }
   .login-link-btn { background:none; border:none; color:var(--muted); font-size:0.8rem; cursor:pointer; margin-top:16px; text-align:center; width:100%; padding:6px; }
   .login-link-btn:hover { color:var(--brand); }
-  #loginError, #loginCodeError { color:var(--red); font-size:0.8rem; margin-top:12px; min-height:1em; text-align:center; }
-
-  .otp-boxes { display:flex; gap:10px; justify-content:center; margin: 6px 0 4px; }
-  .otp-box {
-    width:52px !important; height:58px; text-align:center; font-size:1.5rem !important; font-weight:800;
-    padding:0 !important; margin:0 !important; letter-spacing:0;
-  }
-  .otp-boxes.is-shaking { animation: otp-shake 0.4s ease; }
-  @keyframes otp-shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-8px)} 40%{transform:translateX(8px)} 60%{transform:translateX(-6px)} 80%{transform:translateX(6px)} }
+  #loginError { color:var(--red); font-size:0.8rem; margin-top:12px; min-height:1em; text-align:center; }
 
   /* ============ APP SHELL ============ */
   #dashboard { display:none; min-height:100vh; min-height:100dvh; }
@@ -182,6 +174,13 @@
   tbody tr:hover { background:rgba(242,179,61,0.035); }
   td.faint { color:var(--faint); }
   td.gold { color:var(--brand); font-weight:600; }
+  .handle-pill {
+    display:inline-flex; align-items:center; gap:6px; font-weight:700; font-size:0.8rem;
+    color:var(--handle-color, var(--brand));
+  }
+  .handle-pill::before {
+    content:""; width:7px; height:7px; border-radius:50%; background:var(--handle-color, var(--brand)); flex-shrink:0;
+  }
 
   /* ============ TOOLBAR ============ */
   .toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; flex-wrap:wrap; }
@@ -203,14 +202,30 @@
   .empty-state { text-align:center; padding:36px 20px; color:var(--faint); font-size:0.85rem; }
 
   /* ============ LOCATIONS PANEL ============ */
+  .loc-filter-tabs { display:flex; gap:6px; margin-bottom:14px; flex-wrap:wrap; }
+  .loc-filter-tab {
+    background:var(--panel2); border:1px solid var(--border); color:var(--muted); font-size:0.78rem; font-weight:700;
+    padding:7px 14px; border-radius:999px; cursor:pointer; transition:border-color .15s, color .15s, background .15s;
+  }
+  .loc-filter-tab:hover { border-color:var(--border2); color:var(--txt); }
+  .loc-filter-tab.is-active { background:linear-gradient(135deg, var(--brand), #d99a26); border-color:transparent; color:var(--brand-ink); }
+
   .locations-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(270px, 1fr)); gap:12px; }
   .loc-card {
-    background: linear-gradient(165deg, var(--panel-raised), var(--panel));
-    border:1px solid var(--border); border-radius:var(--r-lg); padding:16px 18px;
-    display:flex; flex-direction:column; gap:12px;
+    position:relative; background: linear-gradient(165deg, var(--panel-raised), var(--panel));
+    border:1px solid var(--border); border-left:3px solid var(--border2); border-radius:var(--r-lg); padding:16px 18px 16px 16px;
+    display:flex; flex-direction:column; gap:12px; transition:transform .15s ease, border-color .15s ease;
   }
+  .loc-card:hover { transform:translateY(-2px); border-color:var(--border2); }
+  .loc-card--on { border-left-color:var(--green); }
+  .loc-card--off { border-left-color:var(--red); }
+  .loc-card--unknown { border-left-color:var(--border2); }
   .loc-card__top { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
-  .loc-card__name { font-weight:700; font-size:0.95rem; }
+  .loc-card__name { display:flex; align-items:center; gap:8px; font-weight:700; font-size:0.95rem; }
+  .loc-card__dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+  .loc-card__dot--on { background:var(--green); box-shadow:0 0 8px rgba(53,208,127,0.7); }
+  .loc-card__dot--off { background:var(--red); box-shadow:0 0 8px rgba(255,92,102,0.6); }
+  .loc-card__dot--unknown { background:var(--faint); }
   .loc-card__meta { font-size:0.72rem; color:var(--faint); margin-top:3px; }
   .status-chip { font-size:0.7rem; font-weight:800; padding:4px 10px; border-radius:999px; white-space:nowrap; text-transform:uppercase; letter-spacing:0.03em; }
   .status-chip--on { background:var(--green-dim); color:var(--green); }
@@ -224,6 +239,8 @@
   .loc-btn--off { border-color: rgba(255,92,102,0.4); color:#FF8087; }
   .loc-btn--off:hover { background:var(--red-dim); }
   .loc-btn:disabled { opacity:0.5; cursor:not-allowed; transform:none; }
+  .loc-btn--active-on { background:var(--green-dim); }
+  .loc-btn--active-off { background:var(--red-dim); }
   .loc-card--pushed { animation: loc-flash 1s ease; }
   @keyframes loc-flash { 0%{ box-shadow: 0 0 0 2px var(--brand); } 100%{ box-shadow: 0 0 0 0 transparent; } }
   .add-location-row { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
@@ -231,6 +248,32 @@
   .add-location-row input:focus { outline:none; border-color:var(--brand); }
   .add-location-row button { padding:9px 16px; border-radius:var(--r-md); border:none; background:linear-gradient(135deg, var(--brand2), #3767d6); color:#fff; font-weight:700; font-size:0.82rem; cursor:pointer; }
   .add-location-row button:hover { filter:brightness(1.08); }
+
+  /* ============ BROADCAST ============ */
+  .broadcast-card {
+    background: linear-gradient(165deg, var(--panel-raised), var(--panel));
+    border:1px solid var(--border); border-radius:var(--r-lg); padding:16px 18px; margin-bottom:18px;
+    display:flex; flex-direction:column; gap:10px;
+  }
+  .broadcast-card__head { display:flex; align-items:baseline; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+  .broadcast-card__title { font-size:0.92rem; font-weight:700; }
+  .broadcast-card__hint { font-size:0.72rem; color:var(--faint); }
+  .broadcast-row { display:flex; gap:8px; align-items:flex-start; }
+  .broadcast-row input, .broadcast-row textarea {
+    flex:1; min-width:200px; background:var(--panel2); border:1px solid var(--border); border-radius:var(--r-md);
+    padding:9px 12px; color:var(--txt); font-size:0.85rem; font-family:var(--font); resize:vertical;
+  }
+  .broadcast-row input:focus, .broadcast-row textarea:focus { outline:none; border-color:var(--brand); }
+  .broadcast-row button {
+    padding:9px 18px; border-radius:var(--r-md); border:none; align-self:flex-start;
+    background:linear-gradient(135deg, var(--brand), #d99a26); color:var(--brand-ink); font-weight:800; font-size:0.82rem; cursor:pointer;
+    white-space:nowrap; transition:filter .15s, transform .1s;
+  }
+  .broadcast-row button:hover { filter:brightness(1.06); transform:translateY(-1px); }
+  .broadcast-row button:disabled { opacity:0.6; cursor:not-allowed; transform:none; }
+  .broadcast-status { font-size:0.78rem; color:var(--faint); min-height:1em; }
+  .broadcast-status--ok { color:var(--green); }
+  .broadcast-status--err { color:var(--red); }
 
   /* ============ ANALYTICS ============ */
   .analytics-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:14px; }
@@ -286,6 +329,9 @@
   .bottom-nav__btn.active { background:linear-gradient(135deg, var(--brand), #d99a26); color:var(--brand-ink); }
 
   /* ============ RESPONSIVE ============ */
+  html, body { overflow-x:hidden; max-width:100vw; }
+  img, svg { max-width:100%; }
+
   @media(max-width:1080px) {
     .analytics-grid { grid-template-columns:1fr; }
   }
@@ -293,9 +339,10 @@
   @media(max-width:960px) {
     .sidebar { display:none; }
     .topbar-mobile { display:flex; }
-    main { padding:20px 16px calc(90px + env(safe-area-inset-bottom)); }
+    main { padding:18px 14px calc(90px + env(safe-area-inset-bottom)); }
     .bottom-nav { display:flex; }
-    .summary-grid { grid-template-columns:1fr 1fr; }
+    .summary-grid { grid-template-columns:1fr 1fr; gap:10px; }
+    .locations-grid { grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); }
   }
 
   @media(max-width:640px) {
@@ -303,15 +350,32 @@
     table,thead,tbody,th,td,tr { display:block; }
     thead { display:none; }
     tbody tr { background:var(--panel); border:1px solid var(--border); border-radius:var(--r-md); margin-bottom:8px; padding:10px 12px; }
-    td { border-bottom:none; padding:4px 2px; display:flex; justify-content:space-between; gap:8px; }
+    td { border-bottom:none; padding:4px 2px; display:flex; justify-content:space-between; gap:8px; align-items:center; flex-wrap:wrap; }
     td::before { content:attr(data-label); color:var(--faint); font-size:0.68rem; text-transform:uppercase; }
-    .bar-row { grid-template-columns: 84px 1fr 38px; gap:8px; }
-    .search-input { width:100%; }
+    .bar-row { grid-template-columns: 74px 1fr 36px; gap:8px; }
+    .bar-row__label { font-size:0.75rem; }
+    .search-input, .range-select { width:100%; }
     .toolbar { flex-direction:column; align-items:stretch; }
     .toolbar__left { justify-content:space-between; }
     .locations-grid { grid-template-columns:1fr; }
-    .otp-box { width:46px !important; height:52px; font-size:1.3rem !important; }
-    .otp-boxes { gap:8px; }
+    .add-location-row { flex-direction:column; align-items:stretch; }
+    .add-location-row input { min-width:0; }
+    .add-location-row button { width:100%; }
+    main { padding-left:12px; padding-right:12px; }
+    .page-head { gap:6px; }
+    .page-head h2 { font-size:1.12rem; }
+    .broadcast-row { flex-direction:column; align-items:stretch; }
+    .broadcast-row input, .broadcast-row textarea { min-width:0; }
+    .broadcast-row button { width:100%; }
+  }
+
+  @media(max-width:480px) {
+    .summary-grid { grid-template-columns:1fr; }
+    .s-card { padding:15px 16px; }
+    .s-card__value { font-size:1.5rem; }
+    .login-card { padding:28px 20px; }
+    .day-chart { height:110px; }
+    .day-chart__bar-wrap { height:80px; }
   }
 </style>
 </head>
@@ -328,28 +392,13 @@
       </div>
     </div>
 
-    <!-- Step 1: contact -->
-    <div id="loginStepEmail">
+    <!-- Password sign-in -->
+    <div id="loginStepPassword">
       <h1>Sign in</h1>
       <p class="sub">Private. Authorized access only.</p>
-      <input type="email" id="adminEmailInput" placeholder="Admin email" autocomplete="username" />
-      <button class="login-btn" id="adminSendCodeBtn" type="button">Continue</button>
+      <input type="password" id="adminPasswordInput" placeholder="Admin password" autocomplete="current-password" />
+      <button class="login-btn" id="adminLoginBtn" type="button">Sign in</button>
       <div id="loginError"></div>
-    </div>
-
-    <!-- Step 2: code -->
-    <div id="loginStepCode" hidden>
-      <h1>Enter your code</h1>
-      <p class="sub" id="adminCodeHint">Enter the code sent to your admin address</p>
-      <div class="otp-boxes" id="adminOtpBoxes">
-        <input class="otp-box" type="text" inputmode="numeric" maxlength="1" autocomplete="one-time-code" />
-        <input class="otp-box" type="text" inputmode="numeric" maxlength="1" autocomplete="one-time-code" />
-        <input class="otp-box" type="text" inputmode="numeric" maxlength="1" autocomplete="one-time-code" />
-        <input class="otp-box" type="text" inputmode="numeric" maxlength="1" autocomplete="one-time-code" />
-      </div>
-      <div id="loginCodeError"></div>
-      <button class="login-btn" id="adminVerifyBtn" type="button" style="margin-top:16px;">Verify &amp; sign in</button>
-      <button class="login-link-btn" id="adminBackLink" type="button">Use a different email</button>
     </div>
   </div>
 </div>
@@ -519,6 +568,12 @@
             </div>
             <input class="search-input" type="text" id="locationSearch" placeholder="Search locations…" />
           </div>
+          <div class="loc-filter-tabs" id="locFilterTabs">
+            <button type="button" class="loc-filter-tab is-active" data-loc-filter="all">All</button>
+            <button type="button" class="loc-filter-tab" data-loc-filter="on">On</button>
+            <button type="button" class="loc-filter-tab" data-loc-filter="off">Off</button>
+            <button type="button" class="loc-filter-tab" data-loc-filter="unknown">Unknown</button>
+          </div>
           <div class="add-location-row">
             <input type="text" id="newLocationInput" placeholder="Add a location not listed yet (e.g. Bantama, Ashanti)" />
             <button id="addLocationBtn" type="button">Add</button>
@@ -576,6 +631,22 @@
         <!-- Chats panel -->
         <div class="panel" id="chatsPanel">
           <div class="page-head"><h2>Chat messages</h2></div>
+
+          <div class="broadcast-card">
+            <div class="broadcast-card__head">
+              <span class="broadcast-card__title">Push a message to everyone</span>
+              <span class="broadcast-card__hint">Sends a push notification to every device with notifications enabled</span>
+            </div>
+            <div class="broadcast-row">
+              <input type="text" id="broadcastTitleInput" placeholder="Title (optional — defaults to “LightWatch Admin”)" maxlength="60" />
+            </div>
+            <div class="broadcast-row">
+              <textarea id="broadcastBodyInput" placeholder="Message to send to every user…" maxlength="220" rows="2"></textarea>
+              <button id="broadcastSendBtn" type="button">Send to everyone</button>
+            </div>
+            <div id="broadcastStatus" class="broadcast-status"></div>
+          </div>
+
           <div class="toolbar">
             <div class="toolbar__left">
               <span class="status-msg" id="chatsStatus">Loading messages…</span>
@@ -642,6 +713,24 @@
         const d = document.createElement("div");
         d.textContent = String(str ?? "");
         return d.innerHTML;
+      }
+
+      // Deterministic color per chat handle — same handle always gets the
+      // same color, so it's easy to visually track who's who in a fast
+      // scrolling messages list. Fixed saturation/lightness (tuned for the
+      // dark theme) with only the hue varying per handle.
+      const handleColorCache = new Map();
+      function handleColor(handle) {
+        const key = String(handle || "").toLowerCase();
+        if (handleColorCache.has(key)) return handleColorCache.get(key);
+        let hash = 0;
+        for (let i = 0; i < key.length; i++) {
+          hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
+        }
+        const hue = hash % 360;
+        const color = `hsl(${hue}, 72%, 68%)`;
+        handleColorCache.set(key, color);
+        return color;
       }
 
       function fmtDate(iso) {
@@ -745,137 +834,48 @@
         IDLE_EVENTS.forEach(evt => document.removeEventListener(evt, resetIdleTimer));
       }
 
-      // ===== LOGIN (two-step: email -> hardcoded 4-digit code) =====
-      const stepEmail = document.getElementById("loginStepEmail");
-      const stepCode  = document.getElementById("loginStepCode");
-      const emailInput = document.getElementById("adminEmailInput");
-      const sendCodeBtn = document.getElementById("adminSendCodeBtn");
-      const verifyBtn = document.getElementById("adminVerifyBtn");
-      const backLink = document.getElementById("adminBackLink");
+      // ===== LOGIN (single admin password, checked against ADMIN_PASSWORD) =====
+      const stepPassword = document.getElementById("loginStepPassword");
+      const passwordInput = document.getElementById("adminPasswordInput");
+      const loginBtn = document.getElementById("adminLoginBtn");
       const loginError = document.getElementById("loginError");
-      const codeError = document.getElementById("loginCodeError");
-      const otpBoxesWrap = document.getElementById("adminOtpBoxes");
-      const otpBoxes = Array.from(document.querySelectorAll("#adminOtpBoxes .otp-box"));
-      let pendingAdminEmail = "";
 
-      function getOtpValue() { return otpBoxes.map(b => b.value).join(""); }
-      function clearOtpBoxes() { otpBoxes.forEach(b => b.value = ""); otpBoxes[0]?.focus(); }
-      function shakeOtp() {
-        otpBoxesWrap.classList.remove("is-shaking");
-        void otpBoxesWrap.offsetWidth;
-        otpBoxesWrap.classList.add("is-shaking");
-      }
-
-      otpBoxes.forEach((box, index) => {
-        box.addEventListener("input", () => {
-          const digits = box.value.replace(/[^0-9]/g, "");
-          if (digits.length > 1) {
-            otpBoxes.forEach((b, i) => { b.value = digits[i] || ""; });
-            const nextEmpty = otpBoxes.find(b => !b.value) || otpBoxes[otpBoxes.length - 1];
-            nextEmpty.focus();
-            if (getOtpValue().length === otpBoxes.length) setTimeout(handleVerifyCode, 150);
-            return;
-          }
-          box.value = digits.slice(0, 1);
-          if (box.value && index < otpBoxes.length - 1) otpBoxes[index + 1].focus();
-          if (getOtpValue().length === otpBoxes.length) setTimeout(handleVerifyCode, 150);
-        });
-        box.addEventListener("keydown", (e) => {
-          if (e.key === "Backspace" && !box.value && index > 0) otpBoxes[index - 1].focus();
-          if (e.key === "Enter") { e.preventDefault(); handleVerifyCode(); }
-        });
-        box.addEventListener("paste", (e) => {
-          e.preventDefault();
-          const digits = (e.clipboardData.getData("text") || "").replace(/[^0-9]/g, "").split("");
-          otpBoxes.forEach((b, i) => { b.value = digits[i] || ""; });
-          const nextEmpty = otpBoxes.find(b => !b.value) || otpBoxes[otpBoxes.length - 1];
-          nextEmpty.focus();
-          if (getOtpValue().length === otpBoxes.length) setTimeout(handleVerifyCode, 150);
-        });
-      });
-
-      function maskEmailLocally(email) {
-        if (!email.includes("@")) return email;
-        const [name, domain] = email.split("@");
-        return name[0] + "***@" + domain;
-      }
-
-      async function handleSendCode() {
-        const email = emailInput.value.trim().toLowerCase();
+      async function handleLogin() {
+        const password = passwordInput.value;
         loginError.textContent = "";
-        if (!email) { loginError.textContent = "Enter the admin email"; return; }
+        if (!password) { loginError.textContent = "Enter the admin password"; return; }
 
-        sendCodeBtn.disabled = true;
-        sendCodeBtn.textContent = "Checking…";
+        loginBtn.disabled = true;
+        loginBtn.textContent = "Signing in…";
         try {
-          const res = await fetch(`${API}/admin/request-code`, {
+          const res = await fetch(`${API}/admin/login`, {
             method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ emailPhone: email })
+            body: JSON.stringify({ password })
           });
           const result = await res.json();
-          if (!res.ok) { loginError.textContent = result.error || "Not authorized"; return; }
+          if (!res.ok) { loginError.textContent = result.error || "Incorrect password"; return; }
 
-          pendingAdminEmail = email;
-          document.getElementById("adminCodeHint").textContent =
-            `Enter the code sent to ${result.maskedContact || maskEmailLocally(email)}`;
-          stepEmail.hidden = true;
-          stepCode.hidden = false;
-          clearOtpBoxes();
+          setToken(result.token);
+          passwordInput.value = "";
+          showDashboard();
         } catch (e) {
           loginError.textContent = "Could not reach the server";
         } finally {
-          sendCodeBtn.disabled = false;
-          sendCodeBtn.textContent = "Continue";
+          loginBtn.disabled = false;
+          loginBtn.textContent = "Sign in";
         }
       }
 
-      async function handleVerifyCode() {
-        const code = getOtpValue();
-        codeError.textContent = "";
-        if (code.length < otpBoxes.length) { codeError.textContent = "Enter the full code"; return; }
-
-        verifyBtn.disabled = true;
-        verifyBtn.textContent = "Verifying…";
-        try {
-          const res = await fetch(`${API}/admin/verify-code`, {
-            method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ emailPhone: pendingAdminEmail, code })
-          });
-          const result = await res.json();
-          if (!res.ok) {
-            codeError.textContent = result.error || "Incorrect code";
-            shakeOtp();
-            clearOtpBoxes();
-            return;
-          }
-          setToken(result.token);
-          showDashboard();
-        } catch (e) {
-          codeError.textContent = "Could not reach the server";
-        } finally {
-          verifyBtn.disabled = false;
-          verifyBtn.textContent = "Verify & sign in";
-        }
-      }
-
-      sendCodeBtn.addEventListener("click", handleSendCode);
-      emailInput.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); handleSendCode(); } });
-      verifyBtn.addEventListener("click", handleVerifyCode);
-      backLink.addEventListener("click", () => {
-        stepCode.hidden = true;
-        stepEmail.hidden = false;
-        codeError.textContent = "";
-        clearOtpBoxes();
-      });
+      loginBtn.addEventListener("click", handleLogin);
+      passwordInput.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); handleLogin(); } });
 
       function showLogin(msg) {
         stopIdleTracking();
         document.getElementById("loginScreen").style.display = "flex";
         document.getElementById("dashboard").style.display = "none";
-        stepCode.hidden = true;
-        stepEmail.hidden = false;
-        clearOtpBoxes();
+        passwordInput.value = "";
         if (msg) loginError.textContent = msg;
+        passwordInput.focus();
       }
 
       function showDashboard() {
@@ -955,33 +955,44 @@
         }
       }
 
+      let activeLocFilter = "all";
+
       function renderLocations(locations) {
         const grid = document.getElementById("locationsGrid");
         const empty = document.getElementById("locationsEmpty");
-        if (!locations.length) {
+        const filtered = activeLocFilter === "all"
+          ? locations
+          : locations.filter(l => (l.status || "unknown") === activeLocFilter);
+
+        if (!filtered.length) {
           grid.innerHTML = "";
           empty.style.display = "block";
+          empty.textContent = locations.length
+            ? "No locations match that filter."
+            : "No locations yet — add one above.";
           return;
         }
         empty.style.display = "none";
-        grid.innerHTML = locations.map(loc => {
-          const chipClass = loc.status === "on" ? "status-chip--on" : loc.status === "off" ? "status-chip--off" : "status-chip--unknown";
-          const chipLabel = loc.status === "on" ? "Light on" : loc.status === "off" ? "Light off" : "Unknown";
+        grid.innerHTML = filtered.map(loc => {
+          const status = loc.status || "unknown";
+          const chipClass = status === "on" ? "status-chip--on" : status === "off" ? "status-chip--off" : "status-chip--unknown";
+          const chipLabel = status === "on" ? "Light on" : status === "off" ? "Light off" : "Unknown";
+          const dotClass = status === "on" ? "loc-card__dot--on" : status === "off" ? "loc-card__dot--off" : "loc-card__dot--unknown";
           const meta = loc.reportedAt
             ? `Last set by ${esc(loc.reportedBy || "—")} · ${fmtRel(loc.reportedAt)}`
             : "No status set yet";
           return `
-            <div class="loc-card" data-location-key="${esc(loc.locationKey)}">
+            <div class="loc-card loc-card--${status}" data-location-key="${esc(loc.locationKey)}">
               <div class="loc-card__top">
                 <div>
-                  <div class="loc-card__name">${esc(loc.label)}</div>
+                  <div class="loc-card__name"><span class="loc-card__dot ${dotClass}"></span>${esc(loc.label)}</div>
                   <div class="loc-card__meta">${meta}</div>
                 </div>
                 <span class="status-chip ${chipClass}">${chipLabel}</span>
               </div>
               <div class="loc-card__actions">
-                <button type="button" class="loc-btn loc-btn--on" data-push-key="${esc(loc.locationKey)}" data-push-status="on">Set ON</button>
-                <button type="button" class="loc-btn loc-btn--off" data-push-key="${esc(loc.locationKey)}" data-push-status="off">Set OFF</button>
+                <button type="button" class="loc-btn loc-btn--on ${status === 'on' ? 'loc-btn--active-on' : ''}" data-push-key="${esc(loc.locationKey)}" data-push-status="on">Set ON</button>
+                <button type="button" class="loc-btn loc-btn--off ${status === 'off' ? 'loc-btn--active-off' : ''}" data-push-key="${esc(loc.locationKey)}" data-push-status="off">Set OFF</button>
               </div>
             </div>
           `;
@@ -995,6 +1006,15 @@
           });
         });
       }
+
+      document.getElementById("locFilterTabs")?.addEventListener("click", (e) => {
+        const btn = e.target.closest("[data-loc-filter]");
+        if (!btn) return;
+        activeLocFilter = btn.dataset.locFilter;
+        document.querySelectorAll("#locFilterTabs .loc-filter-tab").forEach(b => b.classList.toggle("is-active", b === btn));
+        const q = (document.getElementById("locationSearch")?.value || "").toLowerCase();
+        renderLocations(q ? allLocations.filter(l => l.label.toLowerCase().includes(q)) : allLocations);
+      });
 
       async function pushLocationStatus(locationKey, status, triggerBtn) {
         const card = triggerBtn?.closest(".loc-card");
@@ -1019,7 +1039,7 @@
 
       document.getElementById("locationSearch")?.addEventListener("input", (e) => {
         const q = e.target.value.toLowerCase();
-        renderLocations(allLocations.filter(l => l.label.toLowerCase().includes(q)));
+        renderLocations(q ? allLocations.filter(l => l.label.toLowerCase().includes(q)) : allLocations);
       });
 
       document.getElementById("addLocationBtn")?.addEventListener("click", () => {
@@ -1269,6 +1289,36 @@
         }
       }
 
+      // ===== BROADCAST (push a message to every subscriber) =====
+      document.getElementById("broadcastSendBtn")?.addEventListener("click", async () => {
+        const titleInput = document.getElementById("broadcastTitleInput");
+        const bodyInput = document.getElementById("broadcastBodyInput");
+        const statusEl = document.getElementById("broadcastStatus");
+        const btn = document.getElementById("broadcastSendBtn");
+        const body = bodyInput.value.trim();
+
+        statusEl.className = "broadcast-status";
+        if (!body) { statusEl.textContent = "Write a message first."; statusEl.classList.add("broadcast-status--err"); return; }
+
+        btn.disabled = true;
+        btn.textContent = "Sending…";
+        try {
+          const result = await apiPost("/admin/broadcast", { title: titleInput.value.trim(), body });
+          statusEl.textContent = `Sent to ${result.sentCount} of ${result.subscribers} subscriber(s).`;
+          statusEl.classList.add("broadcast-status--ok");
+          bodyInput.value = "";
+          titleInput.value = "";
+        } catch (e) {
+          if (e.message !== "auth") {
+            statusEl.textContent = e.message || "Could not send broadcast.";
+            statusEl.classList.add("broadcast-status--err");
+          }
+        } finally {
+          btn.disabled = false;
+          btn.textContent = "Send to everyone";
+        }
+      });
+
       // ===== CHATS =====
       async function loadChats() {
         try {
@@ -1297,7 +1347,7 @@
         tbody.innerHTML = chats.map(c => `
           <tr>
             <td data-label="Select"><input type="checkbox" class="select-checkbox chat-row-select" data-chat-id="${esc(c._id)}" ${selectedChatIds.has(String(c._id)) ? "checked" : ""} /></td>
-            <td data-label="Handle" class="gold">${esc(c.handle)}</td>
+            <td data-label="Handle"><span class="handle-pill" style="--handle-color:${handleColor(c.handle)}">${esc(c.handle)}</span></td>
             <td data-label="Message">${esc(c.text)}</td>
             <td data-label="Location" class="faint">${esc(c.location)}</td>
             <td data-label="Sent" class="faint">${fmtDate(c.createdAt)}</td>
