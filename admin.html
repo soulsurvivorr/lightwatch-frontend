@@ -2,161 +2,237 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <link rel="icon" href="/images/dev-logo.png?v=20260707" type="image/png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
 <title>LightWatch Admin</title>
 <style>
   :root {
-    --bg: #060A14; --bg-mid: #0A1120;
-    --panel: #0E1626; --panel2: #121B2E; --panel-raised: #16213A;
-    --border: #1B2740; --border2: #263a5c;
-    --teal: #3DD9C2; --teal-dim: #123028;
-    --indigo: #6C8CFF; --indigo-dim: #17203D;
-    --amber: #F2B33D; --amber-dim: #3A2C12;
-    --red: #FF5C66; --red-dim: #3A1418;
-    --txt: #EAF1FC; --muted: #9FB0CC; --faint: #5B6B87;
+    /* Brand tokens shared with the rest of LightWatch — gold primary,
+       blue secondary — instead of the old one-off indigo/teal admin palette. */
+    --brand: #F2B33D; --brand-dim: #3A2C12; --brand-ink: #241a05;
+    --brand2: #4F86F7; --brand2-dim: #16233F;
+    --amber: #F2B33D; --red: #FF5C66; --red-dim: #3A1418; --green: #35D07F; --green-dim: #143122;
+
+    --bg: #07090D; --bg-mid: #0B0E15;
+    --panel: #10141D; --panel2: #151A25; --panel-raised: #181E2B;
+    --border: #232A38; --border2: #2E374A;
+    --txt: #F3F5F9; --muted: #9AA4B8; --faint: #5C6578;
+
     --font: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
-    --display: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
-    --r-sm: 8px; --r-md: 12px; --r-lg: 18px; --r-xl: 24px;
+    --display: "Manrope", "Inter", system-ui, -apple-system, sans-serif;
+    --r-sm: 8px; --r-md: 12px; --r-lg: 18px; --r-xl: 26px;
+    --sidebar-w: 236px; --bottom-nav-h: 64px;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html { color-scheme: dark; }
   body {
     background:
-      radial-gradient(1100px 620px at 12% -8%, rgba(108,140,255,0.10), transparent 60%),
-      radial-gradient(900px 560px at 88% 0%, rgba(61,217,194,0.08), transparent 55%),
+      radial-gradient(900px 520px at 8% -10%, rgba(242,179,61,0.09), transparent 60%),
+      radial-gradient(900px 560px at 96% 0%, rgba(79,134,247,0.10), transparent 55%),
       var(--bg);
     background-attachment: fixed;
     color: var(--txt); font-family: var(--font); font-size: 14px; min-height: 100vh;
+    min-height: 100dvh;
     -webkit-font-smoothing: antialiased;
   }
   h1,h2,h3 { font-family: var(--display); letter-spacing:-0.01em; }
-  ::selection { background: rgba(108,140,255,0.35); }
+  ::selection { background: rgba(242,179,61,0.30); }
   ::-webkit-scrollbar { width:10px; height:10px; }
   ::-webkit-scrollbar-track { background:transparent; }
   ::-webkit-scrollbar-thumb { background:var(--border2); border-radius:99px; }
+  a { color: inherit; }
 
-  /* LOGIN */
-  #loginScreen { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; }
+  /* ============ LOGIN ============ */
+  #loginScreen { min-height:100vh; min-height:100dvh; display:flex; align-items:center; justify-content:center; padding:24px; }
   .login-card {
-    position:relative; width:100%; max-width:340px;
+    position:relative; width:100%; max-width:380px;
     background: linear-gradient(180deg, var(--panel-raised), var(--panel));
     border:1px solid var(--border); border-radius:var(--r-xl);
-    padding:34px 28px; box-shadow: 0 30px 70px rgba(2,6,16,0.55), 0 1px 0 rgba(255,255,255,0.03) inset;
+    padding:36px 30px; box-shadow: 0 30px 70px rgba(2,6,16,0.6), 0 1px 0 rgba(255,255,255,0.03) inset;
     overflow:hidden;
   }
   .login-card::before {
     content:""; position:absolute; top:0; left:0; right:0; height:3px;
-    background:linear-gradient(90deg, var(--indigo), var(--teal));
+    background:linear-gradient(90deg, var(--brand), var(--brand2));
   }
-  .login-card h1 { font-size:1.25rem; font-weight:700; margin-bottom:6px; }
-  .login-card p { color:var(--faint); font-size:0.82rem; margin-bottom:22px; }
+  .login-brand { display:flex; align-items:center; gap:12px; margin-bottom:22px; }
+  .login-brand__logo { width:38px; height:38px; border-radius:11px; object-fit:cover; border:1px solid var(--border2); }
+  .login-brand__name { display:flex; flex-direction:column; line-height:1.2; }
+  .login-brand__name strong { font-family:var(--display); font-size:1.02rem; }
+  .login-brand__name span { font-size:0.72rem; color:var(--faint); font-weight:600; letter-spacing:0.03em; }
+  .login-card h1 { font-size:1.3rem; font-weight:800; margin-bottom:6px; }
+  .login-card p.sub { color:var(--faint); font-size:0.83rem; margin-bottom:24px; line-height:1.5; }
   .login-card input {
     width:100%; background:var(--bg); border:1px solid var(--border2); border-radius:var(--r-md);
-    padding:12px 14px; color:var(--txt); font-size:0.9rem; margin-bottom:12px;
+    padding:13px 14px; color:var(--txt); font-size:0.92rem; margin-bottom:14px;
     transition:border-color .15s ease, box-shadow .15s ease;
   }
-  .login-card input:focus { outline:none; border-color:var(--indigo); box-shadow:0 0 0 3px rgba(108,140,255,0.18); }
-  .login-card button {
-    width:100%; padding:12px; border-radius:var(--r-md); border:none;
-    background:linear-gradient(135deg, var(--indigo), #4f6fe0); color:#fff; font-weight:700; font-size:0.9rem; cursor:pointer;
+  .login-card input:focus { outline:none; border-color:var(--brand); box-shadow:0 0 0 3px rgba(242,179,61,0.16); }
+  .login-btn {
+    width:100%; padding:13px; border-radius:var(--r-md); border:none;
+    background:linear-gradient(135deg, var(--brand), #d99a26); color:var(--brand-ink); font-weight:800; font-size:0.92rem; cursor:pointer;
     transition:transform .15s ease, box-shadow .15s ease, filter .15s ease;
   }
-  .login-card button:hover { filter:brightness(1.08); transform:translateY(-1px); box-shadow:0 10px 24px rgba(108,140,255,0.28); }
-  .login-card button:active { transform:translateY(0); }
-  #loginError { color:var(--red); font-size:0.8rem; margin-top:10px; min-height:1em; }
+  .login-btn:hover { filter:brightness(1.06); transform:translateY(-1px); box-shadow:0 10px 26px rgba(242,179,61,0.25); }
+  .login-btn:active { transform:translateY(0); }
+  .login-btn:disabled { opacity:0.6; cursor:not-allowed; transform:none; box-shadow:none; }
+  .login-link-btn { background:none; border:none; color:var(--muted); font-size:0.8rem; cursor:pointer; margin-top:16px; text-align:center; width:100%; padding:6px; }
+  .login-link-btn:hover { color:var(--brand); }
+  #loginError, #loginCodeError { color:var(--red); font-size:0.8rem; margin-top:12px; min-height:1em; text-align:center; }
 
-  /* TOPBAR */
-  #dashboard { display:none; }
-  .topbar { border-bottom:1px solid var(--border); background:rgba(10,15,28,0.72); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); position:sticky; top:0; z-index:10; }
-  .topbar__inner { max-width:1240px; margin:0 auto; padding:15px 24px; display:flex; align-items:center; justify-content:space-between; gap:16px; }
-  .brand { display:flex; align-items:center; gap:11px; font-weight:700; font-size:1rem; }
-  .brand__logo { width:30px; height:30px; border-radius:9px; object-fit:cover; border:1px solid var(--border2); }
-  .brand__name { display:flex; flex-direction:column; line-height:1.15; }
-  .brand__name strong { font-size:0.95rem; letter-spacing:-0.01em; }
-  .brand__name span { font-size:0.7rem; color:var(--faint); font-weight:500; }
-  .topbar-right { display:flex; align-items:center; gap:14px; }
-  .live-dot { width:8px; height:8px; border-radius:50%; background:var(--teal); box-shadow:0 0 8px rgba(61,217,194,0.85); animation:pulse-dot 2s ease-out infinite; }
+  .otp-boxes { display:flex; gap:10px; justify-content:center; margin: 6px 0 4px; }
+  .otp-box {
+    width:52px !important; height:58px; text-align:center; font-size:1.5rem !important; font-weight:800;
+    padding:0 !important; margin:0 !important; letter-spacing:0;
+  }
+  .otp-boxes.is-shaking { animation: otp-shake 0.4s ease; }
+  @keyframes otp-shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-8px)} 40%{transform:translateX(8px)} 60%{transform:translateX(-6px)} 80%{transform:translateX(6px)} }
+
+  /* ============ APP SHELL ============ */
+  #dashboard { display:none; min-height:100vh; min-height:100dvh; }
+  .app-shell { display:flex; min-height:100vh; min-height:100dvh; }
+
+  .sidebar {
+    width:var(--sidebar-w); flex-shrink:0; border-right:1px solid var(--border);
+    background:rgba(11,14,21,0.6); display:flex; flex-direction:column; padding:22px 16px;
+    position:sticky; top:0; height:100vh; height:100dvh;
+  }
+  .sidebar__brand { display:flex; align-items:center; gap:11px; padding:6px 8px 22px; }
+  .sidebar__brand img { width:32px; height:32px; border-radius:9px; object-fit:cover; border:1px solid var(--border2); }
+  .sidebar__brand strong { font-family:var(--display); font-size:0.98rem; display:block; }
+  .sidebar__brand span { font-size:0.68rem; color:var(--faint); font-weight:600; }
+  .sidebar__nav { display:flex; flex-direction:column; gap:2px; flex:1; }
+  .nav-btn {
+    display:flex; align-items:center; gap:11px; background:transparent; border:none; text-align:left;
+    color:var(--muted); padding:11px 12px; border-radius:var(--r-md); font-size:0.87rem; font-weight:600;
+    cursor:pointer; transition:background .15s, color .15s;
+  }
+  .nav-btn svg { width:17px; height:17px; flex-shrink:0; opacity:0.85; }
+  .nav-btn:hover { background:rgba(255,255,255,0.04); color:var(--txt); }
+  .nav-btn.active { background:linear-gradient(90deg, rgba(242,179,61,0.14), rgba(242,179,61,0.02)); color:var(--brand); }
+  .sidebar__footer { display:flex; flex-direction:column; gap:10px; padding-top:14px; border-top:1px solid var(--border); }
+  .live-pill { display:flex; align-items:center; gap:7px; font-size:0.76rem; color:var(--green); font-weight:700; padding:0 4px; }
+  .live-dot { width:7px; height:7px; border-radius:50%; background:var(--green); box-shadow:0 0 8px rgba(53,208,127,0.85); animation:pulse-dot 2s ease-out infinite; }
   @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:0.4} }
-  .live-label { font-size:0.75rem; color:var(--teal); font-weight:600; }
-  .logout-btn { background:transparent; border:1px solid var(--border2); color:var(--muted); padding:8px 14px; border-radius:var(--r-md); cursor:pointer; font-size:0.82rem; transition:border-color .15s ease, color .15s ease; }
+  .logout-btn {
+    background:transparent; border:1px solid var(--border2); color:var(--muted); padding:9px 14px; border-radius:var(--r-md);
+    cursor:pointer; font-size:0.82rem; font-weight:600; transition:border-color .15s ease, color .15s ease;
+  }
   .logout-btn:hover { border-color:var(--red); color:var(--red); }
 
-  /* MAIN */
-  main { max-width:1200px; margin:0 auto; padding:24px 24px 64px; }
+  .main-col { flex:1; min-width:0; display:flex; flex-direction:column; }
+  .topbar-mobile {
+    display:none; align-items:center; justify-content:space-between; gap:12px; padding:14px 16px;
+    border-bottom:1px solid var(--border); background:rgba(10,15,28,0.75); backdrop-filter:blur(10px);
+    position:sticky; top:0; z-index:20;
+  }
+  .topbar-mobile .brand { display:flex; align-items:center; gap:9px; font-weight:700; }
+  .topbar-mobile .brand img { width:26px; height:26px; border-radius:8px; border:1px solid var(--border2); }
+  .topbar-mobile .brand strong { font-size:0.9rem; font-family:var(--display); }
 
-  /* SUMMARY */
-  .summary-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:28px; }
+  main { max-width:1240px; width:100%; margin:0 auto; padding:26px 26px 40px; flex:1; }
+  .page-head { display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:20px; flex-wrap:wrap; }
+  .page-head h2 { font-size:1.3rem; font-weight:800; }
+  .page-head__hint { font-size:0.8rem; color:var(--faint); }
+
+  /* ============ SUMMARY ============ */
+  .summary-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:26px; }
   .s-card {
     background: linear-gradient(165deg, var(--panel-raised), var(--panel));
     border:1px solid var(--border); border-radius:var(--r-lg); padding:18px 20px;
     position:relative; overflow:hidden; transition:transform .18s ease, border-color .18s ease;
   }
   .s-card:hover { transform:translateY(-2px); border-color:var(--border2); }
-  .s-card::after { content:""; position:absolute; right:-18px; top:-18px; width:80px; height:80px; border-radius:50%; background:radial-gradient(circle,rgba(108,140,255,0.12),transparent 70%); }
-  .s-card__label { font-size:0.7rem; color:var(--faint); text-transform:uppercase; letter-spacing:0.07em; margin-bottom:9px; font-weight:600; }
-  .s-card__value { font-family:var(--display); font-size:1.8rem; font-weight:700; line-height:1; letter-spacing:-0.02em; }
+  .s-card::after { content:""; position:absolute; right:-18px; top:-18px; width:80px; height:80px; border-radius:50%; background:radial-gradient(circle,rgba(242,179,61,0.12),transparent 70%); }
+  .s-card__label { font-size:0.7rem; color:var(--faint); text-transform:uppercase; letter-spacing:0.07em; margin-bottom:9px; font-weight:700; }
+  .s-card__value { font-family:var(--display); font-size:1.85rem; font-weight:800; line-height:1; letter-spacing:-0.02em; }
   .s-card__delta { font-size:0.75rem; color:var(--faint); margin-top:7px; }
-  .s-card__delta span { color:var(--teal); font-weight:600; }
+  .s-card__delta span { color:var(--brand); font-weight:700; }
 
-  /* TABS */
-  .tabs { display:flex; gap:2px; border-bottom:1px solid var(--border); margin-bottom:18px; overflow-x:auto; }
-  .tab-btn { background:transparent; border:none; color:var(--faint); padding:11px 16px; font-size:0.88rem; font-weight:600; cursor:pointer; border-bottom:2px solid transparent; transition:color 0.15s; white-space:nowrap; }
-  .tab-btn.active { color:var(--indigo); border-bottom-color:var(--indigo); }
-  .tab-btn:hover:not(.active) { color:var(--muted); }
+  /* ============ TABS (mobile fallback if sidebar hidden) ============ */
+  .tabs-scroll { display:none; }
+
   .panel { display:none; }
   .panel.active { display:block; animation:fadeIn .2s ease both; }
   @keyframes fadeIn { from{opacity:0} to{opacity:1} }
 
-  /* ACTIVITY LOG */
+  /* ============ ACTIVITY LOG ============ */
   .activity-log { display:flex; flex-direction:column; gap:0; background:var(--panel); border:1px solid var(--border); border-radius:var(--r-lg); overflow:hidden; }
   .log-item { display:grid; grid-template-columns: 90px 1fr auto; gap:12px; align-items:center; padding:13px 16px; border-bottom:1px solid var(--border); font-size:0.82rem; }
   .log-item:last-child { border-bottom:none; }
-  .log-item:hover { background:rgba(108,140,255,0.04); }
+  .log-item:hover { background:rgba(242,179,61,0.035); }
   .log-item__time { color:var(--faint); font-size:0.75rem; }
   .log-item__content { color:var(--txt); }
-  .log-item__content strong { color:var(--teal); }
-  .log-item__badge { font-size:0.72rem; padding:3px 9px; border-radius:999px; white-space:nowrap; font-weight:600; }
-  .badge-chat { background:var(--teal-dim); color:var(--teal); }
-  .badge-signup { background:#173321; color:#3DD975; }
-  .badge-signin { background:var(--indigo-dim); color:#7BA6FF; }
+  .log-item__content strong { color:var(--brand); }
+  .log-item__badge { font-size:0.72rem; padding:3px 9px; border-radius:999px; white-space:nowrap; font-weight:700; }
+  .badge-chat { background:var(--brand2-dim); color:#9DB8FF; }
+  .badge-signup { background:var(--green-dim); color:var(--green); }
+  .badge-signin { background:var(--brand2-dim); color:#9DB8FF; }
+  .badge-locationset { background:var(--brand-dim); color:var(--brand); }
 
-  /* TABLES */
+  /* ============ TABLES ============ */
   table { width:100%; border-collapse:collapse; background:var(--panel); border:1px solid var(--border); border-radius:var(--r-lg); overflow:hidden; }
   thead { background:var(--panel2); }
   th,td { text-align:left; padding:12px 14px; font-size:0.82rem; border-bottom:1px solid var(--border); }
   th { color:var(--faint); font-size:0.68rem; text-transform:uppercase; letter-spacing:0.06em; font-weight:700; }
   tbody tr:last-child td { border-bottom:none; }
-  tbody tr:hover { background:rgba(108,140,255,0.04); }
+  tbody tr:hover { background:rgba(242,179,61,0.035); }
   td.faint { color:var(--faint); }
-  td.teal { color:var(--teal); font-weight:500; }
+  td.gold { color:var(--brand); font-weight:600; }
 
-  /* TOOLBAR */
+  /* ============ TOOLBAR ============ */
   .toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; flex-wrap:wrap; }
   .toolbar__left { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
   .status-msg { font-size:0.82rem; color:var(--faint); }
-  .refresh-btn { background:transparent; border:1px solid var(--border2); color:var(--muted); padding:7px 13px; border-radius:var(--r-md); cursor:pointer; font-size:0.8rem; transition:border-color .15s, color .15s; }
-  .refresh-btn:hover { border-color:var(--indigo); color:var(--indigo); }
-  .delete-btn { background:transparent; border:1px solid var(--border2); color:var(--muted); padding:7px 13px; border-radius:var(--r-md); cursor:pointer; font-size:0.8rem; transition:border-color .15s, color .15s; }
-  .delete-btn:hover { border-color:var(--red); color:var(--red); }
-  .delete-btn:disabled { opacity:0.5; cursor:not-allowed; }
-  .delete-btn--danger { border-color: rgba(255,92,102,0.45); color: #ff9b9e; }
-  .delete-btn--danger:hover { border-color: var(--red); color: #ffd7d8; background: rgba(255,92,102,0.1); }
+  .btn-ghost { background:transparent; border:1px solid var(--border2); color:var(--muted); padding:7px 13px; border-radius:var(--r-md); cursor:pointer; font-size:0.8rem; font-weight:600; transition:border-color .15s, color .15s; }
+  .btn-ghost:hover { border-color:var(--brand2); color:var(--brand2); }
+  .btn-ghost:disabled { opacity:0.5; cursor:not-allowed; }
+  .btn-ghost--danger { border-color: rgba(255,92,102,0.4); color: #ff9b9e; }
+  .btn-ghost--danger:hover { border-color: var(--red); color: #ffd7d8; background: rgba(255,92,102,0.08); }
   .row-del-btn { background:transparent; border:1px solid var(--border2); color:var(--muted); padding:4px 9px; border-radius:var(--r-sm); cursor:pointer; font-size:0.72rem; }
   .row-del-btn:hover { border-color:var(--red); color:var(--red); }
   .select-col { width:34px; }
-  .select-checkbox { width:16px; height:16px; accent-color: var(--indigo); cursor:pointer; }
-  .search-input { background:var(--panel2); border:1px solid var(--border); border-radius:var(--r-md); padding:8px 12px; color:var(--txt); font-size:0.82rem; width:200px; transition:border-color .15s; }
-  .search-input:focus { outline:none; border-color:var(--indigo); }
+  .select-checkbox { width:16px; height:16px; accent-color: var(--brand); cursor:pointer; }
+  .search-input { background:var(--panel2); border:1px solid var(--border); border-radius:var(--r-md); padding:8px 12px; color:var(--txt); font-size:0.82rem; width:210px; transition:border-color .15s; }
+  .search-input:focus { outline:none; border-color:var(--brand); }
   .range-select { background:var(--panel2); border:1px solid var(--border); border-radius:var(--r-md); padding:7px 11px; color:var(--txt); font-size:0.8rem; cursor:pointer; }
-  .range-select:focus { outline:none; border-color:var(--indigo); }
-
+  .range-select:focus { outline:none; border-color:var(--brand); }
   .empty-state { text-align:center; padding:36px 20px; color:var(--faint); font-size:0.85rem; }
 
-  /* ===== ANALYTICS ===== */
+  /* ============ LOCATIONS PANEL ============ */
+  .locations-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(270px, 1fr)); gap:12px; }
+  .loc-card {
+    background: linear-gradient(165deg, var(--panel-raised), var(--panel));
+    border:1px solid var(--border); border-radius:var(--r-lg); padding:16px 18px;
+    display:flex; flex-direction:column; gap:12px;
+  }
+  .loc-card__top { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+  .loc-card__name { font-weight:700; font-size:0.95rem; }
+  .loc-card__meta { font-size:0.72rem; color:var(--faint); margin-top:3px; }
+  .status-chip { font-size:0.7rem; font-weight:800; padding:4px 10px; border-radius:999px; white-space:nowrap; text-transform:uppercase; letter-spacing:0.03em; }
+  .status-chip--on { background:var(--green-dim); color:var(--green); }
+  .status-chip--off { background:var(--red-dim); color:#FF8087; }
+  .status-chip--unknown { background:var(--panel2); color:var(--faint); border:1px solid var(--border2); }
+  .loc-card__actions { display:flex; gap:8px; }
+  .loc-btn { flex:1; padding:9px 10px; border-radius:var(--r-md); font-size:0.78rem; font-weight:700; cursor:pointer; border:1px solid var(--border2); background:transparent; color:var(--muted); transition:filter .15s, transform .1s; }
+  .loc-btn:hover { transform:translateY(-1px); }
+  .loc-btn--on { border-color: rgba(53,208,127,0.4); color:var(--green); }
+  .loc-btn--on:hover { background:var(--green-dim); }
+  .loc-btn--off { border-color: rgba(255,92,102,0.4); color:#FF8087; }
+  .loc-btn--off:hover { background:var(--red-dim); }
+  .loc-btn:disabled { opacity:0.5; cursor:not-allowed; transform:none; }
+  .loc-card--pushed { animation: loc-flash 1s ease; }
+  @keyframes loc-flash { 0%{ box-shadow: 0 0 0 2px var(--brand); } 100%{ box-shadow: 0 0 0 0 transparent; } }
+  .add-location-row { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
+  .add-location-row input { background:var(--panel2); border:1px solid var(--border); border-radius:var(--r-md); padding:9px 12px; color:var(--txt); font-size:0.85rem; flex:1; min-width:200px; }
+  .add-location-row input:focus { outline:none; border-color:var(--brand); }
+  .add-location-row button { padding:9px 16px; border-radius:var(--r-md); border:none; background:linear-gradient(135deg, var(--brand2), #3767d6); color:#fff; font-weight:700; font-size:0.82rem; cursor:pointer; }
+  .add-location-row button:hover { filter:brightness(1.08); }
+
+  /* ============ ANALYTICS ============ */
   .analytics-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:14px; }
   .a-card {
     background: linear-gradient(165deg, var(--panel-raised), var(--panel));
@@ -171,7 +247,7 @@
   .bar-row { display:grid; grid-template-columns: 108px 1fr 44px; align-items:center; gap:12px; }
   .bar-row__label { font-size:0.8rem; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .bar-row__track { height:8px; border-radius:999px; background:var(--panel2); overflow:hidden; border:1px solid var(--border); }
-  .bar-row__fill { height:100%; border-radius:999px; background:linear-gradient(90deg,var(--indigo),var(--teal)); transition:width .5s ease; }
+  .bar-row__fill { height:100%; border-radius:999px; background:linear-gradient(90deg,var(--brand2),var(--brand)); transition:width .5s ease; }
   .bar-row__fill--amber { background:linear-gradient(90deg,var(--amber),#c98a1f); }
   .bar-row__fill--red { background:linear-gradient(90deg,var(--red),#b8333c); }
   .bar-row__value { text-align:right; font-size:0.8rem; color:var(--txt); font-weight:700; font-variant-numeric:tabular-nums; }
@@ -180,26 +256,49 @@
   .day-chart__col { flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; }
   .day-chart__bar-wrap { width:100%; max-width:26px; height:100px; display:flex; flex-direction:column-reverse; border-radius:6px 6px 3px 3px; overflow:hidden; background:var(--panel2); border:1px solid var(--border); }
   .day-chart__seg { width:100%; transition:height .4s ease; }
-  .day-chart__seg--returning { background:linear-gradient(180deg,var(--teal),var(--indigo)); }
+  .day-chart__seg--returning { background:linear-gradient(180deg,var(--brand),var(--brand2)); }
   .day-chart__seg--new { background:linear-gradient(180deg,var(--amber),#c98a1f); }
-  .day-chart__seg--reports { background:linear-gradient(180deg,var(--indigo),#3d54b0); }
+  .day-chart__seg--reports { background:linear-gradient(180deg,var(--brand2),#3d54b0); }
   .day-chart__label { font-size:0.6rem; color:var(--faint); margin-top:8px; white-space:nowrap; }
 
   .legend { display:flex; gap:16px; font-size:0.75rem; color:var(--muted); margin-top:14px; flex-wrap:wrap; }
   .legend__item { display:flex; align-items:center; gap:6px; }
   .legend__dot { width:9px; height:9px; border-radius:50%; }
-  .legend__dot--returning { background:linear-gradient(135deg,var(--teal),var(--indigo)); }
+  .legend__dot--returning { background:linear-gradient(135deg,var(--brand),var(--brand2)); }
   .legend__dot--new { background:linear-gradient(135deg,var(--amber),#c98a1f); }
-  .legend__dot--reports { background:linear-gradient(135deg,var(--indigo),#3d54b0); }
+  .legend__dot--reports { background:linear-gradient(135deg,var(--brand2),#3d54b0); }
 
   .a-empty { text-align:center; padding:24px 12px; color:var(--faint); font-size:0.8rem; }
 
-  @media(max-width:900px) {
+  /* ============ BOTTOM NAV (mobile) ============ */
+  .bottom-nav {
+    display:none; position:fixed; left:50%; transform:translateX(-50%); bottom:calc(12px + env(safe-area-inset-bottom));
+    z-index:30; background:rgba(16,20,29,0.92); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+    border:1px solid var(--border2); border-radius:999px; padding:6px; gap:2px;
+    box-shadow: 0 14px 34px rgba(0,0,0,0.45);
+    max-width:calc(100vw - 24px); overflow-x:auto;
+  }
+  .bottom-nav__btn {
+    background:transparent; border:none; color:var(--faint); padding:9px 13px; border-radius:999px;
+    font-size:0.72rem; font-weight:700; cursor:pointer; white-space:nowrap; display:flex; flex-direction:column; align-items:center; gap:2px;
+  }
+  .bottom-nav__btn svg { width:16px; height:16px; }
+  .bottom-nav__btn.active { background:linear-gradient(135deg, var(--brand), #d99a26); color:var(--brand-ink); }
+
+  /* ============ RESPONSIVE ============ */
+  @media(max-width:1080px) {
     .analytics-grid { grid-template-columns:1fr; }
   }
 
-  @media(max-width:700px) {
+  @media(max-width:960px) {
+    .sidebar { display:none; }
+    .topbar-mobile { display:flex; }
+    main { padding:20px 16px calc(90px + env(safe-area-inset-bottom)); }
+    .bottom-nav { display:flex; }
     .summary-grid { grid-template-columns:1fr 1fr; }
+  }
+
+  @media(max-width:640px) {
     .log-item { grid-template-columns:1fr; gap:4px; }
     table,thead,tbody,th,td,tr { display:block; }
     thead { display:none; }
@@ -207,6 +306,12 @@
     td { border-bottom:none; padding:4px 2px; display:flex; justify-content:space-between; gap:8px; }
     td::before { content:attr(data-label); color:var(--faint); font-size:0.68rem; text-transform:uppercase; }
     .bar-row { grid-template-columns: 84px 1fr 38px; gap:8px; }
+    .search-input { width:100%; }
+    .toolbar { flex-direction:column; align-items:stretch; }
+    .toolbar__left { justify-content:space-between; }
+    .locations-grid { grid-template-columns:1fr; }
+    .otp-box { width:46px !important; height:52px; font-size:1.3rem !important; }
+    .otp-boxes { gap:8px; }
   }
 </style>
 </head>
@@ -215,216 +320,311 @@
 <!-- LOGIN -->
 <div id="loginScreen">
   <div class="login-card">
-    <div class="brand" style="margin-bottom:12px;">
-      <img src="/images/dev-logo.png?v=20260708" alt="LightWatch logo" class="brand__logo" />
-      <div class="brand__name">
+    <div class="login-brand">
+      <img src="/images/dev-logo.png?v=20260708" alt="LightWatch logo" class="login-brand__logo" />
+      <div class="login-brand__name">
         <strong>LightWatch GH</strong>
-        <span>Admin Console</span>
+        <span>ADMIN CONSOLE</span>
       </div>
     </div>
-    <h1>LightWatch Admin</h1>
-    <p>Private. Authorized access only.</p>
-    <input type="password" id="pwInput" placeholder="Admin password" autocomplete="current-password" />
-    <button id="loginBtn" type="button">Sign in</button>
-    <div id="loginError"></div>
+
+    <!-- Step 1: contact -->
+    <div id="loginStepEmail">
+      <h1>Sign in</h1>
+      <p class="sub">Private. Authorized access only.</p>
+      <input type="email" id="adminEmailInput" placeholder="Admin email" autocomplete="username" />
+      <button class="login-btn" id="adminSendCodeBtn" type="button">Continue</button>
+      <div id="loginError"></div>
+    </div>
+
+    <!-- Step 2: code -->
+    <div id="loginStepCode" hidden>
+      <h1>Enter your code</h1>
+      <p class="sub" id="adminCodeHint">Enter the code sent to your admin address</p>
+      <div class="otp-boxes" id="adminOtpBoxes">
+        <input class="otp-box" type="text" inputmode="numeric" maxlength="1" autocomplete="one-time-code" />
+        <input class="otp-box" type="text" inputmode="numeric" maxlength="1" autocomplete="one-time-code" />
+        <input class="otp-box" type="text" inputmode="numeric" maxlength="1" autocomplete="one-time-code" />
+        <input class="otp-box" type="text" inputmode="numeric" maxlength="1" autocomplete="one-time-code" />
+      </div>
+      <div id="loginCodeError"></div>
+      <button class="login-btn" id="adminVerifyBtn" type="button" style="margin-top:16px;">Verify &amp; sign in</button>
+      <button class="login-link-btn" id="adminBackLink" type="button">Use a different email</button>
+    </div>
   </div>
 </div>
 
 <!-- DASHBOARD -->
 <div id="dashboard">
-  <header class="topbar">
-    <div class="topbar__inner">
-      <div class="brand">
-        <img src="/images/dev-logo.png?v=20260708" alt="LightWatch logo" class="brand__logo" />
-        <div class="brand__name">
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar__brand">
+        <img src="/images/dev-logo.png?v=20260708" alt="LightWatch logo" />
+        <div>
           <strong>LightWatch GH</strong>
           <span>Admin Dashboard</span>
         </div>
       </div>
-      <div class="topbar-right">
-        <span class="live-dot"></span>
-        <span class="live-label">Live</span>
+      <nav class="sidebar__nav" id="sidebarNav">
+        <button class="nav-btn active" data-tab="activity" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l3 8 4-16 3 8h4"/></svg>
+          Live activity
+        </button>
+        <button class="nav-btn" data-tab="analytics" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 15l4-6 4 4 5-8"/></svg>
+          Analytics
+        </button>
+        <button class="nav-btn" data-tab="locations" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.5 7-12a7 7 0 1 0-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>
+          Locations
+        </button>
+        <button class="nav-btn" data-tab="reports" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19h16"/><path d="M4 15l4-4 3 3 5-6 4 4"/></svg>
+          Reports
+        </button>
+        <button class="nav-btn" data-tab="users" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c1-4 3.6-6 6.5-6s5.5 2 6.5 6"/><circle cx="18" cy="8.5" r="2.4"/><path d="M15.6 14.3c2.3.3 4.2 2.1 5 5.7"/></svg>
+          Users
+        </button>
+        <button class="nav-btn" data-tab="chats" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16v11H8l-4 4V5z"/></svg>
+          Chat messages
+        </button>
+      </nav>
+      <div class="sidebar__footer">
+        <span class="live-pill"><span class="live-dot"></span>Live</span>
         <button class="logout-btn" id="logoutBtn" type="button">Log out</button>
       </div>
-    </div>
-  </header>
+    </aside>
 
-  <main>
-    <!-- Summary -->
-    <div class="summary-grid">
-      <div class="s-card">
-        <div class="s-card__label">Total users</div>
-        <div class="s-card__value" id="sTotal">—</div>
-        <div class="s-card__delta"><span id="sNew24h">—</span> joined in last 24h</div>
-      </div>
-      <div class="s-card">
-        <div class="s-card__label">Total chat messages</div>
-        <div class="s-card__value" id="sChats">—</div>
-        <div class="s-card__delta"><span id="sChats24h">—</span> in last 24h</div>
-      </div>
-      <div class="s-card">
-        <div class="s-card__label">Active locations</div>
-        <div class="s-card__value" id="sLocations">—</div>
-        <div class="s-card__delta">Unique areas with chat</div>
-      </div>
-      <div class="s-card">
-        <div class="s-card__label">Last activity</div>
-        <div class="s-card__value" style="font-size:1rem;" id="sLastActivity">—</div>
-        <div class="s-card__delta">Most recent event</div>
-      </div>
-    </div>
-
-    <!-- Tabs -->
-    <div class="tabs">
-      <button class="tab-btn active" data-tab="activity" type="button">Live activity</button>
-      <button class="tab-btn" data-tab="analytics" type="button">Analytics</button>
-      <button class="tab-btn" data-tab="reports" type="button">Reports management</button>
-      <button class="tab-btn" data-tab="users" type="button">Users</button>
-      <button class="tab-btn" data-tab="chats" type="button">Chat messages</button>
-    </div>
-
-    <!-- Activity log panel -->
-    <div class="panel active" id="activityPanel">
-      <div class="toolbar">
-        <div class="toolbar__left">
-          <span class="status-msg" id="activityStatus">Loading…</span>
-          <button class="refresh-btn" id="refreshActivity" type="button">↻ Refresh</button>
-          <button class="delete-btn delete-btn--danger" id="clearReportsBtnActivity" type="button">Clear all reports</button>
+    <div class="main-col">
+      <header class="topbar-mobile">
+        <div class="brand">
+          <img src="/images/dev-logo.png?v=20260708" alt="LightWatch logo" />
+          <strong id="mobilePageTitle">Live activity</strong>
         </div>
-        <span style="font-size:0.75rem;color:var(--faint);">Auto-refreshes every 15s</span>
-      </div>
-      <div class="activity-log" id="activityLog">
-        <div class="empty-state">Loading activity…</div>
-      </div>
-    </div>
+        <button class="logout-btn" id="logoutBtnMobile" type="button">Log out</button>
+      </header>
 
-    <!-- Analytics panel -->
-    <div class="panel" id="analyticsPanel">
-      <div class="toolbar">
-        <div class="toolbar__left">
-          <span class="status-msg" id="analyticsStatus">Loading analytics…</span>
-          <button class="refresh-btn" id="refreshAnalytics" type="button">↻ Refresh</button>
-        </div>
-        <select class="range-select" id="analyticsRange">
-          <option value="7">Last 7 days</option>
-          <option value="14" selected>Last 14 days</option>
-          <option value="30">Last 30 days</option>
-        </select>
-      </div>
-
-      <div class="analytics-grid">
-        <div class="a-card">
-          <div class="a-card__head">
-            <span class="a-card__title">Most searched areas</span>
-            <span class="a-card__hint">Top 10</span>
+      <main>
+        <!-- Summary -->
+        <div class="summary-grid">
+          <div class="s-card">
+            <div class="s-card__label">Total users</div>
+            <div class="s-card__value" id="sTotal">—</div>
+            <div class="s-card__delta"><span id="sNew24h">—</span> joined in last 24h</div>
           </div>
-          <div class="bar-list" id="topAreasList"><div class="a-empty">No search activity recorded yet.</div></div>
-        </div>
-
-        <div class="a-card">
-          <div class="a-card__head">
-            <span class="a-card__title">Where people drop off</span>
-            <span class="a-card__hint">Last screen before leaving</span>
+          <div class="s-card">
+            <div class="s-card__label">Total chat messages</div>
+            <div class="s-card__value" id="sChats">—</div>
+            <div class="s-card__delta"><span id="sChats24h">—</span> in last 24h</div>
           </div>
-          <div class="bar-list" id="dropOffList"><div class="a-empty">No exit events recorded yet.</div></div>
-        </div>
-
-        <div class="a-card a-card--full">
-          <div class="a-card__head">
-            <span class="a-card__title">Reports submitted per day</span>
-            <span class="a-card__hint" id="reportsPerDayHint">—</span>
+          <div class="s-card">
+            <div class="s-card__label">Active locations</div>
+            <div class="s-card__value" id="sLocations">—</div>
+            <div class="s-card__delta">Tracked across statuses, chats &amp; users</div>
           </div>
-          <div class="day-chart" id="reportsPerDayChart"></div>
-          <div class="legend"><span class="legend__item"><span class="legend__dot legend__dot--reports"></span>Reports submitted</span></div>
-        </div>
-
-        <div class="a-card a-card--full">
-          <div class="a-card__head">
-            <span class="a-card__title">Daily active users</span>
-            <span class="a-card__hint" id="dailyUsersHint">—</span>
-          </div>
-          <div class="day-chart" id="dailyUsersChart"></div>
-          <div class="legend">
-            <span class="legend__item"><span class="legend__dot legend__dot--returning"></span>Returning</span>
-            <span class="legend__item"><span class="legend__dot legend__dot--new"></span>New</span>
+          <div class="s-card">
+            <div class="s-card__label">Last activity</div>
+            <div class="s-card__value" style="font-size:1rem;" id="sLastActivity">—</div>
+            <div class="s-card__delta">Most recent event</div>
           </div>
         </div>
 
-        <div class="a-card a-card--full">
-          <div class="a-card__head">
-            <span class="a-card__title">Average time spent per screen</span>
-            <span class="a-card__hint">Seconds</span>
+        <!-- Activity log panel -->
+        <div class="panel active" id="activityPanel">
+          <div class="page-head"><h2>Live activity</h2><span class="page-head__hint">Auto-refreshes every 15s</span></div>
+          <div class="toolbar">
+            <div class="toolbar__left">
+              <span class="status-msg" id="activityStatus">Loading…</span>
+              <button class="btn-ghost" id="refreshActivity" type="button">↻ Refresh</button>
+              <button class="btn-ghost btn-ghost--danger" id="clearReportsBtnActivity" type="button">Clear all reports</button>
+            </div>
           </div>
-          <div class="bar-list" id="screenTimeList"><div class="a-empty">No screen-time data recorded yet.</div></div>
+          <div class="activity-log" id="activityLog">
+            <div class="empty-state">Loading activity…</div>
+          </div>
         </div>
-      </div>
-    </div>
 
-    <!-- Reports panel -->
-    <div class="panel" id="reportsPanel">
-      <div class="toolbar">
-        <div class="toolbar__left">
-          <span class="status-msg" id="reportsStatus">Loading reports…</span>
-          <button class="refresh-btn" id="refreshReports" type="button">↻ Refresh</button>
-          <button class="delete-btn" id="deleteReportsBtn" type="button" disabled>Delete selected reports</button>
-          <button class="delete-btn delete-btn--danger" id="clearReportsBtnPanel" type="button">Clear all reports</button>
-        </div>
-      </div>
-      <table id="reportsTable" style="display:none;">
-        <thead>
-          <tr>
-            <th class="select-col"><input type="checkbox" id="reportsSelectAll" class="select-checkbox" aria-label="Select all reports" /></th>
-            <th>Type</th><th>Location</th><th>Details</th><th>Reported</th><th>Actions</th>
-          </tr>
-        </thead>
-        <tbody id="reportsTbody"></tbody>
-      </table>
-      <div id="reportsEmpty" class="empty-state" style="display:none;">No reports available.</div>
-    </div>
+        <!-- Analytics panel -->
+        <div class="panel" id="analyticsPanel">
+          <div class="page-head"><h2>Analytics</h2></div>
+          <div class="toolbar">
+            <div class="toolbar__left">
+              <span class="status-msg" id="analyticsStatus">Loading analytics…</span>
+              <button class="btn-ghost" id="refreshAnalytics" type="button">↻ Refresh</button>
+            </div>
+            <select class="range-select" id="analyticsRange">
+              <option value="7">Last 7 days</option>
+              <option value="14" selected>Last 14 days</option>
+              <option value="30">Last 30 days</option>
+            </select>
+          </div>
 
-    <!-- Users panel -->
-    <div class="panel" id="usersPanel">
-      <div class="toolbar">
-        <div class="toolbar__left">
-          <span class="status-msg" id="usersStatus">Loading users…</span>
-          <button class="delete-btn" id="deleteUsersBtn" type="button" disabled>Delete selected users</button>
-        </div>
-        <input class="search-input" type="text" id="userSearch" placeholder="Search by name or contact…" />
-      </div>
-      <table id="usersTable" style="display:none;">
-        <thead>
-          <tr>
-            <th class="select-col"><input type="checkbox" id="usersSelectAll" class="select-checkbox" aria-label="Select all users" /></th>
-            <th>Name</th><th>Email / Phone</th><th>Region</th><th>City</th>
-            <th>Chat handle</th><th>Joined</th><th>Actions</th>
-          </tr>
-        </thead>
-        <tbody id="usersTbody"></tbody>
-      </table>
-      <div id="usersEmpty" class="empty-state" style="display:none;">No users registered yet.</div>
-    </div>
+          <div class="analytics-grid">
+            <div class="a-card">
+              <div class="a-card__head">
+                <span class="a-card__title">Most searched areas</span>
+                <span class="a-card__hint">Top 10</span>
+              </div>
+              <div class="bar-list" id="topAreasList"><div class="a-empty">No search activity recorded yet.</div></div>
+            </div>
 
-    <!-- Chats panel -->
-    <div class="panel" id="chatsPanel">
-      <div class="toolbar">
-        <div class="toolbar__left">
-          <span class="status-msg" id="chatsStatus">Loading messages…</span>
-          <button class="delete-btn" id="deleteChatsBtn" type="button" disabled>Delete selected messages</button>
+            <div class="a-card">
+              <div class="a-card__head">
+                <span class="a-card__title">Where people drop off</span>
+                <span class="a-card__hint">Last screen before leaving</span>
+              </div>
+              <div class="bar-list" id="dropOffList"><div class="a-empty">No exit events recorded yet.</div></div>
+            </div>
+
+            <div class="a-card a-card--full">
+              <div class="a-card__head">
+                <span class="a-card__title">Reports submitted per day</span>
+                <span class="a-card__hint" id="reportsPerDayHint">—</span>
+              </div>
+              <div class="day-chart" id="reportsPerDayChart"></div>
+              <div class="legend"><span class="legend__item"><span class="legend__dot legend__dot--reports"></span>Reports submitted</span></div>
+            </div>
+
+            <div class="a-card a-card--full">
+              <div class="a-card__head">
+                <span class="a-card__title">Daily active users</span>
+                <span class="a-card__hint" id="dailyUsersHint">—</span>
+              </div>
+              <div class="day-chart" id="dailyUsersChart"></div>
+              <div class="legend">
+                <span class="legend__item"><span class="legend__dot legend__dot--returning"></span>Returning</span>
+                <span class="legend__item"><span class="legend__dot legend__dot--new"></span>New</span>
+              </div>
+            </div>
+
+            <div class="a-card a-card--full">
+              <div class="a-card__head">
+                <span class="a-card__title">Average time spent per screen</span>
+                <span class="a-card__hint">Seconds</span>
+              </div>
+              <div class="bar-list" id="screenTimeList"><div class="a-empty">No screen-time data recorded yet.</div></div>
+            </div>
+          </div>
         </div>
-        <input class="search-input" type="text" id="chatSearch" placeholder="Search messages or location…" />
-      </div>
-      <table id="chatsTable" style="display:none;">
-        <thead>
-          <tr>
-            <th class="select-col"><input type="checkbox" id="chatsSelectAll" class="select-checkbox" aria-label="Select all chats" /></th>
-            <th>Handle</th><th>Message</th><th>Location</th><th>Sent</th><th>Actions</th>
-          </tr>
-        </thead>
-        <tbody id="chatsTbody"></tbody>
-      </table>
-      <div id="chatsEmpty" class="empty-state" style="display:none;">No chat messages yet.</div>
+
+        <!-- Locations panel -->
+        <div class="panel" id="locationsPanel">
+          <div class="page-head"><h2>Locations</h2><span class="page-head__hint">Push a status and it goes straight to users' home pages</span></div>
+          <div class="toolbar">
+            <div class="toolbar__left">
+              <span class="status-msg" id="locationsStatus">Loading locations…</span>
+              <button class="btn-ghost" id="refreshLocations" type="button">↻ Refresh</button>
+            </div>
+            <input class="search-input" type="text" id="locationSearch" placeholder="Search locations…" />
+          </div>
+          <div class="add-location-row">
+            <input type="text" id="newLocationInput" placeholder="Add a location not listed yet (e.g. Bantama, Ashanti)" />
+            <button id="addLocationBtn" type="button">Add</button>
+          </div>
+          <div class="locations-grid" id="locationsGrid"></div>
+          <div id="locationsEmpty" class="empty-state" style="display:none;">No locations yet — add one above.</div>
+        </div>
+
+        <!-- Reports panel -->
+        <div class="panel" id="reportsPanel">
+          <div class="page-head"><h2>Reports management</h2></div>
+          <div class="toolbar">
+            <div class="toolbar__left">
+              <span class="status-msg" id="reportsStatus">Loading reports…</span>
+              <button class="btn-ghost" id="refreshReports" type="button">↻ Refresh</button>
+              <button class="btn-ghost" id="deleteReportsBtn" type="button" disabled>Delete selected reports</button>
+              <button class="btn-ghost btn-ghost--danger" id="clearReportsBtnPanel" type="button">Clear all reports</button>
+            </div>
+          </div>
+          <table id="reportsTable" style="display:none;">
+            <thead>
+              <tr>
+                <th class="select-col"><input type="checkbox" id="reportsSelectAll" class="select-checkbox" aria-label="Select all reports" /></th>
+                <th>Type</th><th>Location</th><th>Details</th><th>Reported</th><th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="reportsTbody"></tbody>
+          </table>
+          <div id="reportsEmpty" class="empty-state" style="display:none;">No reports available.</div>
+        </div>
+
+        <!-- Users panel -->
+        <div class="panel" id="usersPanel">
+          <div class="page-head"><h2>Users</h2></div>
+          <div class="toolbar">
+            <div class="toolbar__left">
+              <span class="status-msg" id="usersStatus">Loading users…</span>
+              <button class="btn-ghost" id="deleteUsersBtn" type="button" disabled>Delete selected users</button>
+            </div>
+            <input class="search-input" type="text" id="userSearch" placeholder="Search by name or contact…" />
+          </div>
+          <table id="usersTable" style="display:none;">
+            <thead>
+              <tr>
+                <th class="select-col"><input type="checkbox" id="usersSelectAll" class="select-checkbox" aria-label="Select all users" /></th>
+                <th>Name</th><th>Email / Phone</th><th>Region</th><th>City</th>
+                <th>Chat handle</th><th>Joined</th><th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="usersTbody"></tbody>
+          </table>
+          <div id="usersEmpty" class="empty-state" style="display:none;">No users registered yet.</div>
+        </div>
+
+        <!-- Chats panel -->
+        <div class="panel" id="chatsPanel">
+          <div class="page-head"><h2>Chat messages</h2></div>
+          <div class="toolbar">
+            <div class="toolbar__left">
+              <span class="status-msg" id="chatsStatus">Loading messages…</span>
+              <button class="btn-ghost" id="deleteChatsBtn" type="button" disabled>Delete selected messages</button>
+            </div>
+            <input class="search-input" type="text" id="chatSearch" placeholder="Search messages or location…" />
+          </div>
+          <table id="chatsTable" style="display:none;">
+            <thead>
+              <tr>
+                <th class="select-col"><input type="checkbox" id="chatsSelectAll" class="select-checkbox" aria-label="Select all chats" /></th>
+                <th>Handle</th><th>Message</th><th>Location</th><th>Sent</th><th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="chatsTbody"></tbody>
+          </table>
+          <div id="chatsEmpty" class="empty-state" style="display:none;">No chat messages yet.</div>
+        </div>
+      </main>
     </div>
-  </main>
+  </div>
+
+  <!-- Bottom pill nav (mobile) -->
+  <nav class="bottom-nav" id="bottomNav">
+    <button class="bottom-nav__btn active" data-tab="activity" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l3 8 4-16 3 8h4"/></svg>
+      Activity
+    </button>
+    <button class="bottom-nav__btn" data-tab="analytics" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 15l4-6 4 4 5-8"/></svg>
+      Analytics
+    </button>
+    <button class="bottom-nav__btn" data-tab="locations" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.5 7-12a7 7 0 1 0-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>
+      Locations
+    </button>
+    <button class="bottom-nav__btn" data-tab="reports" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19h16"/><path d="M4 15l4-4 3 3 5-6 4 4"/></svg>
+      Reports
+    </button>
+    <button class="bottom-nav__btn" data-tab="users" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c1-4 3.6-6 6.5-6s5.5 2 6.5 6"/><circle cx="18" cy="8.5" r="2.4"/><path d="M15.6 14.3c2.3.3 4.2 2.1 5 5.7"/></svg>
+      Users
+    </button>
+    <button class="bottom-nav__btn" data-tab="chats" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16v11H8l-4 4V5z"/></svg>
+      Chats
+    </button>
+  </nav>
 </div>
 
   <script src="./Js/config.js"></script>
@@ -467,6 +667,23 @@
         }
         if (!res.ok) throw new Error("Request failed");
         return res.json();
+      }
+
+      async function apiPost(path, body) {
+        const res = await fetch(`${API}${path}`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${getToken()}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(body || {})
+        });
+        if (res.status === 401 || res.status === 403) {
+          clearToken(); showLogin("Session expired."); throw new Error("auth");
+        }
+        const payload = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(payload.error || "Request failed");
+        return payload;
       }
 
       async function apiDelete(path, ids) {
@@ -528,11 +745,137 @@
         IDLE_EVENTS.forEach(evt => document.removeEventListener(evt, resetIdleTimer));
       }
 
+      // ===== LOGIN (two-step: email -> hardcoded 4-digit code) =====
+      const stepEmail = document.getElementById("loginStepEmail");
+      const stepCode  = document.getElementById("loginStepCode");
+      const emailInput = document.getElementById("adminEmailInput");
+      const sendCodeBtn = document.getElementById("adminSendCodeBtn");
+      const verifyBtn = document.getElementById("adminVerifyBtn");
+      const backLink = document.getElementById("adminBackLink");
+      const loginError = document.getElementById("loginError");
+      const codeError = document.getElementById("loginCodeError");
+      const otpBoxesWrap = document.getElementById("adminOtpBoxes");
+      const otpBoxes = Array.from(document.querySelectorAll("#adminOtpBoxes .otp-box"));
+      let pendingAdminEmail = "";
+
+      function getOtpValue() { return otpBoxes.map(b => b.value).join(""); }
+      function clearOtpBoxes() { otpBoxes.forEach(b => b.value = ""); otpBoxes[0]?.focus(); }
+      function shakeOtp() {
+        otpBoxesWrap.classList.remove("is-shaking");
+        void otpBoxesWrap.offsetWidth;
+        otpBoxesWrap.classList.add("is-shaking");
+      }
+
+      otpBoxes.forEach((box, index) => {
+        box.addEventListener("input", () => {
+          const digits = box.value.replace(/[^0-9]/g, "");
+          if (digits.length > 1) {
+            otpBoxes.forEach((b, i) => { b.value = digits[i] || ""; });
+            const nextEmpty = otpBoxes.find(b => !b.value) || otpBoxes[otpBoxes.length - 1];
+            nextEmpty.focus();
+            if (getOtpValue().length === otpBoxes.length) setTimeout(handleVerifyCode, 150);
+            return;
+          }
+          box.value = digits.slice(0, 1);
+          if (box.value && index < otpBoxes.length - 1) otpBoxes[index + 1].focus();
+          if (getOtpValue().length === otpBoxes.length) setTimeout(handleVerifyCode, 150);
+        });
+        box.addEventListener("keydown", (e) => {
+          if (e.key === "Backspace" && !box.value && index > 0) otpBoxes[index - 1].focus();
+          if (e.key === "Enter") { e.preventDefault(); handleVerifyCode(); }
+        });
+        box.addEventListener("paste", (e) => {
+          e.preventDefault();
+          const digits = (e.clipboardData.getData("text") || "").replace(/[^0-9]/g, "").split("");
+          otpBoxes.forEach((b, i) => { b.value = digits[i] || ""; });
+          const nextEmpty = otpBoxes.find(b => !b.value) || otpBoxes[otpBoxes.length - 1];
+          nextEmpty.focus();
+          if (getOtpValue().length === otpBoxes.length) setTimeout(handleVerifyCode, 150);
+        });
+      });
+
+      function maskEmailLocally(email) {
+        if (!email.includes("@")) return email;
+        const [name, domain] = email.split("@");
+        return name[0] + "***@" + domain;
+      }
+
+      async function handleSendCode() {
+        const email = emailInput.value.trim().toLowerCase();
+        loginError.textContent = "";
+        if (!email) { loginError.textContent = "Enter the admin email"; return; }
+
+        sendCodeBtn.disabled = true;
+        sendCodeBtn.textContent = "Checking…";
+        try {
+          const res = await fetch(`${API}/admin/request-code`, {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ emailPhone: email })
+          });
+          const result = await res.json();
+          if (!res.ok) { loginError.textContent = result.error || "Not authorized"; return; }
+
+          pendingAdminEmail = email;
+          document.getElementById("adminCodeHint").textContent =
+            `Enter the code sent to ${result.maskedContact || maskEmailLocally(email)}`;
+          stepEmail.hidden = true;
+          stepCode.hidden = false;
+          clearOtpBoxes();
+        } catch (e) {
+          loginError.textContent = "Could not reach the server";
+        } finally {
+          sendCodeBtn.disabled = false;
+          sendCodeBtn.textContent = "Continue";
+        }
+      }
+
+      async function handleVerifyCode() {
+        const code = getOtpValue();
+        codeError.textContent = "";
+        if (code.length < otpBoxes.length) { codeError.textContent = "Enter the full code"; return; }
+
+        verifyBtn.disabled = true;
+        verifyBtn.textContent = "Verifying…";
+        try {
+          const res = await fetch(`${API}/admin/verify-code`, {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ emailPhone: pendingAdminEmail, code })
+          });
+          const result = await res.json();
+          if (!res.ok) {
+            codeError.textContent = result.error || "Incorrect code";
+            shakeOtp();
+            clearOtpBoxes();
+            return;
+          }
+          setToken(result.token);
+          showDashboard();
+        } catch (e) {
+          codeError.textContent = "Could not reach the server";
+        } finally {
+          verifyBtn.disabled = false;
+          verifyBtn.textContent = "Verify & sign in";
+        }
+      }
+
+      sendCodeBtn.addEventListener("click", handleSendCode);
+      emailInput.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); handleSendCode(); } });
+      verifyBtn.addEventListener("click", handleVerifyCode);
+      backLink.addEventListener("click", () => {
+        stepCode.hidden = true;
+        stepEmail.hidden = false;
+        codeError.textContent = "";
+        clearOtpBoxes();
+      });
+
       function showLogin(msg) {
         stopIdleTracking();
         document.getElementById("loginScreen").style.display = "flex";
         document.getElementById("dashboard").style.display = "none";
-        if (msg) document.getElementById("loginError").textContent = msg;
+        stepCode.hidden = true;
+        stepEmail.hidden = false;
+        clearOtpBoxes();
+        if (msg) loginError.textContent = msg;
       }
 
       function showDashboard() {
@@ -543,7 +886,27 @@
         startIdleTracking();
       }
 
-      let allUsers = [], allChats = [], allReports = [];
+      document.getElementById("logoutBtn").addEventListener("click", () => { clearToken(); showLogin(); });
+      document.getElementById("logoutBtnMobile").addEventListener("click", () => { clearToken(); showLogin(); });
+
+      // ===== TAB SWITCHING (sidebar + bottom nav stay in sync) =====
+      const TAB_LABELS = {
+        activity: "Live activity", analytics: "Analytics", locations: "Locations",
+        reports: "Reports", users: "Users", chats: "Chat messages"
+      };
+      function switchTab(tab) {
+        document.querySelectorAll(".nav-btn, .bottom-nav__btn").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
+        document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+        document.getElementById(`${tab}Panel`)?.classList.add("active");
+        const title = document.getElementById("mobilePageTitle");
+        if (title) title.textContent = TAB_LABELS[tab] || tab;
+        window.scrollTo({ top: 0, behavior: "instant" in window ? "instant" : "auto" });
+      }
+      document.querySelectorAll(".nav-btn, .bottom-nav__btn").forEach(btn => {
+        btn.addEventListener("click", () => switchTab(btn.dataset.tab));
+      });
+
+      let allUsers = [], allChats = [], allReports = [], allLocations = [];
       const selectedUserIds = new Set();
       const selectedChatIds = new Set();
       const selectedReportIds = new Set();
@@ -558,13 +921,11 @@
           delUsersBtn.disabled = count === 0;
           delUsersBtn.textContent = count > 0 ? `Delete selected users (${count})` : "Delete selected users";
         }
-
         if (delChatsBtn) {
           const count = selectedChatIds.size;
           delChatsBtn.disabled = count === 0;
           delChatsBtn.textContent = count > 0 ? `Delete selected messages (${count})` : "Delete selected messages";
         }
-
         if (delReportsBtn) {
           const count = selectedReportIds.size;
           delReportsBtn.disabled = count === 0;
@@ -576,11 +937,110 @@
         loadSummary();
         loadActivity();
         loadAnalytics();
+        loadLocations();
         loadReportsPanel();
         loadUsers();
         loadChats();
       }
 
+      // ===== LOCATIONS (admin push -> users' home pages) =====
+      async function loadLocations() {
+        const status = document.getElementById("locationsStatus");
+        try {
+          allLocations = await apiFetch("/admin/locations");
+          renderLocations(allLocations);
+          status.textContent = `${allLocations.length} location${allLocations.length !== 1 ? "s" : ""} tracked`;
+        } catch (e) {
+          if (e.message !== "auth") status.textContent = "Could not load locations.";
+        }
+      }
+
+      function renderLocations(locations) {
+        const grid = document.getElementById("locationsGrid");
+        const empty = document.getElementById("locationsEmpty");
+        if (!locations.length) {
+          grid.innerHTML = "";
+          empty.style.display = "block";
+          return;
+        }
+        empty.style.display = "none";
+        grid.innerHTML = locations.map(loc => {
+          const chipClass = loc.status === "on" ? "status-chip--on" : loc.status === "off" ? "status-chip--off" : "status-chip--unknown";
+          const chipLabel = loc.status === "on" ? "Light on" : loc.status === "off" ? "Light off" : "Unknown";
+          const meta = loc.reportedAt
+            ? `Last set by ${esc(loc.reportedBy || "—")} · ${fmtRel(loc.reportedAt)}`
+            : "No status set yet";
+          return `
+            <div class="loc-card" data-location-key="${esc(loc.locationKey)}">
+              <div class="loc-card__top">
+                <div>
+                  <div class="loc-card__name">${esc(loc.label)}</div>
+                  <div class="loc-card__meta">${meta}</div>
+                </div>
+                <span class="status-chip ${chipClass}">${chipLabel}</span>
+              </div>
+              <div class="loc-card__actions">
+                <button type="button" class="loc-btn loc-btn--on" data-push-key="${esc(loc.locationKey)}" data-push-status="on">Set ON</button>
+                <button type="button" class="loc-btn loc-btn--off" data-push-key="${esc(loc.locationKey)}" data-push-status="off">Set OFF</button>
+              </div>
+            </div>
+          `;
+        }).join("");
+
+        grid.querySelectorAll("[data-push-key]").forEach(btn => {
+          btn.addEventListener("click", async (e) => {
+            const key = e.currentTarget.dataset.pushKey;
+            const status = e.currentTarget.dataset.pushStatus;
+            await pushLocationStatus(key, status, e.currentTarget);
+          });
+        });
+      }
+
+      async function pushLocationStatus(locationKey, status, triggerBtn) {
+        const card = triggerBtn?.closest(".loc-card");
+        const buttons = card ? card.querySelectorAll(".loc-btn") : [];
+        buttons.forEach(b => b.disabled = true);
+        try {
+          await apiPost("/admin/lightstatus", { location: locationKey, status });
+          await Promise.all([loadLocations(), loadSummary(), loadActivity()]);
+          const refreshedCard = document.querySelector(`.loc-card[data-location-key="${CSS.escape(locationKey)}"]`);
+          if (refreshedCard) {
+            refreshedCard.classList.add("loc-card--pushed");
+            setTimeout(() => refreshedCard.classList.remove("loc-card--pushed"), 1000);
+          }
+        } catch (e) {
+          if (e.message !== "auth") alert(e.message || "Could not update location status.");
+        } finally {
+          buttons.forEach(b => b.disabled = false);
+        }
+      }
+
+      document.getElementById("refreshLocations")?.addEventListener("click", loadLocations);
+
+      document.getElementById("locationSearch")?.addEventListener("input", (e) => {
+        const q = e.target.value.toLowerCase();
+        renderLocations(allLocations.filter(l => l.label.toLowerCase().includes(q)));
+      });
+
+      document.getElementById("addLocationBtn")?.addEventListener("click", () => {
+        const input = document.getElementById("newLocationInput");
+        const value = input.value.trim();
+        if (!value) return;
+        const key = value.toLowerCase().split(",")[0].trim();
+        if (allLocations.some(l => l.locationKey === key)) {
+          input.value = "";
+          document.getElementById("locationSearch").value = value.split(",")[0].trim();
+          renderLocations(allLocations.filter(l => l.locationKey === key));
+          return;
+        }
+        const label = key.split(" ").filter(Boolean).map(w => w[0].toUpperCase() + w.slice(1)).join(" ");
+        allLocations = [...allLocations, { locationKey: key, label, status: "unknown", reportedBy: null, reportedAt: null }]
+          .sort((a, b) => a.label.localeCompare(b.label));
+        renderLocations(allLocations);
+        input.value = "";
+      });
+
+      // ===== REPORTS =====
       async function loadReportsPanel() {
         const table = document.getElementById("reportsTable");
         const empty = document.getElementById("reportsEmpty");
@@ -604,7 +1064,7 @@
           tbody.innerHTML = allReports.map(r => `
             <tr>
               <td data-label="Select"><input type="checkbox" class="select-checkbox report-row-select" data-report-id="${esc(r.id)}" ${selectedReportIds.has(String(r.id)) ? "checked" : ""} /></td>
-              <td data-label="Type" class="${r.type === 'warning' ? 'faint' : 'teal'}">${esc(r.type === 'warning' ? 'Outage' : 'Restored')}</td>
+              <td data-label="Type" class="${r.type === 'warning' ? 'faint' : 'gold'}">${esc(r.type === 'warning' ? 'Outage' : 'Restored')}</td>
               <td data-label="Location">${esc(r.location || '—')}</td>
               <td data-label="Details">${esc(r.text || r.title || '—')}</td>
               <td data-label="Reported" class="faint">${fmtDate(r.reportedAt)}</td>
@@ -681,6 +1141,7 @@
         }
       }
 
+      // ===== SUMMARY + ACTIVITY =====
       async function loadSummary() {
         try {
           const s = await apiFetch("/admin/summary");
@@ -688,6 +1149,10 @@
           document.getElementById("sNew24h").textContent = s.newUsers24h;
           document.getElementById("sChats").textContent = s.chatCount;
           document.getElementById("sChats24h").textContent = s.newChats24h;
+          // Real, backend-computed figure — union of statuses, chats, and
+          // user cities — rather than derived only from whatever chats
+          // happen to be loaded on the activity tab.
+          document.getElementById("sLocations").textContent = s.locationsTracked ?? "—";
         } catch(e) {}
       }
 
@@ -698,15 +1163,10 @@
             apiFetch("/admin/chats")
           ]);
 
-          // Build a merged activity feed sorted by date
           const events = [
             ...users.map(u => ({ type:"signup", time: u.createdAt, name: u.name, contact: u.emailPhone, location: u.city ? `${u.city}, ${u.region}` : u.region })),
             ...chats.map(c => ({ type:"chat", time: c.createdAt, handle: c.handle, text: c.text, location: c.location }))
           ].sort((a,b) => new Date(b.time) - new Date(a.time)).slice(0, 60);
-
-          // Unique locations
-          const locs = new Set(chats.map(c => c.location?.split(",")[0]?.trim()).filter(Boolean));
-          document.getElementById("sLocations").textContent = locs.size || "—";
 
           if (events.length > 0) {
             document.getElementById("sLastActivity").textContent = fmtRel(events[0].time);
@@ -746,6 +1206,7 @@
         }
       }
 
+      // ===== USERS =====
       async function loadUsers() {
         try {
           allUsers = await apiFetch("/admin/users");
@@ -774,7 +1235,7 @@
           <tr>
             <td data-label="Select"><input type="checkbox" class="select-checkbox user-row-select" data-user-id="${esc(u._id)}" ${selectedUserIds.has(String(u._id)) ? "checked" : ""} /></td>
             <td data-label="Name">${esc(u.name)}</td>
-            <td data-label="Contact" class="teal">${esc(u.emailPhone)}</td>
+            <td data-label="Contact" class="gold">${esc(u.emailPhone)}</td>
             <td data-label="Region">${esc(u.region)}</td>
             <td data-label="City">${esc(u.city)}</td>
             <td data-label="Handle" class="faint">${esc(u.chatHandle || "—")}</td>
@@ -808,6 +1269,7 @@
         }
       }
 
+      // ===== CHATS =====
       async function loadChats() {
         try {
           allChats = await apiFetch("/admin/chats");
@@ -835,7 +1297,7 @@
         tbody.innerHTML = chats.map(c => `
           <tr>
             <td data-label="Select"><input type="checkbox" class="select-checkbox chat-row-select" data-chat-id="${esc(c._id)}" ${selectedChatIds.has(String(c._id)) ? "checked" : ""} /></td>
-            <td data-label="Handle" class="teal">${esc(c.handle)}</td>
+            <td data-label="Handle" class="gold">${esc(c.handle)}</td>
             <td data-label="Message">${esc(c.text)}</td>
             <td data-label="Location" class="faint">${esc(c.location)}</td>
             <td data-label="Sent" class="faint">${fmtDate(c.createdAt)}</td>
@@ -897,13 +1359,11 @@
       }
 
       // ===== ANALYTICS =====
-
       function fmtDayLabel(iso) {
         const d = new Date(iso + "T00:00:00Z");
         return d.toLocaleDateString([], { month: "short", day: "numeric", timeZone: "UTC" });
       }
 
-      // Generic horizontal bar-list renderer. `items` is [{label, value}], sorted desc.
       function renderBarList(containerId, items, opts = {}) {
         const el = document.getElementById(containerId);
         if (!items || !items.length) {
@@ -921,9 +1381,6 @@
         `).join("");
       }
 
-      // Renders a stacked (or single-series) day-by-day column chart.
-      // `series` is an array of {date, ...} and `segments` describes which
-      // fields to stack, bottom-to-top, e.g. [{key:'returning', cls:'returning'}, {key:'new', cls:'new'}]
       function renderDayChart(containerId, series, segments) {
         const el = document.getElementById(containerId);
         if (!series || !series.length) {
@@ -989,16 +1446,6 @@
 
       document.getElementById("refreshAnalytics")?.addEventListener("click", loadAnalytics);
       document.getElementById("analyticsRange")?.addEventListener("change", loadAnalytics);
-
-      // Tab switching
-      document.querySelectorAll(".tab-btn").forEach(btn => {
-        btn.addEventListener("click", () => {
-          document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
-          document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
-          btn.classList.add("active");
-          document.getElementById(`${btn.dataset.tab}Panel`).classList.add("active");
-        });
-      });
 
       // Search
       document.getElementById("userSearch")?.addEventListener("input", e => {
@@ -1079,35 +1526,6 @@
 
       document.getElementById("refreshActivity")?.addEventListener("click", loadActivity);
       document.getElementById("refreshReports")?.addEventListener("click", loadReportsPanel);
-
-      // Login
-      async function handleLogin() {
-        const pw = document.getElementById("pwInput").value.trim();
-        const errEl = document.getElementById("loginError");
-        const btn = document.getElementById("loginBtn");
-        errEl.textContent = "";
-        if (!pw) { errEl.textContent = "Enter the admin password"; return; }
-        btn.disabled = true; btn.textContent = "Signing in…";
-        try {
-          const res = await fetch(`${API}/admin/login`, {
-            method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ password: pw })
-          });
-          const result = await res.json();
-          if (!res.ok) { errEl.textContent = result.error || "Incorrect password"; return; }
-          setToken(result.token);
-          document.getElementById("pwInput").value = "";
-          showDashboard();
-        } catch(e) {
-          errEl.textContent = "Could not reach the server";
-        } finally {
-          btn.disabled = false; btn.textContent = "Sign in";
-        }
-      }
-
-      document.getElementById("loginBtn").addEventListener("click", handleLogin);
-      document.getElementById("pwInput").addEventListener("keydown", e => { if (e.key === "Enter") handleLogin(); });
-      document.getElementById("logoutBtn").addEventListener("click", () => { clearToken(); showLogin(); });
 
       // Init
       if (getToken()) showDashboard(); else showLogin();
