@@ -597,20 +597,57 @@ function showProfileLoader(maxDuration = 8000) {
 
 function hideProfileLoader() {
     clearTimeout(profileLoaderSafetyTimer);
-    if (document.body?.dataset.accountExtrasLoading !== '1') {
-        document.body?.classList.remove('page-data-loading');
-    }
-    document.body?.classList.remove('app-loading');
     document.getElementById('lwBootLoader')?.remove();
 
-    // Anything that needs the real page (not the skeleton) to actually
-    // be visible before it acts — e.g. chat.js opening the mobile chat
-    // popup for a notification deep-link — should wait for this instead
-    // of reacting the moment its own data happens to be ready. Reacting
-    // early was toggling the popup open while it was still hidden behind
-    // the skeleton, so it appeared already-open with no transition once
-    // the skeleton cleared.
-    window.dispatchEvent(new CustomEvent('lw-page-revealed'));
+    // Same branch as before: when account.js still has extra data in
+    // flight (dataset.accountExtrasLoading === '1'), app-loading clears
+    // but the skeleton (page-data-loading) stays up for that extra
+    // stretch — only the final call here should run the reveal below.
+    if (document.body?.dataset.accountExtrasLoading === '1') {
+        document.body?.classList.remove('app-loading');
+        window.dispatchEvent(new CustomEvent('lw-page-revealed'));
+        return;
+    }
+
+    // home.html uses #pageSkeleton/#realPageContent, account.html uses
+    // #accountSkeleton/#accountRealContent — this function is shared
+    // across both pages via profile.js.
+    const skeleton = document.getElementById('pageSkeleton') || document.getElementById('accountSkeleton');
+    const realContent = document.getElementById('realPageContent') || document.getElementById('accountRealContent');
+
+    const finishReveal = () => {
+        document.body?.classList.remove('page-data-loading');
+        document.body?.classList.remove('app-loading');
+        skeleton?.classList.remove('lw-skel-fading');
+        if (realContent) {
+            realContent.classList.add('lw-content-reveal');
+            const clearReveal = () => realContent.classList.remove('lw-content-reveal');
+            realContent.addEventListener('animationend', clearReveal, { once: true });
+            setTimeout(clearReveal, 500); // safety net if animationend never fires
+        }
+
+        // Anything that needs the real page (not the skeleton) to actually
+        // be visible before it acts — e.g. chat.js opening the mobile chat
+        // popup for a notification deep-link — should wait for this instead
+        // of reacting the moment its own data happens to be ready. Reacting
+        // early was toggling the popup open while it was still hidden behind
+        // the skeleton, so it appeared already-open with no transition once
+        // the skeleton cleared.
+        window.dispatchEvent(new CustomEvent('lw-page-revealed'));
+    };
+
+    if (skeleton && document.body?.classList.contains('page-data-loading')) {
+        // Fade the skeleton out first, THEN swap display and fade the
+        // real content in (see #pageSkeleton's CSS) — was previously an
+        // instant classList.remove('page-data-loading') that hard-cut
+        // from skeleton to real content in the same frame with no
+        // transition at all. 200ms here matches the CSS transition
+        // duration on #pageSkeleton/#accountSkeleton.
+        skeleton.classList.add('lw-skel-fading');
+        setTimeout(finishReveal, 200);
+    } else {
+        finishReveal();
+    }
 }
 
 function waitForChatReady(maxWait = 700) {

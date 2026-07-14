@@ -2,7 +2,7 @@
 <html lang="en" class="auth-check">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <style>
     /* MUST come before the theme-detection script below, and before
        every other tag — this is what actually closes the iOS white
@@ -66,6 +66,22 @@
       visibility: visible;
       opacity: 1;
     }
+    /* This overlay is only ever on screen here for ~180ms before the
+       redirect to home.html fires (see the script below) — far
+       shorter than the glow/mark entrance animations' own 0.5-0.6s
+       duration. That meant the page navigated away mid-transform,
+       cutting the mark's scale/opacity animation off partway through
+       — visually a stutter/"shake" right as home.html's fresh copy of
+       the same overlay started its own entrance from scratch a
+       moment later. Skipping the entrance here (home.html plays the
+       real, uninterrupted one) removes that double/truncated
+       animation. */
+    #appLaunchOverlay.is-active.is-instant #appLaunchOverlay__glow,
+    #appLaunchOverlay.is-active.is-instant #appLaunchOverlay__mark {
+      animation: none;
+      opacity: 1;
+      transform: scale(1);
+    }
     /* Entrance keyframes — kept in lockstep with auth.js's
        showAppLaunchOverlay(), since that's where this same overlay
        gets recreated fresh a moment later on home.html. Same names,
@@ -116,11 +132,11 @@
       document.documentElement.style.setProperty('color-scheme', theme);
     })();
   </script>
-  <link rel="manifest" href="/manifest.json?v=1.0.18" />
-  <script src="./Js/app-startup.js?v=1.0.18" defer></script>
+  <link rel="manifest" href="/manifest.json?v=1.0.19" />
+  <script src="./Js/app-startup.js?v=1.0.19" defer></script>
   <meta name="theme-color" content="#1C1F26" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/images/dev-logo.png?v=1.0.18" />
-  <link rel="apple-touch-icon" sizes="192x192" href="/images/dev-logo.png?v=1.0.18" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/dev-logo.png?v=1.0.19" />
+  <link rel="apple-touch-icon" sizes="192x192" href="/images/dev-logo.png?v=1.0.19" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="LightWatch" />
@@ -155,12 +171,12 @@
   <link rel="apple-touch-startup-image" href="/images/splash/splash-2048x2732.png" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
   <!-- END: apple-touch-startup-image tags -->
   <title>LightWatch - Sign In</title>
-  <link rel="icon" href="/images/dev-logo.png?v=1.0.18" type="image/png" />
+  <link rel="icon" href="/images/dev-logo.png?v=1.0.19" type="image/png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="./css/styles.css?v=1.0.18" />
-  <link rel="stylesheet" href="./css/login.css?v=1.0.18" />
-  <link rel="stylesheet" href="./css/onboarding.css?v=1.0.18" />
+  <link rel="stylesheet" href="./css/styles.css?v=1.0.19" />
+  <link rel="stylesheet" href="./css/login.css?v=1.0.19" />
+  <link rel="stylesheet" href="./css/onboarding.css?v=1.0.19" />
 </head>
 <body>
   <!-- See #appLaunchOverlay CSS in <head> and the auth-check script
@@ -209,7 +225,7 @@
           // not by JS), so activating the overlay here still shows it
           // with zero flash of the login form underneath.
           const overlay = document.getElementById('appLaunchOverlay');
-          if (overlay) overlay.classList.add('is-active');
+          if (overlay) overlay.classList.add('is-active', 'is-instant');
           try { sessionStorage.setItem('lw_launch_overlay_pending', '1'); } catch {}
           // Brief pause so the entrance animation actually gets a
           // frame to paint before navigation tears the page down —
@@ -290,7 +306,7 @@
 
       <div class="onboarding-slide onboarding-slide--areas" data-slide="3">
         <span class="onboarding-slide__icon">
-          <img src="./images/areas.png?v=1.0.18" alt="" aria-hidden="true" width="24" height="24" />
+          <img src="./images/areas.png?v=1.0.19" alt="" aria-hidden="true" width="24" height="24" />
         </span>
         <h2>Before you continue</h2>
         <ul class="onboarding-slide__points onboarding-slide__points--disclaimer">
@@ -405,10 +421,10 @@
     </section>
   </main>
 
-  <script src="./Js/theme.js?v=1.0.18"></script>
-  <script src="./Js/config.js?v=1.0.18"></script>
-  <script src="./Js/auth.js?v=1.0.18"></script>
-  <script src="./Js/login.js?v=1.0.18"></script>
-  <script src="./Js/onboarding.js?v=1.0.18"></script>
+  <script src="./Js/theme.js?v=1.0.19"></script>
+  <script src="./Js/config.js?v=1.0.19"></script>
+  <script src="./Js/auth.js?v=1.0.19"></script>
+  <script src="./Js/login.js?v=1.0.19"></script>
+  <script src="./Js/onboarding.js?v=1.0.19"></script>
 </body>
 </html>

@@ -2,7 +2,17 @@
 <html lang="en" class="auth-check">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <style>
+    html {
+      background: #eeedf1;
+    }
+    @media (prefers-color-scheme: dark) {
+      html:not([data-theme="light"]) {
+        background: #0f1318;
+      }
+    }
+  </style>
   <link rel="manifest" href="/manifest.json?v=1.0.14">
   <script src="../Js/app-startup.js?v=1.0.14" defer></script>
   <meta name="theme-color" content="#1C1F26">
@@ -31,7 +41,7 @@
   <link rel="prefetch" href="./home.html">
   <link rel="prefetch" href="./reports.html">
 </head>
-<body class="app-loading">
+<body class="app-loading" data-screen="areas">
 
   <div class="lw-boot-loader" id="lwBootLoader" aria-hidden="true">
     <div class="lw-loader-orbit">
@@ -54,6 +64,7 @@
        flash before we know whether there's a session. -->
   <script src="../Js/config.js?v=1.0.14"></script>
   <script src="../Js/auth.js?v=1.0.14"></script>
+  <script src="../Js/analytics.js?v=1.0.14"></script>
   <script>
     requireAuth();
     if (!window.__lwAuthRedirecting) {
@@ -192,11 +203,11 @@
     </div>
   </div>
 
-  <script src="../Js/theme.js?v=1.0.18" defer></script>
-  <script src="../Js/profile.js?v=1.0.18" defer></script>
-  <script src="../Js/notification.js?v=1.0.18" defer></script>
-  <script src="../Js/areas.js?v=1.0.18" defer></script>
-  <script src="../Js/nav.js?v=1.0.18" defer></script>
+  <script src="../Js/theme.js?v=1.0.19" defer></script>
+  <script src="../Js/profile.js?v=1.0.19" defer></script>
+  <script src="../Js/notification.js?v=1.0.19" defer></script>
+  <script src="../Js/areas.js?v=1.0.19" defer></script>
+  <script src="../Js/nav.js?v=1.0.19" defer></script>
   <script defer>
     window.lwToast = function(msg, duration) {
       const el = document.getElementById('lw-toast');

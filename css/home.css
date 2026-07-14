@@ -1219,14 +1219,34 @@
 
 #pageSkeleton {
   display: none;
+  opacity: 1;
+  /* Was an instant display:none the moment .page-data-loading came
+     off body — real content and skeleton hard-swapped in the same
+     frame, which is the "not smooth" handoff. profile.js's
+     hideProfileLoader() now adds .lw-skel-fading a beat before
+     removing .page-data-loading, so this fades out first and
+     #realPageContent's existing lw-content-reveal animation (see
+     home.html's <head>) fades/slides the real page in right after —
+     a clean crossfade instead of a snap. */
+  transition: opacity 0.2s ease;
 }
 
 .page-data-loading #pageSkeleton {
   display: block;
 }
 
+#pageSkeleton.lw-skel-fading {
+  opacity: 0;
+}
+
 .page-data-loading #realPageContent {
   display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #pageSkeleton {
+    transition: none;
+  }
 }
 
 .skel {
@@ -1554,6 +1574,13 @@ body.lw-location-panel-open .mobile-chat-toggle {
   .location-expand-overlay {
     padding-left: 10px;
     padding-right: 10px;
+    /* The base rule's fixed 92px clearance for the bottom-nav pill is
+       sized for taller phones. On a short screen (Galaxy S8-class,
+       ~360x740) that plus the panel's own padding left too little
+       vertical room, forcing the panel to lean on its 82vh/76vh cap
+       and read as an oversized slab rather than a compact sheet.
+       Trimmed here so the panel gets more of the available height. */
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 76px);
   }
   .location-expand-panel {
     padding: 12px 13px 13px;
@@ -1634,6 +1661,22 @@ body.lw-location-panel-open .mobile-chat-toggle {
   }
   .location-expand-notify__text span {
     font-size: 0.68rem;
+  }
+}
+
+/* Short-viewport tier, independent of width — catches devices like the
+   Galaxy S8 (360x740) on the height axis too. A 76dvh cap is still
+   ~560px on a 740px-tall screen, which is most of the visible page;
+   this pulls the cap down further and shrinks the reserved bottom-nav
+   clearance so the sheet reads as a compact card instead of a
+   near-full-screen takeover on genuinely short screens. */
+@media (max-height: 720px) {
+  .location-expand-overlay {
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 64px);
+  }
+  .location-expand-panel {
+    max-height: min(68vh, 420px);
+    max-height: min(68dvh, 420px);
   }
 }
 /* Small drag-handle affordance at the top — a light visual cue that this

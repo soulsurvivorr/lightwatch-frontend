@@ -412,6 +412,13 @@
     width: 100%;
     overflow: hidden;
     isolation: isolate;
+    /* Keep the notch/Dynamic Island clearance from styles.css's base
+       .login-form-side rule — this block only needs to change layout
+       (height/overflow) for the phone breakpoint, not padding, but it
+       shares a selector with that rule so it has to restate this or
+       lose it. */
+    padding-top: calc(25px + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(48px + env(safe-area-inset-bottom, 0px));
   }
 
   .login-form-side::before,
@@ -512,6 +519,8 @@
 @media (max-width: 400px) {
   .login-form-side {
     padding: 20px 18px 32px;
+    padding-top: calc(20px + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(32px + env(safe-area-inset-bottom, 0px));
   }
 
   .login-box__brand {

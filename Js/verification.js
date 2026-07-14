@@ -13,9 +13,6 @@ const userValue     = getVerificationValue('userIdentifier');
 const maskedContact = getVerificationValue('maskedContact');
 const isSignupFlow  = !!getVerificationValue('signupUser');
 
-document.getElementById('code-text').textContent =
-    `Enter the code we sent to ${maskedContact || maskValue(userValue)}`;
-
 function maskValue(value) {
     if (!value) return '';
     if (value.includes('@')) {
@@ -28,6 +25,15 @@ function maskValue(value) {
     const hiddenLen = Math.max(value.length - visible.length, 3);
     return visible + '*'.repeat(hiddenLen);
 }
+
+// Compute the mask ourselves rather than trusting the server's
+// maskedContact — the backend's masking rule doesn't necessarily match
+// the "first 3 characters visible" rule this app wants, and userValue
+// (what the person actually typed on the sign-in/signup form) is always
+// available here to mask locally. Only falls back to the server's
+// version if userValue is somehow missing.
+document.getElementById('code-text').textContent =
+    `Enter the code we sent to ${userValue ? maskValue(userValue) : (maskedContact || '')}`;
 
 const verifyCard    = document.getElementById('verifyCard');
 const continueBtn   = document.getElementById('continueBtn');
@@ -213,15 +219,16 @@ async function checkOTP() {
             localStorage.removeItem(k);
         });
 
-        // Small success moment on this card, then hand off to home.html's
-        // branded launch overlay — same mechanism index.html uses for a
-        // cold-start sign-in (see markAppLaunchPending()/auth.js). That
-        // overlay shows the instant home.html's <head> script runs (no
-        // gap for the skeleton or a blank frame to flash through) and
-        // only dismisses once home.html's real content actually replaces
-        // its skeleton, however long that takes.
+        // Small success moment on this card (white checkmark), then hand
+        // off straight to home.html. Deliberately NOT calling
+        // markAppLaunchPending() here — that triggers auth.js's black
+        // full-bleed launch overlay + logo, which after this white
+        // success screen read as a second, redundant splash. That
+        // branded overlay is reserved for the cold-start case (someone
+        // already signed in reopening the app — see index.html); after
+        // verification, home.html's normal white skeleton is enough to
+        // bridge the gap until real content is ready.
         verifyCard.classList.add('is-success');
-        if (typeof markAppLaunchPending === 'function') markAppLaunchPending();
         setTimeout(() => {
             window.location.replace('../pages/home.html');
         }, 700);

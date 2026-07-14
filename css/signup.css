@@ -538,6 +538,12 @@ footer {
         align-items: center;
         justify-content: center;
         padding: clamp(8px, 2vh, 18px) 10px;
+        /* .lw-ambient's blobs are position:fixed so they still cover
+           the full viewport under the notch regardless; this only
+           pushes the centered `section` card down so its content
+           (brand row, form) clears it. Requires viewport-fit=cover in
+           the page's <meta name="viewport"> tag. */
+        padding-top: calc(clamp(8px, 2vh, 18px) + env(safe-area-inset-top, 0px));
     }
 
     #main-content_wrapper {
@@ -716,6 +722,7 @@ footer {
 @media (max-width: 400px) {
     body {
         padding: clamp(8px, 1.8vh, 14px) 8px;
+        padding-top: calc(clamp(8px, 1.8vh, 14px) + env(safe-area-inset-top, 0px));
     }
 
     #input-field-section {

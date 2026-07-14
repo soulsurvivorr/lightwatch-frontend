@@ -243,6 +243,8 @@ button, a {
   align-items: center;
   justify-content: center;
   padding: 25px 32px 48px 32px;
+  padding-top: calc(25px + env(safe-area-inset-top, 0px));
+  padding-bottom: calc(48px + env(safe-area-inset-bottom, 0px));
   background-color: var(--bg-panel);
 }
 
@@ -602,6 +604,15 @@ button, a {
   position: sticky;
   top: 0;
   z-index: 10;
+  /* Extends the topbar's own dark background up underneath the status
+     bar / Dynamic Island / camera cutout instead of stopping short of
+     it (that gap is what read as "other apps reach further up than
+     ours"). Requires viewport-fit=cover in the page's <meta
+     name="viewport"> tag — without it this env() resolves to 0 and
+     nothing changes. The inner nav content keeps its own normal
+     padding (.topbar__inner below) so links/logo/avatar stay clear of
+     the notch; only the background bleeds under it. */
+  padding-top: env(safe-area-inset-top, 0px);
 }
 
 .topbar__inner {
@@ -942,6 +953,8 @@ button, a {
 @media (max-width: 480px) {
   .login-form-side {
     padding: 32px 20px;
+    padding-top: calc(32px + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(32px + env(safe-area-inset-bottom, 0px));
   }
 }
 

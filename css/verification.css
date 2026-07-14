@@ -101,6 +101,13 @@ header {
     display: flex;
     align-items: center;
     padding: .6rem 1.2rem;
+    /* Adds the notch/Dynamic Island clearance on top of the existing
+       .6rem — the background (backdrop-filter blur) still starts at
+       the very top of the sticky box, so it bleeds up underneath the
+       status bar; only the logo/title (the actual content) shifts
+       down to stay clear of it. Requires viewport-fit=cover in the
+       page's <meta name="viewport"> tag. */
+    padding-top: calc(.6rem + env(safe-area-inset-top, 0px));
     gap: 10px;
     position: sticky;
     top: 0;
@@ -445,6 +452,7 @@ button#continueBtn.is-loading .btn-label {
 @media (max-width: 480px) {
     header {
         padding: .5rem 1rem;
+        padding-top: calc(.5rem + env(safe-area-inset-top, 0px));
     }
 
     header h3 {

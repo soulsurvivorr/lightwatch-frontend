@@ -2,7 +2,17 @@
 <html lang="en" class="auth-check">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <style>
+    html {
+      background: #eeedf1;
+    }
+    @media (prefers-color-scheme: dark) {
+      html:not([data-theme="light"]) {
+        background: #0f1318;
+      }
+    }
+  </style>
   <link rel="manifest" href="/manifest.json?v=1.0.14">
   <script src="../Js/app-startup.js?v=1.0.14" defer></script>
   <meta name="theme-color" content="#1C1F26">
@@ -171,9 +181,9 @@
     </div>
   </div>
 
-  <script src="../Js/theme.js?v=1.0.18"></script>
-  <script src="../Js/profile.js?v=1.0.18"></script>
-  <script src="../Js/reports.js?v=1.0.18"></script>
-  <script src="../Js/nav.js?v=1.0.18"></script>
+  <script src="../Js/theme.js?v=1.0.19"></script>
+  <script src="../Js/profile.js?v=1.0.19"></script>
+  <script src="../Js/reports.js?v=1.0.19"></script>
+  <script src="../Js/nav.js?v=1.0.19"></script>
 </body>
 </html>
