@@ -465,3 +465,4 @@ addLocationForm?.addEventListener('submit', (e) => {
     addLocationForm.reset();
     autocompleteList.hidden = true;
 });
+
