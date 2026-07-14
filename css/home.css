@@ -16,6 +16,11 @@
   4) #bottom_nav_wrapper
 */
 
+html, body {
+    height: 100dvh !important;
+    height: 100svh !important;
+}
+
 /* ---- Hero greeting banner ---- */
     .hero-banner {
       background: linear-gradient(135deg, #1C1F26 0%, #2A2E38 55%, #123D36 100%);

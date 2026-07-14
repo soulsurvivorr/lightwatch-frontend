@@ -16,14 +16,24 @@
                         - .submit-btn
 */
 
-html,
-body {
+html, body {
+    height: 100dvh;
     height: 100svh;
-    height: 100dvh; /* tracks the real viewport once mobile browser chrome collapses — a static 100% left html taller/shorter than the actual visible area */
     overflow: hidden;
     overscroll-behavior: none;
-    touch-action: none; /* has to sit on html too, not just body — otherwise html itself stays a pannable ancestor even with body locked */
+    touch-action: none;
 }
+
+section {
+    height: 100%;
+    max-height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-top: env(safe-area-inset-top, 20px);
+    padding-bottom: env(safe-area-inset-bottom, 20px);
+}
+
 
 body {
     margin: 0;
