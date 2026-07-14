@@ -6,7 +6,7 @@
 <link rel="icon" href="/images/dev-logo.png?v=20260707" type="image/png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <title>LightWatch Admin</title>
 <style>
   :root {
@@ -21,8 +21,8 @@
     --border: #232A38; --border2: #2E374A;
     --txt: #F3F5F9; --muted: #9AA4B8; --faint: #5C6578;
 
-    --font: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
-    --display: "Manrope", "Inter", system-ui, -apple-system, sans-serif;
+    --font: "Manrope", "Segoe UI", system-ui, -apple-system, sans-serif;
+    --display: "Sora", "Segoe UI", system-ui, -apple-system, sans-serif;
     --r-sm: 8px; --r-md: 12px; --r-lg: 18px; --r-xl: 26px;
     --sidebar-w: 236px; --bottom-nav-h: 64px;
   }
@@ -210,37 +210,44 @@
   .loc-filter-tab:hover { border-color:var(--border2); color:var(--txt); }
   .loc-filter-tab.is-active { background:linear-gradient(135deg, var(--brand), #d99a26); border-color:transparent; color:var(--brand-ink); }
 
-  .locations-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(270px, 1fr)); gap:12px; }
+  .locations-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(270px, 1fr)); gap:14px; }
   .loc-card {
-    position:relative; background: linear-gradient(165deg, var(--panel-raised), var(--panel));
-    border:1px solid var(--border); border-left:3px solid var(--border2); border-radius:var(--r-lg); padding:16px 18px 16px 16px;
-    display:flex; flex-direction:column; gap:12px; transition:transform .15s ease, border-color .15s ease;
+    position:relative; border:1px solid var(--border); border-left:3px solid var(--border2); border-radius:var(--r-lg);
+    padding:17px 19px 17px 17px; display:flex; flex-direction:column; gap:13px;
+    transition:transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+    background: linear-gradient(165deg, var(--panel-raised), var(--panel));
   }
-  .loc-card:hover { transform:translateY(-2px); border-color:var(--border2); }
-  .loc-card--on { border-left-color:var(--green); }
-  .loc-card--off { border-left-color:var(--red); }
+  .loc-card:hover { transform:translateY(-2px); border-color:var(--border2); box-shadow:0 14px 30px rgba(2,6,16,0.35); }
+  .loc-card--on { border-left-color:var(--green); background:linear-gradient(165deg, rgba(53,208,127,0.07), var(--panel) 55%); }
+  .loc-card--off { border-left-color:var(--red); background:linear-gradient(165deg, rgba(255,92,102,0.07), var(--panel) 55%); }
   .loc-card--unknown { border-left-color:var(--border2); }
   .loc-card__top { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
-  .loc-card__name { display:flex; align-items:center; gap:8px; font-weight:700; font-size:0.95rem; }
+  .loc-card__name { display:flex; align-items:center; gap:9px; font-family:var(--display); font-weight:700; font-size:0.98rem; letter-spacing:-0.01em; }
   .loc-card__dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
-  .loc-card__dot--on { background:var(--green); box-shadow:0 0 8px rgba(53,208,127,0.7); }
-  .loc-card__dot--off { background:var(--red); box-shadow:0 0 8px rgba(255,92,102,0.6); }
+  .loc-card__dot--on { background:var(--green); box-shadow:0 0 9px rgba(53,208,127,0.8); animation:loc-dot-pulse 2.4s ease-in-out infinite; }
+  .loc-card__dot--off { background:var(--red); box-shadow:0 0 9px rgba(255,92,102,0.65); }
   .loc-card__dot--unknown { background:var(--faint); }
+  @keyframes loc-dot-pulse { 0%,100%{opacity:1} 50%{opacity:0.45} }
   .loc-card__meta { font-size:0.72rem; color:var(--faint); margin-top:3px; }
   .status-chip { font-size:0.7rem; font-weight:800; padding:4px 10px; border-radius:999px; white-space:nowrap; text-transform:uppercase; letter-spacing:0.03em; }
   .status-chip--on { background:var(--green-dim); color:var(--green); }
   .status-chip--off { background:var(--red-dim); color:#FF8087; }
   .status-chip--unknown { background:var(--panel2); color:var(--faint); border:1px solid var(--border2); }
   .loc-card__actions { display:flex; gap:8px; }
-  .loc-btn { flex:1; padding:9px 10px; border-radius:var(--r-md); font-size:0.78rem; font-weight:700; cursor:pointer; border:1px solid var(--border2); background:transparent; color:var(--muted); transition:filter .15s, transform .1s; }
+  .loc-btn {
+    flex:1; display:flex; align-items:center; justify-content:center; gap:6px; padding:10px 10px; border-radius:var(--r-md);
+    font-size:0.78rem; font-weight:700; cursor:pointer; border:1px solid var(--border2); background:var(--panel2); color:var(--muted);
+    transition:filter .15s, transform .1s, background .15s, border-color .15s;
+  }
+  .loc-btn svg { width:14px; height:14px; flex-shrink:0; }
   .loc-btn:hover { transform:translateY(-1px); }
-  .loc-btn--on { border-color: rgba(53,208,127,0.4); color:var(--green); }
-  .loc-btn--on:hover { background:var(--green-dim); }
-  .loc-btn--off { border-color: rgba(255,92,102,0.4); color:#FF8087; }
-  .loc-btn--off:hover { background:var(--red-dim); }
+  .loc-btn--on { border-color: rgba(53,208,127,0.35); color:var(--green); }
+  .loc-btn--on:hover { background:var(--green-dim); border-color:rgba(53,208,127,0.6); }
+  .loc-btn--off { border-color: rgba(255,92,102,0.35); color:#FF8087; }
+  .loc-btn--off:hover { background:var(--red-dim); border-color:rgba(255,92,102,0.6); }
   .loc-btn:disabled { opacity:0.5; cursor:not-allowed; transform:none; }
-  .loc-btn--active-on { background:var(--green-dim); }
-  .loc-btn--active-off { background:var(--red-dim); }
+  .loc-btn--active-on { background:var(--green-dim); border-color:rgba(53,208,127,0.6); box-shadow:inset 0 0 0 1px rgba(53,208,127,0.25); }
+  .loc-btn--active-off { background:var(--red-dim); border-color:rgba(255,92,102,0.6); box-shadow:inset 0 0 0 1px rgba(255,92,102,0.25); }
   .loc-card--pushed { animation: loc-flash 1s ease; }
   @keyframes loc-flash { 0%{ box-shadow: 0 0 0 2px var(--brand); } 100%{ box-shadow: 0 0 0 0 transparent; } }
   .add-location-row { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
@@ -991,8 +998,14 @@
                 <span class="status-chip ${chipClass}">${chipLabel}</span>
               </div>
               <div class="loc-card__actions">
-                <button type="button" class="loc-btn loc-btn--on ${status === 'on' ? 'loc-btn--active-on' : ''}" data-push-key="${esc(loc.locationKey)}" data-push-status="on">Set ON</button>
-                <button type="button" class="loc-btn loc-btn--off ${status === 'off' ? 'loc-btn--active-off' : ''}" data-push-key="${esc(loc.locationKey)}" data-push-status="off">Set OFF</button>
+                <button type="button" class="loc-btn loc-btn--on ${status === 'on' ? 'loc-btn--active-on' : ''}" data-push-key="${esc(loc.locationKey)}" data-push-status="on">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18h6M10 22h4M12 2a6 6 0 0 0-4 10.5c.6.55 1 1.4 1 2.2V16h6v-1.3c0-.8.4-1.65 1-2.2A6 6 0 0 0 12 2z"/></svg>
+                  Set ON
+                </button>
+                <button type="button" class="loc-btn loc-btn--off ${status === 'off' ? 'loc-btn--active-off' : ''}" data-push-key="${esc(loc.locationKey)}" data-push-status="off">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18h6M10 22h4M12 2a6 6 0 0 0-4 10.5c.6.55 1 1.4 1 2.2V16h6v-1.3c0-.8.4-1.65 1-2.2A6 6 0 0 0 12 2z"/><line x1="3" y1="3" x2="21" y2="21"/></svg>
+                  Set OFF
+                </button>
               </div>
             </div>
           `;
@@ -1213,7 +1226,7 @@
               <div class="log-item">
                 <span class="log-item__time">${fmtRel(ev.time)}</span>
                 <span class="log-item__content">
-                  <strong>${esc(ev.handle)}</strong>: "${esc(ev.text.length > 60 ? ev.text.slice(0,60)+"…" : ev.text)}"
+                  <strong style="color:${handleColor(ev.handle)}">${esc(ev.handle)}</strong>: "${esc(ev.text.length > 60 ? ev.text.slice(0,60)+"…" : ev.text)}"
                   ${ev.location ? `<span style="color:var(--faint);"> in ${esc(ev.location)}</span>` : ""}
                 </span>
                 <span class="log-item__badge badge-chat">Chat</span>
