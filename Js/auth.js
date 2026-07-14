@@ -260,7 +260,6 @@ function dismissAppLaunchOverlay() {
 
   const realContent = document.getElementById('realPageContent');
   if (realContent) {
-    // Force dark background one last time before reveal
     document.documentElement.style.background = '#1C1F26';
     realContent.classList.add('lw-content-reveal');
   }
@@ -268,11 +267,10 @@ function dismissAppLaunchOverlay() {
   setTimeout(() => {
     el.remove();
     document.documentElement.classList.remove('lw-cold-boot');
-    document.documentElement.style.background = ''; // let CSS take over
+    document.documentElement.style.background = '';
     window.dispatchEvent(new CustomEvent('lw-page-revealed'));
-  }, 480);
+  }, 460); // slightly tighter timing
 }
-
 // Kept as its own name for readability at sign-out call sites; it's
 // just the shared overlay with sign-out's copy. (Sign-out does NOT use
 // the wordless launch overlay below — that one is reserved for the

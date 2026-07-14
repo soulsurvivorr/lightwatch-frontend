@@ -4773,3 +4773,13 @@ body.modal-open {
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   }
 }
+
+/* Mobile chat popup — sit above everything else, including
+   .home-reminder-overlay (z-index: 12000), which is the actual
+   element that was covering it. This project's real popup class is
+   .chat-card--mobile-open (toggled from chat.js, setMobileChatOpen).
+   There is no #mobileChatPopup or .chat-popup--open element in this
+   codebase, so those selectors are intentionally omitted here. */
+.chat-card--mobile-open {
+  z-index: 12001 !important;
+}
