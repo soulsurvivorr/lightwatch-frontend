@@ -48,13 +48,13 @@
       }
   </style>
   <script>
-   (function () {
-    try {
-      if (sessionStorage.getItem('lw_launch_overlay_pending') === '1') {
-        document.documentElement.classList.add('lw-cold-boot');
-      }
-    } catch (e) {}
-  })();
+    (function () {
+      try {
+        if (sessionStorage.getItem('lw_launch_overlay_pending') === '1') {
+          document.documentElement.classList.add('lw-cold-boot');
+        }
+      } catch (e) {}
+    })();
   </script>
   <link rel="manifest" href="/manifest.json?v=1.0.18">
   <script src="../Js/app-startup.js?v=1.0.18" defer></script>
