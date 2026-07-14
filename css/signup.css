@@ -541,9 +541,13 @@ footer {
    `section` stays only as a safety net for unusually short/zoomed
    viewports; it should not be needed in normal use. */
 @media (max-width: 700px) {
+    html,
     body {
-        min-height: 100svh;
-        min-height: 100dvh;
+        height: 100svh;
+        height: 100dvh;
+    }
+
+    body {
         align-items: stretch;
         justify-content: stretch;
         padding: 0;
@@ -561,10 +565,14 @@ footer {
     section {
         width: 100%;
         max-width: 100%;
-        height: 100svh;
-        height: 100dvh;
-        max-height: 100svh;
-        max-height: 100dvh;
+        /* 100% of the body, not another independent 100dvh — two
+           separate dvh calculations at different DOM depths can round
+           to slightly different pixel values on some mobile browsers,
+           leaving a sliver of the page background visible at the
+           bottom. Sizing off the already-dvh-sized parent instead
+           guarantees an exact match, no gap. */
+        height: 100%;
+        max-height: 100%;
         border-radius: 0;
         box-shadow: none;
         overflow-y: auto;
