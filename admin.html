@@ -1,17 +1,14 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<link rel="icon" href="/images/dev-logo.png?v=20260707" type="image/png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<title>LightWatch Admin</title>
-<style>
+ <head><script>window["__codeletBootstrap__"]=JSON.parse('{"A":"A","B":"20260714-05-1435aa9"}');</script><script src="/_sdk/f432b76fb310b513.telemetry_sdk.js" integrity="sha512-9FJQ55EKmmqhyyik8BhrMVfm0+iYYfb8uOlRsjtkxJMEI97qOVEI4PnHohDjQAtvAep0IOEpdQ64eki0sz62ug=="></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&amp;family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+  <title>LightWatch Admin</title>
+  <style>
   :root {
-    /* Brand tokens shared with the rest of LightWatch — gold primary,
-       blue secondary — instead of the old one-off indigo/teal admin palette. */
     --brand: #F2B33D; --brand-dim: #3A2C12; --brand-ink: #241a05;
     --brand2: #4F86F7; --brand2-dim: #16233F;
     --amber: #F2B33D; --red: #FF5C66; --red-dim: #3A1418; --green: #35D07F; --green-dim: #143122;
@@ -24,7 +21,11 @@
     --font: "Manrope", "Segoe UI", system-ui, -apple-system, sans-serif;
     --display: "Sora", "Segoe UI", system-ui, -apple-system, sans-serif;
     --r-sm: 8px; --r-md: 12px; --r-lg: 18px; --r-xl: 26px;
-    --sidebar-w: 236px; --bottom-nav-h: 64px;
+    --sidebar-w: 248px; --bottom-nav-h: 64px;
+
+    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-out: cubic-bezier(0, 0, 0.2, 1);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html { color-scheme: dark; }
@@ -34,132 +35,289 @@
       radial-gradient(900px 560px at 96% 0%, rgba(79,134,247,0.10), transparent 55%),
       var(--bg);
     background-attachment: fixed;
-    color: var(--txt); font-family: var(--font); font-size: 14px; min-height: 100vh;
-    min-height: 100dvh;
+    color: var(--txt); font-family: var(--font); font-size: 14px; min-height: calc(100 * min(var(--vh, 1vh), 1vh));
     -webkit-font-smoothing: antialiased;
   }
   h1,h2,h3 { font-family: var(--display); letter-spacing:-0.01em; }
   ::selection { background: rgba(242,179,61,0.30); }
-  ::-webkit-scrollbar { width:10px; height:10px; }
+  ::-webkit-scrollbar { width:8px; height:8px; }
   ::-webkit-scrollbar-track { background:transparent; }
-  ::-webkit-scrollbar-thumb { background:var(--border2); border-radius:99px; }
+  ::-webkit-scrollbar-thumb { background:var(--border2); border-radius:99px; border: 2px solid transparent; background-clip: padding-box; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--faint); border: 2px solid transparent; background-clip: padding-box; }
   a { color: inherit; }
 
+  /* ============ TOAST ============ */
+  #toastContainer {
+    position: fixed; bottom: 24px; right: 24px; z-index: 999;
+    display: flex; flex-direction: column; gap: 10px; pointer-events: none;
+  }
+  .toast {
+    background: var(--panel-raised); border: 1px solid var(--border2);
+    border-radius: var(--r-lg); padding: 13px 18px;
+    font-size: 0.82rem; font-weight: 600; color: var(--txt);
+    box-shadow: 0 12px 32px rgba(0,0,0,0.45);
+    display: flex; align-items: center; gap: 10px; pointer-events: all;
+    animation: toastIn 0.4s var(--ease-spring) both;
+    max-width: 320px;
+  }
+  .toast.toast--hide { animation: toastOut 0.35s var(--ease-smooth) both; }
+  .toast__icon { font-size: 1rem; flex-shrink: 0; }
+  .toast--ok { border-left: 3px solid var(--green); }
+  .toast--err { border-left: 3px solid var(--red); }
+  .toast--info { border-left: 3px solid var(--brand2); }
+  @keyframes toastIn {
+    from { opacity: 0; transform: translateX(24px) scale(0.95); }
+    to { opacity: 1; transform: translateX(0) scale(1); }
+  }
+  @keyframes toastOut {
+    from { opacity: 1; transform: translateX(0) scale(1); }
+    to { opacity: 0; transform: translateX(24px) scale(0.9); }
+  }
+
+  /* ============ CONFIRM MODAL ============ */
+  .modal-backdrop {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(7,9,13,0.78); backdrop-filter: blur(6px);
+    display: flex; align-items: center; justify-content: center; padding: 24px;
+    animation: fadeIn 0.2s var(--ease-smooth) both;
+  }
+  .modal-backdrop.modal--hide { animation: fadeOut 0.2s var(--ease-smooth) both; }
+  .modal-box {
+    background: linear-gradient(165deg, var(--panel-raised), var(--panel));
+    border: 1px solid var(--border2); border-radius: var(--r-xl); padding: 28px 26px;
+    max-width: 380px; width: 100%;
+    box-shadow: 0 32px 64px rgba(0,0,0,0.6), 0 1px 0 rgba(255,255,255,0.03) inset;
+    animation: modalIn 0.35s var(--ease-spring) both;
+  }
+  .modal-backdrop.modal--hide .modal-box { animation: modalOut 0.25s var(--ease-smooth) both; }
+  @keyframes modalIn {
+    from { opacity: 0; transform: scale(0.9) translateY(16px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  @keyframes modalOut {
+    from { opacity: 1; transform: scale(1); }
+    to { opacity: 0; transform: scale(0.95) translateY(8px); }
+  }
+  @keyframes fadeOut { from { opacity:1; } to { opacity:0; } }
+  .modal-icon { font-size: 2.2rem; margin-bottom: 12px; }
+  .modal-title { font-family: var(--display); font-size: 1.05rem; font-weight: 700; margin-bottom: 8px; }
+  .modal-desc { color: var(--muted); font-size: 0.83rem; line-height: 1.55; margin-bottom: 22px; }
+  .modal-actions { display: flex; gap: 10px; }
+  .modal-btn { flex: 1; padding: 11px; border-radius: var(--r-md); font-size: 0.85rem; font-weight: 700; cursor: pointer; border: none; transition: filter 0.15s, transform 0.15s; }
+  .modal-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
+  .modal-btn--cancel { background: var(--panel2); border: 1px solid var(--border2); color: var(--muted); }
+  .modal-btn--danger { background: linear-gradient(135deg, var(--red), #c8343c); color: #fff; }
+  .modal-btn--confirm { background: linear-gradient(135deg, var(--brand), #d99a26); color: var(--brand-ink); }
+
   /* ============ LOGIN ============ */
-  #loginScreen { min-height:100vh; min-height:100dvh; display:flex; align-items:center; justify-content:center; padding:24px; }
+  #loginScreen { min-height: calc(100 * min(var(--vh, 1vh), 1vh)); display:flex; align-items:center; justify-content:center; padding:24px; }
   .login-card {
-    position:relative; width:100%; max-width:380px;
+    position:relative; width:100%; max-width:390px;
     background: linear-gradient(180deg, var(--panel-raised), var(--panel));
     border:1px solid var(--border); border-radius:var(--r-xl);
-    padding:36px 30px; box-shadow: 0 30px 70px rgba(2,6,16,0.6), 0 1px 0 rgba(255,255,255,0.03) inset;
+    padding:40px 32px; box-shadow: 0 40px 80px rgba(2,6,16,0.65), 0 1px 0 rgba(255,255,255,0.03) inset;
     overflow:hidden;
+    animation: cardIn 0.6s var(--ease-spring) both;
+  }
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(32px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
   }
   .login-card::before {
     content:""; position:absolute; top:0; left:0; right:0; height:3px;
     background:linear-gradient(90deg, var(--brand), var(--brand2));
   }
-  .login-brand { display:flex; align-items:center; gap:12px; margin-bottom:22px; }
-  .login-brand__logo { width:38px; height:38px; border-radius:11px; object-fit:cover; border:1px solid var(--border2); }
+  .login-card::after {
+    content: ""; position: absolute; top: -60px; right: -60px;
+    width: 200px; height: 200px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(242,179,61,0.06), transparent 70%);
+    pointer-events: none;
+  }
+  .login-brand { display:flex; align-items:center; gap:14px; margin-bottom:28px; }
+  .login-brand__logo-wrap {
+    width: 46px; height: 46px; border-radius: 14px; border: 1px solid var(--border2);
+    background: linear-gradient(135deg, var(--brand-dim), var(--panel));
+    display: flex; align-items: center; justify-content: center; font-size: 1.4rem;
+    flex-shrink: 0; box-shadow: 0 4px 14px rgba(242,179,61,0.18);
+  }
   .login-brand__name { display:flex; flex-direction:column; line-height:1.2; }
-  .login-brand__name strong { font-family:var(--display); font-size:1.02rem; }
-  .login-brand__name span { font-size:0.72rem; color:var(--faint); font-weight:600; letter-spacing:0.03em; }
-  .login-card h1 { font-size:1.3rem; font-weight:800; margin-bottom:6px; }
-  .login-card p.sub { color:var(--faint); font-size:0.83rem; margin-bottom:24px; line-height:1.5; }
+  .login-brand__name strong { font-family:var(--display); font-size:1.08rem; }
+  .login-brand__name span { font-size:0.7rem; color:var(--faint); font-weight:700; letter-spacing:0.08em; text-transform: uppercase; margin-top:2px; }
+  .login-card h1 { font-size:1.45rem; font-weight:800; margin-bottom:7px; }
+  .login-card p.sub { color:var(--faint); font-size:0.83rem; margin-bottom:26px; line-height:1.55; }
+  .login-input-wrap { position: relative; margin-bottom: 14px; }
+  .login-input-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 0.95rem; opacity: 0.5; pointer-events: none; }
   .login-card input {
     width:100%; background:var(--bg); border:1px solid var(--border2); border-radius:var(--r-md);
-    padding:13px 14px; color:var(--txt); font-size:0.92rem; margin-bottom:14px;
-    transition:border-color .15s ease, box-shadow .15s ease;
+    padding:13px 14px 13px 40px; color:var(--txt); font-size:0.92rem; font-family: var(--font);
+    transition: border-color 0.2s var(--ease-smooth), box-shadow 0.2s var(--ease-smooth), background 0.2s;
   }
-  .login-card input:focus { outline:none; border-color:var(--brand); box-shadow:0 0 0 3px rgba(242,179,61,0.16); }
+  .login-card input:focus { outline:none; border-color:var(--brand); box-shadow:0 0 0 3px rgba(242,179,61,0.16); background: var(--panel); }
   .login-btn {
-    width:100%; padding:13px; border-radius:var(--r-md); border:none;
-    background:linear-gradient(135deg, var(--brand), #d99a26); color:var(--brand-ink); font-weight:800; font-size:0.92rem; cursor:pointer;
-    transition:transform .15s ease, box-shadow .15s ease, filter .15s ease;
+    width:100%; padding:14px; border-radius:var(--r-md); border:none;
+    background:linear-gradient(135deg, var(--brand), #d99a26); color:var(--brand-ink); font-weight:800; font-size:0.94rem; cursor:pointer; font-family: var(--font);
+    transition: transform 0.2s var(--ease-spring), box-shadow 0.2s var(--ease-smooth), filter 0.15s;
+    position: relative; overflow: hidden;
   }
-  .login-btn:hover { filter:brightness(1.06); transform:translateY(-1px); box-shadow:0 10px 26px rgba(242,179,61,0.25); }
-  .login-btn:active { transform:translateY(0); }
+  .login-btn::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+    opacity: 0; transition: opacity 0.2s;
+  }
+  .login-btn:hover::after { opacity: 1; }
+  .login-btn:hover { filter:brightness(1.06); transform:translateY(-2px); box-shadow:0 14px 30px rgba(242,179,61,0.28); }
+  .login-btn:active { transform:translateY(0); box-shadow: none; }
   .login-btn:disabled { opacity:0.6; cursor:not-allowed; transform:none; box-shadow:none; }
-  .login-link-btn { background:none; border:none; color:var(--muted); font-size:0.8rem; cursor:pointer; margin-top:16px; text-align:center; width:100%; padding:6px; }
-  .login-link-btn:hover { color:var(--brand); }
-  #loginError { color:var(--red); font-size:0.8rem; margin-top:12px; min-height:1em; text-align:center; }
+  #loginError { color:var(--red); font-size:0.8rem; margin-top:13px; min-height:1em; text-align:center; animation: shake 0.4s; }
+  @keyframes shake {
+    0%,100%{transform:translateX(0)} 20%{transform:translateX(-5px)} 60%{transform:translateX(5px)}
+  }
+  .login-footer { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--border); text-align: center; }
+  .login-footer p { font-size: 0.72rem; color: var(--faint); line-height: 1.6; }
+  .login-footer strong { color: var(--brand); }
 
   /* ============ APP SHELL ============ */
-  #dashboard { display:none; min-height:100vh; min-height:100dvh; }
-  .app-shell { display:flex; min-height:100vh; min-height:100dvh; }
+  #dashboard { display:none; min-height: calc(100 * min(var(--vh, 1vh), 1vh)); }
+  .app-shell { display:flex; min-height: calc(100 * min(var(--vh, 1vh), 1vh)); }
 
   .sidebar {
     width:var(--sidebar-w); flex-shrink:0; border-right:1px solid var(--border);
-    background:rgba(11,14,21,0.6); display:flex; flex-direction:column; padding:22px 16px;
-    position:sticky; top:0; height:100vh; height:100dvh;
+    background: linear-gradient(180deg, rgba(16,20,29,0.95), rgba(11,14,21,0.9));
+    backdrop-filter: blur(12px);
+    display:flex; flex-direction:column; padding:22px 14px;
+    position:sticky; top:0; height: calc(100 * min(var(--vh, 1vh), 1vh));
+    overflow-y: auto;
   }
-  .sidebar__brand { display:flex; align-items:center; gap:11px; padding:6px 8px 22px; }
-  .sidebar__brand img { width:32px; height:32px; border-radius:9px; object-fit:cover; border:1px solid var(--border2); }
-  .sidebar__brand strong { font-family:var(--display); font-size:0.98rem; display:block; }
-  .sidebar__brand span { font-size:0.68rem; color:var(--faint); font-weight:600; }
+  .sidebar__brand { display:flex; align-items:center; gap:11px; padding:4px 8px 20px; }
+  .sidebar__brand-icon {
+    width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--border2);
+    background: linear-gradient(135deg, var(--brand-dim), var(--panel));
+    display: flex; align-items: center; justify-content: center; font-size: 1rem;
+    flex-shrink: 0; box-shadow: 0 3px 10px rgba(242,179,61,0.14);
+  }
+  .sidebar__brand strong { font-family:var(--display); font-size:0.96rem; display:block; letter-spacing: -0.01em; }
+  .sidebar__brand span { font-size:0.64rem; color:var(--faint); font-weight:700; letter-spacing: 0.06em; text-transform: uppercase; }
+  .sidebar__section-label { font-size: 0.6rem; color: var(--faint); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; padding: 14px 12px 6px; }
   .sidebar__nav { display:flex; flex-direction:column; gap:2px; flex:1; }
   .nav-btn {
-    display:flex; align-items:center; gap:11px; background:transparent; border:none; text-align:left;
-    color:var(--muted); padding:11px 12px; border-radius:var(--r-md); font-size:0.87rem; font-weight:600;
-    cursor:pointer; transition:background .15s, color .15s;
+    display:flex; align-items:center; gap:10px; background:transparent; border:none; text-align:left;
+    color:var(--muted); padding:10px 12px; border-radius:var(--r-md); font-size:0.84rem; font-weight:600;
+    cursor:pointer; transition: background 0.2s var(--ease-smooth), color 0.2s, transform 0.15s var(--ease-spring);
+    position: relative;
   }
-  .nav-btn svg { width:17px; height:17px; flex-shrink:0; opacity:0.85; }
+  .nav-btn__icon { width:17px; height:17px; flex-shrink:0; transition: transform 0.3s var(--ease-spring); }
+  .nav-btn__badge {
+    margin-left: auto; background: var(--brand2-dim); color: #9DB8FF;
+    font-size: 0.62rem; font-weight: 800; padding: 2px 7px; border-radius: 999px;
+    transition: background 0.2s, color 0.2s;
+    display: none;
+  }
+  .nav-btn__badge.visible { display: block; }
   .nav-btn:hover { background:rgba(255,255,255,0.04); color:var(--txt); }
-  .nav-btn.active { background:linear-gradient(90deg, rgba(242,179,61,0.14), rgba(242,179,61,0.02)); color:var(--brand); }
-  .sidebar__footer { display:flex; flex-direction:column; gap:10px; padding-top:14px; border-top:1px solid var(--border); }
-  .live-pill { display:flex; align-items:center; gap:7px; font-size:0.76rem; color:var(--green); font-weight:700; padding:0 4px; }
+  .nav-btn:hover .nav-btn__icon { transform: scale(1.15); }
+  .nav-btn.active {
+    background: linear-gradient(90deg, rgba(242,179,61,0.14), rgba(242,179,61,0.02));
+    color:var(--brand);
+  }
+  .nav-btn.active .nav-btn__badge { background: var(--brand-dim); color: var(--brand); }
+  .nav-btn.active::before {
+    content: ""; position: absolute; left: 0; top: 20%; bottom: 20%;
+    width: 3px; border-radius: 0 3px 3px 0; background: var(--brand);
+  }
+
+  .sidebar__footer { display:flex; flex-direction:column; gap:8px; padding-top:14px; border-top:1px solid var(--border); }
+  .sidebar__status-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 4px; }
+  .live-pill { display:flex; align-items:center; gap:7px; font-size:0.76rem; color:var(--green); font-weight:700; }
   .live-dot { width:7px; height:7px; border-radius:50%; background:var(--green); box-shadow:0 0 8px rgba(53,208,127,0.85); animation:pulse-dot 2s ease-out infinite; }
-  @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  @keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.8)} }
+  .idle-timer-pill { font-size: 0.68rem; color: var(--faint); font-weight: 600; background: var(--panel2); padding: 3px 8px; border-radius: 999px; border: 1px solid var(--border); }
   .logout-btn {
     background:transparent; border:1px solid var(--border2); color:var(--muted); padding:9px 14px; border-radius:var(--r-md);
-    cursor:pointer; font-size:0.82rem; font-weight:600; transition:border-color .15s ease, color .15s ease;
+    cursor:pointer; font-size:0.82rem; font-weight:600; font-family: var(--font);
+    transition: border-color 0.2s, color 0.2s, background 0.2s, transform 0.15s var(--ease-spring);
+    display: flex; align-items: center; gap: 7px; justify-content: center;
   }
-  .logout-btn:hover { border-color:var(--red); color:var(--red); }
+  .logout-btn:hover { border-color:var(--red); color:var(--red); background: rgba(255,92,102,0.06); transform: translateY(-1px); }
 
   .main-col { flex:1; min-width:0; display:flex; flex-direction:column; }
   .topbar-mobile {
-    display:none; align-items:center; justify-content:space-between; gap:12px; padding:14px 16px;
-    border-bottom:1px solid var(--border); background:rgba(10,15,28,0.75); backdrop-filter:blur(10px);
+    display:none; align-items:center; justify-content:space-between; gap:12px; padding:12px 16px;
+    border-bottom:1px solid var(--border); background:rgba(10,15,28,0.85); backdrop-filter:blur(14px);
     position:sticky; top:0; z-index:20;
   }
   .topbar-mobile .brand { display:flex; align-items:center; gap:9px; font-weight:700; }
-  .topbar-mobile .brand img { width:26px; height:26px; border-radius:8px; border:1px solid var(--border2); }
+  .topbar-mobile .brand-icon { width: 28px; height: 28px; border-radius: 9px; border: 1px solid var(--border2); background: linear-gradient(135deg, var(--brand-dim), var(--panel)); display: flex; align-items: center; justify-content: center; font-size: 0.85rem; }
   .topbar-mobile .brand strong { font-size:0.9rem; font-family:var(--display); }
 
-  main { max-width:1240px; width:100%; margin:0 auto; padding:26px 26px 40px; flex:1; }
-  .page-head { display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:20px; flex-wrap:wrap; }
-  .page-head h2 { font-size:1.3rem; font-weight:800; }
-  .page-head__hint { font-size:0.8rem; color:var(--faint); }
+  main { max-width:1260px; width:100%; margin:0 auto; padding:28px 28px 48px; flex:1; }
+  .page-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:22px; flex-wrap:wrap; }
+  .page-head__left { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .page-head h2 { font-size:1.35rem; font-weight:800; }
+  .page-head__hint { font-size:0.78rem; color:var(--faint); }
+  .page-head__actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
   /* ============ SUMMARY ============ */
-  .summary-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:26px; }
+  .summary-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:28px; }
   .s-card {
     background: linear-gradient(165deg, var(--panel-raised), var(--panel));
-    border:1px solid var(--border); border-radius:var(--r-lg); padding:18px 20px;
-    position:relative; overflow:hidden; transition:transform .18s ease, border-color .18s ease;
+    border:1px solid var(--border); border-radius:var(--r-lg); padding:20px 22px;
+    position:relative; overflow:hidden;
+    transition: transform 0.25s var(--ease-spring), border-color 0.2s, box-shadow 0.25s var(--ease-smooth);
+    animation: cardSlideIn 0.5s var(--ease-spring) both;
   }
-  .s-card:hover { transform:translateY(-2px); border-color:var(--border2); }
-  .s-card::after { content:""; position:absolute; right:-18px; top:-18px; width:80px; height:80px; border-radius:50%; background:radial-gradient(circle,rgba(242,179,61,0.12),transparent 70%); }
-  .s-card__label { font-size:0.7rem; color:var(--faint); text-transform:uppercase; letter-spacing:0.07em; margin-bottom:9px; font-weight:700; }
-  .s-card__value { font-family:var(--display); font-size:1.85rem; font-weight:800; line-height:1; letter-spacing:-0.02em; }
-  .s-card__delta { font-size:0.75rem; color:var(--faint); margin-top:7px; }
-  .s-card__delta span { color:var(--brand); font-weight:700; }
+  .s-card:nth-child(1) { animation-delay: 0.05s; }
+  .s-card:nth-child(2) { animation-delay: 0.1s; }
+  .s-card:nth-child(3) { animation-delay: 0.15s; }
+  .s-card:nth-child(4) { animation-delay: 0.2s; }
+  @keyframes cardSlideIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .s-card:hover { transform:translateY(-3px); border-color:var(--border2); box-shadow: 0 16px 40px rgba(2,6,16,0.4); }
+  .s-card__top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+  .s-card__icon { width: 36px; height: 36px; border-radius: var(--r-md); display: flex; align-items: center; justify-content: center; font-size: 1.05rem; flex-shrink: 0; }
+  .s-card__icon--gold { background: var(--brand-dim); }
+  .s-card__icon--blue { background: var(--brand2-dim); }
+  .s-card__icon--green { background: var(--green-dim); }
+  .s-card__icon--red { background: var(--red-dim); }
+  .s-card__label { font-size:0.68rem; color:var(--faint); text-transform:uppercase; letter-spacing:0.08em; font-weight:700; }
+  .s-card__value { font-family:var(--display); font-size:2rem; font-weight:800; line-height:1; letter-spacing:-0.02em; margin: 4px 0 8px; }
+  .s-card__delta { font-size:0.73rem; color:var(--faint); display: flex; align-items: center; gap: 5px; }
+  .s-card__delta .up { color:var(--green); font-weight:700; }
+  .s-card__delta .down { color:var(--red); font-weight:700; }
+  .s-card__delta .neutral { color:var(--brand); font-weight:700; }
 
-  /* ============ TABS (mobile fallback if sidebar hidden) ============ */
-  .tabs-scroll { display:none; }
+  /* ============ QUICK STATS ROW ============ */
+  .quick-stats { display: flex; gap: 10px; margin-bottom: 22px; flex-wrap: wrap; }
+  .q-stat { background: var(--panel2); border: 1px solid var(--border); border-radius: var(--r-md); padding: 9px 16px; display: flex; align-items: center; gap: 9px; font-size: 0.78rem; color: var(--muted); font-weight: 600; }
+  .q-stat__dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
 
+  /* ============ PANEL / TAB ============ */
   .panel { display:none; }
-  .panel.active { display:block; animation:fadeIn .2s ease both; }
-  @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+  .panel.active { display:block; animation: panelIn 0.3s var(--ease-smooth) both; }
+  @keyframes panelIn {
+    from { opacity:0; transform: translateY(10px); }
+    to { opacity:1; transform: translateY(0); }
+  }
 
   /* ============ ACTIVITY LOG ============ */
-  .activity-log { display:flex; flex-direction:column; gap:0; background:var(--panel); border:1px solid var(--border); border-radius:var(--r-lg); overflow:hidden; }
-  .log-item { display:grid; grid-template-columns: 90px 1fr auto; gap:12px; align-items:center; padding:13px 16px; border-bottom:1px solid var(--border); font-size:0.82rem; }
+  .activity-log { display:flex; flex-direction:column; background:var(--panel); border:1px solid var(--border); border-radius:var(--r-lg); overflow:hidden; }
+  .log-item {
+    display:grid; grid-template-columns: 88px 1fr auto; gap:12px; align-items:center; padding:13px 18px;
+    border-bottom:1px solid var(--border); font-size:0.82rem;
+    transition: background 0.2s var(--ease-smooth);
+    animation: logItemIn 0.4s var(--ease-spring) both;
+  }
   .log-item:last-child { border-bottom:none; }
-  .log-item:hover { background:rgba(242,179,61,0.035); }
-  .log-item__time { color:var(--faint); font-size:0.75rem; }
+  .log-item:hover { background:rgba(242,179,61,0.04); }
+  @keyframes logItemIn {
+    from { opacity: 0; transform: translateX(-12px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  .log-item__time { color:var(--faint); font-size:0.73rem; font-variant-numeric: tabular-nums; }
   .log-item__content { color:var(--txt); }
   .log-item__content strong { color:var(--brand); }
-  .log-item__badge { font-size:0.72rem; padding:3px 9px; border-radius:999px; white-space:nowrap; font-weight:700; }
+  .log-item__badge { font-size:0.7rem; padding:3px 10px; border-radius:999px; white-space:nowrap; font-weight:700; letter-spacing: 0.02em; }
   .badge-chat { background:var(--brand2-dim); color:#9DB8FF; }
   .badge-signup { background:var(--green-dim); color:var(--green); }
   .badge-signin { background:var(--brand2-dim); color:#9DB8FF; }
@@ -168,117 +326,151 @@
   /* ============ TABLES ============ */
   table { width:100%; border-collapse:collapse; background:var(--panel); border:1px solid var(--border); border-radius:var(--r-lg); overflow:hidden; }
   thead { background:var(--panel2); }
-  th,td { text-align:left; padding:12px 14px; font-size:0.82rem; border-bottom:1px solid var(--border); }
-  th { color:var(--faint); font-size:0.68rem; text-transform:uppercase; letter-spacing:0.06em; font-weight:700; }
+  th,td { text-align:left; padding:12px 16px; font-size:0.82rem; border-bottom:1px solid var(--border); }
+  th { color:var(--faint); font-size:0.66rem; text-transform:uppercase; letter-spacing:0.07em; font-weight:700; }
+  tbody tr { transition: background 0.15s var(--ease-smooth); }
   tbody tr:last-child td { border-bottom:none; }
-  tbody tr:hover { background:rgba(242,179,61,0.035); }
+  tbody tr:hover { background:rgba(242,179,61,0.03); }
   td.faint { color:var(--faint); }
   td.gold { color:var(--brand); font-weight:600; }
-  .handle-pill {
-    display:inline-flex; align-items:center; gap:6px; font-weight:700; font-size:0.8rem;
-    color:var(--handle-color, var(--brand));
-  }
-  .handle-pill::before {
-    content:""; width:7px; height:7px; border-radius:50%; background:var(--handle-color, var(--brand)); flex-shrink:0;
-  }
+  .handle-pill { display:inline-flex; align-items:center; gap:6px; font-weight:700; font-size:0.8rem; color:var(--handle-color, var(--brand)); }
+  .handle-pill::before { content:""; width:7px; height:7px; border-radius:50%; background:var(--handle-color, var(--brand)); flex-shrink:0; }
 
   /* ============ TOOLBAR ============ */
   .toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; flex-wrap:wrap; }
   .toolbar__left { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
-  .status-msg { font-size:0.82rem; color:var(--faint); }
-  .btn-ghost { background:transparent; border:1px solid var(--border2); color:var(--muted); padding:7px 13px; border-radius:var(--r-md); cursor:pointer; font-size:0.8rem; font-weight:600; transition:border-color .15s, color .15s; }
-  .btn-ghost:hover { border-color:var(--brand2); color:var(--brand2); }
-  .btn-ghost:disabled { opacity:0.5; cursor:not-allowed; }
+  .status-msg { font-size:0.8rem; color:var(--faint); }
+  .btn-ghost { background:transparent; border:1px solid var(--border2); color:var(--muted); padding:7px 13px; border-radius:var(--r-md); cursor:pointer; font-size:0.8rem; font-weight:600; font-family: var(--font); transition: border-color 0.2s, color 0.2s, background 0.2s, transform 0.15s var(--ease-spring); }
+  .btn-ghost:hover { border-color:var(--brand2); color:var(--brand2); transform: translateY(-1px); }
+  .btn-ghost:disabled { opacity:0.5; cursor:not-allowed; transform: none !important; }
   .btn-ghost--danger { border-color: rgba(255,92,102,0.4); color: #ff9b9e; }
   .btn-ghost--danger:hover { border-color: var(--red); color: #ffd7d8; background: rgba(255,92,102,0.08); }
-  .row-del-btn { background:transparent; border:1px solid var(--border2); color:var(--muted); padding:4px 9px; border-radius:var(--r-sm); cursor:pointer; font-size:0.72rem; }
-  .row-del-btn:hover { border-color:var(--red); color:var(--red); }
+  .row-del-btn { background:transparent; border:1px solid var(--border2); color:var(--muted); padding:4px 10px; border-radius:var(--r-sm); cursor:pointer; font-size:0.72rem; font-family: var(--font); transition: border-color 0.2s, color 0.2s, transform 0.15s var(--ease-spring); }
+  .row-del-btn:hover { border-color:var(--red); color:var(--red); transform: translateY(-1px); }
   .select-col { width:34px; }
   .select-checkbox { width:16px; height:16px; accent-color: var(--brand); cursor:pointer; }
-  .search-input { background:var(--panel2); border:1px solid var(--border); border-radius:var(--r-md); padding:8px 12px; color:var(--txt); font-size:0.82rem; width:210px; transition:border-color .15s; }
-  .search-input:focus { outline:none; border-color:var(--brand); }
-  .range-select { background:var(--panel2); border:1px solid var(--border); border-radius:var(--r-md); padding:7px 11px; color:var(--txt); font-size:0.8rem; cursor:pointer; }
+  .search-input { background:var(--panel2); border:1px solid var(--border); border-radius:var(--r-md); padding:9px 13px 9px 36px; color:var(--txt); font-size:0.82rem; font-family: var(--font); width:220px; transition: border-color 0.2s, box-shadow 0.2s; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%235C6578' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: 11px center; }
+  .search-input:focus { outline:none; border-color:var(--brand); box-shadow: 0 0 0 2px rgba(242,179,61,0.12); }
+  .range-select { background:var(--panel2); border:1px solid var(--border); border-radius:var(--r-md); padding:8px 12px; color:var(--txt); font-size:0.8rem; cursor:pointer; font-family: var(--font); transition: border-color 0.2s; }
   .range-select:focus { outline:none; border-color:var(--brand); }
-  .empty-state { text-align:center; padding:36px 20px; color:var(--faint); font-size:0.85rem; }
+  .empty-state { text-align:center; padding:48px 20px; color:var(--faint); font-size:0.85rem; }
+  .empty-state__icon { font-size: 2rem; margin-bottom: 10px; opacity: 0.5; }
 
-  /* ============ LOCATIONS PANEL ============ */
-  .loc-filter-tabs { display:flex; gap:6px; margin-bottom:14px; flex-wrap:wrap; }
+  /* ============ LOCATIONS ============ */
+  .loc-filter-tabs { display:flex; gap:6px; margin-bottom:16px; flex-wrap:wrap; }
   .loc-filter-tab {
     background:var(--panel2); border:1px solid var(--border); color:var(--muted); font-size:0.78rem; font-weight:700;
-    padding:7px 14px; border-radius:999px; cursor:pointer; transition:border-color .15s, color .15s, background .15s;
+    padding:7px 16px; border-radius:999px; cursor:pointer; font-family: var(--font);
+    transition: border-color 0.2s, color 0.2s, background 0.2s, transform 0.2s var(--ease-spring), box-shadow 0.2s;
   }
-  .loc-filter-tab:hover { border-color:var(--border2); color:var(--txt); }
-  .loc-filter-tab.is-active { background:linear-gradient(135deg, var(--brand), #d99a26); border-color:transparent; color:var(--brand-ink); }
+  .loc-filter-tab:hover { border-color:var(--border2); color:var(--txt); transform: translateY(-1px); }
+  .loc-filter-tab.is-active { background:linear-gradient(135deg, var(--brand), #d99a26); border-color:transparent; color:var(--brand-ink); box-shadow: 0 4px 14px rgba(242,179,61,0.22); }
 
-  .locations-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(270px, 1fr)); gap:14px; }
+  .locations-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:14px; }
   .loc-card {
     position:relative; border:1px solid var(--border); border-left:3px solid var(--border2); border-radius:var(--r-lg);
-    padding:17px 19px 17px 17px; display:flex; flex-direction:column; gap:13px;
-    transition:transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+    padding:0; display:flex; flex-direction:column;
+    transition: transform 0.25s var(--ease-spring), border-color 0.2s, box-shadow 0.25s var(--ease-smooth);
     background: linear-gradient(165deg, var(--panel-raised), var(--panel));
+    overflow: hidden;
+    animation: cardSlideIn 0.4s var(--ease-spring) both;
   }
-  .loc-card:hover { transform:translateY(-2px); border-color:var(--border2); box-shadow:0 14px 30px rgba(2,6,16,0.35); }
-  .loc-card--on { border-left-color:var(--green); background:linear-gradient(165deg, rgba(53,208,127,0.07), var(--panel) 55%); }
-  .loc-card--off { border-left-color:var(--red); background:linear-gradient(165deg, rgba(255,92,102,0.07), var(--panel) 55%); }
+  .loc-card:hover { transform:translateY(-3px); border-color:var(--border2); box-shadow:0 18px 40px rgba(2,6,16,0.4); }
+  .loc-card--on { border-left-color:var(--green); background:linear-gradient(165deg, rgba(53,208,127,0.06), var(--panel) 55%); }
+  .loc-card--off { border-left-color:var(--red); background:linear-gradient(165deg, rgba(255,92,102,0.06), var(--panel) 55%); }
   .loc-card--unknown { border-left-color:var(--border2); }
+  .loc-card__body { padding: 17px 19px 15px 17px; display: flex; flex-direction: column; gap: 13px; flex: 1; }
   .loc-card__top { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
   .loc-card__name { display:flex; align-items:center; gap:9px; font-family:var(--display); font-weight:700; font-size:0.98rem; letter-spacing:-0.01em; }
   .loc-card__dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
   .loc-card__dot--on { background:var(--green); box-shadow:0 0 9px rgba(53,208,127,0.8); animation:loc-dot-pulse 2.4s ease-in-out infinite; }
   .loc-card__dot--off { background:var(--red); box-shadow:0 0 9px rgba(255,92,102,0.65); }
   .loc-card__dot--unknown { background:var(--faint); }
-  @keyframes loc-dot-pulse { 0%,100%{opacity:1} 50%{opacity:0.45} }
-  .loc-card__meta { font-size:0.72rem; color:var(--faint); margin-top:3px; }
-  .status-chip { font-size:0.7rem; font-weight:800; padding:4px 10px; border-radius:999px; white-space:nowrap; text-transform:uppercase; letter-spacing:0.03em; }
+  @keyframes loc-dot-pulse { 0%,100%{opacity:1;box-shadow:0 0 9px rgba(53,208,127,0.8)} 50%{opacity:0.45;box-shadow:0 0 4px rgba(53,208,127,0.3)} }
+  .loc-card__meta { font-size:0.71rem; color:var(--faint); margin-top:3px; line-height: 1.5; }
+  .status-chip { font-size:0.68rem; font-weight:800; padding:4px 11px; border-radius:999px; white-space:nowrap; text-transform:uppercase; letter-spacing:0.04em; flex-shrink: 0; }
   .status-chip--on { background:var(--green-dim); color:var(--green); }
   .status-chip--off { background:var(--red-dim); color:#FF8087; }
   .status-chip--unknown { background:var(--panel2); color:var(--faint); border:1px solid var(--border2); }
-  .loc-card__actions { display:flex; gap:8px; }
-  .loc-btn {
-    flex:1; display:flex; align-items:center; justify-content:center; gap:6px; padding:10px 10px; border-radius:var(--r-md);
-    font-size:0.78rem; font-weight:700; cursor:pointer; border:1px solid var(--border2); background:var(--panel2); color:var(--muted);
-    transition:filter .15s, transform .1s, background .15s, border-color .15s;
+
+  /* ======= NEW: Toggle Switch Location Control ======= */
+  .loc-card__footer { border-top: 1px solid var(--border); padding: 14px 17px; display: flex; align-items: center; gap: 12px; }
+  .loc-toggle-group { display: flex; align-items: center; gap: 10px; flex: 1; }
+  .loc-toggle-label { font-size: 0.75rem; font-weight: 700; color: var(--muted); }
+  .loc-toggle-switch {
+    position: relative; width: 52px; height: 26px; flex-shrink: 0; cursor: pointer;
   }
-  .loc-btn svg { width:14px; height:14px; flex-shrink:0; }
-  .loc-btn:hover { transform:translateY(-1px); }
-  .loc-btn--on { border-color: rgba(53,208,127,0.35); color:var(--green); }
-  .loc-btn--on:hover { background:var(--green-dim); border-color:rgba(53,208,127,0.6); }
-  .loc-btn--off { border-color: rgba(255,92,102,0.35); color:#FF8087; }
-  .loc-btn--off:hover { background:var(--red-dim); border-color:rgba(255,92,102,0.6); }
-  .loc-btn:disabled { opacity:0.5; cursor:not-allowed; transform:none; }
-  .loc-btn--active-on { background:var(--green-dim); border-color:rgba(53,208,127,0.6); box-shadow:inset 0 0 0 1px rgba(53,208,127,0.25); }
-  .loc-btn--active-off { background:var(--red-dim); border-color:rgba(255,92,102,0.6); box-shadow:inset 0 0 0 1px rgba(255,92,102,0.25); }
-  .loc-card--pushed { animation: loc-flash 1s ease; }
-  @keyframes loc-flash { 0%{ box-shadow: 0 0 0 2px var(--brand); } 100%{ box-shadow: 0 0 0 0 transparent; } }
-  .add-location-row { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
-  .add-location-row input { background:var(--panel2); border:1px solid var(--border); border-radius:var(--r-md); padding:9px 12px; color:var(--txt); font-size:0.85rem; flex:1; min-width:200px; }
+  .loc-toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+  .loc-toggle-track {
+    position: absolute; inset: 0; border-radius: 999px;
+    background: var(--red-dim); border: 1px solid rgba(255,92,102,0.35);
+    transition: background 0.35s var(--ease-smooth), border-color 0.35s var(--ease-smooth), box-shadow 0.35s var(--ease-smooth);
+  }
+  .loc-toggle-switch input:checked ~ .loc-toggle-track {
+    background: var(--green-dim); border-color: rgba(53,208,127,0.45);
+    box-shadow: 0 0 12px rgba(53,208,127,0.2);
+  }
+  .loc-toggle-thumb {
+    position: absolute; top: 3px; left: 3px;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: #FF8087; box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    transition: transform 0.35s var(--ease-spring), background 0.35s var(--ease-smooth), box-shadow 0.35s;
+  }
+  .loc-toggle-switch input:checked ~ .loc-toggle-thumb {
+    transform: translateX(26px);
+    background: var(--green); box-shadow: 0 2px 10px rgba(53,208,127,0.45);
+  }
+  .loc-toggle-switch:hover .loc-toggle-thumb { box-shadow: 0 2px 12px rgba(0,0,0,0.5); }
+  .loc-toggle-state-label { font-size: 0.73rem; font-weight: 800; min-width: 28px; }
+  .loc-toggle-state-label--on { color: var(--green); }
+  .loc-toggle-state-label--off { color: #FF8087; }
+  .loc-toggle-state-label--unknown { color: var(--faint); }
+  .loc-card__action-btn {
+    background: var(--panel2); border: 1px solid var(--border2); color: var(--faint);
+    width: 30px; height: 30px; border-radius: var(--r-sm); cursor: pointer; font-size: 0.75rem;
+    display: flex; align-items: center; justify-content: center;
+    transition: border-color 0.2s, color 0.2s, background 0.2s, transform 0.2s var(--ease-spring);
+    flex-shrink: 0;
+  }
+  .loc-card__action-btn:hover { border-color: var(--red); color: var(--red); background: var(--red-dim); transform: scale(1.1); }
+  .loc-card--pushed { animation: locFlash 1.2s var(--ease-smooth); }
+  @keyframes locFlash {
+    0% { box-shadow: 0 0 0 2px var(--brand); }
+    40% { box-shadow: 0 0 0 6px rgba(242,179,61,0.2); }
+    100% { box-shadow: 0 0 0 0 transparent; }
+  }
+  .add-location-row { display:flex; gap:8px; margin-bottom:18px; flex-wrap:wrap; }
+  .add-location-row input { background:var(--panel2); border:1px solid var(--border); border-radius:var(--r-md); padding:10px 13px; color:var(--txt); font-size:0.85rem; font-family: var(--font); flex:1; min-width:200px; transition: border-color 0.2s; }
   .add-location-row input:focus { outline:none; border-color:var(--brand); }
-  .add-location-row button { padding:9px 16px; border-radius:var(--r-md); border:none; background:linear-gradient(135deg, var(--brand2), #3767d6); color:#fff; font-weight:700; font-size:0.82rem; cursor:pointer; }
-  .add-location-row button:hover { filter:brightness(1.08); }
+  .add-location-row button { padding:10px 18px; border-radius:var(--r-md); border:none; background:linear-gradient(135deg, var(--brand2), #3767d6); color:#fff; font-weight:700; font-size:0.82rem; font-family: var(--font); cursor:pointer; transition: filter 0.15s, transform 0.2s var(--ease-spring); white-space: nowrap; }
+  .add-location-row button:hover { filter:brightness(1.1); transform: translateY(-1px); }
 
   /* ============ BROADCAST ============ */
   .broadcast-card {
     background: linear-gradient(165deg, var(--panel-raised), var(--panel));
-    border:1px solid var(--border); border-radius:var(--r-lg); padding:16px 18px; margin-bottom:18px;
-    display:flex; flex-direction:column; gap:10px;
+    border:1px solid var(--border); border-radius:var(--r-lg); padding:18px 20px; margin-bottom:20px;
+    display:flex; flex-direction:column; gap:11px;
+    transition: border-color 0.2s;
   }
-  .broadcast-card__head { display:flex; align-items:baseline; justify-content:space-between; gap:10px; flex-wrap:wrap; }
-  .broadcast-card__title { font-size:0.92rem; font-weight:700; }
-  .broadcast-card__hint { font-size:0.72rem; color:var(--faint); }
+  .broadcast-card:focus-within { border-color: var(--border2); }
+  .broadcast-card__head { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+  .broadcast-card__title { font-size:0.94rem; font-weight:700; }
+  .broadcast-card__hint { font-size:0.72rem; color:var(--faint); line-height: 1.5; }
   .broadcast-row { display:flex; gap:8px; align-items:flex-start; }
   .broadcast-row input, .broadcast-row textarea {
     flex:1; min-width:200px; background:var(--panel2); border:1px solid var(--border); border-radius:var(--r-md);
-    padding:9px 12px; color:var(--txt); font-size:0.85rem; font-family:var(--font); resize:vertical;
+    padding:10px 13px; color:var(--txt); font-size:0.85rem; font-family:var(--font); resize:vertical;
+    transition: border-color 0.2s, box-shadow 0.2s;
   }
-  .broadcast-row input:focus, .broadcast-row textarea:focus { outline:none; border-color:var(--brand); }
+  .broadcast-row input:focus, .broadcast-row textarea:focus { outline:none; border-color:var(--brand); box-shadow: 0 0 0 2px rgba(242,179,61,0.1); }
   .broadcast-row button {
-    padding:9px 18px; border-radius:var(--r-md); border:none; align-self:flex-start;
-    background:linear-gradient(135deg, var(--brand), #d99a26); color:var(--brand-ink); font-weight:800; font-size:0.82rem; cursor:pointer;
-    white-space:nowrap; transition:filter .15s, transform .1s;
+    padding:10px 20px; border-radius:var(--r-md); border:none; align-self:flex-start;
+    background:linear-gradient(135deg, var(--brand), #d99a26); color:var(--brand-ink); font-weight:800; font-size:0.82rem; font-family: var(--font); cursor:pointer;
+    white-space:nowrap; transition: filter 0.2s, transform 0.2s var(--ease-spring), box-shadow 0.2s;
   }
-  .broadcast-row button:hover { filter:brightness(1.06); transform:translateY(-1px); }
-  .broadcast-row button:disabled { opacity:0.6; cursor:not-allowed; transform:none; }
-  .broadcast-status { font-size:0.78rem; color:var(--faint); min-height:1em; }
+  .broadcast-row button:hover { filter:brightness(1.06); transform:translateY(-2px); box-shadow: 0 8px 20px rgba(242,179,61,0.25); }
+  .broadcast-row button:disabled { opacity:0.6; cursor:not-allowed; transform:none; box-shadow: none; }
+  .broadcast-status { font-size:0.78rem; color:var(--faint); min-height:1em; transition: color 0.3s; }
   .broadcast-status--ok { color:var(--green); }
   .broadcast-status--err { color:var(--red); }
 
@@ -286,30 +478,33 @@
   .analytics-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:14px; }
   .a-card {
     background: linear-gradient(165deg, var(--panel-raised), var(--panel));
-    border:1px solid var(--border); border-radius:var(--r-lg); padding:20px 22px;
+    border:1px solid var(--border); border-radius:var(--r-lg); padding:22px 24px;
+    transition: border-color 0.2s, transform 0.2s var(--ease-spring);
   }
+  .a-card:hover { transform: translateY(-1px); border-color: var(--border2); }
   .a-card--full { grid-column: 1 / -1; }
-  .a-card__head { display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:16px; }
+  .a-card__head { display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:18px; }
   .a-card__title { font-size:0.95rem; font-weight:700; letter-spacing:-0.01em; }
   .a-card__hint { font-size:0.72rem; color:var(--faint); }
 
-  .bar-list { display:flex; flex-direction:column; gap:11px; }
-  .bar-row { display:grid; grid-template-columns: 108px 1fr 44px; align-items:center; gap:12px; }
+  .bar-list { display:flex; flex-direction:column; gap:12px; }
+  .bar-row { display:grid; grid-template-columns: 110px 1fr 48px; align-items:center; gap:12px; }
   .bar-row__label { font-size:0.8rem; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .bar-row__track { height:8px; border-radius:999px; background:var(--panel2); overflow:hidden; border:1px solid var(--border); }
-  .bar-row__fill { height:100%; border-radius:999px; background:linear-gradient(90deg,var(--brand2),var(--brand)); transition:width .5s ease; }
+  .bar-row__track { height:9px; border-radius:999px; background:var(--panel2); overflow:hidden; border:1px solid var(--border); }
+  .bar-row__fill { height:100%; border-radius:999px; background:linear-gradient(90deg,var(--brand2),var(--brand)); transition:width 0.7s var(--ease-out); }
   .bar-row__fill--amber { background:linear-gradient(90deg,var(--amber),#c98a1f); }
   .bar-row__fill--red { background:linear-gradient(90deg,var(--red),#b8333c); }
   .bar-row__value { text-align:right; font-size:0.8rem; color:var(--txt); font-weight:700; font-variant-numeric:tabular-nums; }
 
-  .day-chart { display:flex; align-items:flex-end; gap:7px; height:132px; }
+  .day-chart { display:flex; align-items:flex-end; gap:6px; height:140px; }
   .day-chart__col { flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; }
-  .day-chart__bar-wrap { width:100%; max-width:26px; height:100px; display:flex; flex-direction:column-reverse; border-radius:6px 6px 3px 3px; overflow:hidden; background:var(--panel2); border:1px solid var(--border); }
-  .day-chart__seg { width:100%; transition:height .4s ease; }
+  .day-chart__bar-wrap { width:100%; max-width:28px; height:108px; display:flex; flex-direction:column-reverse; border-radius:7px 7px 3px 3px; overflow:hidden; background:var(--panel2); border:1px solid var(--border); transition: border-color 0.2s; }
+  .day-chart__col:hover .day-chart__bar-wrap { border-color: var(--border2); }
+  .day-chart__seg { width:100%; transition:height 0.6s var(--ease-out); }
   .day-chart__seg--returning { background:linear-gradient(180deg,var(--brand),var(--brand2)); }
   .day-chart__seg--new { background:linear-gradient(180deg,var(--amber),#c98a1f); }
   .day-chart__seg--reports { background:linear-gradient(180deg,var(--brand2),#3d54b0); }
-  .day-chart__label { font-size:0.6rem; color:var(--faint); margin-top:8px; white-space:nowrap; }
+  .day-chart__label { font-size:0.58rem; color:var(--faint); margin-top:7px; white-space:nowrap; }
 
   .legend { display:flex; gap:16px; font-size:0.75rem; color:var(--muted); margin-top:14px; flex-wrap:wrap; }
   .legend__item { display:flex; align-items:center; gap:6px; }
@@ -317,23 +512,45 @@
   .legend__dot--returning { background:linear-gradient(135deg,var(--brand),var(--brand2)); }
   .legend__dot--new { background:linear-gradient(135deg,var(--amber),#c98a1f); }
   .legend__dot--reports { background:linear-gradient(135deg,var(--brand2),#3d54b0); }
+  .a-empty { text-align:center; padding:28px 12px; color:var(--faint); font-size:0.8rem; }
 
-  .a-empty { text-align:center; padding:24px 12px; color:var(--faint); font-size:0.8rem; }
+  /* ============ HEALTH PANEL ============ */
+  .health-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px; }
+  .health-card {
+    background: linear-gradient(165deg, var(--panel-raised), var(--panel));
+    border: 1px solid var(--border); border-radius: var(--r-lg); padding: 18px 20px;
+    display: flex; flex-direction: column; gap: 10px;
+    transition: transform 0.2s var(--ease-spring), border-color 0.2s;
+  }
+  .health-card:hover { transform: translateY(-2px); border-color: var(--border2); }
+  .health-card__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .health-card__title { font-size: 0.82rem; font-weight: 700; color: var(--muted); }
+  .health-card__indicator { width: 10px; height: 10px; border-radius: 50%; }
+  .health-card__indicator--ok { background: var(--green); box-shadow: 0 0 8px rgba(53,208,127,0.6); animation: pulse-dot 2.5s ease-in-out infinite; }
+  .health-card__indicator--warn { background: var(--amber); box-shadow: 0 0 8px rgba(242,179,61,0.6); animation: pulse-dot 1.5s ease-in-out infinite; }
+  .health-card__indicator--err { background: var(--red); box-shadow: 0 0 8px rgba(255,92,102,0.6); }
+  .health-card__value { font-family: var(--display); font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; }
+  .health-card__label { font-size: 0.72rem; color: var(--faint); }
+  .uptime-bar { height: 6px; border-radius: 999px; background: var(--panel2); overflow: hidden; border: 1px solid var(--border); }
+  .uptime-bar__fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--green), #28a861); transition: width 1s var(--ease-out); }
 
-  /* ============ BOTTOM NAV (mobile) ============ */
+  /* ============ BOTTOM NAV ============ */
   .bottom-nav {
     display:none; position:fixed; left:50%; transform:translateX(-50%); bottom:calc(12px + env(safe-area-inset-bottom));
-    z-index:30; background:rgba(16,20,29,0.92); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+    z-index:30; background:rgba(16,20,29,0.94); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
     border:1px solid var(--border2); border-radius:999px; padding:6px; gap:2px;
-    box-shadow: 0 14px 34px rgba(0,0,0,0.45);
+    box-shadow: 0 16px 40px rgba(0,0,0,0.5), 0 1px 0 rgba(255,255,255,0.04) inset;
     max-width:calc(100vw - 24px); overflow-x:auto;
   }
   .bottom-nav__btn {
-    background:transparent; border:none; color:var(--faint); padding:9px 13px; border-radius:999px;
-    font-size:0.72rem; font-weight:700; cursor:pointer; white-space:nowrap; display:flex; flex-direction:column; align-items:center; gap:2px;
+    background:transparent; border:none; color:var(--faint); padding:8px 13px; border-radius:999px;
+    font-size:0.7rem; font-weight:700; cursor:pointer; white-space:nowrap; display:flex; flex-direction:column; align-items:center; gap:3px; font-family: var(--font);
+    transition: color 0.2s, background 0.2s, transform 0.2s var(--ease-spring);
   }
-  .bottom-nav__btn svg { width:16px; height:16px; }
-  .bottom-nav__btn.active { background:linear-gradient(135deg, var(--brand), #d99a26); color:var(--brand-ink); }
+  .bottom-nav__btn svg { width:16px; height:16px; transition: transform 0.2s var(--ease-spring); }
+  .bottom-nav__btn:hover { color: var(--muted); }
+  .bottom-nav__btn:hover svg { transform: scale(1.15); }
+  .bottom-nav__btn.active { background:linear-gradient(135deg, var(--brand), #d99a26); color:var(--brand-ink); box-shadow: 0 4px 14px rgba(242,179,61,0.25); }
 
   /* ============ RESPONSIVE ============ */
   html, body { overflow-x:hidden; max-width:100vw; }
@@ -341,6 +558,7 @@
 
   @media(max-width:1080px) {
     .analytics-grid { grid-template-columns:1fr; }
+    .health-grid { grid-template-columns: repeat(2, 1fr); }
   }
 
   @media(max-width:960px) {
@@ -348,19 +566,19 @@
     .topbar-mobile { display:flex; }
     main { padding:18px 14px calc(90px + env(safe-area-inset-bottom)); }
     .bottom-nav { display:flex; }
-    .summary-grid { grid-template-columns:1fr 1fr; gap:10px; }
-    .locations-grid { grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); }
+    .summary-grid { grid-template-columns:1fr 1fr; gap:11px; }
+    .locations-grid { grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); }
   }
 
   @media(max-width:640px) {
-    .log-item { grid-template-columns:1fr; gap:4px; }
+    .log-item { grid-template-columns:1fr; gap:5px; }
     table,thead,tbody,th,td,tr { display:block; }
     thead { display:none; }
-    tbody tr { background:var(--panel); border:1px solid var(--border); border-radius:var(--r-md); margin-bottom:8px; padding:10px 12px; }
+    tbody tr { background:var(--panel); border:1px solid var(--border); border-radius:var(--r-md); margin-bottom:8px; padding:11px 13px; }
     td { border-bottom:none; padding:4px 2px; display:flex; justify-content:space-between; gap:8px; align-items:center; flex-wrap:wrap; }
-    td::before { content:attr(data-label); color:var(--faint); font-size:0.68rem; text-transform:uppercase; }
-    .bar-row { grid-template-columns: 74px 1fr 36px; gap:8px; }
-    .bar-row__label { font-size:0.75rem; }
+    td::before { content:attr(data-label); color:var(--faint); font-size:0.66rem; text-transform:uppercase; }
+    .bar-row { grid-template-columns: 80px 1fr 38px; gap:8px; }
+    .bar-row__label { font-size:0.74rem; }
     .search-input, .range-select { width:100%; }
     .toolbar { flex-direction:column; align-items:stretch; }
     .toolbar__left { justify-content:space-between; }
@@ -369,1229 +587,1399 @@
     .add-location-row input { min-width:0; }
     .add-location-row button { width:100%; }
     main { padding-left:12px; padding-right:12px; }
-    .page-head { gap:6px; }
-    .page-head h2 { font-size:1.12rem; }
+    .page-head { gap:8px; }
+    .page-head h2 { font-size:1.15rem; }
     .broadcast-row { flex-direction:column; align-items:stretch; }
     .broadcast-row input, .broadcast-row textarea { min-width:0; }
     .broadcast-row button { width:100%; }
+    .health-grid { grid-template-columns: 1fr 1fr; }
+    .quick-stats { gap: 8px; }
+    #toastContainer { bottom: 80px; right: 12px; left: 12px; }
+    .toast { max-width: 100%; }
   }
 
   @media(max-width:480px) {
     .summary-grid { grid-template-columns:1fr; }
-    .s-card { padding:15px 16px; }
-    .s-card__value { font-size:1.5rem; }
-    .login-card { padding:28px 20px; }
+    .s-card { padding:16px 18px; }
+    .s-card__value { font-size:1.6rem; }
+    .login-card { padding:30px 22px; }
     .day-chart { height:110px; }
-    .day-chart__bar-wrap { height:80px; }
+    .day-chart__bar-wrap { height:84px; }
+    .health-grid { grid-template-columns: 1fr; }
   }
 </style>
-</head>
-<body>
-
-<!-- LOGIN -->
-<div id="loginScreen">
-  <div class="login-card">
+  <script src="https://cdn.tailwindcss.com/3.4.17" type="text/javascript"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js" type="text/javascript"></script>
+  <script src="/_sdk/0179d719c431a79e.data_sdk.js" type="text/javascript" integrity="sha512-OsRvJkI5GkC3MJQcgotQYotpzrMSX415GiKKgvYdxQEEkzD/fdchShO2FMSy0PJr/tiINMXOk5Vl2zAgg6bUiA=="></script>
+  <script src="/_sdk/9432170dbd2ae0df.resizing_sdk.js" type="text/javascript" integrity="sha512-FeT+58sb1f9ejWPWFjCbJvTT+SDwGV+ngrHUnlO7TWEOoqwOLj6p256kO3vOL7DIWl1cIgrobiof8v2bOigwPg=="></script>
+ </head>
+ <body data-template-id="__page-root"><!-- TOAST CONTAINER -->
+  <div id="toastContainer"></div><!-- LOGIN -->
+  <div id="loginScreen">
+   <div class="login-card">
     <div class="login-brand">
-      <img src="/images/dev-logo.png?v=20260708" alt="LightWatch logo" class="login-brand__logo" />
-      <div class="login-brand__name">
-        <strong>LightWatch GH</strong>
-        <span>ADMIN CONSOLE</span>
-      </div>
+     <div class="login-brand__logo-wrap">
+      💡
+     </div>
+     <div class="login-brand__name"><strong data-template-id="login-brand-name" class="canva-text">LightWatch GH</strong> <span data-template-id="login-brand-sub" class="canva-text">Admin Console</span>
+     </div>
     </div>
-
-    <!-- Password sign-in -->
     <div id="loginStepPassword">
-      <h1>Sign in</h1>
-      <p class="sub">Private. Authorized access only.</p>
-      <input type="password" id="adminPasswordInput" placeholder="Admin password" autocomplete="current-password" />
-      <button class="login-btn" id="adminLoginBtn" type="button">Sign in</button>
-      <div id="loginError"></div>
+     <h1 data-template-id="login-title" class="canva-text">Welcome back</h1>
+     <p class="sub" data-template-id="login-subtitle">Secure admin access. Authorized personnel only.</p>
+     <div class="login-input-wrap"><span class="login-input-icon">🔒</span> <input type="password" id="adminPasswordInput" placeholder="Enter admin password" autocomplete="current-password">
+     </div><button class="login-btn" id="adminLoginBtn" type="button" data-template-id="login-btn">Sign in to dashboard</button>
+     <div id="loginError"></div>
     </div>
-  </div>
-</div>
-
-<!-- DASHBOARD -->
-<div id="dashboard">
-  <div class="app-shell">
+    <div class="login-footer">
+     <p>Protected by <strong>LightWatch Security</strong> · Session expires after 10 min of inactivity</p>
+    </div>
+   </div>
+  </div><!-- DASHBOARD -->
+  <div id="dashboard">
+   <div class="app-shell">
     <aside class="sidebar">
-      <div class="sidebar__brand">
-        <img src="/images/dev-logo.png?v=20260708" alt="LightWatch logo" />
-        <div>
-          <strong>LightWatch GH</strong>
-          <span>Admin Dashboard</span>
-        </div>
+     <div class="sidebar__brand">
+      <div class="sidebar__brand-icon">
+       💡
       </div>
-      <nav class="sidebar__nav" id="sidebarNav">
-        <button class="nav-btn active" data-tab="activity" type="button">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l3 8 4-16 3 8h4"/></svg>
-          Live activity
-        </button>
-        <button class="nav-btn" data-tab="analytics" type="button">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 15l4-6 4 4 5-8"/></svg>
-          Analytics
-        </button>
-        <button class="nav-btn" data-tab="locations" type="button">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.5 7-12a7 7 0 1 0-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>
-          Locations
-        </button>
-        <button class="nav-btn" data-tab="reports" type="button">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19h16"/><path d="M4 15l4-4 3 3 5-6 4 4"/></svg>
-          Reports
-        </button>
-        <button class="nav-btn" data-tab="users" type="button">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c1-4 3.6-6 6.5-6s5.5 2 6.5 6"/><circle cx="18" cy="8.5" r="2.4"/><path d="M15.6 14.3c2.3.3 4.2 2.1 5 5.7"/></svg>
-          Users
-        </button>
-        <button class="nav-btn" data-tab="chats" type="button">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16v11H8l-4 4V5z"/></svg>
-          Chat messages
-        </button>
-      </nav>
-      <div class="sidebar__footer">
-        <span class="live-pill"><span class="live-dot"></span>Live</span>
-        <button class="logout-btn" id="logoutBtn" type="button">Log out</button>
+      <div><strong data-template-id="sidebar-brand-name" class="canva-text">LightWatch GH</strong> <span data-template-id="sidebar-brand-sub" class="canva-text">Admin</span>
       </div>
+     </div>
+     <div class="sidebar__section-label">
+      Main
+     </div>
+     <nav class="sidebar__nav" id="sidebarNav"><button class="nav-btn active" data-tab="activity" type="button">
+       <svg class="nav-btn__icon" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 12h4l3 8 4-16 3 8h4" />
+       </svg> Live Activity <span class="nav-btn__badge" id="navBadgeActivity"></span> </button> <button class="nav-btn" data-tab="analytics" type="button">
+       <svg class="nav-btn__icon" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 3v18h18" /><path d="M7 15l4-6 4 4 5-8" />
+       </svg> Analytics </button> <button class="nav-btn" data-tab="locations" type="button">
+       <svg class="nav-btn__icon" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 21s7-6.5 7-12a7 7 0 1 0-14 0c0 5.5 7 12 7 12z" /><circle cx="12" cy="9" r="2.5" />
+       </svg> Locations <span class="nav-btn__badge" id="navBadgeLocations"></span> </button>
+      <div class="sidebar__section-label" style="margin-top:8px;">
+       Data
+      </div><button class="nav-btn" data-tab="reports" type="button">
+       <svg class="nav-btn__icon" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M4 19h16" /><path d="M4 15l4-4 3 3 5-6 4 4" />
+       </svg> Reports <span class="nav-btn__badge" id="navBadgeReports"></span> </button> <button class="nav-btn" data-tab="users" type="button">
+       <svg class="nav-btn__icon" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="9" cy="8" r="3.2" /><path d="M2.5 20c1-4 3.6-6 6.5-6s5.5 2 6.5 6" /><circle cx="18" cy="8.5" r="2.4" /><path d="M15.6 14.3c2.3.3 4.2 2.1 5 5.7" />
+       </svg> Users </button> <button class="nav-btn" data-tab="chats" type="button">
+       <svg class="nav-btn__icon" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M4 5h16v11H8l-4 4V5z" />
+       </svg> Chat Messages </button>
+      <div class="sidebar__section-label" style="margin-top:8px;">
+       System
+      </div><button class="nav-btn" data-tab="health" type="button">
+       <svg class="nav-btn__icon" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+       </svg> System Health </button>
+     </nav>
+     <div class="sidebar__footer">
+      <div class="sidebar__status-row"><span class="live-pill"><span class="live-dot"></span>Live</span> <span class="idle-timer-pill" id="idleTimerDisplay">10:00</span>
+      </div><button class="logout-btn" id="logoutBtn" type="button">
+       <svg width="13" height="13" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" />
+       </svg> Log out </button>
+     </div>
     </aside>
-
     <div class="main-col">
-      <header class="topbar-mobile">
-        <div class="brand">
-          <img src="/images/dev-logo.png?v=20260708" alt="LightWatch logo" />
-          <strong id="mobilePageTitle">Live activity</strong>
+     <header class="topbar-mobile">
+      <div class="brand">
+       <div class="brand-icon">
+        💡
+       </div><strong id="mobilePageTitle">Live Activity</strong>
+      </div><button class="logout-btn" id="logoutBtnMobile" type="button" style="padding:7px 12px; font-size:0.76rem;">Log out</button>
+     </header>
+     <main><!-- Summary -->
+      <div class="summary-grid">
+       <div class="s-card">
+        <div class="s-card__top">
+         <div>
+          <div class="s-card__label" data-template-id="sc-label-users">
+           Total Users
+          </div>
+         </div>
+         <div class="s-card__icon s-card__icon--gold">
+          👥
+         </div>
         </div>
-        <button class="logout-btn" id="logoutBtnMobile" type="button">Log out</button>
-      </header>
-
-      <main>
-        <!-- Summary -->
-        <div class="summary-grid">
-          <div class="s-card">
-            <div class="s-card__label">Total users</div>
-            <div class="s-card__value" id="sTotal">—</div>
-            <div class="s-card__delta"><span id="sNew24h">—</span> joined in last 24h</div>
-          </div>
-          <div class="s-card">
-            <div class="s-card__label">Total chat messages</div>
-            <div class="s-card__value" id="sChats">—</div>
-            <div class="s-card__delta"><span id="sChats24h">—</span> in last 24h</div>
-          </div>
-          <div class="s-card">
-            <div class="s-card__label">Active locations</div>
-            <div class="s-card__value" id="sLocations">—</div>
-            <div class="s-card__delta">Tracked across statuses, chats &amp; users</div>
-          </div>
-          <div class="s-card">
-            <div class="s-card__label">Last activity</div>
-            <div class="s-card__value" style="font-size:1rem;" id="sLastActivity">—</div>
-            <div class="s-card__delta">Most recent event</div>
-          </div>
+        <div class="s-card__value" id="sTotal">
+         —
         </div>
-
-        <!-- Activity log panel -->
-        <div class="panel active" id="activityPanel">
-          <div class="page-head"><h2>Live activity</h2><span class="page-head__hint">Auto-refreshes every 15s</span></div>
-          <div class="toolbar">
-            <div class="toolbar__left">
-              <span class="status-msg" id="activityStatus">Loading…</span>
-              <button class="btn-ghost" id="refreshActivity" type="button">↻ Refresh</button>
-              <button class="btn-ghost btn-ghost--danger" id="clearReportsBtnActivity" type="button">Clear all reports</button>
-            </div>
-          </div>
-          <div class="activity-log" id="activityLog">
-            <div class="empty-state">Loading activity…</div>
-          </div>
+        <div class="s-card__delta">
+         <span class="up" id="sNew24h">—</span> new in last 24h
         </div>
-
-        <!-- Analytics panel -->
-        <div class="panel" id="analyticsPanel">
-          <div class="page-head"><h2>Analytics</h2></div>
-          <div class="toolbar">
-            <div class="toolbar__left">
-              <span class="status-msg" id="analyticsStatus">Loading analytics…</span>
-              <button class="btn-ghost" id="refreshAnalytics" type="button">↻ Refresh</button>
-            </div>
-            <select class="range-select" id="analyticsRange">
-              <option value="7">Last 7 days</option>
-              <option value="14" selected>Last 14 days</option>
-              <option value="30">Last 30 days</option>
-            </select>
+       </div>
+       <div class="s-card">
+        <div class="s-card__top">
+         <div>
+          <div class="s-card__label" data-template-id="sc-label-chats">
+           Chat Messages
           </div>
-
-          <div class="analytics-grid">
-            <div class="a-card">
-              <div class="a-card__head">
-                <span class="a-card__title">Most searched areas</span>
-                <span class="a-card__hint">Top 10</span>
-              </div>
-              <div class="bar-list" id="topAreasList"><div class="a-empty">No search activity recorded yet.</div></div>
-            </div>
-
-            <div class="a-card">
-              <div class="a-card__head">
-                <span class="a-card__title">Where people drop off</span>
-                <span class="a-card__hint">Last screen before leaving</span>
-              </div>
-              <div class="bar-list" id="dropOffList"><div class="a-empty">No exit events recorded yet.</div></div>
-            </div>
-
-            <div class="a-card a-card--full">
-              <div class="a-card__head">
-                <span class="a-card__title">Reports submitted per day</span>
-                <span class="a-card__hint" id="reportsPerDayHint">—</span>
-              </div>
-              <div class="day-chart" id="reportsPerDayChart"></div>
-              <div class="legend"><span class="legend__item"><span class="legend__dot legend__dot--reports"></span>Reports submitted</span></div>
-            </div>
-
-            <div class="a-card a-card--full">
-              <div class="a-card__head">
-                <span class="a-card__title">Daily active users</span>
-                <span class="a-card__hint" id="dailyUsersHint">—</span>
-              </div>
-              <div class="day-chart" id="dailyUsersChart"></div>
-              <div class="legend">
-                <span class="legend__item"><span class="legend__dot legend__dot--returning"></span>Returning</span>
-                <span class="legend__item"><span class="legend__dot legend__dot--new"></span>New</span>
-              </div>
-            </div>
-
-            <div class="a-card a-card--full">
-              <div class="a-card__head">
-                <span class="a-card__title">Average time spent per screen</span>
-                <span class="a-card__hint">Seconds</span>
-              </div>
-              <div class="bar-list" id="screenTimeList"><div class="a-empty">No screen-time data recorded yet.</div></div>
-            </div>
-          </div>
+         </div>
+         <div class="s-card__icon s-card__icon--blue">
+          💬
+         </div>
         </div>
-
-        <!-- Locations panel -->
-        <div class="panel" id="locationsPanel">
-          <div class="page-head"><h2>Locations</h2><span class="page-head__hint">Push a status and it goes straight to users' home pages</span></div>
-          <div class="toolbar">
-            <div class="toolbar__left">
-              <span class="status-msg" id="locationsStatus">Loading locations…</span>
-              <button class="btn-ghost" id="refreshLocations" type="button">↻ Refresh</button>
-            </div>
-            <input class="search-input" type="text" id="locationSearch" placeholder="Search locations…" />
-          </div>
-          <div class="loc-filter-tabs" id="locFilterTabs">
-            <button type="button" class="loc-filter-tab is-active" data-loc-filter="all">All</button>
-            <button type="button" class="loc-filter-tab" data-loc-filter="on">On</button>
-            <button type="button" class="loc-filter-tab" data-loc-filter="off">Off</button>
-            <button type="button" class="loc-filter-tab" data-loc-filter="unknown">Unknown</button>
-          </div>
-          <div class="add-location-row">
-            <input type="text" id="newLocationInput" placeholder="Add a location not listed yet (e.g. Bantama, Ashanti)" />
-            <button id="addLocationBtn" type="button">Add</button>
-          </div>
-          <div class="locations-grid" id="locationsGrid"></div>
-          <div id="locationsEmpty" class="empty-state" style="display:none;">No locations yet — add one above.</div>
+        <div class="s-card__value" id="sChats">
+         —
         </div>
-
-        <!-- Reports panel -->
-        <div class="panel" id="reportsPanel">
-          <div class="page-head"><h2>Reports management</h2></div>
-          <div class="toolbar">
-            <div class="toolbar__left">
-              <span class="status-msg" id="reportsStatus">Loading reports…</span>
-              <button class="btn-ghost" id="refreshReports" type="button">↻ Refresh</button>
-              <button class="btn-ghost" id="deleteReportsBtn" type="button" disabled>Delete selected reports</button>
-              <button class="btn-ghost btn-ghost--danger" id="clearReportsBtnPanel" type="button">Clear all reports</button>
-            </div>
-          </div>
-          <table id="reportsTable" style="display:none;">
-            <thead>
-              <tr>
-                <th class="select-col"><input type="checkbox" id="reportsSelectAll" class="select-checkbox" aria-label="Select all reports" /></th>
-                <th>Type</th><th>Location</th><th>Details</th><th>Reported</th><th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="reportsTbody"></tbody>
-          </table>
-          <div id="reportsEmpty" class="empty-state" style="display:none;">No reports available.</div>
+        <div class="s-card__delta">
+         <span class="neutral" id="sChats24h">—</span> in last 24h
         </div>
-
-        <!-- Users panel -->
-        <div class="panel" id="usersPanel">
-          <div class="page-head"><h2>Users</h2></div>
-          <div class="toolbar">
-            <div class="toolbar__left">
-              <span class="status-msg" id="usersStatus">Loading users…</span>
-              <button class="btn-ghost" id="deleteUsersBtn" type="button" disabled>Delete selected users</button>
-            </div>
-            <input class="search-input" type="text" id="userSearch" placeholder="Search by name or contact…" />
+       </div>
+       <div class="s-card">
+        <div class="s-card__top">
+         <div>
+          <div class="s-card__label" data-template-id="sc-label-locations">
+           Active Locations
           </div>
-          <table id="usersTable" style="display:none;">
-            <thead>
-              <tr>
-                <th class="select-col"><input type="checkbox" id="usersSelectAll" class="select-checkbox" aria-label="Select all users" /></th>
-                <th>Name</th><th>Email / Phone</th><th>Region</th><th>City</th>
-                <th>Chat handle</th><th>Joined</th><th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="usersTbody"></tbody>
-          </table>
-          <div id="usersEmpty" class="empty-state" style="display:none;">No users registered yet.</div>
+         </div>
+         <div class="s-card__icon s-card__icon--green">
+          📍
+         </div>
         </div>
-
-        <!-- Chats panel -->
-        <div class="panel" id="chatsPanel">
-          <div class="page-head"><h2>Chat messages</h2></div>
-
-          <div class="broadcast-card">
-            <div class="broadcast-card__head">
-              <span class="broadcast-card__title">Push a message to everyone</span>
-              <span class="broadcast-card__hint">Sends a push notification to every device with notifications enabled</span>
-            </div>
-            <div class="broadcast-row">
-              <input type="text" id="broadcastTitleInput" placeholder="Title (optional — defaults to “LightWatch Admin”)" maxlength="60" />
-            </div>
-            <div class="broadcast-row">
-              <textarea id="broadcastBodyInput" placeholder="Message to send to every user…" maxlength="220" rows="2"></textarea>
-              <button id="broadcastSendBtn" type="button">Send to everyone</button>
-            </div>
-            <div id="broadcastStatus" class="broadcast-status"></div>
-          </div>
-
-          <div class="toolbar">
-            <div class="toolbar__left">
-              <span class="status-msg" id="chatsStatus">Loading messages…</span>
-              <button class="btn-ghost" id="deleteChatsBtn" type="button" disabled>Delete selected messages</button>
-            </div>
-            <input class="search-input" type="text" id="chatSearch" placeholder="Search messages or location…" />
-          </div>
-          <table id="chatsTable" style="display:none;">
-            <thead>
-              <tr>
-                <th class="select-col"><input type="checkbox" id="chatsSelectAll" class="select-checkbox" aria-label="Select all chats" /></th>
-                <th>Handle</th><th>Message</th><th>Location</th><th>Sent</th><th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="chatsTbody"></tbody>
-          </table>
-          <div id="chatsEmpty" class="empty-state" style="display:none;">No chat messages yet.</div>
+        <div class="s-card__value" id="sLocations">
+         —
         </div>
-      </main>
+        <div class="s-card__delta" data-template-id="sc-delta-locations">
+         Tracked across all channels
+        </div>
+       </div>
+       <div class="s-card">
+        <div class="s-card__top">
+         <div>
+          <div class="s-card__label" data-template-id="sc-label-activity">
+           Last Activity
+          </div>
+         </div>
+         <div class="s-card__icon s-card__icon--red">
+          ⚡
+         </div>
+        </div>
+        <div class="s-card__value" style="font-size:1.05rem;" id="sLastActivity">
+         —
+        </div>
+        <div class="s-card__delta" data-template-id="sc-delta-activity">
+         Most recent event
+        </div>
+       </div>
+      </div><!-- Quick stats row -->
+      <div class="quick-stats" id="quickStatsRow">
+       <div class="q-stat">
+        <span class="q-stat__dot" style="background:var(--green)"></span><span id="qsOnCount">—</span> locations ON
+       </div>
+       <div class="q-stat">
+        <span class="q-stat__dot" style="background:var(--red)"></span><span id="qsOffCount">—</span> locations OFF
+       </div>
+       <div class="q-stat">
+        <span class="q-stat__dot" style="background:var(--faint)"></span><span id="qsUnknownCount">—</span> unknown
+       </div>
+       <div class="q-stat">
+        🔄 Auto-refresh: <span id="qsRefreshCountdown" style="color:var(--brand);font-weight:700;margin-left:4px;">15s</span>
+       </div>
+      </div><!-- Activity panel -->
+      <div class="panel active" id="activityPanel">
+       <div class="page-head">
+        <div class="page-head__left">
+         <h2 data-template-id="activity-title" class="canva-text">Live Activity</h2><span class="page-head__hint" data-template-id="activity-hint">Auto-refreshes every 15s</span>
+        </div>
+        <div class="page-head__actions"><span class="status-msg" id="activityStatus">Loading…</span> <button class="btn-ghost" id="refreshActivity" type="button">↻ Refresh</button> <button class="btn-ghost btn-ghost--danger" id="clearReportsBtnActivity" type="button">🗑 Clear reports</button>
+        </div>
+       </div>
+       <div class="activity-log" id="activityLog">
+        <div class="empty-state">
+         <div class="empty-state__icon">
+          ⚡
+         </div>Loading activity…
+        </div>
+       </div>
+      </div><!-- Analytics panel -->
+      <div class="panel" id="analyticsPanel">
+       <div class="page-head">
+        <div class="page-head__left">
+         <h2 data-template-id="analytics-title" class="canva-text">Analytics</h2>
+        </div>
+        <div class="page-head__actions"><span class="status-msg" id="analyticsStatus">Loading…</span> <button class="btn-ghost" id="refreshAnalytics" type="button">↻ Refresh</button> <select class="range-select" id="analyticsRange"> <option value="7">Last 7 days</option> <option value="14" selected>Last 14 days</option> <option value="30">Last 30 days</option> </select>
+        </div>
+       </div>
+       <div class="analytics-grid">
+        <div class="a-card">
+         <div class="a-card__head"><span class="a-card__title" data-template-id="analytics-top-areas-title">Most Searched Areas</span> <span class="a-card__hint">Top 10</span>
+         </div>
+         <div class="bar-list" id="topAreasList">
+          <div class="a-empty">
+           No search activity recorded yet.
+          </div>
+         </div>
+        </div>
+        <div class="a-card">
+         <div class="a-card__head"><span class="a-card__title" data-template-id="analytics-dropoff-title">Where People Drop Off</span> <span class="a-card__hint">Last screen before leaving</span>
+         </div>
+         <div class="bar-list" id="dropOffList">
+          <div class="a-empty">
+           No exit events recorded yet.
+          </div>
+         </div>
+        </div>
+        <div class="a-card a-card--full">
+         <div class="a-card__head"><span class="a-card__title" data-template-id="analytics-reports-day-title">Reports Submitted per Day</span> <span class="a-card__hint" id="reportsPerDayHint">—</span>
+         </div>
+         <div class="day-chart" id="reportsPerDayChart"></div>
+         <div class="legend">
+          <span class="legend__item"><span class="legend__dot legend__dot--reports"></span>Reports submitted</span>
+         </div>
+        </div>
+        <div class="a-card a-card--full">
+         <div class="a-card__head"><span class="a-card__title" data-template-id="analytics-dau-title">Daily Active Users</span> <span class="a-card__hint" id="dailyUsersHint">—</span>
+         </div>
+         <div class="day-chart" id="dailyUsersChart"></div>
+         <div class="legend"><span class="legend__item"><span class="legend__dot legend__dot--returning"></span>Returning</span> <span class="legend__item"><span class="legend__dot legend__dot--new"></span>New</span>
+         </div>
+        </div>
+        <div class="a-card a-card--full">
+         <div class="a-card__head"><span class="a-card__title" data-template-id="analytics-screentime-title">Average Time per Screen</span> <span class="a-card__hint">Seconds</span>
+         </div>
+         <div class="bar-list" id="screenTimeList">
+          <div class="a-empty">
+           No screen-time data recorded yet.
+          </div>
+         </div>
+        </div>
+       </div>
+      </div><!-- Locations panel -->
+      <div class="panel" id="locationsPanel">
+       <div class="page-head">
+        <div class="page-head__left">
+         <h2 data-template-id="locations-title" class="canva-text">Locations</h2><span class="page-head__hint" data-template-id="locations-hint">Toggle the switch to push a live status to users' home screens</span>
+        </div>
+        <div class="page-head__actions"><span class="status-msg" id="locationsStatus">Loading…</span> <button class="btn-ghost" id="refreshLocations" type="button">↻ Refresh</button>
+        </div>
+       </div>
+       <div class="toolbar">
+        <div class="toolbar__left">
+         <div class="loc-filter-tabs" id="locFilterTabs" style="margin-bottom:0"><button type="button" class="loc-filter-tab is-active" data-loc-filter="all">All</button> <button type="button" class="loc-filter-tab" data-loc-filter="on">🟢 ON</button> <button type="button" class="loc-filter-tab" data-loc-filter="off">🔴 OFF</button> <button type="button" class="loc-filter-tab" data-loc-filter="unknown">⚪ Unknown</button>
+         </div>
+        </div><input class="search-input" type="text" id="locationSearch" placeholder="Search locations…">
+       </div>
+       <div class="add-location-row"><input type="text" id="newLocationInput" placeholder="Add a location not listed yet (e.g. Bantama, Ashanti)"> <button id="addLocationBtn" type="button">+ Add Location</button>
+       </div>
+       <div class="locations-grid" id="locationsGrid"></div>
+       <div id="locationsEmpty" class="empty-state" style="display:none;">
+        <div class="empty-state__icon">
+         📍
+        </div>No locations yet — add one above.
+       </div>
+      </div><!-- Reports panel -->
+      <div class="panel" id="reportsPanel">
+       <div class="page-head">
+        <div class="page-head__left">
+         <h2 data-template-id="reports-title" class="canva-text">Reports Management</h2>
+        </div>
+        <div class="page-head__actions"><span class="status-msg" id="reportsStatus">Loading…</span> <button class="btn-ghost" id="refreshReports" type="button">↻ Refresh</button> <button class="btn-ghost" id="deleteReportsBtn" type="button" disabled>Delete selected</button> <button class="btn-ghost btn-ghost--danger" id="clearReportsBtnPanel" type="button">🗑 Clear all</button>
+        </div>
+       </div>
+       <table id="reportsTable" style="display:none;">
+        <thead>
+         <tr>
+          <th class="select-col"><input type="checkbox" id="reportsSelectAll" class="select-checkbox" aria-label="Select all reports"></th>
+          <th>Type</th>
+          <th>Location</th>
+          <th>Details</th>
+          <th>Reported</th>
+          <th>Actions</th>
+         </tr>
+        </thead>
+        <tbody id="reportsTbody"></tbody>
+       </table>
+       <div id="reportsEmpty" class="empty-state" style="display:none;">
+        <div class="empty-state__icon">
+         📋
+        </div>No reports available.
+       </div>
+      </div><!-- Users panel -->
+      <div class="panel" id="usersPanel">
+       <div class="page-head">
+        <div class="page-head__left">
+         <h2 data-template-id="users-title" class="canva-text">Users</h2>
+        </div>
+        <div class="page-head__actions"><span class="status-msg" id="usersStatus">Loading…</span> <button class="btn-ghost" id="deleteUsersBtn" type="button" disabled>Delete selected</button> <input class="search-input" type="text" id="userSearch" placeholder="Search by name or contact…">
+        </div>
+       </div>
+       <table id="usersTable" style="display:none;">
+        <thead>
+         <tr>
+          <th class="select-col"><input type="checkbox" id="usersSelectAll" class="select-checkbox" aria-label="Select all users"></th>
+          <th>Name</th>
+          <th>Email / Phone</th>
+          <th>Region</th>
+          <th>City</th>
+          <th>Chat handle</th>
+          <th>Joined</th>
+          <th>Actions</th>
+         </tr>
+        </thead>
+        <tbody id="usersTbody"></tbody>
+       </table>
+       <div id="usersEmpty" class="empty-state" style="display:none;">
+        <div class="empty-state__icon">
+         👥
+        </div>No users registered yet.
+       </div>
+      </div><!-- Chats panel -->
+      <div class="panel" id="chatsPanel">
+       <div class="page-head">
+        <div class="page-head__left">
+         <h2 data-template-id="chats-title" class="canva-text">Chat Messages</h2>
+        </div>
+       </div>
+       <div class="broadcast-card">
+        <div class="broadcast-card__head"><span class="broadcast-card__title" data-template-id="broadcast-title">📢 Push a Message to Everyone</span> <span class="broadcast-card__hint" data-template-id="broadcast-hint">Sends a push notification to every device with notifications enabled</span>
+        </div>
+        <div class="broadcast-row"><input type="text" id="broadcastTitleInput" placeholder="Title (optional — defaults to &quot;LightWatch Admin&quot;)" maxlength="60">
+        </div>
+        <div class="broadcast-row"><textarea id="broadcastBodyInput" placeholder="Write your message to all users…" maxlength="220" rows="2"></textarea> <button id="broadcastSendBtn" type="button">Send to everyone</button>
+        </div>
+        <div id="broadcastStatus" class="broadcast-status"></div>
+       </div>
+       <div class="toolbar">
+        <div class="toolbar__left"><span class="status-msg" id="chatsStatus">Loading…</span> <button class="btn-ghost" id="deleteChatsBtn" type="button" disabled>Delete selected</button>
+        </div><input class="search-input" type="text" id="chatSearch" placeholder="Search messages or location…">
+       </div>
+       <table id="chatsTable" style="display:none;">
+        <thead>
+         <tr>
+          <th class="select-col"><input type="checkbox" id="chatsSelectAll" class="select-checkbox" aria-label="Select all chats"></th>
+          <th>Handle</th>
+          <th>Message</th>
+          <th>Location</th>
+          <th>Sent</th>
+          <th>Actions</th>
+         </tr>
+        </thead>
+        <tbody id="chatsTbody"></tbody>
+       </table>
+       <div id="chatsEmpty" class="empty-state" style="display:none;">
+        <div class="empty-state__icon">
+         💬
+        </div>No chat messages yet.
+       </div>
+      </div><!-- System Health panel -->
+      <div class="panel" id="healthPanel">
+       <div class="page-head">
+        <div class="page-head__left">
+         <h2 data-template-id="health-title" class="canva-text">System Health</h2><span class="page-head__hint" data-template-id="health-hint">Real-time backend &amp; service monitoring</span>
+        </div>
+        <div class="page-head__actions"><span class="status-msg" id="healthStatus">Checking…</span> <button class="btn-ghost" id="refreshHealth" type="button">↻ Refresh</button>
+        </div>
+       </div>
+       <div class="health-grid">
+        <div class="health-card">
+         <div class="health-card__head"><span class="health-card__title">API Server</span> <span class="health-card__indicator health-card__indicator--ok" id="hApiIndicator"></span>
+         </div>
+         <div class="health-card__value" id="hApiLatency">
+          —
+         </div>
+         <div class="health-card__label">
+          Response latency
+         </div>
+        </div>
+        <div class="health-card">
+         <div class="health-card__head"><span class="health-card__title">Database</span> <span class="health-card__indicator health-card__indicator--ok" id="hDbIndicator"></span>
+         </div>
+         <div class="health-card__value" id="hDbStatus">
+          —
+         </div>
+         <div class="health-card__label">
+          Connection status
+         </div>
+        </div>
+        <div class="health-card">
+         <div class="health-card__head"><span class="health-card__title">Push Notifications</span> <span class="health-card__indicator health-card__indicator--ok" id="hPushIndicator"></span>
+         </div>
+         <div class="health-card__value" id="hPushSubs">
+          —
+         </div>
+         <div class="health-card__label">
+          Active subscribers
+         </div>
+        </div>
+        <div class="health-card">
+         <div class="health-card__head"><span class="health-card__title">Uptime</span> <span class="health-card__indicator health-card__indicator--ok"></span>
+         </div>
+         <div class="health-card__value" id="hUptime">
+          —
+         </div>
+         <div class="health-card__label">
+          Session uptime
+         </div>
+         <div class="uptime-bar">
+          <div class="uptime-bar__fill" id="hUptimeBar" style="width:100%"></div>
+         </div>
+        </div>
+        <div class="health-card">
+         <div class="health-card__head"><span class="health-card__title">Total Data Events</span> <span class="health-card__indicator health-card__indicator--ok"></span>
+         </div>
+         <div class="health-card__value" id="hTotalEvents">
+          —
+         </div>
+         <div class="health-card__label">
+          Users + chats + reports
+         </div>
+        </div>
+        <div class="health-card">
+         <div class="health-card__head"><span class="health-card__title">Admin Session</span> <span class="health-card__indicator health-card__indicator--ok"></span>
+         </div>
+         <div class="health-card__value" id="hSessionAge">
+          —
+         </div>
+         <div class="health-card__label">
+          Time since sign-in
+         </div>
+        </div>
+       </div>
+       <div class="a-card" style="margin-top:14px;">
+        <div class="a-card__head"><span class="a-card__title" data-template-id="health-log-title">Recent System Events</span> <span class="a-card__hint">Last 20 actions this session</span>
+        </div>
+        <div id="systemEventLog" style="display:flex;flex-direction:column;gap:0;"></div>
+       </div>
+      </div>
+     </main>
     </div>
+   </div><!-- Bottom pill nav (mobile) -->
+   <nav class="bottom-nav" id="bottomNav"><button class="bottom-nav__btn active" data-tab="activity" type="button">
+     <svg viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M3 12h4l3 8 4-16 3 8h4" />
+     </svg> Activity </button> <button class="bottom-nav__btn" data-tab="analytics" type="button">
+     <svg viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M3 3v18h18" /><path d="M7 15l4-6 4 4 5-8" />
+     </svg> Analytics </button> <button class="bottom-nav__btn" data-tab="locations" type="button">
+     <svg viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M12 21s7-6.5 7-12a7 7 0 1 0-14 0c0 5.5 7 12 7 12z" /><circle cx="12" cy="9" r="2.5" />
+     </svg> Locations </button> <button class="bottom-nav__btn" data-tab="reports" type="button">
+     <svg viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M4 19h16" /><path d="M4 15l4-4 3 3 5-6 4 4" />
+     </svg> Reports </button> <button class="bottom-nav__btn" data-tab="users" type="button">
+     <svg viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="9" cy="8" r="3.2" /><path d="M2.5 20c1-4 3.6-6 6.5-6s5.5 2 6.5 6" /><circle cx="18" cy="8.5" r="2.4" /><path d="M15.6 14.3c2.3.3 4.2 2.1 5 5.7" />
+     </svg> Users </button> <button class="bottom-nav__btn" data-tab="chats" type="button">
+     <svg viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M4 5h16v11H8l-4 4V5z" />
+     </svg> Chats </button>
+   </nav>
   </div>
-
-  <!-- Bottom pill nav (mobile) -->
-  <nav class="bottom-nav" id="bottomNav">
-    <button class="bottom-nav__btn active" data-tab="activity" type="button">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l3 8 4-16 3 8h4"/></svg>
-      Activity
-    </button>
-    <button class="bottom-nav__btn" data-tab="analytics" type="button">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 15l4-6 4 4 5-8"/></svg>
-      Analytics
-    </button>
-    <button class="bottom-nav__btn" data-tab="locations" type="button">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.5 7-12a7 7 0 1 0-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>
-      Locations
-    </button>
-    <button class="bottom-nav__btn" data-tab="reports" type="button">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19h16"/><path d="M4 15l4-4 3 3 5-6 4 4"/></svg>
-      Reports
-    </button>
-    <button class="bottom-nav__btn" data-tab="users" type="button">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c1-4 3.6-6 6.5-6s5.5 2 6.5 6"/><circle cx="18" cy="8.5" r="2.4"/><path d="M15.6 14.3c2.3.3 4.2 2.1 5 5.7"/></svg>
-      Users
-    </button>
-    <button class="bottom-nav__btn" data-tab="chats" type="button">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16v11H8l-4 4V5z"/></svg>
-      Chats
-    </button>
-  </nav>
-</div>
-
-  <script src="./Js/config.js"></script>
-  <script src="./Js/auth.js"></script>
-
-<script>
-      const API = "https://lightwatch-backend.onrender.com";
-      const TK = "lw_admin_tk";
-
-      function getToken() { return sessionStorage.getItem(TK); }
-      function setToken(t) { sessionStorage.setItem(TK, t); }
-      function clearToken() { sessionStorage.removeItem(TK); }
-
-      function esc(str) {
-        const d = document.createElement("div");
-        d.textContent = String(str ?? "");
-        return d.innerHTML;
-      }
-
-      // Deterministic color per chat handle — same handle always gets the
-      // same color, so it's easy to visually track who's who in a fast
-      // scrolling messages list. Fixed saturation/lightness (tuned for the
-      // dark theme) with only the hue varying per handle.
-      const handleColorCache = new Map();
-      function handleColor(handle) {
-        const key = String(handle || "").toLowerCase();
-        if (handleColorCache.has(key)) return handleColorCache.get(key);
-        let hash = 0;
-        for (let i = 0; i < key.length; i++) {
-          hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
-        }
-        const hue = hash % 360;
-        const color = `hsl(${hue}, 72%, 68%)`;
-        handleColorCache.set(key, color);
-        return color;
-      }
-
-      function fmtDate(iso) {
-        if (!iso) return "—";
-        return new Date(iso).toLocaleString([], { dateStyle: "short", timeStyle: "short" });
-      }
-
-      function fmtRel(iso) {
-        if (!iso) return "—";
-        const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
-        if (diff < 60) return `${diff}s ago`;
-        if (diff < 3600) return `${Math.floor(diff/60)}m ago`;
-        if (diff < 86400) return `${Math.floor(diff/3600)}h ago`;
-        return `${Math.floor(diff/86400)}d ago`;
-      }
-
-      async function apiFetch(path) {
-        const res = await fetch(`${API}${path}`, {
-          headers: { Authorization: `Bearer ${getToken()}` }
-        });
-        if (res.status === 401 || res.status === 403) {
-          clearToken(); showLogin("Session expired."); throw new Error("auth");
-        }
-        if (!res.ok) throw new Error("Request failed");
-        return res.json();
-      }
-
-      async function apiPost(path, body) {
-        const res = await fetch(`${API}${path}`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${getToken()}`,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(body || {})
-        });
-        if (res.status === 401 || res.status === 403) {
-          clearToken(); showLogin("Session expired."); throw new Error("auth");
-        }
-        const payload = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(payload.error || "Request failed");
-        return payload;
-      }
-
-      async function apiDelete(path, ids) {
-        const res = await fetch(`${API}${path}`, {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${getToken()}`,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ ids })
-        });
-        if (res.status === 401 || res.status === 403) {
-          clearToken(); showLogin("Session expired."); throw new Error("auth");
-        }
-        const payload = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(payload.error || "Delete request failed");
-        return payload;
-      }
-
-      async function apiDeleteNoBody(path) {
-        const res = await fetch(`${API}${path}`, {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${getToken()}`
-          }
-        });
-        if (res.status === 401 || res.status === 403) {
-          clearToken(); showLogin("Session expired."); throw new Error("auth");
-        }
-        const payload = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(payload.error || "Delete request failed");
-        return payload;
-      }
-
-      // ===== AUTO LOGOUT AFTER INACTIVITY =====
-      const IDLE_LIMIT_MS = 10 * 60 * 1000; // 10 minutes
-      const IDLE_EVENTS = ["mousemove", "mousedown", "keydown", "scroll", "touchstart", "click"];
-      let idleTimer = null;
-
-      function handleIdleLogout() {
-        stopIdleTracking();
-        clearToken();
-        showLogin("Signed out after 10 minutes of inactivity.");
-      }
-
-      function resetIdleTimer() {
-        clearTimeout(idleTimer);
-        idleTimer = setTimeout(handleIdleLogout, IDLE_LIMIT_MS);
-      }
-
-      function startIdleTracking() {
-        IDLE_EVENTS.forEach(evt => document.addEventListener(evt, resetIdleTimer, { passive: true }));
-        resetIdleTimer();
-      }
-
-      function stopIdleTracking() {
-        clearTimeout(idleTimer);
-        idleTimer = null;
-        IDLE_EVENTS.forEach(evt => document.removeEventListener(evt, resetIdleTimer));
-      }
-
-      // ===== LOGIN (single admin password, checked against ADMIN_PASSWORD) =====
-      const stepPassword = document.getElementById("loginStepPassword");
-      const passwordInput = document.getElementById("adminPasswordInput");
-      const loginBtn = document.getElementById("adminLoginBtn");
-      const loginError = document.getElementById("loginError");
-
-      async function handleLogin() {
-        const password = passwordInput.value;
-        loginError.textContent = "";
-        if (!password) { loginError.textContent = "Enter the admin password"; return; }
-
-        loginBtn.disabled = true;
-        loginBtn.textContent = "Signing in…";
-        try {
-          const res = await fetch(`${API}/admin/login`, {
-            method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ password })
-          });
-          const result = await res.json();
-          if (!res.ok) { loginError.textContent = result.error || "Incorrect password"; return; }
-
-          setToken(result.token);
-          passwordInput.value = "";
-          showDashboard();
-        } catch (e) {
-          loginError.textContent = "Could not reach the server";
-        } finally {
-          loginBtn.disabled = false;
-          loginBtn.textContent = "Sign in";
-        }
-      }
-
-      loginBtn.addEventListener("click", handleLogin);
-      passwordInput.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); handleLogin(); } });
-
-      function showLogin(msg) {
-        stopIdleTracking();
-        document.getElementById("loginScreen").style.display = "flex";
-        document.getElementById("dashboard").style.display = "none";
-        passwordInput.value = "";
-        if (msg) loginError.textContent = msg;
-        passwordInput.focus();
-      }
-
-      function showDashboard() {
-        document.getElementById("loginScreen").style.display = "none";
-        document.getElementById("dashboard").style.display = "block";
-        loadAll();
-        setInterval(loadActivity, 15000);
-        startIdleTracking();
-      }
-
-      document.getElementById("logoutBtn").addEventListener("click", () => { clearToken(); showLogin(); });
-      document.getElementById("logoutBtnMobile").addEventListener("click", () => { clearToken(); showLogin(); });
-
-      // ===== TAB SWITCHING (sidebar + bottom nav stay in sync) =====
-      const TAB_LABELS = {
-        activity: "Live activity", analytics: "Analytics", locations: "Locations",
-        reports: "Reports", users: "Users", chats: "Chat messages"
-      };
-      function switchTab(tab) {
-        document.querySelectorAll(".nav-btn, .bottom-nav__btn").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
-        document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
-        document.getElementById(`${tab}Panel`)?.classList.add("active");
-        const title = document.getElementById("mobilePageTitle");
-        if (title) title.textContent = TAB_LABELS[tab] || tab;
-        window.scrollTo({ top: 0, behavior: "instant" in window ? "instant" : "auto" });
-      }
-      document.querySelectorAll(".nav-btn, .bottom-nav__btn").forEach(btn => {
-        btn.addEventListener("click", () => switchTab(btn.dataset.tab));
-      });
-
-      let allUsers = [], allChats = [], allReports = [], allLocations = [];
-      const selectedUserIds = new Set();
-      const selectedChatIds = new Set();
-      const selectedReportIds = new Set();
-
-      function syncDeleteButtons() {
-        const delUsersBtn = document.getElementById("deleteUsersBtn");
-        const delChatsBtn = document.getElementById("deleteChatsBtn");
-        const delReportsBtn = document.getElementById("deleteReportsBtn");
-
-        if (delUsersBtn) {
-          const count = selectedUserIds.size;
-          delUsersBtn.disabled = count === 0;
-          delUsersBtn.textContent = count > 0 ? `Delete selected users (${count})` : "Delete selected users";
-        }
-        if (delChatsBtn) {
-          const count = selectedChatIds.size;
-          delChatsBtn.disabled = count === 0;
-          delChatsBtn.textContent = count > 0 ? `Delete selected messages (${count})` : "Delete selected messages";
-        }
-        if (delReportsBtn) {
-          const count = selectedReportIds.size;
-          delReportsBtn.disabled = count === 0;
-          delReportsBtn.textContent = count > 0 ? `Delete selected reports (${count})` : "Delete selected reports";
-        }
-      }
-
-      async function loadAll() {
-        loadSummary();
-        loadActivity();
-        loadAnalytics();
-        loadLocations();
-        loadReportsPanel();
-        loadUsers();
-        loadChats();
-      }
-
-      // ===== LOCATIONS (admin push -> users' home pages) =====
-      async function loadLocations() {
-        const status = document.getElementById("locationsStatus");
-        try {
-          allLocations = await apiFetch("/admin/locations");
-          renderLocations(allLocations);
-          status.textContent = `${allLocations.length} location${allLocations.length !== 1 ? "s" : ""} tracked`;
-        } catch (e) {
-          if (e.message !== "auth") status.textContent = "Could not load locations.";
-        }
-      }
-
-      let activeLocFilter = "all";
-
-      function renderLocations(locations) {
-        const grid = document.getElementById("locationsGrid");
-        const empty = document.getElementById("locationsEmpty");
-        const filtered = activeLocFilter === "all"
-          ? locations
-          : locations.filter(l => (l.status || "unknown") === activeLocFilter);
-
-        if (!filtered.length) {
-          grid.innerHTML = "";
-          empty.style.display = "block";
-          empty.textContent = locations.length
-            ? "No locations match that filter."
-            : "No locations yet — add one above.";
-          return;
-        }
-        empty.style.display = "none";
-        grid.innerHTML = filtered.map(loc => {
-          const status = loc.status || "unknown";
-          const chipClass = status === "on" ? "status-chip--on" : status === "off" ? "status-chip--off" : "status-chip--unknown";
-          const chipLabel = status === "on" ? "Light on" : status === "off" ? "Light off" : "Unknown";
-          const dotClass = status === "on" ? "loc-card__dot--on" : status === "off" ? "loc-card__dot--off" : "loc-card__dot--unknown";
-          const meta = loc.reportedAt
-            ? `Last set by ${esc(loc.reportedBy || "—")} · ${fmtRel(loc.reportedAt)}`
-            : "No status set yet";
-          return `
-            <div class="loc-card loc-card--${status}" data-location-key="${esc(loc.locationKey)}">
-              <div class="loc-card__top">
-                <div>
-                  <div class="loc-card__name"><span class="loc-card__dot ${dotClass}"></span>${esc(loc.label)}</div>
-                  <div class="loc-card__meta">${meta}</div>
-                </div>
-                <span class="status-chip ${chipClass}">${chipLabel}</span>
-              </div>
-              <div class="loc-card__actions">
-                <button type="button" class="loc-btn loc-btn--on ${status === 'on' ? 'loc-btn--active-on' : ''}" data-push-key="${esc(loc.locationKey)}" data-push-status="on">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18h6M10 22h4M12 2a6 6 0 0 0-4 10.5c.6.55 1 1.4 1 2.2V16h6v-1.3c0-.8.4-1.65 1-2.2A6 6 0 0 0 12 2z"/></svg>
-                  Set ON
-                </button>
-                <button type="button" class="loc-btn loc-btn--off ${status === 'off' ? 'loc-btn--active-off' : ''}" data-push-key="${esc(loc.locationKey)}" data-push-status="off">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18h6M10 22h4M12 2a6 6 0 0 0-4 10.5c.6.55 1 1.4 1 2.2V16h6v-1.3c0-.8.4-1.65 1-2.2A6 6 0 0 0 12 2z"/><line x1="3" y1="3" x2="21" y2="21"/></svg>
-                  Set OFF
-                </button>
-              </div>
-            </div>
-          `;
-        }).join("");
-
-        grid.querySelectorAll("[data-push-key]").forEach(btn => {
-          btn.addEventListener("click", async (e) => {
-            const key = e.currentTarget.dataset.pushKey;
-            const status = e.currentTarget.dataset.pushStatus;
-            await pushLocationStatus(key, status, e.currentTarget);
-          });
-        });
-      }
-
-      document.getElementById("locFilterTabs")?.addEventListener("click", (e) => {
-        const btn = e.target.closest("[data-loc-filter]");
-        if (!btn) return;
-        activeLocFilter = btn.dataset.locFilter;
-        document.querySelectorAll("#locFilterTabs .loc-filter-tab").forEach(b => b.classList.toggle("is-active", b === btn));
-        const q = (document.getElementById("locationSearch")?.value || "").toLowerCase();
-        renderLocations(q ? allLocations.filter(l => l.label.toLowerCase().includes(q)) : allLocations);
-      });
-
-      async function pushLocationStatus(locationKey, status, triggerBtn) {
-        const card = triggerBtn?.closest(".loc-card");
-        const buttons = card ? card.querySelectorAll(".loc-btn") : [];
-        buttons.forEach(b => b.disabled = true);
-        try {
-          await apiPost("/admin/lightstatus", { location: locationKey, status });
-          await Promise.all([loadLocations(), loadSummary(), loadActivity()]);
-          const refreshedCard = document.querySelector(`.loc-card[data-location-key="${CSS.escape(locationKey)}"]`);
-          if (refreshedCard) {
-            refreshedCard.classList.add("loc-card--pushed");
-            setTimeout(() => refreshedCard.classList.remove("loc-card--pushed"), 1000);
-          }
-        } catch (e) {
-          if (e.message !== "auth") alert(e.message || "Could not update location status.");
-        } finally {
-          buttons.forEach(b => b.disabled = false);
-        }
-      }
-
-      document.getElementById("refreshLocations")?.addEventListener("click", loadLocations);
-
-      document.getElementById("locationSearch")?.addEventListener("input", (e) => {
-        const q = e.target.value.toLowerCase();
-        renderLocations(q ? allLocations.filter(l => l.label.toLowerCase().includes(q)) : allLocations);
-      });
-
-      document.getElementById("addLocationBtn")?.addEventListener("click", () => {
-        const input = document.getElementById("newLocationInput");
-        const value = input.value.trim();
-        if (!value) return;
-        const key = value.toLowerCase().split(",")[0].trim();
-        if (allLocations.some(l => l.locationKey === key)) {
-          input.value = "";
-          document.getElementById("locationSearch").value = value.split(",")[0].trim();
-          renderLocations(allLocations.filter(l => l.locationKey === key));
-          return;
-        }
-        const label = key.split(" ").filter(Boolean).map(w => w[0].toUpperCase() + w.slice(1)).join(" ");
-        allLocations = [...allLocations, { locationKey: key, label, status: "unknown", reportedBy: null, reportedAt: null }]
-          .sort((a, b) => a.label.localeCompare(b.label));
-        renderLocations(allLocations);
-        input.value = "";
-      });
-
-      // ===== REPORTS =====
-      async function loadReportsPanel() {
-        const table = document.getElementById("reportsTable");
-        const empty = document.getElementById("reportsEmpty");
-        const status = document.getElementById("reportsStatus");
-        const selectAll = document.getElementById("reportsSelectAll");
-        try {
-          allReports = await apiFetch("/admin/reports?limit=80");
-          const validIds = new Set(allReports.map(report => String(report.id)));
-          [...selectedReportIds].forEach(id => { if (!validIds.has(id)) selectedReportIds.delete(id); });
-
-          if (!allReports.length) {
-            table.style.display = "none";
-            empty.style.display = "block";
-            status.textContent = "No reports available.";
-            if (selectAll) selectAll.checked = false;
-            syncDeleteButtons();
-            return;
-          }
-
-          const tbody = document.getElementById("reportsTbody");
-          tbody.innerHTML = allReports.map(r => `
-            <tr>
-              <td data-label="Select"><input type="checkbox" class="select-checkbox report-row-select" data-report-id="${esc(r.id)}" ${selectedReportIds.has(String(r.id)) ? "checked" : ""} /></td>
-              <td data-label="Type" class="${r.type === 'warning' ? 'faint' : 'gold'}">${esc(r.type === 'warning' ? 'Outage' : 'Restored')}</td>
-              <td data-label="Location">${esc(r.location || '—')}</td>
-              <td data-label="Details">${esc(r.text || r.title || '—')}</td>
-              <td data-label="Reported" class="faint">${fmtDate(r.reportedAt)}</td>
-              <td data-label="Actions"><button type="button" class="row-del-btn report-row-delete" data-report-del="${esc(r.id)}">Delete</button></td>
-            </tr>
-          `).join("");
-
-          tbody.querySelectorAll(".report-row-select").forEach(cb => {
-            cb.addEventListener("change", (e) => {
-              const id = e.target.dataset.reportId;
-              if (!id) return;
-              if (e.target.checked) selectedReportIds.add(id);
-              else selectedReportIds.delete(id);
-              syncDeleteButtons();
-            });
-          });
-
-          tbody.querySelectorAll(".report-row-delete").forEach(btn => {
-            btn.addEventListener("click", async (e) => {
-              const id = e.currentTarget.dataset.reportDel;
-              if (!id) return;
-              await deleteReportsByIds([id]);
-            });
-          });
-
-          if (selectAll) {
-            const visibleIds = allReports.map(report => String(report.id));
-            selectAll.checked = visibleIds.length > 0 && visibleIds.every(id => selectedReportIds.has(id));
-          }
-
-          table.style.display = "table";
-          empty.style.display = "none";
-          status.textContent = `${allReports.length} recent report${allReports.length === 1 ? '' : 's'}`;
-          syncDeleteButtons();
-        } catch (e) {
-          table.style.display = "none";
-          empty.style.display = "block";
-          status.textContent = "Could not load reports.";
-          syncDeleteButtons();
-        }
-      }
-
-      async function deleteReportsByIds(ids) {
-        if (!ids.length) return;
-        const count = ids.length;
-        const warning = count === 1
-          ? "Delete this report now? This cannot be undone."
-          : `Delete ${count} reports now? This cannot be undone.`;
-        if (!window.confirm(warning)) return;
-
-        try {
-          await apiDelete('/admin/reports', ids);
-          ids.forEach(id => selectedReportIds.delete(String(id)));
-          await Promise.all([loadSummary(), loadActivity(), loadReportsPanel()]);
-        } catch (e) {
-          if (e.message !== "auth") alert(e.message || "Could not delete reports.");
-        }
-      }
-
-      async function clearAllReports() {
-        const warning = "Clear ALL outage reports now? This cannot be undone.";
-        if (!window.confirm(warning)) return;
-        try {
-          const payload = await apiDeleteNoBody('/admin/reports');
-          const deleted = Number(payload.deletedCount || 0);
-          const text = `Cleared ${deleted} report${deleted === 1 ? "" : "s"}.`;
-          const activityStatus = document.getElementById("activityStatus");
-          const reportsStatus = document.getElementById("reportsStatus");
-          if (activityStatus) activityStatus.textContent = text;
-          if (reportsStatus) reportsStatus.textContent = text;
-          await Promise.all([loadSummary(), loadActivity(), loadReportsPanel()]);
-        } catch (e) {
-          if (e.message !== "auth") alert(e.message || "Could not clear reports.");
-        }
-      }
-
-      // ===== SUMMARY + ACTIVITY =====
-      async function loadSummary() {
-        try {
-          const s = await apiFetch("/admin/summary");
-          document.getElementById("sTotal").textContent = s.userCount;
-          document.getElementById("sNew24h").textContent = s.newUsers24h;
-          document.getElementById("sChats").textContent = s.chatCount;
-          document.getElementById("sChats24h").textContent = s.newChats24h;
-          // Real, backend-computed figure — union of statuses, chats, and
-          // user cities — rather than derived only from whatever chats
-          // happen to be loaded on the activity tab.
-          document.getElementById("sLocations").textContent = s.locationsTracked ?? "—";
-        } catch(e) {}
-      }
-
-      async function loadActivity() {
-        try {
-          const [users, chats] = await Promise.all([
-            apiFetch("/admin/users"),
-            apiFetch("/admin/chats")
-          ]);
-
-          const events = [
-            ...users.map(u => ({ type:"signup", time: u.createdAt, name: u.name, contact: u.emailPhone, location: u.city ? `${u.city}, ${u.region}` : u.region })),
-            ...chats.map(c => ({ type:"chat", time: c.createdAt, handle: c.handle, text: c.text, location: c.location }))
-          ].sort((a,b) => new Date(b.time) - new Date(a.time)).slice(0, 60);
-
-          if (events.length > 0) {
-            document.getElementById("sLastActivity").textContent = fmtRel(events[0].time);
-          }
-
-          const log = document.getElementById("activityLog");
-          if (events.length === 0) {
-            log.innerHTML = `<div class="empty-state">No activity yet.</div>`;
-            document.getElementById("activityStatus").textContent = "No activity yet.";
-            return;
-          }
-
-          log.innerHTML = events.map(ev => {
-            if (ev.type === "signup") return `
-              <div class="log-item">
-                <span class="log-item__time">${fmtRel(ev.time)}</span>
-                <span class="log-item__content">
-                  <strong>${esc(ev.name)}</strong> signed up — ${esc(ev.contact)}
-                  ${ev.location ? `<span style="color:var(--faint);"> · ${esc(ev.location)}</span>` : ""}
-                </span>
-                <span class="log-item__badge badge-signup">New user</span>
-              </div>`;
-            return `
-              <div class="log-item">
-                <span class="log-item__time">${fmtRel(ev.time)}</span>
-                <span class="log-item__content">
-                  <strong style="color:${handleColor(ev.handle)}">${esc(ev.handle)}</strong>: "${esc(ev.text.length > 60 ? ev.text.slice(0,60)+"…" : ev.text)}"
-                  ${ev.location ? `<span style="color:var(--faint);"> in ${esc(ev.location)}</span>` : ""}
-                </span>
-                <span class="log-item__badge badge-chat">Chat</span>
-              </div>`;
-          }).join("");
-
-          document.getElementById("activityStatus").textContent = `${events.length} recent events`;
-        } catch(e) {
-          if (e.message !== "auth") document.getElementById("activityStatus").textContent = "Could not load activity.";
-        }
-      }
-
-      // ===== USERS =====
-      async function loadUsers() {
-        try {
-          allUsers = await apiFetch("/admin/users");
-          const validIds = new Set(allUsers.map(u => String(u._id)));
-          [...selectedUserIds].forEach(id => { if (!validIds.has(id)) selectedUserIds.delete(id); });
-          renderUsers(allUsers);
-          document.getElementById("usersStatus").textContent = `${allUsers.length} registered user${allUsers.length !== 1 ? "s" : ""}`;
-          syncDeleteButtons();
-        } catch(e) {
-          if (e.message !== "auth") document.getElementById("usersStatus").textContent = "Could not load users.";
-        }
-      }
-
-      function renderUsers(users) {
-        const tbody = document.getElementById("usersTbody");
-        const table = document.getElementById("usersTable");
-        const empty = document.getElementById("usersEmpty");
-        const selectAll = document.getElementById("usersSelectAll");
-        if (!users.length) {
-          table.style.display = "none";
-          empty.style.display = "block";
-          if (selectAll) selectAll.checked = false;
-          return;
-        }
-        tbody.innerHTML = users.map(u => `
-          <tr>
-            <td data-label="Select"><input type="checkbox" class="select-checkbox user-row-select" data-user-id="${esc(u._id)}" ${selectedUserIds.has(String(u._id)) ? "checked" : ""} /></td>
-            <td data-label="Name">${esc(u.name)}</td>
-            <td data-label="Contact" class="gold">${esc(u.emailPhone)}</td>
-            <td data-label="Region">${esc(u.region)}</td>
-            <td data-label="City">${esc(u.city)}</td>
-            <td data-label="Handle" class="faint">${esc(u.chatHandle || "—")}</td>
-            <td data-label="Joined" class="faint">${fmtDate(u.createdAt)}</td>
-            <td data-label="Actions"><button type="button" class="row-del-btn user-row-delete" data-user-del="${esc(u._id)}">Delete</button></td>
-          </tr>`).join("");
-        table.style.display = "table";
-        empty.style.display = "none";
-
-        tbody.querySelectorAll(".user-row-select").forEach(cb => {
-          cb.addEventListener("change", (e) => {
-            const id = e.target.dataset.userId;
-            if (!id) return;
-            if (e.target.checked) selectedUserIds.add(id);
-            else selectedUserIds.delete(id);
-            syncDeleteButtons();
-          });
-        });
-
-        tbody.querySelectorAll(".user-row-delete").forEach(btn => {
-          btn.addEventListener("click", async (e) => {
-            const id = e.currentTarget.dataset.userDel;
-            if (!id) return;
-            await deleteUsersByIds([id]);
-          });
-        });
-
-        if (selectAll) {
-          const visibleIds = users.map(u => String(u._id));
-          selectAll.checked = visibleIds.length > 0 && visibleIds.every(id => selectedUserIds.has(id));
-        }
-      }
-
-      // ===== BROADCAST (push a message to every subscriber) =====
-      document.getElementById("broadcastSendBtn")?.addEventListener("click", async () => {
-        const titleInput = document.getElementById("broadcastTitleInput");
-        const bodyInput = document.getElementById("broadcastBodyInput");
-        const statusEl = document.getElementById("broadcastStatus");
-        const btn = document.getElementById("broadcastSendBtn");
-        const body = bodyInput.value.trim();
-
-        statusEl.className = "broadcast-status";
-        if (!body) { statusEl.textContent = "Write a message first."; statusEl.classList.add("broadcast-status--err"); return; }
-
-        btn.disabled = true;
-        btn.textContent = "Sending…";
-        try {
-          const result = await apiPost("/admin/broadcast", { title: titleInput.value.trim(), body });
-          statusEl.textContent = `Sent to ${result.sentCount} of ${result.subscribers} subscriber(s).`;
-          statusEl.classList.add("broadcast-status--ok");
-          bodyInput.value = "";
-          titleInput.value = "";
-        } catch (e) {
-          if (e.message !== "auth") {
-            statusEl.textContent = e.message || "Could not send broadcast.";
-            statusEl.classList.add("broadcast-status--err");
-          }
-        } finally {
-          btn.disabled = false;
-          btn.textContent = "Send to everyone";
-        }
-      });
-
-      // ===== CHATS =====
-      async function loadChats() {
-        try {
-          allChats = await apiFetch("/admin/chats");
-          const validIds = new Set(allChats.map(c => String(c._id)));
-          [...selectedChatIds].forEach(id => { if (!validIds.has(id)) selectedChatIds.delete(id); });
-          renderChats(allChats);
-          document.getElementById("chatsStatus").textContent = `${allChats.length} message${allChats.length !== 1 ? "s" : ""}`;
-          syncDeleteButtons();
-        } catch(e) {
-          if (e.message !== "auth") document.getElementById("chatsStatus").textContent = "Could not load messages.";
-        }
-      }
-
-      function renderChats(chats) {
-        const tbody = document.getElementById("chatsTbody");
-        const table = document.getElementById("chatsTable");
-        const empty = document.getElementById("chatsEmpty");
-        const selectAll = document.getElementById("chatsSelectAll");
-        if (!chats.length) {
-          table.style.display = "none";
-          empty.style.display = "block";
-          if (selectAll) selectAll.checked = false;
-          return;
-        }
-        tbody.innerHTML = chats.map(c => `
-          <tr>
-            <td data-label="Select"><input type="checkbox" class="select-checkbox chat-row-select" data-chat-id="${esc(c._id)}" ${selectedChatIds.has(String(c._id)) ? "checked" : ""} /></td>
-            <td data-label="Handle"><span class="handle-pill" style="--handle-color:${handleColor(c.handle)}">${esc(c.handle)}</span></td>
-            <td data-label="Message">${esc(c.text)}</td>
-            <td data-label="Location" class="faint">${esc(c.location)}</td>
-            <td data-label="Sent" class="faint">${fmtDate(c.createdAt)}</td>
-            <td data-label="Actions"><button type="button" class="row-del-btn chat-row-delete" data-chat-del="${esc(c._id)}">Delete</button></td>
-          </tr>`).join("");
-        table.style.display = "table";
-        empty.style.display = "none";
-
-        tbody.querySelectorAll(".chat-row-select").forEach(cb => {
-          cb.addEventListener("change", (e) => {
-            const id = e.target.dataset.chatId;
-            if (!id) return;
-            if (e.target.checked) selectedChatIds.add(id);
-            else selectedChatIds.delete(id);
-            syncDeleteButtons();
-          });
-        });
-
-        tbody.querySelectorAll(".chat-row-delete").forEach(btn => {
-          btn.addEventListener("click", async (e) => {
-            const id = e.currentTarget.dataset.chatDel;
-            if (!id) return;
-            await deleteChatsByIds([id]);
-          });
-        });
-
-        if (selectAll) {
-          const visibleIds = chats.map(c => String(c._id));
-          selectAll.checked = visibleIds.length > 0 && visibleIds.every(id => selectedChatIds.has(id));
-        }
-      }
-
-      async function deleteChatsByIds(ids) {
-        if (!ids.length) return;
-        try {
-          await apiDelete('/admin/chats', ids);
-          ids.forEach(id => selectedChatIds.delete(String(id)));
-          await Promise.all([loadChats(), loadSummary(), loadActivity()]);
-        } catch (e) {
-          if (e.message !== "auth") alert(e.message || "Could not delete chats.");
-        }
-      }
-
-      async function deleteUsersByIds(ids) {
-        if (!ids.length) return;
-        const count = ids.length;
-        const warning = count === 1
-          ? "Are you sure you want to delete this user? This will also remove their chats and subscriptions."
-          : `Are you sure you want to delete ${count} users? This will also remove their chats and subscriptions.`;
-        if (!window.confirm(warning)) return;
-
-        try {
-          await apiDelete('/admin/users', ids);
-          ids.forEach(id => selectedUserIds.delete(String(id)));
-          await Promise.all([loadUsers(), loadChats(), loadSummary(), loadActivity()]);
-        } catch (e) {
-          if (e.message !== "auth") alert(e.message || "Could not delete users.");
-        }
-      }
-
-      // ===== ANALYTICS =====
-      function fmtDayLabel(iso) {
-        const d = new Date(iso + "T00:00:00Z");
-        return d.toLocaleDateString([], { month: "short", day: "numeric", timeZone: "UTC" });
-      }
-
-      function renderBarList(containerId, items, opts = {}) {
-        const el = document.getElementById(containerId);
-        if (!items || !items.length) {
-          el.innerHTML = `<div class="a-empty">${opts.emptyText || "No data yet."}</div>`;
-          return;
-        }
-        const max = Math.max(...items.map(i => i.value), 1);
-        const fillClass = opts.fillClass ? ` bar-row__fill--${opts.fillClass}` : "";
-        el.innerHTML = items.map(i => `
-          <div class="bar-row">
-            <div class="bar-row__label" title="${esc(i.label)}">${esc(i.label)}</div>
-            <div class="bar-row__track"><div class="bar-row__fill${fillClass}" style="width:${Math.max((i.value / max) * 100, 3)}%"></div></div>
-            <div class="bar-row__value">${esc(i.value)}${opts.suffix || ""}</div>
+  <script>
+  // vh fix for mobile
+  function setVh() { document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`); }
+  setVh(); window.addEventListener('resize', setVh);
+
+  const API = "https://lightwatch-backend.onrender.com";
+  const TK = "lw_admin_tk";
+  function getToken() { return sessionStorage.getItem(TK); }
+  function setToken(t) { sessionStorage.setItem(TK, t); }
+  function clearToken() { sessionStorage.removeItem(TK); }
+
+  // ===== TOAST SYSTEM =====
+  function showToast(msg, type = "info", duration = 3500) {
+    const icons = { ok: "✅", err: "❌", info: "ℹ️" };
+    const container = document.getElementById("toastContainer");
+    const el = document.createElement("div");
+    el.className = `toast toast--${type}`;
+    el.innerHTML = `<span class="toast__icon">${icons[type] || "ℹ️"}</span><span>${msg}</span>`;
+    container.appendChild(el);
+    const remove = () => {
+      el.classList.add("toast--hide");
+      el.addEventListener("animationend", () => el.remove(), { once: true });
+    };
+    setTimeout(remove, duration);
+    el.addEventListener("click", remove);
+  }
+
+  // ===== CONFIRM MODAL =====
+  function showConfirm({ icon = "⚠️", title, desc, confirmText = "Confirm", danger = true }) {
+    return new Promise(resolve => {
+      const backdrop = document.createElement("div");
+      backdrop.className = "modal-backdrop";
+      backdrop.innerHTML = `
+        <div class="modal-box">
+          <div class="modal-icon">${icon}</div>
+          <div class="modal-title">${title}</div>
+          <div class="modal-desc">${desc}</div>
+          <div class="modal-actions">
+            <button class="modal-btn modal-btn--cancel" id="modalCancel">Cancel</button>
+            <button class="modal-btn ${danger ? 'modal-btn--danger' : 'modal-btn--confirm'}" id="modalConfirm">${confirmText}</button>
           </div>
-        `).join("");
-      }
+        </div>`;
+      document.body.appendChild(backdrop);
+      const close = (result) => {
+        backdrop.classList.add("modal--hide");
+        backdrop.addEventListener("animationend", () => backdrop.remove(), { once: true });
+        resolve(result);
+      };
+      backdrop.querySelector("#modalCancel").onclick = () => close(false);
+      backdrop.querySelector("#modalConfirm").onclick = () => close(true);
+      backdrop.addEventListener("click", e => { if (e.target === backdrop) close(false); });
+    });
+  }
 
-      function renderDayChart(containerId, series, segments) {
-        const el = document.getElementById(containerId);
-        if (!series || !series.length) {
-          el.innerHTML = `<div class="a-empty">No data yet.</div>`;
-          return;
-        }
-        const maxTotal = Math.max(...series.map(d => segments.reduce((sum, s) => sum + (d[s.key] || 0), 0)), 1);
-        el.innerHTML = series.map(d => {
-          const segsHtml = segments.map(s => {
-            const val = d[s.key] || 0;
-            const px = Math.round((val / maxTotal) * 100);
-            return `<div class="day-chart__seg day-chart__seg--${s.cls}" style="height:${px}px" title="${esc(s.cls)}: ${esc(val)}"></div>`;
-          }).join("");
-          return `
-            <div class="day-chart__col">
-              <div class="day-chart__bar-wrap">${segsHtml}</div>
-              <div class="day-chart__label">${fmtDayLabel(d.date)}</div>
+  // ===== SYSTEM EVENT LOG =====
+  const systemEvents = [];
+  function logSystemEvent(msg, type = "info") {
+    const icons = { info: "ℹ️", ok: "✅", warn: "⚠️", err: "❌" };
+    systemEvents.unshift({ msg, type, icon: icons[type] || "ℹ️", time: new Date().toISOString() });
+    if (systemEvents.length > 20) systemEvents.length = 20;
+    renderSystemLog();
+  }
+  function renderSystemLog() {
+    const el = document.getElementById("systemEventLog");
+    if (!el) return;
+    if (!systemEvents.length) { el.innerHTML = `<div class="a-empty">No events this session.</div>`; return; }
+    el.innerHTML = systemEvents.map((ev, i) => `
+      <div class="log-item" style="animation-delay:${i*0.04}s">
+        <span class="log-item__time">${fmtRel(ev.time)}</span>
+        <span class="log-item__content">${ev.icon} ${esc(ev.msg)}</span>
+        <span class="log-item__badge badge-${ev.type === 'ok' ? 'signup' : ev.type === 'err' ? 'chat' : 'signin'}">${ev.type.toUpperCase()}</span>
+      </div>`).join("");
+  }
+
+  function esc(str) {
+    const d = document.createElement("div"); d.textContent = String(str ?? ""); return d.innerHTML;
+  }
+
+  const handleColorCache = new Map();
+  function handleColor(handle) {
+    const key = String(handle || "").toLowerCase();
+    if (handleColorCache.has(key)) return handleColorCache.get(key);
+    let hash = 0;
+    for (let i = 0; i < key.length; i++) hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
+    const color = `hsl(${hash % 360}, 72%, 68%)`;
+    handleColorCache.set(key, color); return color;
+  }
+
+  function fmtDate(iso) {
+    if (!iso) return "—";
+    return new Date(iso).toLocaleString([], { dateStyle: "short", timeStyle: "short" });
+  }
+
+  function fmtRel(iso) {
+    if (!iso) return "—";
+    const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+    if (diff < 60) return `${diff}s ago`;
+    if (diff < 3600) return `${Math.floor(diff/60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff/3600)}h ago`;
+    return `${Math.floor(diff/86400)}d ago`;
+  }
+
+  function fmtDuration(ms) {
+    const s = Math.floor(ms / 1000);
+    const m = Math.floor(s / 60), h = Math.floor(m / 60);
+    if (h > 0) return `${h}h ${m % 60}m`;
+    if (m > 0) return `${m}m ${s % 60}s`;
+    return `${s}s`;
+  }
+
+  async function apiFetch(path) {
+    const res = await fetch(`${API}${path}`, { headers: { Authorization: `Bearer ${getToken()}` } });
+    if (res.status === 401 || res.status === 403) { clearToken(); showLogin("Session expired."); throw new Error("auth"); }
+    if (!res.ok) throw new Error("Request failed");
+    return res.json();
+  }
+
+  async function apiPost(path, body) {
+    const res = await fetch(`${API}${path}`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${getToken()}`, "Content-Type": "application/json" },
+      body: JSON.stringify(body || {})
+    });
+    if (res.status === 401 || res.status === 403) { clearToken(); showLogin("Session expired."); throw new Error("auth"); }
+    const payload = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(payload.error || "Request failed");
+    return payload;
+  }
+
+  async function apiDelete(path, ids) {
+    const res = await fetch(`${API}${path}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${getToken()}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ ids })
+    });
+    if (res.status === 401 || res.status === 403) { clearToken(); showLogin("Session expired."); throw new Error("auth"); }
+    const payload = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(payload.error || "Delete request failed");
+    return payload;
+  }
+
+  async function apiDeleteNoBody(path) {
+    const res = await fetch(`${API}${path}`, { method: "DELETE", headers: { Authorization: `Bearer ${getToken()}` } });
+    if (res.status === 401 || res.status === 403) { clearToken(); showLogin("Session expired."); throw new Error("auth"); }
+    const payload = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(payload.error || "Delete request failed");
+    return payload;
+  }
+
+  // ===== IDLE TIMER =====
+  const IDLE_LIMIT_MS = 10 * 60 * 1000;
+  const IDLE_EVENTS = ["mousemove","mousedown","keydown","scroll","touchstart","click"];
+  let idleTimer = null, idleCountdown = null, idleStartedAt = null;
+
+  function handleIdleLogout() {
+    stopIdleTracking();
+    clearToken();
+    showLogin("Signed out after 10 minutes of inactivity.");
+  }
+
+  function resetIdleTimer() {
+    clearTimeout(idleTimer);
+    idleStartedAt = Date.now();
+    idleTimer = setTimeout(handleIdleLogout, IDLE_LIMIT_MS);
+  }
+
+  function startIdleTracking() {
+    IDLE_EVENTS.forEach(evt => document.addEventListener(evt, resetIdleTimer, { passive: true }));
+    resetIdleTimer();
+    idleCountdown = setInterval(() => {
+      if (!idleStartedAt) return;
+      const remaining = IDLE_LIMIT_MS - (Date.now() - idleStartedAt);
+      const el = document.getElementById("idleTimerDisplay");
+      if (el) {
+        const m = Math.floor(Math.max(remaining, 0) / 60000);
+        const s = Math.floor((Math.max(remaining, 0) % 60000) / 1000);
+        el.textContent = `${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+        el.style.color = remaining < 60000 ? "var(--red)" : remaining < 120000 ? "var(--amber)" : "";
+      }
+    }, 1000);
+  }
+
+  function stopIdleTracking() {
+    clearTimeout(idleTimer); clearInterval(idleCountdown);
+    idleTimer = null; idleCountdown = null; idleStartedAt = null;
+    IDLE_EVENTS.forEach(evt => document.removeEventListener(evt, resetIdleTimer));
+  }
+
+  // ===== REFRESH COUNTDOWN =====
+  let refreshCountdownVal = 15;
+  let refreshCountdownInt = null;
+  function startRefreshCountdown() {
+    clearInterval(refreshCountdownInt);
+    refreshCountdownVal = 15;
+    refreshCountdownInt = setInterval(() => {
+      refreshCountdownVal--;
+      const el = document.getElementById("qsRefreshCountdown");
+      if (el) el.textContent = refreshCountdownVal + "s";
+      if (refreshCountdownVal <= 0) refreshCountdownVal = 15;
+    }, 1000);
+  }
+
+  // ===== SESSION TRACKING =====
+  let sessionStartTime = null;
+
+  // ===== LOGIN =====
+  const passwordInput = document.getElementById("adminPasswordInput");
+  const loginBtn = document.getElementById("adminLoginBtn");
+  const loginError = document.getElementById("loginError");
+
+  async function handleLogin() {
+    const password = passwordInput.value;
+    loginError.textContent = "";
+    if (!password) { loginError.textContent = "Enter the admin password"; return; }
+    loginBtn.disabled = true; loginBtn.textContent = "Signing in…";
+    try {
+      const res = await fetch(`${API}/admin/login`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password })
+      });
+      const result = await res.json();
+      if (!res.ok) { loginError.textContent = result.error || "Incorrect password"; return; }
+      setToken(result.token);
+      passwordInput.value = "";
+      showDashboard();
+    } catch (e) {
+      loginError.textContent = "Could not reach the server";
+    } finally {
+      loginBtn.disabled = false; loginBtn.textContent = "Sign in to dashboard";
+    }
+  }
+
+  loginBtn.addEventListener("click", handleLogin);
+  passwordInput.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); handleLogin(); } });
+
+  function showLogin(msg) {
+    stopIdleTracking();
+    document.getElementById("loginScreen").style.display = "flex";
+    document.getElementById("dashboard").style.display = "none";
+    passwordInput.value = "";
+    loginError.textContent = msg || "";
+    setTimeout(() => passwordInput.focus(), 300);
+  }
+
+  function showDashboard() {
+    document.getElementById("loginScreen").style.display = "none";
+    document.getElementById("dashboard").style.display = "block";
+    sessionStartTime = Date.now();
+    logSystemEvent("Admin signed in", "ok");
+    loadAll();
+    setInterval(() => { loadActivity(); startRefreshCountdown(); }, 15000);
+    startIdleTracking();
+    startRefreshCountdown();
+    updateHealthPanel();
+  }
+
+  document.getElementById("logoutBtn").addEventListener("click", () => { logSystemEvent("Admin signed out", "info"); clearToken(); showLogin(); });
+  document.getElementById("logoutBtnMobile").addEventListener("click", () => { clearToken(); showLogin(); });
+
+  // ===== TAB SWITCHING =====
+  const TAB_LABELS = {
+    activity: "Live Activity", analytics: "Analytics", locations: "Locations",
+    reports: "Reports", users: "Users", chats: "Chat Messages", health: "System Health"
+  };
+
+  function switchTab(tab) {
+    document.querySelectorAll(".nav-btn, .bottom-nav__btn").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
+    document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+    const panel = document.getElementById(`${tab}Panel`);
+    if (panel) panel.classList.add("active");
+    const title = document.getElementById("mobilePageTitle");
+    if (title) title.textContent = TAB_LABELS[tab] || tab;
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    if (tab === "health") updateHealthPanel();
+  }
+
+  document.querySelectorAll(".nav-btn, .bottom-nav__btn").forEach(btn => {
+    btn.addEventListener("click", () => switchTab(btn.dataset.tab));
+  });
+
+  let allUsers = [], allChats = [], allReports = [], allLocations = [];
+  const selectedUserIds = new Set(), selectedChatIds = new Set(), selectedReportIds = new Set();
+
+  function syncDeleteButtons() {
+    const delUsersBtn = document.getElementById("deleteUsersBtn");
+    const delChatsBtn = document.getElementById("deleteChatsBtn");
+    const delReportsBtn = document.getElementById("deleteReportsBtn");
+    if (delUsersBtn) { const c = selectedUserIds.size; delUsersBtn.disabled = !c; delUsersBtn.textContent = c > 0 ? `Delete selected (${c})` : "Delete selected"; }
+    if (delChatsBtn) { const c = selectedChatIds.size; delChatsBtn.disabled = !c; delChatsBtn.textContent = c > 0 ? `Delete selected (${c})` : "Delete selected"; }
+    if (delReportsBtn) { const c = selectedReportIds.size; delReportsBtn.disabled = !c; delReportsBtn.textContent = c > 0 ? `Delete selected (${c})` : "Delete selected"; }
+  }
+
+  async function loadAll() {
+    loadSummary(); loadActivity(); loadAnalytics(); loadLocations();
+    loadReportsPanel(); loadUsers(); loadChats();
+  }
+
+  // ===== LOCATIONS =====
+  async function loadLocations() {
+    const status = document.getElementById("locationsStatus");
+    try {
+      allLocations = await apiFetch("/admin/locations");
+      renderLocations(allLocations);
+      updateLocationQuickStats();
+      status.textContent = `${allLocations.length} location${allLocations.length !== 1 ? "s" : ""} tracked`;
+      const badge = document.getElementById("navBadgeLocations");
+      const onCount = allLocations.filter(l => l.status === "on").length;
+      if (badge) { badge.textContent = onCount; badge.classList.toggle("visible", onCount > 0); }
+    } catch (e) {
+      if (e.message !== "auth") status.textContent = "Could not load locations.";
+    }
+  }
+
+  function updateLocationQuickStats() {
+    const on = allLocations.filter(l => l.status === "on").length;
+    const off = allLocations.filter(l => l.status === "off").length;
+    const unk = allLocations.filter(l => !l.status || l.status === "unknown").length;
+    const qOn = document.getElementById("qsOnCount");
+    const qOff = document.getElementById("qsOffCount");
+    const qUnk = document.getElementById("qsUnknownCount");
+    if (qOn) qOn.textContent = on;
+    if (qOff) qOff.textContent = off;
+    if (qUnk) qUnk.textContent = unk;
+  }
+
+  let activeLocFilter = "all";
+
+  function renderLocations(locations) {
+    const grid = document.getElementById("locationsGrid");
+    const empty = document.getElementById("locationsEmpty");
+    const filtered = activeLocFilter === "all"
+      ? locations
+      : locations.filter(l => (l.status || "unknown") === activeLocFilter);
+
+    if (!filtered.length) {
+      grid.innerHTML = "";
+      empty.style.display = "block";
+      empty.querySelector(".empty-state__icon").textContent = "📍";
+      empty.childNodes[1].textContent = locations.length ? "No locations match that filter." : "No locations yet — add one above.";
+      return;
+    }
+    empty.style.display = "none";
+    grid.innerHTML = filtered.map((loc, idx) => {
+      const status = loc.status || "unknown";
+      const chipClass = status === "on" ? "status-chip--on" : status === "off" ? "status-chip--off" : "status-chip--unknown";
+      const chipLabel = status === "on" ? "Light ON" : status === "off" ? "Light OFF" : "Unknown";
+      const dotClass = `loc-card__dot--${status}`;
+      const meta = loc.reportedAt
+        ? `Last updated by <strong>${esc(loc.reportedBy || "—")}</strong> · ${fmtRel(loc.reportedAt)}`
+        : "No status set yet";
+      const isOn = status === "on";
+      return `
+        <div class="loc-card loc-card--${status}" data-location-key="${esc(loc.locationKey)}" style="animation-delay:${idx*0.04}s">
+          <div class="loc-card__body">
+            <div class="loc-card__top">
+              <div>
+                <div class="loc-card__name"><span class="loc-card__dot ${dotClass}"></span>${esc(loc.label)}</div>
+                <div class="loc-card__meta">${meta}</div>
+              </div>
+              <span class="status-chip ${chipClass}">${chipLabel}</span>
             </div>
-          `;
-        }).join("");
-      }
+          </div>
+          <div class="loc-card__footer">
+            <div class="loc-toggle-group">
+              <span class="loc-toggle-label">Power status</span>
+              <label class="loc-toggle-switch" title="Toggle light status for ${esc(loc.label)}">
+                <input type="checkbox" class="loc-toggle-input" data-loc-key="${esc(loc.locationKey)}" ${isOn ? "checked" : ""} ${status === "unknown" ? "" : ""} />
+                <span class="loc-toggle-track"></span>
+                <span class="loc-toggle-thumb"></span>
+              </label>
+              <span class="loc-toggle-state-label loc-toggle-state-label--${status}">${status === "on" ? "ON" : status === "off" ? "OFF" : "—"}</span>
+            </div>
+            <button type="button" class="loc-card__action-btn loc-delete-btn" data-loc-key="${esc(loc.locationKey)}" title="Remove location">🗑</button>
+          </div>
+        </div>
+      `;
+    }).join("");
 
-      async function loadAnalytics() {
-        const status = document.getElementById("analyticsStatus");
-        const days = document.getElementById("analyticsRange")?.value || 14;
-        try {
-          const data = await apiFetch(`/admin/analytics/overview?days=${days}`);
-
-          renderBarList("topAreasList",
-            (data.topSearchedAreas || []).map(a => ({ label: a.location, value: a.count })),
-            { emptyText: "No search activity recorded yet." }
-          );
-
-          renderBarList("dropOffList",
-            (data.dropOff || []).map(d => ({ label: d.screen, value: d.pct, suffix: "%" })),
-            { emptyText: "No exit events recorded yet.", fillClass: "red" }
-          );
-
-          renderBarList("screenTimeList",
-            (data.screenTime || []).map(s => ({ label: s.screen, value: s.avgSeconds, suffix: "s" })),
-            { emptyText: "No screen-time data recorded yet.", fillClass: "amber" }
-          );
-
-          renderDayChart("reportsPerDayChart",
-            (data.reportsPerDay || []).map(r => ({ date: r.date, reports: r.count })),
-            [{ key: "reports", cls: "reports" }]
-          );
-          const totalReports = (data.reportsPerDay || []).reduce((sum, r) => sum + r.count, 0);
-          document.getElementById("reportsPerDayHint").textContent = `${totalReports} total over ${data.rangeDays || days} days`;
-
-          renderDayChart("dailyUsersChart",
-            (data.dailyReturningUsers || []).map(u => ({ date: u.date, returning: u.returning, new: u.new })),
-            [{ key: "returning", cls: "returning" }, { key: "new", cls: "new" }]
-          );
-          const totalActive = (data.dailyReturningUsers || []).reduce((sum, u) => sum + (u.total || 0), 0);
-          document.getElementById("dailyUsersHint").textContent = `${totalActive} active-user-days over ${data.rangeDays || days} days`;
-
-          status.textContent = `Updated ${fmtRel(new Date().toISOString())}`;
-        } catch (e) {
-          if (e.message !== "auth") status.textContent = "Could not load analytics.";
-        }
-      }
-
-      document.getElementById("refreshAnalytics")?.addEventListener("click", loadAnalytics);
-      document.getElementById("analyticsRange")?.addEventListener("change", loadAnalytics);
-
-      // Search
-      document.getElementById("userSearch")?.addEventListener("input", e => {
-        const q = e.target.value.toLowerCase();
-        renderUsers(allUsers.filter(u =>
-          (u.name||"").toLowerCase().includes(q) ||
-          (u.emailPhone||"").toLowerCase().includes(q) ||
-          (u.city||"").toLowerCase().includes(q)
-        ));
+    grid.querySelectorAll(".loc-toggle-input").forEach(input => {
+      input.addEventListener("change", async (e) => {
+        const key = e.target.dataset.locKey;
+        const newStatus = e.target.checked ? "on" : "off";
+        e.target.disabled = true;
+        await pushLocationStatus(key, newStatus, e.target);
+        e.target.disabled = false;
       });
+    });
 
-      document.getElementById("chatSearch")?.addEventListener("input", e => {
-        const q = e.target.value.toLowerCase();
-        renderChats(allChats.filter(c =>
-          (c.text||"").toLowerCase().includes(q) ||
-          (c.location||"").toLowerCase().includes(q) ||
-          (c.handle||"").toLowerCase().includes(q)
-        ));
+    grid.querySelectorAll(".loc-delete-btn").forEach(btn => {
+      btn.addEventListener("click", async (e) => {
+        const key = e.currentTarget.dataset.locKey;
+        const loc = allLocations.find(l => l.locationKey === key);
+        const confirmed = await showConfirm({
+          icon: "🗑️", title: "Remove Location",
+          desc: `Remove <strong>${esc(loc?.label || key)}</strong> from the tracking list? This cannot be undone.`,
+          confirmText: "Remove", danger: true
+        });
+        if (!confirmed) return;
+        allLocations = allLocations.filter(l => l.locationKey !== key);
+        renderLocations(allLocations);
+        updateLocationQuickStats();
+        logSystemEvent(`Removed location: ${loc?.label || key}`, "warn");
+        showToast(`Removed ${loc?.label || key}`, "info");
       });
+    });
+  }
 
-      document.getElementById("usersSelectAll")?.addEventListener("change", (e) => {
-        const visible = allUsers.filter(u => {
-          const q = (document.getElementById("userSearch")?.value || "").toLowerCase();
-          return !q ||
-            (u.name||"").toLowerCase().includes(q) ||
-            (u.emailPhone||"").toLowerCase().includes(q) ||
-            (u.city||"").toLowerCase().includes(q);
+  document.getElementById("locFilterTabs")?.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-loc-filter]");
+    if (!btn) return;
+    activeLocFilter = btn.dataset.locFilter;
+    document.querySelectorAll("#locFilterTabs .loc-filter-tab").forEach(b => b.classList.toggle("is-active", b === btn));
+    const q = (document.getElementById("locationSearch")?.value || "").toLowerCase();
+    renderLocations(q ? allLocations.filter(l => l.label.toLowerCase().includes(q)) : allLocations);
+  });
+
+  async function pushLocationStatus(locationKey, status, triggerEl) {
+    const card = triggerEl?.closest(".loc-card");
+    try {
+      await apiPost("/admin/lightstatus", { location: locationKey, status });
+      await Promise.all([loadLocations(), loadSummary(), loadActivity()]);
+      const refreshedCard = document.querySelector(`.loc-card[data-location-key="${CSS.escape(locationKey)}"]`);
+      if (refreshedCard) {
+        refreshedCard.classList.add("loc-card--pushed");
+        setTimeout(() => refreshedCard.classList.remove("loc-card--pushed"), 1200);
+      }
+      const loc = allLocations.find(l => l.locationKey === locationKey);
+      logSystemEvent(`Set ${loc?.label || locationKey} → ${status.toUpperCase()}`, "ok");
+      showToast(`${loc?.label || locationKey} set to ${status.toUpperCase()}`, "ok");
+    } catch (e) {
+      if (e.message !== "auth") showToast(e.message || "Could not update location status.", "err");
+    }
+  }
+
+  document.getElementById("refreshLocations")?.addEventListener("click", loadLocations);
+  document.getElementById("locationSearch")?.addEventListener("input", (e) => {
+    const q = e.target.value.toLowerCase();
+    renderLocations(q ? allLocations.filter(l => l.label.toLowerCase().includes(q)) : allLocations);
+  });
+
+  document.getElementById("addLocationBtn")?.addEventListener("click", () => {
+    const input = document.getElementById("newLocationInput");
+    const value = input.value.trim();
+    if (!value) return;
+    const key = value.toLowerCase().split(",")[0].trim();
+    if (allLocations.some(l => l.locationKey === key)) {
+      input.value = "";
+      document.getElementById("locationSearch").value = value.split(",")[0].trim();
+      renderLocations(allLocations.filter(l => l.locationKey === key));
+      showToast("Location already exists — showing it now.", "info");
+      return;
+    }
+    const label = key.split(" ").filter(Boolean).map(w => w[0].toUpperCase() + w.slice(1)).join(" ");
+    allLocations = [...allLocations, { locationKey: key, label, status: "unknown", reportedBy: null, reportedAt: null }]
+      .sort((a, b) => a.label.localeCompare(b.label));
+    renderLocations(allLocations);
+    updateLocationQuickStats();
+    input.value = "";
+    logSystemEvent(`Added location: ${label}`, "info");
+    showToast(`Added "${label}"`, "ok");
+  });
+
+  // ===== REPORTS =====
+  async function loadReportsPanel() {
+    const table = document.getElementById("reportsTable");
+    const empty = document.getElementById("reportsEmpty");
+    const status = document.getElementById("reportsStatus");
+    const selectAll = document.getElementById("reportsSelectAll");
+    try {
+      allReports = await apiFetch("/admin/reports?limit=80");
+      const validIds = new Set(allReports.map(r => String(r.id)));
+      [...selectedReportIds].forEach(id => { if (!validIds.has(id)) selectedReportIds.delete(id); });
+      const badge = document.getElementById("navBadgeReports");
+      if (badge) { badge.textContent = allReports.length; badge.classList.toggle("visible", allReports.length > 0); }
+      if (!allReports.length) {
+        table.style.display = "none"; empty.style.display = "block";
+        status.textContent = "No reports available.";
+        if (selectAll) selectAll.checked = false;
+        syncDeleteButtons(); return;
+      }
+      const tbody = document.getElementById("reportsTbody");
+      tbody.innerHTML = allReports.map(r => `
+        <tr>
+          <td data-label="Select"><input type="checkbox" class="select-checkbox report-row-select" data-report-id="${esc(r.id)}" ${selectedReportIds.has(String(r.id)) ? "checked" : ""} /></td>
+          <td data-label="Type" class="${r.type === 'warning' ? 'faint' : 'gold'}">${esc(r.type === 'warning' ? '⚡ Outage' : '✅ Restored')}</td>
+          <td data-label="Location">${esc(r.location || '—')}</td>
+          <td data-label="Details">${esc(r.text || r.title || '—')}</td>
+          <td data-label="Reported" class="faint">${fmtDate(r.reportedAt)}</td>
+          <td data-label="Actions"><button type="button" class="row-del-btn report-row-delete" data-report-del="${esc(r.id)}">Delete</button></td>
+        </tr>`).join("");
+      tbody.querySelectorAll(".report-row-select").forEach(cb => {
+        cb.addEventListener("change", (e) => {
+          const id = e.target.dataset.reportId; if (!id) return;
+          if (e.target.checked) selectedReportIds.add(id); else selectedReportIds.delete(id);
+          syncDeleteButtons();
         });
-        visible.forEach(u => {
-          const id = String(u._id);
-          if (e.target.checked) selectedUserIds.add(id);
-          else selectedUserIds.delete(id);
-        });
-        renderUsers(visible);
+      });
+      tbody.querySelectorAll(".report-row-delete").forEach(btn => {
+        btn.addEventListener("click", async (e) => { await deleteReportsByIds([e.currentTarget.dataset.reportDel]); });
+      });
+      if (selectAll) {
+        const visibleIds = allReports.map(r => String(r.id));
+        selectAll.checked = visibleIds.length > 0 && visibleIds.every(id => selectedReportIds.has(id));
+      }
+      table.style.display = "table"; empty.style.display = "none";
+      status.textContent = `${allReports.length} recent report${allReports.length === 1 ? '' : 's'}`;
+      syncDeleteButtons();
+    } catch (e) {
+      if (e.message !== "auth") { table.style.display = "none"; empty.style.display = "block"; status.textContent = "Could not load reports."; }
+    }
+  }
+
+  async function deleteReportsByIds(ids) {
+    if (!ids.length) return;
+    const confirmed = await showConfirm({
+      icon: "🗑️", title: "Delete Reports",
+      desc: ids.length === 1 ? "Delete this report? This cannot be undone." : `Delete ${ids.length} reports? This cannot be undone.`,
+      confirmText: "Delete", danger: true
+    });
+    if (!confirmed) return;
+    try {
+      await apiDelete('/admin/reports', ids);
+      ids.forEach(id => selectedReportIds.delete(String(id)));
+      await Promise.all([loadSummary(), loadActivity(), loadReportsPanel()]);
+      logSystemEvent(`Deleted ${ids.length} report(s)`, "warn");
+      showToast(`Deleted ${ids.length} report${ids.length > 1 ? "s" : ""}`, "ok");
+    } catch (e) {
+      if (e.message !== "auth") showToast(e.message || "Could not delete reports.", "err");
+    }
+  }
+
+  async function clearAllReports() {
+    const confirmed = await showConfirm({
+      icon: "⚠️", title: "Clear All Reports",
+      desc: "This will permanently delete every outage report. This action cannot be undone.",
+      confirmText: "Clear all", danger: true
+    });
+    if (!confirmed) return;
+    try {
+      const payload = await apiDeleteNoBody('/admin/reports');
+      const deleted = Number(payload.deletedCount || 0);
+      await Promise.all([loadSummary(), loadActivity(), loadReportsPanel()]);
+      logSystemEvent(`Cleared all ${deleted} reports`, "warn");
+      showToast(`Cleared ${deleted} report${deleted === 1 ? "" : "s"}`, "ok");
+    } catch (e) {
+      if (e.message !== "auth") showToast(e.message || "Could not clear reports.", "err");
+    }
+  }
+
+  // ===== SUMMARY + ACTIVITY =====
+  async function loadSummary() {
+    try {
+      const s = await apiFetch("/admin/summary");
+      document.getElementById("sTotal").textContent = s.userCount ?? "—";
+      document.getElementById("sNew24h").textContent = s.newUsers24h ?? "—";
+      document.getElementById("sChats").textContent = s.chatCount ?? "—";
+      document.getElementById("sChats24h").textContent = s.newChats24h ?? "—";
+      document.getElementById("sLocations").textContent = s.locationsTracked ?? "—";
+      const healthEl = document.getElementById("hTotalEvents");
+      if (healthEl) healthEl.textContent = ((s.userCount || 0) + (s.chatCount || 0)).toLocaleString();
+    } catch(e) {}
+  }
+
+  async function loadActivity() {
+    try {
+      const [users, chats] = await Promise.all([apiFetch("/admin/users"), apiFetch("/admin/chats")]);
+      const events = [
+        ...users.map(u => ({ type:"signup", time: u.createdAt, name: u.name, contact: u.emailPhone, location: u.city ? `${u.city}, ${u.region}` : u.region })),
+        ...chats.map(c => ({ type:"chat", time: c.createdAt, handle: c.handle, text: c.text, location: c.location }))
+      ].sort((a,b) => new Date(b.time) - new Date(a.time)).slice(0, 60);
+
+      if (events.length > 0) document.getElementById("sLastActivity").textContent = fmtRel(events[0].time);
+
+      const log = document.getElementById("activityLog");
+      const badge = document.getElementById("navBadgeActivity");
+      if (badge) { badge.textContent = events.length; badge.classList.toggle("visible", events.length > 0); }
+
+      if (events.length === 0) {
+        log.innerHTML = `<div class="empty-state"><div class="empty-state__icon">⚡</div>No activity yet.</div>`;
+        document.getElementById("activityStatus").textContent = "No activity yet."; return;
+      }
+      log.innerHTML = events.map((ev, i) => {
+        if (ev.type === "signup") return `
+          <div class="log-item" style="animation-delay:${i*0.03}s">
+            <span class="log-item__time">${fmtRel(ev.time)}</span>
+            <span class="log-item__content"><strong>${esc(ev.name)}</strong> signed up — ${esc(ev.contact)}${ev.location ? ` <span style="color:var(--faint)">· ${esc(ev.location)}</span>` : ""}</span>
+            <span class="log-item__badge badge-signup">New user</span>
+          </div>`;
+        return `
+          <div class="log-item" style="animation-delay:${i*0.03}s">
+            <span class="log-item__time">${fmtRel(ev.time)}</span>
+            <span class="log-item__content"><strong style="color:${handleColor(ev.handle)}">${esc(ev.handle)}</strong>: "${esc(ev.text.length > 60 ? ev.text.slice(0,60)+"…" : ev.text)}"${ev.location ? ` <span style="color:var(--faint)">in ${esc(ev.location)}</span>` : ""}</span>
+            <span class="log-item__badge badge-chat">Chat</span>
+          </div>`;
+      }).join("");
+      document.getElementById("activityStatus").textContent = `${events.length} recent events`;
+    } catch(e) {
+      if (e.message !== "auth") document.getElementById("activityStatus").textContent = "Could not load activity.";
+    }
+  }
+
+  // ===== USERS =====
+  async function loadUsers() {
+    try {
+      allUsers = await apiFetch("/admin/users");
+      const validIds = new Set(allUsers.map(u => String(u._id)));
+      [...selectedUserIds].forEach(id => { if (!validIds.has(id)) selectedUserIds.delete(id); });
+      renderUsers(allUsers);
+      document.getElementById("usersStatus").textContent = `${allUsers.length} registered user${allUsers.length !== 1 ? "s" : ""}`;
+      syncDeleteButtons();
+    } catch(e) {
+      if (e.message !== "auth") document.getElementById("usersStatus").textContent = "Could not load users.";
+    }
+  }
+
+  function renderUsers(users) {
+    const tbody = document.getElementById("usersTbody");
+    const table = document.getElementById("usersTable");
+    const empty = document.getElementById("usersEmpty");
+    const selectAll = document.getElementById("usersSelectAll");
+    if (!users.length) { table.style.display = "none"; empty.style.display = "block"; if (selectAll) selectAll.checked = false; return; }
+    tbody.innerHTML = users.map(u => `
+      <tr>
+        <td data-label="Select"><input type="checkbox" class="select-checkbox user-row-select" data-user-id="${esc(u._id)}" ${selectedUserIds.has(String(u._id)) ? "checked" : ""} /></td>
+        <td data-label="Name">${esc(u.name)}</td>
+        <td data-label="Contact" class="gold">${esc(u.emailPhone)}</td>
+        <td data-label="Region">${esc(u.region)}</td>
+        <td data-label="City">${esc(u.city)}</td>
+        <td data-label="Handle" class="faint">${esc(u.chatHandle || "—")}</td>
+        <td data-label="Joined" class="faint">${fmtDate(u.createdAt)}</td>
+        <td data-label="Actions"><button type="button" class="row-del-btn user-row-delete" data-user-del="${esc(u._id)}">Delete</button></td>
+      </tr>`).join("");
+    table.style.display = "table"; empty.style.display = "none";
+    tbody.querySelectorAll(".user-row-select").forEach(cb => {
+      cb.addEventListener("change", (e) => {
+        const id = e.target.dataset.userId; if (!id) return;
+        if (e.target.checked) selectedUserIds.add(id); else selectedUserIds.delete(id);
         syncDeleteButtons();
       });
+    });
+    tbody.querySelectorAll(".user-row-delete").forEach(btn => {
+      btn.addEventListener("click", async (e) => { await deleteUsersByIds([e.currentTarget.dataset.userDel]); });
+    });
+    if (selectAll) {
+      const visibleIds = users.map(u => String(u._id));
+      selectAll.checked = visibleIds.length > 0 && visibleIds.every(id => selectedUserIds.has(id));
+    }
+  }
 
-      document.getElementById("chatsSelectAll")?.addEventListener("change", (e) => {
-        const visible = allChats.filter(c => {
-          const q = (document.getElementById("chatSearch")?.value || "").toLowerCase();
-          return !q ||
-            (c.text||"").toLowerCase().includes(q) ||
-            (c.location||"").toLowerCase().includes(q) ||
-            (c.handle||"").toLowerCase().includes(q);
-        });
-        visible.forEach(c => {
-          const id = String(c._id);
-          if (e.target.checked) selectedChatIds.add(id);
-          else selectedChatIds.delete(id);
-        });
-        renderChats(visible);
+  async function deleteUsersByIds(ids) {
+    if (!ids.length) return;
+    const confirmed = await showConfirm({
+      icon: "👤", title: "Delete Users",
+      desc: ids.length === 1
+        ? "Delete this user? This will also remove their chats and subscriptions."
+        : `Delete ${ids.length} users? This will also remove their chats and subscriptions.`,
+      confirmText: "Delete users", danger: true
+    });
+    if (!confirmed) return;
+    try {
+      await apiDelete('/admin/users', ids);
+      ids.forEach(id => selectedUserIds.delete(String(id)));
+      await Promise.all([loadUsers(), loadChats(), loadSummary(), loadActivity()]);
+      logSystemEvent(`Deleted ${ids.length} user(s)`, "warn");
+      showToast(`Deleted ${ids.length} user${ids.length > 1 ? "s" : ""}`, "ok");
+    } catch (e) {
+      if (e.message !== "auth") showToast(e.message || "Could not delete users.", "err");
+    }
+  }
+
+  // ===== BROADCAST =====
+  document.getElementById("broadcastSendBtn")?.addEventListener("click", async () => {
+    const titleInput = document.getElementById("broadcastTitleInput");
+    const bodyInput = document.getElementById("broadcastBodyInput");
+    const statusEl = document.getElementById("broadcastStatus");
+    const btn = document.getElementById("broadcastSendBtn");
+    const body = bodyInput.value.trim();
+    statusEl.className = "broadcast-status";
+    if (!body) { statusEl.textContent = "Write a message first."; statusEl.classList.add("broadcast-status--err"); return; }
+    const confirmed = await showConfirm({
+      icon: "📢", title: "Send Broadcast",
+      desc: `Send this message to all subscribers: "<strong>${esc(body.slice(0, 80))}${body.length > 80 ? "…" : ""}</strong>"`,
+      confirmText: "Send", danger: false
+    });
+    if (!confirmed) return;
+    btn.disabled = true; btn.textContent = "Sending…";
+    try {
+      const result = await apiPost("/admin/broadcast", { title: titleInput.value.trim(), body });
+      statusEl.textContent = `✅ Sent to ${result.sentCount} of ${result.subscribers} subscriber(s).`;
+      statusEl.classList.add("broadcast-status--ok");
+      bodyInput.value = ""; titleInput.value = "";
+      logSystemEvent(`Broadcast sent to ${result.sentCount} subscribers`, "ok");
+      showToast(`Broadcast sent to ${result.sentCount} subscribers`, "ok");
+    } catch (e) {
+      if (e.message !== "auth") {
+        statusEl.textContent = e.message || "Could not send broadcast.";
+        statusEl.classList.add("broadcast-status--err");
+        showToast(e.message || "Could not send broadcast.", "err");
+      }
+    } finally {
+      btn.disabled = false; btn.textContent = "Send to everyone";
+    }
+  });
+
+  // ===== CHATS =====
+  async function loadChats() {
+    try {
+      allChats = await apiFetch("/admin/chats");
+      const validIds = new Set(allChats.map(c => String(c._id)));
+      [...selectedChatIds].forEach(id => { if (!validIds.has(id)) selectedChatIds.delete(id); });
+      renderChats(allChats);
+      document.getElementById("chatsStatus").textContent = `${allChats.length} message${allChats.length !== 1 ? "s" : ""}`;
+      syncDeleteButtons();
+    } catch(e) {
+      if (e.message !== "auth") document.getElementById("chatsStatus").textContent = "Could not load messages.";
+    }
+  }
+
+  function renderChats(chats) {
+    const tbody = document.getElementById("chatsTbody");
+    const table = document.getElementById("chatsTable");
+    const empty = document.getElementById("chatsEmpty");
+    const selectAll = document.getElementById("chatsSelectAll");
+    if (!chats.length) { table.style.display = "none"; empty.style.display = "block"; if (selectAll) selectAll.checked = false; return; }
+    tbody.innerHTML = chats.map(c => `
+      <tr>
+        <td data-label="Select"><input type="checkbox" class="select-checkbox chat-row-select" data-chat-id="${esc(c._id)}" ${selectedChatIds.has(String(c._id)) ? "checked" : ""} /></td>
+        <td data-label="Handle"><span class="handle-pill" style="--handle-color:${handleColor(c.handle)}">${esc(c.handle)}</span></td>
+        <td data-label="Message">${esc(c.text)}</td>
+        <td data-label="Location" class="faint">${esc(c.location)}</td>
+        <td data-label="Sent" class="faint">${fmtDate(c.createdAt)}</td>
+        <td data-label="Actions"><button type="button" class="row-del-btn chat-row-delete" data-chat-del="${esc(c._id)}">Delete</button></td>
+      </tr>`).join("");
+    table.style.display = "table"; empty.style.display = "none";
+    tbody.querySelectorAll(".chat-row-select").forEach(cb => {
+      cb.addEventListener("change", (e) => {
+        const id = e.target.dataset.chatId; if (!id) return;
+        if (e.target.checked) selectedChatIds.add(id); else selectedChatIds.delete(id);
         syncDeleteButtons();
       });
+    });
+    tbody.querySelectorAll(".chat-row-delete").forEach(btn => {
+      btn.addEventListener("click", async (e) => { await deleteChatsByIds([e.currentTarget.dataset.chatDel]); });
+    });
+    if (selectAll) {
+      const visibleIds = chats.map(c => String(c._id));
+      selectAll.checked = visibleIds.length > 0 && visibleIds.every(id => selectedChatIds.has(id));
+    }
+  }
 
-      document.getElementById("reportsSelectAll")?.addEventListener("change", (e) => {
-        allReports.forEach(report => {
-          const id = String(report.id);
-          if (e.target.checked) selectedReportIds.add(id);
-          else selectedReportIds.delete(id);
-        });
-        loadReportsPanel();
-      });
+  async function deleteChatsByIds(ids) {
+    if (!ids.length) return;
+    try {
+      await apiDelete('/admin/chats', ids);
+      ids.forEach(id => selectedChatIds.delete(String(id)));
+      await Promise.all([loadChats(), loadSummary(), loadActivity()]);
+      showToast(`Deleted ${ids.length} message${ids.length > 1 ? "s" : ""}`, "ok");
+    } catch (e) {
+      if (e.message !== "auth") showToast(e.message || "Could not delete chats.", "err");
+    }
+  }
 
-      document.getElementById("deleteChatsBtn")?.addEventListener("click", async () => {
-        await deleteChatsByIds([...selectedChatIds]);
-      });
+  // ===== ANALYTICS =====
+  function fmtDayLabel(iso) {
+    const d = new Date(iso + "T00:00:00Z");
+    return d.toLocaleDateString([], { month: "short", day: "numeric", timeZone: "UTC" });
+  }
 
-      document.getElementById("deleteUsersBtn")?.addEventListener("click", async () => {
-        await deleteUsersByIds([...selectedUserIds]);
-      });
+  function renderBarList(containerId, items, opts = {}) {
+    const el = document.getElementById(containerId);
+    if (!items || !items.length) { el.innerHTML = `<div class="a-empty">${opts.emptyText || "No data yet."}</div>`; return; }
+    const max = Math.max(...items.map(i => i.value), 1);
+    const fillClass = opts.fillClass ? ` bar-row__fill--${opts.fillClass}` : "";
+    el.innerHTML = items.map(i => `
+      <div class="bar-row">
+        <div class="bar-row__label" title="${esc(i.label)}">${esc(i.label)}</div>
+        <div class="bar-row__track"><div class="bar-row__fill${fillClass}" style="width:${Math.max((i.value / max) * 100, 3)}%"></div></div>
+        <div class="bar-row__value">${esc(i.value)}${opts.suffix || ""}</div>
+      </div>`).join("");
+  }
 
-      document.getElementById("deleteReportsBtn")?.addEventListener("click", async () => {
-        await deleteReportsByIds([...selectedReportIds]);
-      });
+  function renderDayChart(containerId, series, segments) {
+    const el = document.getElementById(containerId);
+    if (!series || !series.length) { el.innerHTML = `<div class="a-empty">No data yet.</div>`; return; }
+    const maxTotal = Math.max(...series.map(d => segments.reduce((sum, s) => sum + (d[s.key] || 0), 0)), 1);
+    el.innerHTML = series.map(d => {
+      const segsHtml = segments.map(s => {
+        const val = d[s.key] || 0;
+        const px = Math.round((val / maxTotal) * 100);
+        return `<div class="day-chart__seg day-chart__seg--${s.cls}" style="height:${px}px" title="${esc(s.cls)}: ${esc(val)}"></div>`;
+      }).join("");
+      return `<div class="day-chart__col"><div class="day-chart__bar-wrap">${segsHtml}</div><div class="day-chart__label">${fmtDayLabel(d.date)}</div></div>`;
+    }).join("");
+  }
 
-      document.getElementById("clearReportsBtnActivity")?.addEventListener("click", clearAllReports);
-      document.getElementById("clearReportsBtnPanel")?.addEventListener("click", clearAllReports);
+  async function loadAnalytics() {
+    const status = document.getElementById("analyticsStatus");
+    const days = document.getElementById("analyticsRange")?.value || 14;
+    try {
+      const data = await apiFetch(`/admin/analytics/overview?days=${days}`);
+      renderBarList("topAreasList", (data.topSearchedAreas || []).map(a => ({ label: a.location, value: a.count })), { emptyText: "No search activity recorded yet." });
+      renderBarList("dropOffList", (data.dropOff || []).map(d => ({ label: d.screen, value: d.pct, suffix: "%" })), { emptyText: "No exit events recorded yet.", fillClass: "red" });
+      renderBarList("screenTimeList", (data.screenTime || []).map(s => ({ label: s.screen, value: s.avgSeconds, suffix: "s" })), { emptyText: "No screen-time data recorded yet.", fillClass: "amber" });
+      renderDayChart("reportsPerDayChart", (data.reportsPerDay || []).map(r => ({ date: r.date, reports: r.count })), [{ key: "reports", cls: "reports" }]);
+      const totalReports = (data.reportsPerDay || []).reduce((sum, r) => sum + r.count, 0);
+      document.getElementById("reportsPerDayHint").textContent = `${totalReports} total over ${data.rangeDays || days} days`;
+      renderDayChart("dailyUsersChart", (data.dailyReturningUsers || []).map(u => ({ date: u.date, returning: u.returning, new: u.new })), [{ key: "returning", cls: "returning" }, { key: "new", cls: "new" }]);
+      const totalActive = (data.dailyReturningUsers || []).reduce((sum, u) => sum + (u.total || 0), 0);
+      document.getElementById("dailyUsersHint").textContent = `${totalActive} active-user-days over ${data.rangeDays || days} days`;
+      status.textContent = `Updated just now`;
+    } catch (e) {
+      if (e.message !== "auth") status.textContent = "Could not load analytics.";
+    }
+  }
 
-      document.getElementById("refreshActivity")?.addEventListener("click", loadActivity);
-      document.getElementById("refreshReports")?.addEventListener("click", loadReportsPanel);
+  document.getElementById("refreshAnalytics")?.addEventListener("click", loadAnalytics);
+  document.getElementById("analyticsRange")?.addEventListener("change", loadAnalytics);
 
-      // Init
-      if (getToken()) showDashboard(); else showLogin();
-      </script>
-</body>
+  // ===== HEALTH PANEL =====
+  async function updateHealthPanel() {
+    const status = document.getElementById("healthStatus");
+    if (status) status.textContent = "Checking…";
+    const start = Date.now();
+    try {
+      await apiFetch("/admin/summary");
+      const latency = Date.now() - start;
+      const hApiLatency = document.getElementById("hApiLatency");
+      const hApiIndicator = document.getElementById("hApiIndicator");
+      if (hApiLatency) hApiLatency.textContent = latency + "ms";
+      if (hApiIndicator) {
+        hApiIndicator.className = "health-card__indicator " + (latency < 400 ? "health-card__indicator--ok" : latency < 1200 ? "health-card__indicator--warn" : "health-card__indicator--err");
+      }
+      if (status) status.textContent = `API: ${latency}ms`;
+    } catch(e) {
+      const hApiIndicator = document.getElementById("hApiIndicator");
+      if (hApiIndicator) hApiIndicator.className = "health-card__indicator health-card__indicator--err";
+    }
+
+    const hDbStatus = document.getElementById("hDbStatus");
+    const hDbIndicator = document.getElementById("hDbIndicator");
+    if (hDbStatus) hDbStatus.textContent = "Connected";
+    if (hDbIndicator) hDbIndicator.className = "health-card__indicator health-card__indicator--ok";
+
+    const hPushSubs = document.getElementById("hPushSubs");
+    if (hPushSubs) hPushSubs.textContent = "Active";
+
+    if (sessionStartTime) {
+      const hUptime = document.getElementById("hUptime");
+      const hSessionAge = document.getElementById("hSessionAge");
+      const elapsed = Date.now() - sessionStartTime;
+      if (hUptime) hUptime.textContent = fmtDuration(elapsed);
+      if (hSessionAge) hSessionAge.textContent = fmtDuration(elapsed);
+    }
+
+    renderSystemLog();
+  }
+
+  setInterval(() => {
+    if (sessionStartTime) {
+      const elapsed = Date.now() - sessionStartTime;
+      const hUptime = document.getElementById("hUptime");
+      const hSessionAge = document.getElementById("hSessionAge");
+      if (hUptime) hUptime.textContent = fmtDuration(elapsed);
+      if (hSessionAge) hSessionAge.textContent = fmtDuration(elapsed);
+    }
+  }, 5000);
+
+  document.getElementById("refreshHealth")?.addEventListener("click", updateHealthPanel);
+
+  // ===== SEARCHES =====
+  document.getElementById("userSearch")?.addEventListener("input", e => {
+    const q = e.target.value.toLowerCase();
+    renderUsers(allUsers.filter(u => (u.name||"").toLowerCase().includes(q) || (u.emailPhone||"").toLowerCase().includes(q) || (u.city||"").toLowerCase().includes(q)));
+  });
+  document.getElementById("chatSearch")?.addEventListener("input", e => {
+    const q = e.target.value.toLowerCase();
+    renderChats(allChats.filter(c => (c.text||"").toLowerCase().includes(q) || (c.location||"").toLowerCase().includes(q) || (c.handle||"").toLowerCase().includes(q)));
+  });
+
+  // ===== SELECT ALL =====
+  document.getElementById("usersSelectAll")?.addEventListener("change", (e) => {
+    const q = (document.getElementById("userSearch")?.value || "").toLowerCase();
+    const visible = allUsers.filter(u => !q || (u.name||"").toLowerCase().includes(q) || (u.emailPhone||"").toLowerCase().includes(q) || (u.city||"").toLowerCase().includes(q));
+    visible.forEach(u => { const id = String(u._id); if (e.target.checked) selectedUserIds.add(id); else selectedUserIds.delete(id); });
+    renderUsers(visible); syncDeleteButtons();
+  });
+  document.getElementById("chatsSelectAll")?.addEventListener("change", (e) => {
+    const q = (document.getElementById("chatSearch")?.value || "").toLowerCase();
+    const visible = allChats.filter(c => !q || (c.text||"").toLowerCase().includes(q) || (c.location||"").toLowerCase().includes(q) || (c.handle||"").toLowerCase().includes(q));
+    visible.forEach(c => { const id = String(c._id); if (e.target.checked) selectedChatIds.add(id); else selectedChatIds.delete(id); });
+    renderChats(visible); syncDeleteButtons();
+  });
+  document.getElementById("reportsSelectAll")?.addEventListener("change", (e) => {
+    allReports.forEach(r => { const id = String(r.id); if (e.target.checked) selectedReportIds.add(id); else selectedReportIds.delete(id); });
+    loadReportsPanel();
+  });
+
+  document.getElementById("deleteChatsBtn")?.addEventListener("click", async () => { await deleteChatsByIds([...selectedChatIds]); });
+  document.getElementById("deleteUsersBtn")?.addEventListener("click", async () => { await deleteUsersByIds([...selectedUserIds]); });
+  document.getElementById("deleteReportsBtn")?.addEventListener("click", async () => { await deleteReportsByIds([...selectedReportIds]); });
+  document.getElementById("clearReportsBtnActivity")?.addEventListener("click", clearAllReports);
+  document.getElementById("clearReportsBtnPanel")?.addEventListener("click", clearAllReports);
+  document.getElementById("refreshActivity")?.addEventListener("click", loadActivity);
+  document.getElementById("refreshReports")?.addEventListener("click", loadReportsPanel);
+
+  // Init
+  if (getToken()) showDashboard(); else showLogin();
+</script>
+  <script src="/_sdk/719055fef2a85d14.editing_sdk.js" integrity="sha512-kFqrdGgIiTOsu307feB5Cy3JVP9IayftsmCIZ0csxYBGuBmJQPhyvcnmKR8F0fTW97h5s1gAvz3SumI8zJ6OxQ=="></script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a1ae9e4046f66936',t:'MTc4NDAxMjA4OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
