@@ -568,6 +568,8 @@ footer {
     }
 
     section {
+        position: fixed;
+        inset: 0;
         width: 100%;
         max-width: 100%;
         /* 100% of the body, not another independent 100dvh — two
