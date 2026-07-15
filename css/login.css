@@ -391,6 +391,9 @@
 @media (max-width: 768px) {
   html,
   body {
+    height: 100vh; /* broadest-support fallback first — some iOS builds
+                       resolve neither svh nor dvh and were otherwise
+                       left with no height declared at all here */
     height: 100svh;
     height: 100dvh; /* tracks the real viewport once mobile browser chrome collapses */
     overflow: hidden;
@@ -399,8 +402,10 @@
   }
 
   .login-shell {
+    min-height: 100vh;
     min-height: 100svh;
     min-height: 100dvh;
+    height: 100vh;
     height: 100svh;
     height: 100dvh;
     grid-template-columns: 1fr;
@@ -412,8 +417,10 @@
   }
 
   .login-form-side {
+    min-height: 100vh;
     min-height: 100svh;
     min-height: 100dvh;
+    height: 100vh;
     height: 100svh;
     height: 100dvh;
     width: 100%;

@@ -19,6 +19,16 @@
        for a light paint to land in. (`!important` still matters
        here too, since !important in a stylesheet rule always beats
        a plain inline style regardless of source order.) */
+    /* Unconditional and first: the earliest possible paint on this
+       page, before the external styles.css has even been requested.
+       Android PWA cold opens were still showing a brief white frame
+       even with the html.auth-check rule below, because that rule
+       only applies once the auth-check class is present — this one
+       needs nothing to have run yet. */
+    html {
+      background: #1C1F26;
+    }
+
     html.auth-check {
       background: #1C1F26;
       color-scheme: dark !important;
@@ -255,11 +265,12 @@
     })();
   </script>
 
-  <!-- First-visit walkthrough. Only ever seen by signed-out visitors,
-       since the auth-check script above redirects anyone with a
-       session straight to home.html before this page renders. Shown
-       once per device (localStorage-gated in onboarding.js) — starts
-       closed here so there's nothing to flash before that check runs. -->
+  <!-- Walkthrough. Only ever seen by signed-out visitors, since the
+       auth-check script above redirects anyone with a session straight
+       to home.html before this page renders. Shown once per browsing
+       session (sessionStorage-gated in onboarding.js, see
+       lw_onboarding_shown_session) — starts closed here so there's
+       nothing to flash before that check runs. -->
   <div class="onboarding-overlay" id="onboardingOverlay">
     <div class="onboarding-card" role="dialog" aria-modal="true" aria-label="Welcome to LightWatch">
       <div class="onboarding-slide is-active" data-slide="0">
@@ -284,27 +295,12 @@
         <ul class="onboarding-slide__points">
           <li>Confirm first, then report.</li>
           <li>Accurate updates protect everyone from costly false moves.</li>
+          <li>Matching updates from your neighborhood raise confidence in each status.</li>
+          <li>Frequent participation turns uncertainty into fast, confident decisions across Kumasi.</li>
         </ul>
       </div>
 
       <div class="onboarding-slide onboarding-slide--areas" data-slide="2">
-        <span class="onboarding-slide__icon">
-          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <rect x="3" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/>
-            <rect x="14" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/>
-            <rect x="3" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/>
-            <rect x="14" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/>
-          </svg>
-        </span>
-        <h2>Consistency builds trust</h2>
-        <p>One report is a signal. Multiple matching reports become evidence. The more your neighborhood checks in, the faster LightWatch turns uncertainty into confident decisions across Kumasi.</p>
-        <ul class="onboarding-slide__points">
-          <li>Matching updates raise confidence in each status.</li>
-          <li>Frequent neighborhood participation strengthens coverage daily.</li>
-        </ul>
-      </div>
-
-      <div class="onboarding-slide onboarding-slide--areas" data-slide="3">
         <span class="onboarding-slide__icon">
           <img src="./images/areas.png?v=1.0.19" alt="" aria-hidden="true" width="24" height="24" />
         </span>
@@ -319,7 +315,6 @@
       <div class="onboarding-footer">
         <div class="onboarding-dots">
           <span class="onboarding-dots__dot is-active"></span>
-          <span class="onboarding-dots__dot"></span>
           <span class="onboarding-dots__dot"></span>
           <span class="onboarding-dots__dot"></span>
         </div>

@@ -1,11 +1,13 @@
 // =========================================================
 // onboarding.js
-// Full-screen walkthrough shown EVERY time a signed-out visitor
-// lands on index.html (not just the first-ever visit). It blocks
+// Full-screen walkthrough shown once per BROWSING SESSION to a
+// signed-out visitor landing on index.html (not just the first-ever
+// visit ever, but also not on every single reload/back-navigation
+// within the same session — see exception 3 below). It blocks
 // interaction with the sign-in form until the final step is
 // acknowledged.
 //
-// Two deliberate exceptions, both one-shot flags consumed here:
+// Three deliberate exceptions:
 //  1. lw_launch_overlay_pending — set by index.html's own
 //     auth-check script the instant it finds a valid session and
 //     is about to redirect straight to home.html. If that's set,
@@ -14,13 +16,28 @@
 //     home-page transition flash — this overlay competing with the
 //     launch overlay for a frame before the navigation actually
 //     tears the page down).
-//  2. lw_skip_onboarding_once — set by auth.js's signOut() right
-//     before it redirects here, so coming back from "Sign out" on
-//     the account page doesn't immediately re-run the walkthrough.
+//  2. lw_skip_onboarding_once — one-shot, consumed here. Set by
+//     auth.js's signOut() right before it redirects here, so coming
+//     back from "Sign out" on the account page doesn't immediately
+//     re-run the walkthrough.
+//  3. lw_onboarding_shown_session — NOT consumed; stays set for the
+//     rest of the tab's session. auth.js forces a hard reload of
+//     whichever page bfcache tries to restore (e.g. hitting Back
+//     from signup.html), which was re-running this file from scratch
+//     and reopening the walkthrough from slide 0 every time. This
+//     flag remembers it already ran once this session so that reload
+//     just reveals the login form instead.
 // =========================================================
 
 const SKIP_ONBOARDING_ONCE_KEY = 'lw_skip_onboarding_once';
 const LAUNCH_PENDING_KEY = 'lw_launch_overlay_pending';
+// Not consumed (removed) like SKIP_ONBOARDING_ONCE_KEY above — this one
+// stays set for the rest of the tab's session once the walkthrough has
+// been shown, so a back-navigation or forced bfcache reload back to
+// index.html later in the SAME session doesn't reopen it from slide 0.
+// A genuinely fresh visit (new tab/window, or the browser fully closed)
+// gets a clean sessionStorage and shows it again, same as before.
+const SHOWN_THIS_SESSION_KEY = 'lw_onboarding_shown_session';
 
 function consumeSkipOnboardingOnce() {
   try {
@@ -30,6 +47,18 @@ function consumeSkipOnboardingOnce() {
   } catch {
     return false;
   }
+}
+
+function hasShownOnboardingThisSession() {
+  try {
+    return sessionStorage.getItem(SHOWN_THIS_SESSION_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function markOnboardingShownThisSession() {
+  try { sessionStorage.setItem(SHOWN_THIS_SESSION_KEY, '1'); } catch {}
 }
 
 function isSessionRedirectPending() {
@@ -80,6 +109,7 @@ function revealAuthCheckBody() {
 function openOnboardingInstant() {
   const overlay = document.getElementById('onboardingOverlay');
   if (!overlay) return;
+  markOnboardingShownThisSession();
   setOnboardingSlide(0);
   // No backdrop fade-in on this first mount — the login page underneath
   // is still hidden (auth-check) at the moment this runs, so a 220ms
@@ -118,6 +148,15 @@ function initOnboarding() {
   // one time only. The next fresh visit to index.html shows it again.
   // No overlay will cover the login form, so reveal it now.
   if (consumeSkipOnboardingOnce()) {
+    overlay.remove();
+    revealAuthCheckBody();
+    return;
+  }
+
+  // Already shown once this session — a back-navigation or forced
+  // bfcache reload (auth.js) brought them back to index.html, not a
+  // fresh visit. Don't restart the walkthrough from slide 0.
+  if (hasShownOnboardingThisSession()) {
     overlay.remove();
     revealAuthCheckBody();
     return;

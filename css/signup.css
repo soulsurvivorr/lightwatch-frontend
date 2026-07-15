@@ -19,6 +19,7 @@
 
 html,
 body {
+    height: 100vh;
     height: 100svh;
     height: 100dvh; /* tracks the real viewport once mobile browser chrome collapses — a static 100% left html taller/shorter than the actual visible area */
     overflow: hidden;
@@ -28,6 +29,7 @@ body {
 
 body {
     margin: 0;
+    height: 100vh;
     height: 100svh;
     height: 100dvh;
     display: flex;
@@ -112,6 +114,7 @@ section {
     padding: 1.15rem 1.35rem 1.35rem;
     width: 100%;
     max-width: 940px;
+    max-height: 100vh;
     max-height: 100svh;
     max-height: 100dvh;
     background: color-mix(in srgb, var(--bg-panel) 60%, transparent);
@@ -544,6 +547,7 @@ footer {
 @media (max-width: 700px) {
     html,
     body {
+        height: 100vh;
         height: 100svh;
         height: 100dvh;
     }
@@ -581,8 +585,13 @@ footer {
         /* Full-bleed, edge-to-edge like index.html's .login-form-side —
            the card itself now carries the safe-area clearance instead
            of leaving a visible gap above/below it. Requires
-           viewport-fit=cover in the page's <meta name="viewport"> tag. */
-        padding-top: calc(.85rem + env(safe-area-inset-top, 0px));
+           viewport-fit=cover in the page's <meta name="viewport"> tag.
+           The extra 2em on top (beyond the safe-area clearance) is
+           deliberate breathing room so the brand row doesn't sit
+           flush against the very top edge — height stays full (100%
+           of the already-dvh-sized body above), this just shifts
+           where content starts inside it. */
+        padding-top: calc(.85rem + 2em + env(safe-area-inset-top, 0px));
         padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
     }
 
@@ -665,7 +674,7 @@ footer {
 @media (min-width: 421px) and (max-width: 700px) {
     section {
         padding: 1.15rem 1.3rem 1.3rem;
-        padding-top: calc(1.15rem + env(safe-area-inset-top, 0px));
+        padding-top: calc(1.15rem + 2em + env(safe-area-inset-top, 0px));
         padding-bottom: calc(1.3rem + env(safe-area-inset-bottom, 0px));
     }
 
@@ -745,7 +754,7 @@ footer {
 @media (max-width: 400px) {
     section {
         padding: .7rem .85rem .85rem;
-        padding-top: calc(.7rem + env(safe-area-inset-top, 0px));
+        padding-top: calc(.7rem + 2em + env(safe-area-inset-top, 0px));
         padding-bottom: calc(.85rem + env(safe-area-inset-bottom, 0px));
     }
 
