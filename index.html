@@ -25,111 +25,28 @@
        even with the html.auth-check rule below, because that rule
        only applies once the auth-check class is present — this one
        needs nothing to have run yet. */
-    html {
-      background: #1C1F26;
+    html, body {
+      background: #1C1F26 !important;
     }
 
-    html.auth-check {
-      background: #1C1F26;
-      color-scheme: dark !important;
-    }
-
-    html.auth-check,
-    html.auth-check body {
-      /* Locks the page underneath from scrolling for as long as the
-         auth-check overlay/hidden-body state is in effect — otherwise
-         the (invisible but still overflowing) content beneath the
-         overlay keeps the scrollbar track alive and visible. */
-      overflow: hidden !important;
-    }
-
+    /* Zero flashes: hide the body content only while the
+       authentication check is running. */
     html.auth-check body {
       visibility: hidden;
     }
 
-    /* Wordless "opens wide" launch splash — shown ONLY when the
-       auth-check script below finds an existing session and is about
-       to redirect straight to home.html (an already-registered user
-       reopening the app after closing it). It sits on top of the
-       hidden login form: visibility:visible here overrides the
-       html.auth-check body{visibility:hidden} rule above for this one
-       element, so the splash shows without ever letting the login
-       form flash first. Stays hidden/inert otherwise. */
-    #appLaunchOverlay {
-      visibility: hidden;
-      opacity: 0;
-      position: fixed;
-      inset: 0;
-      z-index: 100000;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #1C1F26;
-      pointer-events: none;
-    }
-    /* Instant, not a fade — the canvas behind this is already the
-       same #1C1F26 (see html.auth-check above), so there is nothing
-       for a fade to cross-dissolve against except the page itself.
-       Snapping straight to visible removes that translucent window
-       entirely instead of just shortening it. */
-    #appLaunchOverlay.is-active {
-      visibility: visible;
-      opacity: 1;
-    }
-    /* This overlay is only ever on screen here for ~180ms before the
-       redirect to home.html fires (see the script below) — far
-       shorter than the glow/mark entrance animations' own 0.5-0.6s
-       duration. That meant the page navigated away mid-transform,
-       cutting the mark's scale/opacity animation off partway through
-       — visually a stutter/"shake" right as home.html's fresh copy of
-       the same overlay started its own entrance from scratch a
-       moment later. Skipping the entrance here (home.html plays the
-       real, uninterrupted one) removes that double/truncated
-       animation. */
-    #appLaunchOverlay.is-active.is-instant #appLaunchOverlay__glow,
-    #appLaunchOverlay.is-active.is-instant #appLaunchOverlay__mark {
-      animation: none;
-      opacity: 1;
-      transform: scale(1);
-    }
-    /* Entrance keyframes — kept in lockstep with auth.js's
-       showAppLaunchOverlay(), since that's where this same overlay
-       gets recreated fresh a moment later on home.html. Same names,
-       same curves, so the brief flash of it here and the fuller
-       playback there read as one motion instead of two different
-       animations stitched together. */
-    @keyframes lwLaunchGlowIn {
-      0%   { opacity: 0;    transform: scale(0.5); }
-      60%  { opacity: 0.45; transform: scale(1.08); }
-      100% { opacity: 0.35; transform: scale(1); }
-    }
-    @keyframes lwLaunchMarkIn {
-      0%   { transform: scale(0.7);  opacity: 0; }
-      65%  { transform: scale(1.08); opacity: 1; }
-      100% { transform: scale(1);    opacity: 1; }
-    }
-    #appLaunchOverlay__glow {
-      position: absolute;
-      inset: 0;
-      margin: auto;
-      width: 160px;
-      height: 160px;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(240,172,61,0.4), rgba(74,144,217,0.2) 55%, transparent 75%);
-      filter: blur(8px);
-      animation: lwLaunchGlowIn 0.6s cubic-bezier(.16,.84,.44,1) both;
-    }
-    #appLaunchOverlay__mark {
-      position: relative;
-      width: 76px;
-      height: 76px;
-      border-radius: 20px;
-      /* Back-out easing (overshoots slightly past 1 before settling)
-         is what reads as a confident "arrival" rather than a plain
-         fade — the same spirit as X's mark doing a quick decisive
-         snap into place on open. */
-      animation: lwLaunchMarkIn 0.5s cubic-bezier(.34,1.56,.64,1) both;
-    }
+    /* NOTE: this used to also style a JS-drawn #appLaunchOverlay splash
+       (logo + glow, "opens wide" reveal) that covered the gap between
+       finding a session here and home.html actually rendering. That's
+       gone now — this is a native (Capacitor) app, so a real native
+       splash screen already sits on top of the webview from the
+       instant the app icon is tapped until we explicitly hide it
+       (Capacitor's SplashScreen plugin, configured natively with
+       launchAutoHide: false). There's nothing left for HTML/CSS to
+       paint over: the auth-check script below just decides where to
+       go, and either navigates away (splash stays up, home.html hides
+       it once it's ready) or reveals this page and hides the splash
+       at the same moment — see onboarding.js's revealAuthCheckBody(). */
   </style>
   <script>
     (function () {
@@ -142,61 +59,30 @@
       document.documentElement.style.setProperty('color-scheme', theme);
     })();
   </script>
-  <link rel="manifest" href="/manifest.json?v=1.0.19" />
-  <script src="./Js/app-startup.js?v=1.0.19" defer></script>
+  <link rel="manifest" href="/manifest.json?v=1.0.20" />
+  <script src="./Js/app-startup.js?v=1.0.20" defer></script>
   <meta name="theme-color" content="#1C1F26" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/images/dev-logo.png?v=1.0.19" />
-  <link rel="apple-touch-icon" sizes="192x192" href="/images/dev-logo.png?v=1.0.19" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/dev-logo.png?v=1.0.20" />
+  <link rel="apple-touch-icon" sizes="192x192" href="/images/dev-logo.png?v=1.0.20" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="LightWatch" />
-  <!-- iOS-only white flash on cold launch (see notes below and in
-       generate-ios-splash.js): iOS paints its own launch screen BEFORE
-       any HTML/CSS/JS on this page runs, so nothing here can touch that
-       very first frame directly. iOS tries to auto-derive a dark splash
-       from manifest.json (background_color is already #1C1F26, correct),
-       but that derivation is unreliable in practice and gets CACHED at
-       "Add to Home Screen" time — anyone who added the icon before this
-       was set right stays stuck on white until they remove + re-add it.
-       Explicit apple-touch-startup-image tags are the deterministic fix
-       Apple documents, since iOS reads these directly instead of relying
-       on manifest derivation. Run `node generate-ios-splash.js` (repo
-       root) to generate real per-device PNGs from images/dev-logo.png
-       and paste the resulting <link> tags here. Left as a placeholder
-       comment rather than fake filenames so nothing 404s until that's
-       run. -->
-  <!-- START: paste output of generate-ios-splash.js here -->
-  <link rel="apple-touch-startup-image" href="/images/splash/splash-1290x2796.png" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
-  <link rel="apple-touch-startup-image" href="/images/splash/splash-1179x2556.png" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
-  <link rel="apple-touch-startup-image" href="/images/splash/splash-1284x2778.png" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
-  <link rel="apple-touch-startup-image" href="/images/splash/splash-1170x2532.png" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
-  <link rel="apple-touch-startup-image" href="/images/splash/splash-1125x2436.png" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
-  <link rel="apple-touch-startup-image" href="/images/splash/splash-1242x2688.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
-  <link rel="apple-touch-startup-image" href="/images/splash/splash-828x1792.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
-  <link rel="apple-touch-startup-image" href="/images/splash/splash-750x1334.png" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
-  <link rel="apple-touch-startup-image" href="/images/splash/splash-640x1136.png" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
-  <link rel="apple-touch-startup-image" href="/images/splash/splash-1488x2266.png" media="(device-width: 744px) and (device-height: 1133px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
-  <link rel="apple-touch-startup-image" href="/images/splash/splash-1640x2360.png" media="(device-width: 820px) and (device-height: 1180px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
-  <link rel="apple-touch-startup-image" href="/images/splash/splash-1668x2388.png" media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
-  <link rel="apple-touch-startup-image" href="/images/splash/splash-2048x2732.png" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
-  <!-- END: apple-touch-startup-image tags -->
+  <!-- iOS PWA "Add to Home Screen" splash workaround removed — this is
+       now a native Capacitor shell, so the launch screen is a real
+       native asset (configured in Xcode / Info.plist for iOS, and in
+       the Android splash resources), shown by the OS before the
+       webview even exists and kept up via SplashScreen({ launchAutoHide:
+       false }) until the JS below explicitly hides it. Nothing here
+       needs to fake that anymore. -->
   <title>LightWatch - Sign In</title>
-  <link rel="icon" href="/images/dev-logo.png?v=1.0.19" type="image/png" />
+  <link rel="icon" href="/images/dev-logo.png?v=1.0.20" type="image/png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="./css/styles.css?v=1.0.19" />
-  <link rel="stylesheet" href="./css/login.css?v=1.0.19" />
-  <link rel="stylesheet" href="./css/onboarding.css?v=1.0.19" />
+  <link rel="stylesheet" href="./css/styles.css?v=1.0.20" />
+  <link rel="stylesheet" href="./css/login.css?v=1.0.20" />
+  <link rel="stylesheet" href="./css/onboarding.css?v=1.0.20" />
 </head>
 <body>
-  <!-- See #appLaunchOverlay CSS in <head> and the auth-check script
-       above — this only ever becomes visible for an already-signed-in
-       device that's about to be redirected to home.html. -->
-  <div id="appLaunchOverlay" aria-hidden="true">
-    <div id="appLaunchOverlay__glow" aria-hidden="true"></div>
-    <img id="appLaunchOverlay__mark" src="/images/dev-logo.png" alt="">
-  </div>
-
   <script>
     (function () {
       try {
@@ -229,39 +115,64 @@
         }
 
         if (hasSession) {
-          // This runs at the very top of <body>, right after the
-          // overlay markup above — html.auth-check still has body
-          // hidden at this point (that class is set from page load,
-          // not by JS), so activating the overlay here still shows it
-          // with zero flash of the login form underneath.
-          const overlay = document.getElementById('appLaunchOverlay');
-          if (overlay) overlay.classList.add('is-active', 'is-instant');
+          // No more overlay to show here and no reason to delay the
+          // redirect for one — the native splash screen is already
+          // covering the whole screen at this point and stays up
+          // straight through the navigation (it's a native layer, not
+          // part of this page), so there's nothing for a JS-drawn
+          // splash to add. home.html hides the native splash itself
+          // once it's actually ready to be seen. This flag just stops
+          // onboarding.js from opening the walkthrough underneath a
+          // redirect that's already in flight, in the rare case its
+          // script tag runs before navigation takes over.
+          // NOTE: this key name must match exactly what home.html's own
+          // cold-boot script checks in its <head>. It previously said
+          // 'lw_redirect_pending' here while home.html checked
+          // 'lw_launch_overlay_pending' — two different keys that never
+          // matched, so home.html's dark cold-boot styling (and the
+          // native-splash hide it triggers) never actually activated on
+          // a real cold launch. That mismatch is the black-screen bug.
           try { sessionStorage.setItem('lw_launch_overlay_pending', '1'); } catch {}
-          // Brief pause so the entrance animation actually gets a
-          // frame to paint before navigation tears the page down —
-          // home.html picks the splash back up the instant it loads
-          // (see auth.js) and plays the "opens wide" reveal there
-          // once its real content is ready.
-          setTimeout(() => window.location.replace('./pages/home.html'), 180);
+          window.location.replace('./pages/home.html');
           return;
         }
       } catch {
         // If storage is blocked, fall back to normal sign-in rendering.
       }
 
+      // We only reach this line when there's definitely no session and
+      // therefore definitely no redirect about to happen. So if
+      // 'lw_launch_overlay_pending' is still set to '1' here, it's a
+      // leftover from a previous sign-in that clearSession() failed to
+      // remove (fixed separately in auth.js) — and if left alone,
+      // onboarding.js's isSessionRedirectPending() would wrongly treat
+      // it as "a redirect is in flight," skip revealAuthCheckBody(),
+      // and leave the page hidden behind auth-check forever. Clearing
+      // it here self-heals any install already stuck in that state.
+      try { sessionStorage.removeItem('lw_launch_overlay_pending'); } catch {}
+
       // Deliberately NOT removing 'auth-check' here. Body stays hidden
-      // until onboarding.js (deferred, runs on DOMContentLoaded) has
-      // synchronously decided what to show — and, if it's opening the
-      // walkthrough, snapped the overlay fully opaque FIRST. Revealing
-      // the login form before that decision was made is exactly what
-      // caused it to flash/"reflect" through while the overlay was
-      // still fading in. See revealAuthCheckBody() in onboarding.js.
+      // — invisibly, underneath the native splash screen, so there's
+      // truly nothing to flash either way — until onboarding.js
+      // (runs on DOMContentLoaded) has synchronously decided whether
+      // to open the walkthrough or reveal the sign-in form, and hides
+      // the native splash at that exact moment. See
+      // revealAuthCheckBody() in onboarding.js.
       //
-      // Safety net only, in case onboarding.js fails to load for any
-      // reason — don't leave the page hidden forever.
+      // Safety net ONLY — onboarding.js's revealAuthCheckBody() is what
+      // normally hides the splash, at the exact moment content is ready
+      // to paint (see onboarding.js). This fixed timer used to be the
+      // ONLY thing that ever hid the splash on this page, which meant
+      // every signed-out launch sat on the native splash for a flat
+      // 2.5s no matter how fast the device actually was, and then the
+      // hide could still land a frame before real content painted —
+      // that gap is what showed as a black flash. Left here now only
+      // in case onboarding.js fails to load; pushed out to 4s so it
+      // never fires ahead of the real hide in normal operation.
       setTimeout(() => {
         document.documentElement.classList.remove('auth-check');
-      }, 2500);
+        window.Capacitor?.Plugins?.SplashScreen?.hide();
+      }, 4000);
     })();
   </script>
 
@@ -270,7 +181,8 @@
        to home.html before this page renders. Shown once per browsing
        session (sessionStorage-gated in onboarding.js, see
        lw_onboarding_shown_session) — starts closed here so there's
-       nothing to flash before that check runs. -->
+       nothing to flash before that check runs. Right after the native
+       splash hides, this is the first thing a signed-out visitor sees. -->
   <div class="onboarding-overlay" id="onboardingOverlay">
     <div class="onboarding-card" role="dialog" aria-modal="true" aria-label="Welcome to LightWatch">
       <div class="onboarding-slide is-active" data-slide="0">
@@ -302,7 +214,7 @@
 
       <div class="onboarding-slide onboarding-slide--areas" data-slide="2">
         <span class="onboarding-slide__icon">
-          <img src="./images/areas.png?v=1.0.19" alt="" aria-hidden="true" width="24" height="24" />
+          <img src="./images/areas.png?v=1.0.20" alt="" aria-hidden="true" width="24" height="24" />
         </span>
         <h2>Before you continue</h2>
         <ul class="onboarding-slide__points onboarding-slide__points--disclaimer">
@@ -416,10 +328,10 @@
     </section>
   </main>
 
-  <script src="./Js/theme.js?v=1.0.19"></script>
-  <script src="./Js/config.js?v=1.0.19"></script>
-  <script src="./Js/auth.js?v=1.0.19"></script>
-  <script src="./Js/login.js?v=1.0.19"></script>
-  <script src="./Js/onboarding.js?v=1.0.19"></script>
+  <script src="./Js/theme.js?v=1.0.20"></script>
+  <script src="./Js/config.js?v=1.0.20"></script>
+  <script src="./Js/auth.js?v=1.0.20"></script>
+  <script src="./Js/login.js?v=1.0.20"></script>
+  <script src="./Js/onboarding.js?v=1.0.20"></script>
 </body>
 </html>

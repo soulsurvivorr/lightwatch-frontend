@@ -84,7 +84,15 @@ function clearSession() {
      'currentUserId', 'currentUserData', 'chatHandle',
      'maskedContact', 'signupUser', 'userIdentifier',
     'pendingUserId', 'rememberMePending',
-    'lw_skip_disclaimer_once'
+    'lw_skip_disclaimer_once',
+    // Set by index.html right before it redirects a signed-in device to
+    // home.html, and normally consumed there. If it's still set at
+    // sign-out time it's stale — and if it survives to the next cold
+    // launch, onboarding.js's isSessionRedirectPending() wrongly thinks
+    // a redirect is already in flight and bails out of
+    // revealAuthCheckBody(), leaving the whole page (native splash +
+    // body) hidden behind auth-check indefinitely.
+    'lw_launch_overlay_pending'
     ].forEach(k => {
         localStorage.removeItem(k);
         sessionStorage.removeItem(k);
@@ -133,236 +141,13 @@ function showPageTransitionOverlay(message = 'Loading…') {
     return overlay;
 }
 
-// ── App "launch" overlay: same black full-bleed + logo as above, but
-//    wordless, with the logo doing a soft entrance and — when
-//    dismissed — an "opens wide" reveal (scales up and fades out over
-//    the real page underneath), instead of the pulsing loop used
-//    while waiting. Think of it as the app itself opening, X/Twitter-
-//    style, rather than a generic loading state.
-//
-//    This is ONLY for one scenario: someone already registered and
-//    already signed in on this device reopens the app after fully
-//    closing it. It is NOT used for signing in, signing up, or
-//    verification — those keep the ordinary showPageTransitionOverlay
-//    text version. See initColdStartLaunchOverlay() below for the
-//    actual trigger. ──
-let appLaunchOverlayEl = null;
+// App-launch splash overlay removed — this is now a native (Capacitor)
+// app, so the transition from index.html finding a session to
+// home.html actually rendering is covered by the real native splash
+// screen (kept up across the navigation, hidden by home.html once
+// it is ready), not a JS-drawn overlay. See index.html's auth-check
+// script for the redirect itself.
 
-function showAppLaunchOverlay() {
-    if (appLaunchOverlayEl) return appLaunchOverlayEl;
-
-    const overlay = document.createElement('div');
-    overlay.id = 'lwAppLaunchOverlay';
-    overlay.setAttribute('aria-hidden', 'true');
-    // No entrance animation on the backdrop itself — the canvas behind
-    // it is already #1C1F26 (painted pre-script by the html.lw-cold-boot
-    // rule in home.html's <head>), so fading this in just gave the real
-    // page a translucent window to show through for no visual benefit.
-    // Appearing instantly means there's genuinely nothing to "reflect"
-    // through during mount.
-    overlay.style.cssText = `
-        position: fixed; inset: 0; z-index: 100000;
-        display: flex; align-items: center; justify-content: center;
-        background: #1C1F26;
-    `;
-    overlay.innerHTML = `
-        <style>
-            /* Entrance: glow blooms open with the mark snapping in on a
-               slight overshoot (back-out easing) instead of a plain
-               fade — a quick, decisive "arrival" rather than a passive
-               materialization. Same keyframe names/timings as the
-               entrance already played briefly on index.html just
-               before hand-off, so the two don't read as two different
-               animations stitched together. */
-            @keyframes lwLaunchGlowIn {
-                0%   { opacity: 0;    transform: scale(0.5); }
-                60%  { opacity: 0.45; transform: scale(1.08); }
-                100% { opacity: 0.35; transform: scale(1); }
-            }
-            @keyframes lwLaunchMarkIn {
-                0%   { transform: scale(0.7);  opacity: 0; }
-                65%  { transform: scale(1.08); opacity: 1; }
-                100% { transform: scale(1);    opacity: 1; }
-            }
-            /* Exit: two things happen on the same clock.
-               1) The mark itself "flares" — a quick scale-up with a
-                  fast fade, like a brief flash of light, rather than
-                  just shrinking away.
-               2) The overlay performs a hard-edged iris/spotlight
-                  collapse via clip-path (never an opacity fade —
-                  opacity would let the real page blend through
-                  translucently for the whole exit, which is what read
-                  as the home page "flashing"/"reflecting" through the
-                  logo before). Every pixel is either overlay or page,
-                  nothing in between.
-               Together: a bright pulse at the mark's position, then
-               the page opens up around it — the same general shape as
-               a classic "logo flashes, app opens" reveal, without
-               copying the specific bird/shape/colors of any existing
-               app's mark. */
-            #lwAppLaunchOverlay {
-                clip-path: circle(150% at 50% 50%);
-            }
-            #lwAppLaunchOverlay.is-opening {
-                clip-path: circle(0% at 50% 50%);
-                transition: clip-path 0.48s cubic-bezier(.19,1,.22,1);
-            }
-            @keyframes lwLaunchMarkFlare {
-                0%   { transform: scale(1);    opacity: 1; }
-                35%  { transform: scale(1.22); opacity: 1; }
-                100% { transform: scale(1.4);  opacity: 0; }
-            }
-            @keyframes lwLaunchGlowBurst {
-                0%   { opacity: 0.35; transform: scale(1); }
-                35%  { opacity: 0.7;  transform: scale(1.5); }
-                100% { opacity: 0;    transform: scale(2.1); }
-            }
-            #lwAppLaunchOverlay .lw-launch-glow {
-                position: absolute;
-                inset: 0;
-                margin: auto;
-                width: 160px; height: 160px;
-                border-radius: 50%;
-                background: radial-gradient(circle, rgba(240,172,61,0.4), rgba(74,144,217,0.2) 55%, transparent 75%);
-                filter: blur(8px);
-                animation: lwLaunchGlowIn 0.6s cubic-bezier(.16,.84,.44,1) both;
-            }
-            #lwAppLaunchOverlay .lw-launch-mark {
-                position: relative;
-                width: 76px; height: 76px; border-radius: 20px;
-                animation: lwLaunchMarkIn 0.5s cubic-bezier(.34,1.56,.64,1) both;
-            }
-            #lwAppLaunchOverlay.is-opening .lw-launch-glow {
-                animation: lwLaunchGlowBurst 0.28s ease-out forwards;
-            }
-            #lwAppLaunchOverlay.is-opening .lw-launch-mark {
-                animation: lwLaunchMarkFlare 0.28s ease-out forwards;
-            }
-        </style>
-        <div class="lw-launch-glow" aria-hidden="true"></div>
-        <img class="lw-launch-mark" src="/images/dev-logo.png" alt="LightWatch">
-    `;
-    document.body.appendChild(overlay);
-    appLaunchOverlayEl = overlay;
-    return overlay;
-}
-
-// Plays the reveal, then removes the overlay. Duration here must match
-// the .is-opening clip-path transition above (0.48s) — it's the same
-// clock, just read from JS so we know when it's safe to remove the
-// element from the DOM.
-function dismissAppLaunchOverlay() {
-  if (!appLaunchOverlayEl) return;
-  const el = appLaunchOverlayEl;
-  appLaunchOverlayEl = null;
-
-  el.classList.add('is-opening');
-
-  const realContent = document.getElementById('realPageContent');
-  if (realContent) {
-    document.documentElement.style.background = '#1C1F26';
-    realContent.classList.add('lw-content-reveal');
-  }
-
-  setTimeout(() => {
-    el.remove();
-    document.documentElement.classList.remove('lw-cold-boot');
-    document.documentElement.style.background = '';
-    window.dispatchEvent(new CustomEvent('lw-page-revealed'));
-  }, 460); // slightly tighter timing
-}
-// Kept as its own name for readability at sign-out call sites; it's
-// just the shared overlay with sign-out's copy. (Sign-out does NOT use
-// the wordless launch overlay below — that one is reserved for the
-// cold-start-with-existing-session case only.)
-function showSignOutOverlay() {
-    return showPageTransitionOverlay('Signing out…');
-}
-
-// ── Hand-off for the "opens wide" reveal across a real page
-//    navigation. A page load and the page it redirects to are two
-//    separate documents/JS contexts, so the overlay can't just
-//    animate straight through one continuous script — instead,
-//    whoever shows it right before redirecting to home.html marks the
-//    hand-off with markAppLaunchPending(). home.html then shows the
-//    overlay itself the instant auth.js runs there (before its
-//    skeleton can flash), and dismisses it with the opening animation
-//    once the real page content is ready. ──
-const LAUNCH_OVERLAY_PENDING_KEY = 'lw_launch_overlay_pending';
-
-function markAppLaunchPending() {
-    try { sessionStorage.setItem(LAUNCH_OVERLAY_PENDING_KEY, '1'); } catch {}
-}
-
-function consumeAppLaunchPending() {
-    try {
-        const pending = sessionStorage.getItem(LAUNCH_OVERLAY_PENDING_KEY) === '1';
-        sessionStorage.removeItem(LAUNCH_OVERLAY_PENDING_KEY);
-        return pending;
-    } catch {
-        return false;
-    }
-}
-
-// ── The actual trigger for the wordless splash lives in index.html
-//    itself, not here. index.html has its own inline auth-check
-//    script (in <head>, before this file even loads) that already
-//    redirects straight to home.html when a session exists — that's
-//    the correct place to show the overlay, since by the time this
-//    file's <script src> at the bottom of index.html's body would run,
-//    that earlier redirect has usually already fired. See index.html
-//    for the overlay markup + trigger. ──
-
-// On home.html itself: if a launch was just requested, show the
-// overlay immediately (before the skeleton can flash) and dismiss it
-// with the opening animation once the real page content is ready.
-(function initAppLaunchOverlayOnHome() {
-    if (!/\/home\.html$/i.test(window.location.pathname)) return;
-    if (!consumeAppLaunchPending()) return;
-
-    showAppLaunchOverlay();
-
-    let released = false;
-    let fallback;
-    const release = () => {
-        if (released) return;
-        released = true;
-        clearTimeout(fallback);
-        observer.disconnect();
-        dismissAppLaunchOverlay();
-    };
-
-    const isStillLoading = () =>
-        document.body.classList.contains('app-loading') ||
-        document.body.classList.contains('page-data-loading');
-
-    // Primary signal: the event the page-ready flow already dispatches
-    // once real content replaces the skeleton (see home.js).
-    window.addEventListener('lw-page-revealed', release, { once: true });
-
-    // Backup signal: same class-removal check home-reminder.js already
-    // relies on, in case the event above isn't dispatched in every path.
-    const observer = new MutationObserver(() => {
-        if (!isStillLoading()) release();
-    });
-    observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
-
-    // Covers the (unlikely but possible) case where loading already
-    // finished before this script even ran — a MutationObserver only
-    // fires on FUTURE changes, so without this check we'd sit waiting
-    // on a mutation that already happened, and only recover via the
-    // fallback below — i.e. the splash would hang around for seconds
-    // after the real page was already sitting there ready underneath.
-    if (!isStillLoading()) {
-        release();
-    } else {
-        // Genuine last resort only — kept long on purpose so a slower
-        // connection never gets its skeleton exposed by an overlay
-        // that dismissed too early. Real loads should always finish
-        // via one of the two signals above well before this fires.
-        fallback = setTimeout(release, 7000);
-    }
-})();
 
 // ── Sign out — works from ANY page ───────────────────────────
 let signOutInProgress = false;
@@ -379,17 +164,16 @@ function signOut() {
     // the app a second ago. Consumed once by onboarding.js and never
     // set again until the next sign-out.
     try { sessionStorage.setItem('lw_skip_onboarding_once', '1'); } catch {}
-    showSignOutOverlay();
+
+    // Branded transition before we leave
+    showPageTransitionOverlay('Signing out…');
 
     // Figure out the correct path back to index.html from wherever we are
-    // Works whether you're at /pages/home.html or /index.html
     const depth = window.location.pathname.split('/').filter(Boolean).length;
     const prefix = depth > 1 ? '../'.repeat(depth - 1) : './';
 
-    // Give the overlay a beat to actually paint/register before we leave.
-    setTimeout(() => {
-        window.location.replace(prefix + 'index.html');
-    }, 700);
+    // Immediate replace for native feel
+    window.location.replace(prefix + 'index.html');
 }
 
 // ── Guard: redirect to login if no session ────────────────────

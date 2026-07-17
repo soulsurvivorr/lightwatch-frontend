@@ -391,27 +391,25 @@
 @media (max-width: 768px) {
   html,
   body {
-    height: 100vh; /* broadest-support fallback first — some iOS builds
-                       resolve neither svh nor dvh and were otherwise
-                       left with no height declared at all here */
-    height: 100svh;
-    height: 100dvh; /* tracks the real viewport once mobile browser chrome collapses */
-    overflow: hidden;
+    height: auto;
+    /* dvh is meant to track the real viewport, but in this app's
+       WebView it doesn't reliably re-resolve back to full height once
+       the on-screen keyboard has opened and closed (see the --app-vh
+       fix in app-startup.js). --app-vh is measured live via
+       visualViewport and falls back to dvh before that script runs. */
+    min-height: var(--app-vh, 100dvh);
+    overflow-x: hidden;
+    overflow-y: auto;
     overscroll-behavior: none;
-    touch-action: none; /* kills pull-to-refresh + the vertical/horizontal rubber-band drag — no legit pan gesture lives on this page, form fields/checkbox handle their own input fine without it */
   }
 
   .login-shell {
-    position: fixed;
-    inset: 0;
-    min-height: 100vh;
-    min-height: 100svh;
-    min-height: 100dvh;
-    height: 100vh;
-    height: 100svh;
-    height: 100dvh;
-    grid-template-columns: 1fr;
-    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-height: var(--app-vh, 100dvh);
+    background-color: var(--bg-panel);
+    overflow-x: hidden;
   }
 
   .login-visual {
@@ -419,21 +417,18 @@
   }
 
   .login-form-side {
-    min-height: 100vh;
-    min-height: 100svh;
-    min-height: 100dvh;
-    height: 100vh;
-    height: 100svh;
-    height: 100dvh;
+    flex: 1;
     width: 100%;
-    overflow: hidden;
-    isolation: isolate;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start; /* Start from top down */
     /* Keep the notch/Dynamic Island clearance from styles.css's base
        .login-form-side rule — this block only needs to change layout
        (height/overflow) for the phone breakpoint, not padding, but it
        shares a selector with that rule so it has to restate this or
        lose it. */
-    padding-top: calc(25px + env(safe-area-inset-top, 0px));
+    padding-top: calc(25px + 2em + env(safe-area-inset-top, 0px));
     padding-bottom: calc(48px + env(safe-area-inset-bottom, 0px));
   }
 
@@ -444,10 +439,11 @@
     border-radius: 999px;
     z-index: 0;
     pointer-events: none;
-    will-change: transform, opacity;
+    /* Static bubbles on mobile to improve keyboard speed */
+    will-change: auto;
   }
 
-  /* Top-right bubble cluster — tucked into the corner only */
+  /* Top-right bubble cluster */
   .login-form-side::before {
     width: 210px;
     height: 210px;
@@ -458,10 +454,9 @@
       radial-gradient(circle at 46% 46%, rgba(214, 162, 74, 0.92), rgba(166, 108, 20, 0.5) 46%, transparent 66%),
       radial-gradient(circle at 66% 68%, rgba(28, 90, 158, 0.88), transparent 58%);
     filter: blur(0.5px);
-    animation: bubble-float-a 3.2s ease-in-out infinite;
   }
 
-  /* Bottom-left bubble cluster — tucked into the corner only */
+  /* Bottom-left bubble cluster */
   .login-form-side::after {
     width: 230px;
     height: 230px;
@@ -472,7 +467,6 @@
       radial-gradient(circle at 58% 42%, rgba(28, 90, 158, 0.85), transparent 55%),
       radial-gradient(circle at 44% 70%, rgba(214, 162, 74, 0.9), rgba(166, 108, 20, 0.45) 48%, transparent 66%);
     filter: blur(0.5px);
-    animation: bubble-float-b 3.8s ease-in-out infinite;
   }
 
   .login-box {
@@ -535,7 +529,7 @@
 @media (max-width: 400px) {
   .login-form-side {
     padding: 20px 18px 32px;
-    padding-top: calc(20px + env(safe-area-inset-top, 0px));
+    padding-top: calc(20px + 2em + env(safe-area-inset-top, 0px));
     padding-bottom: calc(32px + env(safe-area-inset-bottom, 0px));
   }
 

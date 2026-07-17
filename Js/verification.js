@@ -13,17 +13,20 @@ const userValue     = getVerificationValue('userIdentifier');
 const maskedContact = getVerificationValue('maskedContact');
 const isSignupFlow  = !!getVerificationValue('signupUser');
 
+// Fixed number of asterisks (not scaled to the real hidden length) so
+// long local-parts/numbers don't blow up the line width and wrap the
+// contact-row onto a second line.
+const MASK_STAR_COUNT = 4;
+
 function maskValue(value) {
     if (!value) return '';
     if (value.includes('@')) {
         const [name, domain] = value.split('@');
         const visible = name.slice(0, 3);
-        const hiddenLen = Math.max(name.length - visible.length, 3);
-        return visible + '*'.repeat(hiddenLen) + '@' + domain;
+        return visible + '*'.repeat(MASK_STAR_COUNT) + '@' + domain;
     }
     const visible = value.slice(0, 3);
-    const hiddenLen = Math.max(value.length - visible.length, 3);
-    return visible + '*'.repeat(hiddenLen);
+    return visible + '*'.repeat(MASK_STAR_COUNT);
 }
 
 // Compute the mask ourselves rather than trusting the server's

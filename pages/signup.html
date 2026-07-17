@@ -13,6 +13,15 @@
                 document.documentElement.setAttribute('data-theme', theme);
                 document.documentElement.style.setProperty('color-scheme', theme);
                                 document.documentElement.classList.remove('auth-check');
+
+                // Sync the native window background to match THIS page's
+                // background before it paints — fixes the dark-flash when
+                // navigating here from a dark page (index/login/onboarding),
+                // since the native window otherwise stays on whatever color
+                // the previous page left it at. Mirrors the background
+                // values in the inline <style> block below exactly.
+                const nativeBg = (isLaptop && theme !== 'light') ? '#0f1318' : '#eeedf1';
+                window.Capacitor?.Plugins?.SystemBarAppearance?.setBackground({ color: nativeBg });
             })();
         </script>
         <style>

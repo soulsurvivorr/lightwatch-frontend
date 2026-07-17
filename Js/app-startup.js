@@ -22,14 +22,33 @@
     // itself (bypassing HTTP cache) and compares it byte-for-byte.
     const UPDATE_CHECK_INTERVAL_MS = 60 * 1000;
 
-    // How long after this script starts running a controllerchange is
-    // still considered part of the initial load rather than a genuine
-    // mid-session update. See the controllerchange listener below for
-    // why this exists.
-    const COLD_START_GRACE_MS = 2500;
-    const scriptStartedAt = Date.now();
-
     let refreshing = false; // guards against a reload loop
+
+    // Whether THIS page has finished its own first paint yet. A
+    // controllerchange that lands before this is true is what caused
+    // the black-flash + layout "shake" on cold launches (see the big
+    // comment on the controllerchange listener below) — reloading here
+    // isn't skipped forever, just deferred until it's safe.
+    let pageSettled = false;
+    let pendingReloadAfterSettle = false;
+
+    function markPageSettled() {
+        // A further beat after 'load' so images/fonts actually finish
+        // painting, not just so the event has fired.
+        setTimeout(() => {
+            pageSettled = true;
+            if (pendingReloadAfterSettle && !refreshing) {
+                refreshing = true;
+                window.location.reload();
+            }
+        }, 600);
+    }
+
+    if (document.readyState === 'complete') {
+        markPageSettled();
+    } else {
+        window.addEventListener('load', markPageSettled, { once: true });
+    }
 
     function activateWaitingWorker(registration) {
         if (!registration.waiting) return;
@@ -117,15 +136,17 @@
     // verification.html hands off to home.html).
     //
     // The new worker is still activated either way (see Case 1/2 above)
-    // — this only skips the disruptive hard reload for a controllerchange
-    // that lands inside this page's own startup window. The update takes
-    // over cleanly on the next real navigation instead, or via the
-    // periodic/visibilitychange checks below if the user stays on this
-    // page a while.
+    // — this only defers the disruptive hard reload while this page is
+    // still doing its own first paint. Rather than a fixed timer (which
+    // could still lose the race on a slow cold start), this waits for
+    // an actual "this page has settled" signal and fires the reload the
+    // moment that's true — so the update is never silently lost, just
+    // never allowed to collide with the initial render.
     navigator.serviceWorker.addEventListener('controllerchange', () => {
         if (refreshing) return;
 
-        if (Date.now() - scriptStartedAt < COLD_START_GRACE_MS) {
+        if (!pageSettled) {
+            pendingReloadAfterSettle = true;
             return;
         }
 
@@ -138,4 +159,84 @@
     } else {
         window.addEventListener('load', registerServiceWorker);
     }
+
+    // ── Reliable full-screen height for mobile ─────────────────
+    // Android's `100vh` / `100dvh` are meant to already track the real,
+    // current viewport, but in this app's WebView (decorFitsSystemWindows
+    // = true, windowSoftInputMode = adjustResize — see MainActivity.java)
+    // the on-screen keyboard opening resizes the actual window, and dvh
+    // doesn't reliably re-resolve back to full height once the keyboard
+    // closes again. The visible symptom: tap into a field, dismiss the
+    // keyboard, and a full-height layout (e.g. index.html's sign-in
+    // page) stays pinned at the shorter, keyboard-open height — leaving
+    // a dead gap at the bottom and a page that's oddly scrollable when
+    // it should be a single static screen.
+    //
+    // Fix: measure the real height ourselves via visualViewport, which
+    // DOES fire a reliable 'resize' event on every keyboard open/close
+    // on Android even when window's own resize doesn't, and publish it
+    // as a CSS custom property. Full-screen layouts should size against
+    // var(--app-vh, 100dvh) instead of 100vh/100dvh directly.
+    (function () {
+        function setAppVh() {
+            const height = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+            document.documentElement.style.setProperty('--app-vh', `${height}px`);
+        }
+
+        setAppVh();
+
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', setAppVh);
+        } else {
+            window.addEventListener('resize', setAppVh);
+        }
+
+        // Orientation changes settle a beat after the event fires — an
+        // immediate read here can still catch the pre-rotation size.
+        window.addEventListener('orientationchange', () => {
+            setTimeout(setAppVh, 200);
+        });
+    })();
+
+    // ── Hardware / gesture back button (Android) ──────────────────
+    const AppPlugin = window.Capacitor?.Plugins?.App;
+    if (AppPlugin?.addListener) {
+        AppPlugin.addListener('backButton', () => {
+            // Priority 1: Close Chat if open
+            const card = document.querySelector('.chat-card--mobile-open');
+            if (card && typeof window.setMobileChatOpen === 'function') {
+                window.setMobileChatOpen(false);
+                return;
+            }
+
+            const path = window.location.pathname.toLowerCase();
+            const isRoot = path.endsWith('/index.html') || path === '/' || path === '';
+            const isHome = path.endsWith('/home.html');
+
+            // Priority 2: Exit App if on Index (Login) or Home
+            if (isRoot || isHome) {
+                AppPlugin.exitApp();
+                return;
+            }
+
+            // Priority 3: Back to Home for everything else
+            const depth = window.location.pathname.split('/').filter(Boolean).length;
+            const prefix = depth > 1 ? '../'.repeat(depth - 1) : './';
+            window.location.replace(prefix + 'pages/home.html');
+        });
+    }
+
+    // ── First-run Notification Permission ─────────────────
+    (function () {
+        const NOTIF_PROMPTED_KEY = 'lw_notif_first_prompt';
+        if (!localStorage.getItem(NOTIF_PROMPTED_KEY)) {
+            // Wait for first interaction or a short delay to ask
+            setTimeout(async () => {
+                if (window.enableLightWatchPush) {
+                    await window.enableLightWatchPush();
+                    localStorage.setItem(NOTIF_PROMPTED_KEY, '1');
+                }
+            }, 3000);
+        }
+    })();
 })();

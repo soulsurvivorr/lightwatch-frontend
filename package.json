@@ -1,5 +1,16 @@
 {
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
     "sharp": "^0.35.3"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.4.2",
+    "@capacitor/app": "^8.1.1",
+    "@capacitor/cli": "^8.4.2",
+    "@capacitor/core": "^8.4.2",
+    "@capacitor/push-notifications": "^8.0.0"
+  },
+  "scripts": {
+    "build": "node build.js"
   }
 }

@@ -1,0 +1,14 @@
+{
+  "appId": "gh.lightwatch.app",
+  "appName": "LightWatch",
+  "webDir": "www",
+  "plugins": {
+    "SplashScreen": {
+      "launchAutoHide": false
+    },
+    "SystemBars": {
+      "insetsHandling": "css",
+      "style": "DARK"
+    }
+  }
+}

@@ -304,6 +304,53 @@ function setLightStatus(status) {
 let lightStatusPollInterval = null;
 let lastVerifiedRefreshInterval = null;
 
+// -----------------------------------------------------
+// LIGHT STATUS CACHE
+// Lets renderLocationPage() paint the last-known status/stats for a
+// location INSTANTLY on repeat visits, instead of always forcing a
+// blank "loading" state until the network round-trip finishes. This
+// is what lets loadCurrentUserProfile() skip the skeleton on repeat
+// opens (see hideProfileLoader() call sites below) — the fix is
+// deliberately NOT "skip the skeleton and show nothing" (that was
+// tried before and reverted, see the note in showProfileLoader()),
+// it's "skip the skeleton because there's real cached data to show
+// immediately instead." The network fetch still always runs in the
+// background and overwrites this the moment it lands, so nobody is
+// ever stuck looking at stale data for more than a beat.
+// -----------------------------------------------------
+const LIGHT_STATUS_CACHE_PREFIX = 'lw_cache_lightstatus_';
+const LIGHT_STATUS_CACHE_MAX_AGE_MS = 30 * 60 * 1000; // 30 min — stale past this, treat as no cache
+
+function lightStatusCacheKey(location) {
+    return LIGHT_STATUS_CACHE_PREFIX + location.toLowerCase().trim();
+}
+
+function readLightStatusCache(location) {
+    try {
+        const raw = localStorage.getItem(lightStatusCacheKey(location));
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== 'object' || !parsed.cachedAt) return null;
+        if (Date.now() - parsed.cachedAt > LIGHT_STATUS_CACHE_MAX_AGE_MS) return null;
+        return parsed;
+    } catch {
+        return null;
+    }
+}
+
+function writeLightStatusCache(location, data) {
+    try {
+        localStorage.setItem(lightStatusCacheKey(location), JSON.stringify({
+            status: data.status || 'unknown',
+            stats: data.stats || null,
+            reportedAt: data.reportedAt || null,
+            cachedAt: Date.now()
+        }));
+    } catch {
+        // Storage full/blocked — caching is a nice-to-have, never fatal.
+    }
+}
+
 function renderLocationPage(user) {
     clearInterval(lightStatusPollInterval);
     clearInterval(lastVerifiedRefreshInterval);
@@ -429,14 +476,36 @@ function renderLocationPage(user) {
                     refreshLastVerifiedLabel();
                 }
                 renderLightStats(data.stats);
+                writeLightStatusCache(location, data);
             })
             .catch(() => {
-                setLightStatus('unknown');
-                renderLightStats(null);
+                // Only fall back to 'unknown' if we never managed to paint
+                // anything at all (no cache existed either) — if a cached
+                // value is already on screen, a failed refresh shouldn't
+                // wipe out real (if slightly stale) data with a blank state.
+                if (!cachedLightStatus) {
+                    setLightStatus('unknown');
+                    renderLightStats(null);
+                }
             });
     }
 
-    setLightStatus('loading');
+    // Paint the last-known status/stats immediately if we have them —
+    // this is what lets a repeat page open skip straight to real content
+    // instead of a forced 'loading' placeholder. The fetch below always
+    // still runs and overwrites this with the live value.
+    const cachedLightStatus = readLightStatusCache(location);
+    if (cachedLightStatus) {
+        setLightStatus(cachedLightStatus.status);
+        if (cachedLightStatus.reportedAt) {
+            lastReportedAtMs = new Date(cachedLightStatus.reportedAt).getTime();
+            refreshLastVerifiedLabel();
+        }
+        renderLightStats(cachedLightStatus.stats);
+    } else {
+        setLightStatus('loading');
+    }
+
     const initialStatsLoad = loadLocationStats();
 
     // Poll light status every 30s so all users stay in sync
@@ -450,6 +519,7 @@ function renderLocationPage(user) {
                     refreshLastVerifiedLabel();
                 }
                 renderLightStats(data.stats);
+                writeLightStatusCache(location, data);
             })
             .catch(() => {});
     }, 10000);
@@ -482,9 +552,13 @@ function renderLocationPage(user) {
     }
 
     // So the caller (loadCurrentUserProfile) can await this and only
-    // hide the loading overlay once the FIRST light-status/stats load
-    // has actually landed too — not just the user profile fetch.
-    return initialStatsLoad;
+    // hide the loading overlay once there's real data on screen. If we
+    // had a cache to paint from, that already happened synchronously
+    // above — no reason to keep the skeleton up for a network round
+    // trip that's just going to refresh numbers that are already
+    // visible. Only a genuine first-ever load (no cache) still waits on
+    // the real fetch, since there's nothing else to show yet.
+    return cachedLightStatus ? Promise.resolve() : initialStatsLoad;
 }
 
 // -------------------------------------------------------

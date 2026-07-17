@@ -28,6 +28,20 @@
   pointer-events: auto;
 }
 
+/* Used for exactly one frame when the overlay first opens (see
+   onboarding.js openOnboardingInstant()) so the dark backdrop
+   becomes fully opaque INSTANTLY instead of fading in over 0.22s.
+   That fade was the actual source of the "index page flashes before
+   onboarding starts" bug: the native splash was hiding while the
+   backdrop was still mid-fade, so the sign-in form underneath showed
+   through for a frame or two. The .onboarding-card's own transform/
+   opacity transition below still plays in full, so the walkthrough
+   still gets a smooth, deliberate entrance — it's layered on top of
+   an already-solid backdrop instead of racing it. */
+.onboarding-overlay.is-instant {
+  transition: none !important;
+}
+
 .onboarding-card {
   position: relative;
   width: 100%;
@@ -51,15 +65,16 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  transform: translateY(0) scale(1);
+  transform: translateY(30px);
   opacity: 0;
-  transition: transform 0.24s ease, opacity 0.24s ease;
+  transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.6s ease;
   overflow-y: auto;
   overflow-x: hidden;
 }
 
 .onboarding-overlay.is-open .onboarding-card {
   opacity: 1;
+  transform: translateY(0);
 }
 
 .onboarding-slide {
@@ -216,6 +231,13 @@
 @media (max-width: 420px) {
   .onboarding-card {
     padding: 20px 16px 14px;
+    /* The shorthand above resets padding-top/bottom, which silently
+       dropped the notch/home-indicator clearance the base rule sets
+       via env(safe-area-inset-*) — restore it here. This breakpoint
+       covers almost every phone, so losing it here meant losing it
+       everywhere that actually matters. */
+    padding-top: calc(20px + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
   }
 
   .onboarding-slide {

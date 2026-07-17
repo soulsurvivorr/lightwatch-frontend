@@ -149,7 +149,12 @@ html, body {
    Individual components (e.g. .bottom-nav-link) already set this
    locally; this is now the app-wide floor so nothing new needs to
    remember to opt in. */
-button, a {
+/* Was only "button, a" before — that missed every checkbox-style
+   control in the app (Remember Me toggle, notify-updates toggle, and
+   any future ones), since those are built from <label>/<input>, not
+   <button>/<a>. That gap is exactly why tapping a checkmark still
+   flashed the default Android highlight even though buttons didn't. */
+button, a, label, input, select, [role="button"] {
   -webkit-tap-highlight-color: transparent;
   -webkit-touch-callout: none;
 }
@@ -197,7 +202,16 @@ body {
   font-size: 16px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  /* 100vh alone can under-report the true edge-to-edge screen height
+     on Android once SystemBars.insetsHandling:"css" makes the status
+     bar and gesture-nav bar transparent (capacitor.config.json) —
+     that's what left a gap at the bottom where the WebView's default
+     background (not this app's) showed through instead of your
+     content's color. dvh tracks the real, current viewport including
+     that area. Matches the fallback chain login.css/verification.css/
+     signup.css already use. */
   min-height: 100vh;
+  min-height: 100dvh;
   transition: background-color 0.25s ease, color 0.25s ease, font-family 0.25s ease;
 }
 
@@ -229,10 +243,6 @@ button {
 ::selection {
   background: var(--teal-dim);
   color: var(--text-bright);
-}
-
-button, a {
-    touch-action: manipulation;
 }
 
 /* ============================================================
@@ -361,50 +371,52 @@ button, a {
     animation: none;
   }
 }
-/* Bottom Nav Section for smaller screens */
+/* Bottom Nav Section for smaller screens
+   Flush, edge-to-edge bar — sits directly on the bottom of the screen
+   (full width, no floating side margins) with safe-area padding baked
+   into the bar itself rather than a gap underneath it. */
 #bottom_nav_wrapper {
   position: fixed;
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 14px);
+  bottom: 0;
   left: 0;
   right: 0;
   z-index: 45;
   display: none;
-  padding: 0 16px;
+  padding: 0;
   pointer-events: none;
 }
 
 .bottom-icons-container {
   pointer-events: auto;
-  margin: 0 auto;
-  max-width: 380px;
   width: 100%;
   background: var(--bottom-nav-surface);
-  border: 1px solid var(--bottom-nav-border);
-  border-radius: 999px;
-  padding: 7px 10px;
+  border: none;
+  border-top: 1px solid var(--bottom-nav-border);
+  border-radius: 0;
+  padding: 8px max(10px, env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
   display: flex;
-  justify-content: space-around;
-  align-items: center;
+  justify-content: space-between;
+  align-items: stretch;
   gap: 2px;
   box-shadow: var(--bottom-nav-shadow);
-  backdrop-filter: blur(12px) saturate(160%);
-  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
 }
 
 :root[data-theme="dark"] .bottom-icons-container {
   background: linear-gradient(165deg, rgba(53, 59, 69, 0.96), rgba(30, 35, 44, 0.94));
-  border-color: rgba(153, 178, 218, 0.45);
+  border-top-color: rgba(153, 178, 218, 0.4);
   box-shadow:
-    0 16px 36px rgba(0, 0, 0, 0.52),
+    0 -16px 36px rgba(0, 0, 0, 0.4),
     inset 0 1px 0 rgba(230, 241, 255, 0.09);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) .bottom-icons-container {
     background: linear-gradient(165deg, rgba(46, 55, 69, 0.96), rgba(28, 35, 46, 0.94));
-    border-color: rgba(153, 178, 218, 0.45);
+    border-top-color: rgba(153, 178, 218, 0.4);
     box-shadow:
-      0 16px 36px rgba(0, 0, 0, 0.52),
+      0 -16px 36px rgba(0, 0, 0, 0.4),
       inset 0 1px 0 rgba(230, 241, 255, 0.09);
   }
 }
@@ -415,24 +427,29 @@ button, a {
   cursor: pointer;
 }
 
+/* Equal-width columns instead of fixed-width chips — the bar now
+   divides its full width evenly between tabs rather than clustering
+   them in a centered pill. */
 .bottom-nav-link {
+  position: relative;
   display: inline-flex;
+  flex: 1 1 0;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 3px;
-  min-width: 58px;
+  min-width: 0;
   min-height: 48px;
-  padding: 7px 8px;
-  border-radius: 999px;
+  padding: 6px 4px 4px;
+  border-radius: 12px;
   color: var(--bottom-nav-label);
   font-size: 0.72rem;
   background: transparent;
   border: none;
   cursor: pointer;
   transition: background 0.2s ease, color 0.2s ease;
-  touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
   outline: none;
 }
 
@@ -453,10 +470,30 @@ button, a {
   box-shadow: none;
 }
 
+/* Small active-tab indicator bar, replacing the old pill-shaped
+   highlight now that tabs sit in a flush bar rather than a floating
+   chip — a thin accent line reads more like a native tab bar. */
+.bottom-nav-link::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 22px;
+  height: 3px;
+  border-radius: 0 0 3px 3px;
+  background: var(--bottom-nav-label-active);
+  transform: translateX(-50%) scaleX(0);
+  transition: transform 0.2s ease;
+}
+
+.bottom-nav-link--active::before {
+  transform: translateX(-50%) scaleX(1);
+}
+
 .bottom-nav-icon {
-  font-size: 1.15rem;
-  width: 26px;
-  height: 26px;
+  font-size: 1rem;
+  width: 22px;
+  height: 22px;
   border-radius: 8px;
   display: inline-flex;
   align-items: center;
@@ -467,8 +504,8 @@ button, a {
 
 .bottom-nav-icon img {
   display: block;
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   object-fit: contain;
 }
 
@@ -1022,20 +1059,19 @@ button, a {
   }
 
   #bottom_nav_wrapper {
-    padding: 0 10px;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
+    padding: 0;
   }
 
   .bottom-icons-container {
-    padding: 6px 8px;
-    max-width: 340px;
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
   }
 
   .bottom-nav-link {
-    min-width: 50px;
+    min-width: 0;
     min-height: 44px;
-    padding: 6px 6px;
+    padding: 5px 4px 4px;
   }
+
 
   .user-sidebar-panel {
     padding: 18px 12px 16px;

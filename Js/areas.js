@@ -199,9 +199,45 @@ async function fetchLiveTowns() {
   }
 }
 
-async function loadAreas() {
+// -----------------------------------------------------
+// RENDER CACHE — same pattern used on the light-status card
+// (see profile.js's LIGHT_STATUS_CACHE): paint the last-known
+// Bantama status instantly from localStorage while the real fetch
+// runs in the background, instead of showing "Loading area status…"
+// on every single visit to this page.
+// -----------------------------------------------------
+const AREAS_CACHE_KEY = 'lw_cache_areas_bantama';
+const AREAS_CACHE_MAX_AGE_MS = 30 * 60 * 1000;
+
+function readAreasCache() {
+  try {
+    const raw = localStorage.getItem(AREAS_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || !parsed.cachedAt) return null;
+    if (Date.now() - parsed.cachedAt > AREAS_CACHE_MAX_AGE_MS) return null;
+    return parsed.value;
+  } catch {
+    return null;
+  }
+}
+
+function writeAreasCache(value) {
+  try {
+    localStorage.setItem(AREAS_CACHE_KEY, JSON.stringify({ value, cachedAt: Date.now() }));
+  } catch {}
+}
+
+async function loadAreas(isFirstLoad = false) {
+  if (isFirstLoad) {
+    const cached = readAreasCache();
+    if (cached) {
+      renderAreas([cached, ...DEMO_AREAS]);
+    }
+  }
   const liveBantama = await fetchLiveTowns();
   renderAreas([liveBantama, ...DEMO_AREAS]);
+  writeAreasCache(liveBantama);
 }
 
 function bindControls() {
@@ -246,9 +282,9 @@ function bindControls() {
 
 function startAreasPolling() {
   bindControls();
-  loadAreas();
+  loadAreas(true);
   clearInterval(areasPollTimer);
-  areasPollTimer = setInterval(loadAreas, POLL_INTERVAL_MS);
+  areasPollTimer = setInterval(() => loadAreas(false), POLL_INTERVAL_MS);
 }
 
 document.addEventListener('DOMContentLoaded', startAreasPolling);

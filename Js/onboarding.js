@@ -103,7 +103,34 @@ function closeOnboarding() {
 // call it only AFTER it's safe (i.e. either the overlay is already
 // fully opaque, or there's no overlay to hide behind at all).
 function revealAuthCheckBody() {
-  document.documentElement.classList.remove('auth-check');
+  // Delay the removal of 'auth-check' slightly. This ensures the
+  // onboarding overlay has painted and is opaque before we reveal
+  // the login form underneath, preventing the startup flash.
+  //
+  // The native splash hide used to fire independently of this, on its
+  // own rAF timer — since two rAFs (~30ms) resolve well before this
+  // 150ms timeout does, the splash was being hidden while 'auth-check'
+  // was still on <html> (body still visibility:hidden), exposing a
+  // bare unpainted frame for the ~120ms gap until this timeout caught
+  // up. Nesting the splash hide inside this callback means it only
+  // ever runs once the body has actually been revealed.
+  setTimeout(() => {
+    document.documentElement.classList.remove('auth-check');
+
+    // Hide the native splash right here — the moment this page's real
+    // content (onboarding card or login form) is actually about to be
+    // shown — instead of leaving it to index.html's old blind 2.5s
+    // timer, which was the only thing hiding the splash before. Two
+    // rAFs guarantee the browser has painted this content at least
+    // once first, so hiding the splash reveals real pixels instead of
+    // a raw unpainted frame (that gap was the black flash between the
+    // app logo and the onboarding overlay).
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        window.Capacitor?.Plugins?.SplashScreen?.hide();
+      });
+    });
+  }, 150);
 }
 
 function openOnboardingInstant() {
@@ -111,19 +138,29 @@ function openOnboardingInstant() {
   if (!overlay) return;
   markOnboardingShownThisSession();
   setOnboardingSlide(0);
-  // No backdrop fade-in on this first mount — the login page underneath
-  // is still hidden (auth-check) at the moment this runs, so a 220ms
-  // opacity transition would just let it "reflect" through for that
-  // whole window instead of removing the flash. Snap straight to fully
-  // opaque, THEN reveal the page underneath, so there's genuinely
-  // nothing to peek through at any point. Same reasoning as auth.js's
-  // showAppLaunchOverlay(). The card's own entrance animation (text
-  // fade/slide) is untouched — only the overlay backdrop's transition
-  // is disabled, and only for this one mount.
-  overlay.style.transition = 'none';
+
+  // Snap the dark backdrop to fully opaque with NO transition first.
+  // Previously .is-open alone triggered a 0.22s opacity fade — the
+  // native splash could start hiding while that fade was still
+  // partway through, letting the sign-in form underneath show through
+  // for a frame or two (the "index page flashes before onboarding"
+  // bug). Forcing a reflow between adding/removing .is-instant commits
+  // the "already opaque" state to the render tree before anything
+  // else happens, so there is no fade window left for a flash to land
+  // in.
+  overlay.classList.add('is-instant');
   overlay.classList.add('is-open');
-  void overlay.offsetHeight; // force the instant state to actually paint
-  overlay.style.transition = '';
+  void overlay.offsetWidth; // force reflow — commits the instant state
+  overlay.classList.remove('is-instant');
+
+  // The card itself still gets its normal slide-up + fade-in
+  // transition (defined in onboarding.css) — that's the "smooth,
+  // deliberate entrance" the walkthrough should have. It's just now
+  // playing on top of a backdrop that's already guaranteed solid,
+  // instead of racing the backdrop's own fade.
+
+  // Now it's safe to reveal the underlying body / hide the native
+  // splash — the overlay already fully covers whatever's underneath.
   revealAuthCheckBody();
 }
 

@@ -21,7 +21,7 @@ let lwAudioReady = false;
 let lwMasterBus = null;
 
 function updateEnablePushButtonsVisibility() {
-    const isEnabled = Notification.permission === 'granted';
+    const isEnabled = isNativeAndroidApp() ? nativePushGranted : Notification.permission === 'granted';
     document.querySelectorAll('[data-enable-push-btn]').forEach((btn) => {
         // Keep the button visible either way — flip it into a settled
         // "Enabled" state rather than disappearing, so the page still
@@ -204,12 +204,214 @@ function urlBase64ToUint8Array(base64String) {
     return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
 }
 
+// ── Native Android push (FCM) ───────────────────────────────────
+//    Android System WebView has no PushManager — the web-push path
+//    below this block cannot work inside the Capacitor WebView on
+//    ANY Android version, old or new (that's a WebView limitation,
+//    not something POST_NOTIFICATIONS or targetSdk fixes). Native
+//    Android instead registers for a real FCM token through the
+//    @capacitor/push-notifications plugin, which talks to the OS
+//    directly and bypasses the WebView entirely — this is the same
+//    mechanism every other native Android app uses.
+//
+//    Accessed via window.Capacitor.Plugins.PushNotifications, same
+//    bridge pattern already used elsewhere in this app (App,
+//    SplashScreen) — no bundler/import needed, the native plugin
+//    registers itself once it's present in the Android project.
+let nativePushToken = null;
+let nativePushGranted = false;
+let nativeListenersBound = false;
+
+function getPushNotificationsPlugin() {
+    return window.Capacitor?.Plugins?.PushNotifications || null;
+}
+
+function bindNativePushListeners() {
+    const plugin = getPushNotificationsPlugin();
+    if (!plugin || nativeListenersBound) return;
+    nativeListenersBound = true;
+
+    plugin.addListener('registration', (token) => {
+        nativePushToken = token?.value || null;
+        if (nativePushToken) {
+            sendFcmTokenToServer(nativePushToken);
+        }
+    });
+
+    plugin.addListener('registrationError', (err) => {
+        console.error('FCM registration failed:', err);
+        window.lwToast?.('Could not enable notifications — please try again.');
+    });
+
+    // App was in the foreground when the push arrived — the OS won't
+    // draw a system notification for that case on its own, so this is
+    // where the in-app sound (same one web push uses) plays instead.
+    plugin.addListener('pushNotificationReceived', (notification) => {
+        triggerForegroundSignal(notification?.data?.tone);
+    });
+
+    // User tapped a notification while the app was backgrounded —
+    // mirrors service-worker.js's notificationclick handler.
+    plugin.addListener('pushNotificationActionPerformed', (action) => {
+        const url = action?.notification?.data?.url;
+        if (url) {
+            window.location.href = url;
+        }
+    });
+}
+
+async function sendFcmTokenToServer(fcmToken) {
+    const session = getSession(); // from auth.js
+    const userId = session?.user?.id || localStorage.getItem('currentUserId');
+    if (!userId) return;
+
+    const location = window.currentChatLocation || null;
+    if (!location) return; // location isn't known yet — locationReady sync below will retry
+
+    try {
+        await fetch(`${API_URL}/subscribe/fcm`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId, location, fcmToken })
+        });
+    } catch (err) {
+        console.error('Could not save FCM token:', err);
+    }
+}
+
+// Silent resubscribe path for native — mirrors initPushNotifications()'s
+// "only auto-resubscribe if already granted" logic below, but there's
+// no iOS-gesture concern on Android, so this also covers first-run
+// (see maybePromptFirstLaunchPermission, which calls enableLightWatchPush
+// -> this same native branch -> requestPermissions()).
+async function initNativePushNotifications() {
+    const plugin = getPushNotificationsPlugin();
+    if (!plugin) return;
+
+    bindNativePushListeners();
+
+    try {
+        const status = await plugin.checkPermissions();
+        nativePushGranted = status?.receive === 'granted';
+        updateEnablePushButtonsVisibility();
+        if (nativePushGranted) {
+            await plugin.register();
+        }
+    } catch (err) {
+        console.error('Native push init failed:', err);
+    }
+}
+
+async function enableNativeLightWatchPush() {
+    const plugin = getPushNotificationsPlugin();
+    if (!plugin) {
+        window.lwToast?.('Push notifications are not available on this device.');
+        return;
+    }
+
+    bindNativePushListeners();
+
+    try {
+        const status = await plugin.requestPermissions();
+        nativePushGranted = status?.receive === 'granted';
+        updateEnablePushButtonsVisibility();
+
+        if (!nativePushGranted) {
+            console.log('Native push permission denied.');
+            window.lwToast?.('Notifications permission was not granted.');
+            return;
+        }
+
+        await plugin.register();
+        // The 'registration' listener (bound above) picks up the token
+        // and posts it to the server the moment it arrives — nothing
+        // further to do here.
+        console.log('Push notifications enabled (native).');
+        window.lwToast?.('Notifications are on.');
+    } catch (err) {
+        console.error('Native push registration failed:', err);
+        window.lwToast?.('Could not enable notifications — please try again.');
+        updateEnablePushButtonsVisibility();
+    }
+}
+
+// ── First-launch native prompt ─────────────────────────────────
+//    The comment below on initPushNotifications() explains why this
+//    file otherwise never calls Notification.requestPermission()
+//    without a tap: on iOS Safari, calling it without a direct user
+//    gesture is silently ignored and never shows a prompt. That
+//    restriction is an iOS/Safari thing, not an Android-native-app
+//    thing — in this Capacitor Android build there's no such gesture
+//    requirement, and the ask was for the OS permission dialog to
+//    appear right after install, not buried behind a settings tap.
+//
+//    Gated three ways so this can never misfire:
+//      1. Only runs on the native Android build (Capacitor), never in
+//         a plain mobile/desktop browser tab — those keep the
+//         tap-to-enable flow untouched.
+//      2. Only runs once permission is still 'default' (never re-asks
+//         after a grant OR a denial — Android has no way to re-prompt
+//         after a denial anyway; the user would have to flip it in
+//         system Settings, same as any other Android app).
+//      3. Only runs once ever per install, via a localStorage flag —
+//         a page refresh or revisiting home.html later in the same
+//         install won't re-trigger it.
+const FIRST_LAUNCH_PROMPT_KEY = 'lw_notif_first_launch_prompted';
+
+function isNativeAndroidApp() {
+    return Boolean(
+        window.Capacitor &&
+        typeof window.Capacitor.isNativePlatform === 'function' &&
+        window.Capacitor.isNativePlatform() &&
+        typeof window.Capacitor.getPlatform === 'function' &&
+        window.Capacitor.getPlatform() === 'android'
+    );
+}
+
+async function maybePromptFirstLaunchPermission() {
+    if (!isNativeAndroidApp()) return;
+
+    const plugin = getPushNotificationsPlugin();
+    if (!plugin) return;
+
+    try {
+        const status = await plugin.checkPermissions();
+        // 'prompt' (never asked) or 'prompt-with-rationale' — anything
+        // other than an already-settled granted/denied state. Android
+        // has no way to re-prompt after a real denial, same as any
+        // other app; the user would have to flip it in system Settings.
+        if (status?.receive !== 'prompt' && status?.receive !== 'prompt-with-rationale') return;
+    } catch {
+        return;
+    }
+
+    try {
+        if (localStorage.getItem(FIRST_LAUNCH_PROMPT_KEY) === '1') return;
+        localStorage.setItem(FIRST_LAUNCH_PROMPT_KEY, '1');
+    } catch {
+        // If storage is blocked we can't reliably guard against asking
+        // again every launch — safer to skip the auto-prompt entirely
+        // than to nag on every open.
+        return;
+    }
+
+    // Small delay so this doesn't compete with the boot loader / splash
+    // hide for a frame — same reasoning as onboarding.js's timing.
+    setTimeout(() => {
+        enableLightWatchPush();
+    }, 900);
+}
+
 // ── Auto-init on page load: registers the SW and silently
 //    resubscribes IF the user already granted permission in a
 //    past session. Does NOT call Notification.requestPermission()
 //    here — see enableLightWatchPush() below for why.
 // ───────────────────────────────────────────────────────────
 async function initPushNotifications() {
+    if (isNativeAndroidApp()) {
+        return initNativePushNotifications();
+    }
+
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
         console.log('Push notifications not supported on this browser.');
         return;
@@ -268,6 +470,10 @@ function ensurePushNotificationsInitialized() {
 //    with no significant delay/await beforehand.
 // ───────────────────────────────────────────────────────────
 async function enableLightWatchPush() {
+    if (isNativeAndroidApp()) {
+        return enableNativeLightWatchPush();
+    }
+
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
         window.lwToast?.('Push notifications are not supported on this browser or device.');
         return;
@@ -323,6 +529,13 @@ async function sendSubscriptionToServer(subscription) {
 }
 
 async function syncSubscriptionWithCurrentLocation() {
+    if (isNativeAndroidApp()) {
+        if (nativePushToken) {
+            await sendFcmTokenToServer(nativePushToken);
+        }
+        return;
+    }
+
     if (!('serviceWorker' in navigator)) return;
 
     try {
@@ -337,9 +550,11 @@ async function syncSubscriptionWithCurrentLocation() {
 }
 
 // Start immediately so mobile does not wait on location/profile calls.
-// (Safe now — this no longer calls requestPermission() unprompted.)
+// (Safe now — this no longer calls requestPermission() unprompted,
+// except for the guarded native-Android first-launch case below.)
 ensurePushNotificationsInitialized();
 updateEnablePushButtonsVisibility();
+maybePromptFirstLaunchPermission();
 
 document.addEventListener('DOMContentLoaded', updateEnablePushButtonsVisibility);
 

@@ -50,16 +50,55 @@ function showReportLoading() {
     `).join('');
 }
 
-function loadReports(showLoading = false) {
-    if (showLoading) showReportLoading();
+// -----------------------------------------------------
+// RENDER CACHE — same pattern as areas.js / profile.js's light-status
+// cache: paint the last-known report list instantly from localStorage
+// instead of showing skeleton rows on every visit, then refresh from
+// the network right away in the background.
+// -----------------------------------------------------
+const REPORTS_CACHE_KEY = 'lw_cache_reports_list';
+const REPORTS_CACHE_MAX_AGE_MS = 15 * 60 * 1000;
+
+function readReportsCache() {
+    try {
+        const raw = localStorage.getItem(REPORTS_CACHE_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (!parsed || !parsed.cachedAt) return null;
+        if (Date.now() - parsed.cachedAt > REPORTS_CACHE_MAX_AGE_MS) return null;
+        return Array.isArray(parsed.value) ? parsed.value : null;
+    } catch {
+        return null;
+    }
+}
+
+function writeReportsCache(value) {
+    try {
+        localStorage.setItem(REPORTS_CACHE_KEY, JSON.stringify({ value, cachedAt: Date.now() }));
+    } catch {}
+}
+
+function loadReports(isFirstLoad = false) {
+    const cached = isFirstLoad ? readReportsCache() : null;
+    if (cached) {
+        renderReports(cached);
+    } else if (isFirstLoad) {
+        showReportLoading();
+    }
+
     fetch(`${API_URL}/reports?limit=30`)
         .then(r => r.json())
         .then(data => {
-            renderReports(Array.isArray(data) ? data : []);
+            const list = Array.isArray(data) ? data : [];
+            renderReports(list);
+            writeReportsCache(list);
         })
         .catch(err => {
             console.error('Could not load reports:', err);
-            renderReports([]);
+            // Only wipe the list if there was nothing cached to fall
+            // back on — a failed refresh shouldn't blank out a screen
+            // that already has real (if slightly stale) reports on it.
+            if (!cached) renderReports([]);
         });
 }
 

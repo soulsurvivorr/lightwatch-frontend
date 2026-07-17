@@ -4,10 +4,16 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <style>
+      /* Was: `html { background: #1C1F26 !important; }` here, unconditionally.
+         Because it was !important with no condition, it always beat the
+         rule below no matter what — html never actually painted its
+         light background once .lw-cold-boot was removed; it just looked
+         okay in practice because content covers it. The real "force
+         dark" behavior for a genuine cold boot is handled by the
+         .lw-cold-boot rule further down (which already has its own
+         !important), so this default just needs to be the plain light
+         background with no fight over specificity. */
       html {
-        background: #1C1F26 !important;
-      }
-      html:not(.lw-cold-boot) {
         background: #eeedf1;
       }
       @media (min-width: 1024px) and (prefers-color-scheme: dark) {
@@ -32,7 +38,19 @@
       }
       #realPageContent.lw-content-reveal {
         animation: lwContentReveal 0.4s cubic-bezier(0.23, 1, 0.32, 1) both;
-        will-change: opacity, transform;
+        /* Was: will-change: opacity, transform;
+           will-change with a transform value makes the browser create a
+           new containing block for this element — permanently, since the
+           .lw-content-reveal class is added once by profile.js's
+           hideProfileLoader() and never removed. .chat-card (the mobile
+           report/chat popup) lives inside #realPageContent and is
+           position: fixed — with this containing block in the way, that
+           "fixed" position resolved against #realPageContent's own box
+           (which scrolls with the page) instead of the viewport. That's
+           why opening the popup after scrolling down showed it pinned
+           near the top of the scrolled content instead of anchored to
+           the screen. A one-off 0.4s reveal doesn't need the will-change
+           perf hint anyway — dropping it removes the trap. */
       }
   </style>
   <script>
@@ -40,6 +58,14 @@
       try {
         if (sessionStorage.getItem('lw_launch_overlay_pending') === '1') {
           document.documentElement.classList.add('lw-cold-boot');
+          // Consume it — this is a one-shot "we just redirected here
+          // from a cold launch" flag, not a persistent state. Left
+          // unset before, it was never being cleared by anything,
+          // meaning (once the key name is actually matched — see
+          // index.html) it would have kept re-triggering the dark
+          // cold-boot styling on every subsequent home.html load for
+          // the rest of the session, not just the true first one.
+          sessionStorage.removeItem('lw_launch_overlay_pending');
         }
       } catch (e) {}
     })();
@@ -703,6 +729,54 @@
       el.classList.add('show');
       setTimeout(() => el.classList.remove('show'), duration || 3500);
     };
+  </script>
+
+  <script defer>
+    // ---- Native splash hide ----
+    // This was missing entirely: nothing in home.html or home.js ever
+    // called SplashScreen.hide(). index.html only hides it on the
+    // signed-out (onboarding) path — the signed-in path redirects
+    // straight here and returns before ever touching that call. Every
+    // signed-in cold launch was leaving the native splash up
+    // indefinitely, and whatever eventually became visible did so as
+    // a raw, unhidden-splash frame rather than a clean reveal — that's
+    // the black-screen bug. Two rAFs after load give the browser a
+    // real chance to paint content first, same reasoning as
+    // onboarding.js's revealAuthCheckBody(). This intentionally does
+    // NOT wait on the data-loading skeleton (profile.js/lightstatus.js)
+    // — the skeleton IS the loading UI and is meant to be visible; the
+    // splash only needs to get out of the way of the skeleton, not of
+    // the final loaded content.
+    function lwHideNativeSplash() {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          window.Capacitor?.Plugins?.SplashScreen?.hide();
+          // 'lw-cold-boot' (added in the head script above) was never
+          // being removed anywhere — it forced a dark background AND
+          // overflow:hidden on html/body for the rest of the session,
+          // silently breaking scroll on every cold-boot signed-in
+          // visit. The header + skeleton are already painted by this
+          // point (same rAF timing onboarding.js uses to hide the
+          // splash on the sign-in path), so it's safe to drop it now.
+          document.documentElement.classList.remove('lw-cold-boot');
+        });
+      });
+    }
+    // Was gated on window 'load', which waits for every image/font/
+    // resource on the page — on a slow connection that left the native
+    // splash (solid black) sitting on screen well after the header and
+    // skeleton had already painted underneath it, showing up as an
+    // unnecessarily long black screen. DOMContentLoaded + double rAF
+    // only waits for the DOM/CSS needed to paint the skeleton, which is
+    // all the splash needs to get out of the way of.
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', lwHideNativeSplash, { once: true });
+    } else {
+      lwHideNativeSplash();
+    }
+    // Safety net in case something above never fires — never leave the
+    // native splash stuck over the app.
+    setTimeout(lwHideNativeSplash, 4000);
   </script>
 </body>
 </html>

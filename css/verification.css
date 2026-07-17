@@ -16,7 +16,7 @@
          - .verify-success (shown briefly on success, replaces .verify-body)
 */
 
-html, body {
+html {
     min-height: 100%;
     height: 100%;
 }
@@ -28,9 +28,6 @@ body {
     flex-direction: column;
     position: fixed;
     inset: 0;
-    min-height: 100vh;
-    min-height: 100svh;
-    min-height: 100dvh;
     background-color: var(--bg-deep);
     color: var(--text-bright);
     font-family: var(--font-body);
@@ -150,6 +147,17 @@ main {
     align-items: center;
     margin: 0;
     padding: .6rem .9rem;
+    /* body is position:fixed + overflow:hidden (see above) — nothing on
+       this page could ever scroll. Fine on a resting layout, but once
+       the keyboard opens for the OTP boxes (now correctly shrinking the
+       WebView's own viewport — see MainActivity.java), the card needs
+       somewhere to move to if it doesn't fully fit in what's left. */
+    overflow-y: auto;
+    /* header already clears the notch/status bar with its own top
+       padding — this is the matching bottom clearance so the card
+       (and #continueBtn inside it) never sits under the home
+       indicator/gesture bar on a full-bleed native screen. */
+    padding-bottom: calc(.6rem + env(safe-area-inset-bottom, 0px));
     z-index: 1;
     position: relative;
 }
@@ -479,6 +487,7 @@ button#continueBtn.is-loading .btn-label {
 @media (max-width: 400px) {
     main {
         padding: .45rem .55rem;
+        padding-bottom: calc(.45rem + env(safe-area-inset-bottom, 0px));
     }
 
     header h3 {

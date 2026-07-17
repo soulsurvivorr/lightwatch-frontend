@@ -3369,12 +3369,22 @@ body.modal-open {
     position: fixed;
     left: 10px;
     right: 10px;
+    top: 10px; /* Stay at the top of the viewport, not the page */
     bottom: calc(118px + env(safe-area-inset-bottom));
     margin: 0 auto;
     width: auto;
     max-width: 420px;
-    height: clamp(38rem, 90vh, 44rem);
-    height: clamp(38rem, 90svh, 44rem);
+    /* Was: clamp(38rem, 90vh, 44rem) — that 38rem (608px) FLOOR forced
+       the card to that height no matter how short the real visible
+       viewport was, and raw vh/svh don't reliably reflect it either in
+       this app's Android WebView (see app-startup.js's --app-vh, built
+       for exactly this reason but not used here). On shorter real
+       viewports that floor made the card taller than the visible
+       screen, shoving its top (including the close button) above the
+       top edge — invisible, and with the scroll-lock active, unreachable.
+       Sizing off --app-vh with no hard floor means the card always fits
+       between its top/bottom anchors, however small that space is. */
+    height: min(44rem, calc(var(--app-vh, 100dvh) - 118px - env(safe-area-inset-bottom) - max(14px, env(safe-area-inset-top)) - 14px));
     border-radius: 20px;
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.18);
     background: var(--bg-panel);
@@ -4013,15 +4023,14 @@ body.modal-open {
   }
 
   .bottom-icons-container {
-    gap: 8px;
-    padding: 8px 9px calc(8px + env(safe-area-inset-bottom));
-    border-radius: 22px;
+    gap: 4px;
+    padding: 8px 6px calc(8px + env(safe-area-inset-bottom));
   }
 
   .bottom-nav-link {
-    min-width: 56px;
+    min-width: 0;
     min-height: 52px;
-    padding: 8px 6px;
+    padding: 8px 4px;
   }
 
   .bottom-nav-label {
