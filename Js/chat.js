@@ -953,10 +953,15 @@ function setMobileChatOpen(open) {
         });
         window.addEventListener('resize', positionMobileChatToggle);
         window.addEventListener('orientationchange', positionMobileChatToggle);
+        window.visualViewport?.addEventListener('resize', onChatKeyboardViewportChange);
+        window.visualViewport?.addEventListener('scroll', onChatKeyboardViewportChange);
     } else {
         clearMobileChatTogglePosition();
+        clearChatKeyboardOffset();
         window.removeEventListener('resize', positionMobileChatToggle);
         window.removeEventListener('orientationchange', positionMobileChatToggle);
+        window.visualViewport?.removeEventListener('resize', onChatKeyboardViewportChange);
+        window.visualViewport?.removeEventListener('scroll', onChatKeyboardViewportChange);
     }
 }
 
@@ -989,6 +994,64 @@ function clearMobileChatTogglePosition() {
     toggle.style.top = '';
     toggle.style.bottom = '';
 }
+
+// ── Keyboard-aware popup positioning ──────────────────────────
+// CSS alone (top/bottom/height driven by var(--app-vh, 100dvh)) assumes
+// the on-screen keyboard is fully reflected in that one number. That
+// didn't hold up for this popup: tapping into the textarea could leave
+// the input and Send button sitting underneath the keyboard instead of
+// "flowing up" above it like a normal chat app. window.visualViewport
+// reliably reports the actual visible area (keyboard included, any
+// browser auto-scroll-into-view included via offsetTop) regardless of
+// how the native WebView itself handles the resize, so measure it
+// directly and drive the popup's position from real numbers instead of
+// trusting CSS units alone.
+let chatKeyboardRaf = null;
+
+function applyChatKeyboardOffset() {
+    const card = getVisibleChatCard();
+    const vv = window.visualViewport;
+    if (!card || !vv) return;
+    if (!card.classList.contains('chat-card--mobile-open')) return;
+    if (!window.matchMedia('(max-width: 720px)').matches) return;
+    // Only bother while the textarea is actually focused — the rest of
+    // the time the normal (full-height) CSS layout is already correct.
+    if (document.activeElement !== chatInput) return;
+
+    const topGap = Math.round(vv.offsetTop) + 10;
+    const bottomGap = 14;
+    const availableHeight = Math.round(vv.height) - 10 - bottomGap;
+    if (availableHeight <= 120) return; // keyboard covering almost everything — don't crush the card
+
+    card.style.setProperty('--chat-kb-top', `${topGap}px`);
+    card.style.setProperty('--chat-kb-height', `${availableHeight}px`);
+    card.classList.add('chat-card--keyboard-adjust');
+}
+
+function clearChatKeyboardOffset() {
+    const card = getVisibleChatCard();
+    if (!card) return;
+    card.classList.remove('chat-card--keyboard-adjust');
+    card.style.removeProperty('--chat-kb-top');
+    card.style.removeProperty('--chat-kb-height');
+}
+
+function onChatKeyboardViewportChange() {
+    if (chatKeyboardRaf) cancelAnimationFrame(chatKeyboardRaf);
+    chatKeyboardRaf = requestAnimationFrame(applyChatKeyboardOffset);
+}
+
+chatInput?.addEventListener('focus', () => {
+    // The keyboard animates in over a few frames — a single immediate
+    // measurement can still catch the pre-keyboard size, so re-check a
+    // couple of times as it settles rather than trusting the first read.
+    applyChatKeyboardOffset();
+    setTimeout(applyChatKeyboardOffset, 80);
+    setTimeout(applyChatKeyboardOffset, 320);
+    chatInput.scrollIntoView({ block: 'end', behavior: 'smooth' });
+});
+
+chatInput?.addEventListener('blur', clearChatKeyboardOffset);
 
 document.getElementById('mobileChatToggle')?.addEventListener('click', () => {
     const card = getVisibleChatCard();

@@ -3407,6 +3407,22 @@ body.modal-open {
     transition: transform 0.34s cubic-bezier(0.2, 0.75, 0.15, 1), opacity 0.24s ease;
   }
 
+  /* Keyboard-aware override — see applyChatKeyboardOffset() in chat.js.
+     While the on-screen keyboard is up, chat.js measures the actual
+     visible area itself via window.visualViewport (the one API that
+     reliably reports it, keyboard included, on this app's WebView) and
+     writes the result here as --chat-kb-top/--chat-kb-height, instead
+     of trusting the top/bottom/height calc above to have already
+     accounted for it. That calc block was sometimes leaving the
+     input/Send button sitting under the keyboard instead of "flowing
+     up" above it like a normal chat app. */
+  .chat-card--keyboard-adjust {
+    top: var(--chat-kb-top, 10px) !important;
+    bottom: auto !important;
+    height: var(--chat-kb-height, auto) !important;
+    transition: top 0.15s ease, height 0.15s ease;
+  }
+
   /* Header and form stay fixed height; the thread fills whatever
      space is left between them.
 

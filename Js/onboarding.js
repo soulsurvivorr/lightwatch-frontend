@@ -108,34 +108,60 @@ function closeOnboarding() {
 // call it only AFTER it's safe (i.e. either the overlay is already
 // fully opaque, or there's no overlay to hide behind at all).
 function revealAuthCheckBody() {
-  // Delay the removal of 'auth-check' slightly. This ensures the
-  // onboarding overlay has painted and is opaque before we reveal
-  // the login form underneath, preventing the startup flash.
-  //
-  // The native splash hide used to fire independently of this, on its
-  // own rAF timer — since two rAFs (~30ms) resolve well before this
-  // 150ms timeout does, the splash was being hidden while 'auth-check'
-  // was still on <html> (body still visibility:hidden), exposing a
-  // bare unpainted frame for the ~120ms gap until this timeout caught
-  // up. Nesting the splash hide inside this callback means it only
-  // ever runs once the body has actually been revealed.
-  setTimeout(() => {
-    document.documentElement.classList.remove('auth-check');
+  const doReveal = () => {
+    // Delay the removal of 'auth-check' slightly. This ensures the
+    // onboarding overlay has painted and is opaque before we reveal
+    // the login form underneath, preventing the startup flash.
+    //
+    // The native splash hide used to fire independently of this, on its
+    // own rAF timer — since two rAFs (~30ms) resolve well before this
+    // 150ms timeout does, the splash was being hidden while 'auth-check'
+    // was still on <html> (body still visibility:hidden), exposing a
+    // bare unpainted frame for the ~120ms gap until this timeout caught
+    // up. Nesting the splash hide inside this callback means it only
+    // ever runs once the body has actually been revealed.
+    setTimeout(() => {
+      document.documentElement.classList.remove('auth-check');
 
-    // Hide the native splash right here — the moment this page's real
-    // content (onboarding card or login form) is actually about to be
-    // shown — instead of leaving it to index.html's old blind 2.5s
-    // timer, which was the only thing hiding the splash before. Two
-    // rAFs guarantee the browser has painted this content at least
-    // once first, so hiding the splash reveals real pixels instead of
-    // a raw unpainted frame (that gap was the black flash between the
-    // app logo and the onboarding overlay).
-    requestAnimationFrame(() => {
+      // Hide the native splash right here — the moment this page's real
+      // content (onboarding card or login form) is actually about to be
+      // shown — instead of leaving it to index.html's old blind 2.5s
+      // timer, which was the only thing hiding the splash before. Two
+      // rAFs guarantee the browser has painted this content at least
+      // once first, so hiding the splash reveals real pixels instead of
+      // a raw unpainted frame (that gap was the black flash between the
+      // app logo and the onboarding overlay).
       requestAnimationFrame(() => {
-        window.Capacitor?.Plugins?.SplashScreen?.hide();
+        requestAnimationFrame(() => {
+          window.Capacitor?.Plugins?.SplashScreen?.hide();
+        });
       });
-    });
-  }, 150);
+    }, 150);
+  };
+
+  // Wait for the custom webfonts (Sora/Manrope) to finish loading before
+  // revealing anything. On a fresh install nothing is cached yet, so the
+  // Google Fonts round-trip can still be in flight when this would
+  // otherwise fire — without this wait, the splash hides showing the
+  // fallback system font, then the real font swaps in moments later,
+  // visibly reflowing the onboarding card's first slide (the "shake"
+  // some fresh installs saw). document.fonts.ready resolves as soon as
+  // every @font-face on the page has settled (loaded or failed), so on
+  // every later launch (fonts now HTTP-cached) it resolves almost
+  // immediately and this adds no perceptible delay. Capped at 700ms so
+  // a stalled connection can never hold the splash up indefinitely.
+  if (document.fonts && document.fonts.ready) {
+    let settled = false;
+    const proceed = () => {
+      if (settled) return;
+      settled = true;
+      doReveal();
+    };
+    document.fonts.ready.then(proceed).catch(proceed);
+    setTimeout(proceed, 700);
+  } else {
+    doReveal();
+  }
 }
 
 function openOnboardingInstant() {
