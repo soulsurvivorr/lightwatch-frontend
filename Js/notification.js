@@ -220,9 +220,16 @@ function bindNativePushListeners() {
     nativeListenersBound = true;
 
     plugin.addListener('registration', (token) => {
+        console.log("Registration event fired");
+        console.log("Token:", token?.value);
+
         nativePushToken = token?.value || null;
+
         if (nativePushToken) {
+            console.log("Calling sendFcmTokenToServer()");
             sendFcmTokenToServer(nativePushToken);
+        } else {
+            console.log("No token received.");
         }
     });
 
@@ -254,9 +261,16 @@ async function sendFcmTokenToServer(fcmToken) {
     if (!userId) return;
 
     const location = window.currentChatLocation || null;
-    if (!location) return; // location isn't known yet — locationReady sync below will retry
+    if (!location) {
+        console.log("No location yet — bailing, waiting for locationReady");
+        return; // locationReady sync below will retry
+    }
 
     try {
+        console.log("User ID:", userId);
+        console.log("Location:", location);
+        console.log("FCM Token:", fcmToken);
+
         await fetch(`${API_URL}/subscribe/fcm`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
