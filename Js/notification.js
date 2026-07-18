@@ -82,12 +82,6 @@ function unlockForegroundAudio() {
 
 function triggerForegroundSignal(tone) {
     unlockForegroundAudio();
-    if (navigator.vibrate) {
-        // Chat stays a light single tap; power changes get the slightly
-        // heavier double-pulse so they read as "more important" by feel
-        // alone, even before the sound registers.
-        navigator.vibrate(tone === 'chat' ? [70] : [90, 40, 90]);
-    }
     playToneForType(tone);
 }
 
@@ -141,46 +135,40 @@ function canPlayTone(ctx) {
     return ctx && (lwAudioReady || ctx.state === 'running');
 }
 
-// ⚡ Power ON — low pulse resolving UP into a bright two-note chime.
+// ⚡ Power ON — bright ascending 3-note major arpeggio (C5→E5→G5).
+// Same notes as lw_power_on.wav (see gen_sounds2.py) so foreground and
+// backgrounded/killed-app notifications sound like the same event.
 function playPowerOnTone() {
     const ctx = ensureAudioContext();
     if (!canPlayTone(ctx)) return;
     const now = ctx.currentTime;
 
-    playNote(ctx, { freq: 165, start: now, duration: 0.16, type: 'sine', peakGain: 0.34 }); // "doom"
-    // "ting" — fundamental + a quiet high overtone for sparkle
-    playNote(ctx, { freq: 1318.5, start: now + 0.20, duration: 0.24, type: 'sine', peakGain: 0.30, attack: 0.008 });
-    playNote(ctx, { freq: 1975.5, start: now + 0.20, duration: 0.18, type: 'sine', peakGain: 0.10, attack: 0.008 });
+    playNote(ctx, { freq: 523.25, start: now, duration: 0.20, type: 'sine', peakGain: 0.30, attack: 0.006 });
+    playNote(ctx, { freq: 659.25, start: now + 0.11, duration: 0.20, type: 'sine', peakGain: 0.30, attack: 0.006 });
+    playNote(ctx, { freq: 783.99, start: now + 0.22, duration: 0.32, type: 'sine', peakGain: 0.34, attack: 0.006 });
+    playNote(ctx, { freq: 1567.98, start: now + 0.22, duration: 0.22, type: 'sine', peakGain: 0.10, attack: 0.006 }); // octave sparkle
 }
 
-// 🌑 Power OFF — same low pulse, resolving DOWN into a duller low tone.
+// 🌑 Power OFF — descending 2-note resolution (G4→C4), darker timbre.
+// Same notes as lw_power_off.wav.
 function playPowerOffTone() {
     const ctx = ensureAudioContext();
     if (!canPlayTone(ctx)) return;
     const now = ctx.currentTime;
 
-    playNote(ctx, { freq: 165, start: now, duration: 0.16, type: 'sine', peakGain: 0.34 }); // "doom"
-    // "dum" — was 116Hz, which sits below the range most phone speakers
-    // can reproduce at any real volume (small speakers typically roll
-    // off sharply under ~150-200Hz). That's very likely why this tone
-    // read as "no sound at all": the note meant to make power-off
-    // recognizable was probably inaudible on real hardware even though
-    // it plays correctly in code. Raised to 196Hz — still clearly lower
-    // than the "ting" in the power-on tone (keeps the duller/lower
-    // feel), but comfortably inside typical phone speaker range. Gain
-    // raised to match the shared "doom" note so this note doesn't trail
-    // off quieter than its counterpart in the on-tone.
-    playNote(ctx, { freq: 196, start: now + 0.20, duration: 0.28, type: 'triangle', peakGain: 0.34, attack: 0.02 });
+    playNote(ctx, { freq: 392.00, start: now, duration: 0.22, type: 'triangle', peakGain: 0.30, attack: 0.008 });
+    playNote(ctx, { freq: 261.63, start: now + 0.16, duration: 0.42, type: 'triangle', peakGain: 0.34, attack: 0.010 });
 }
 
-// 💬 Chat — a single soft glass "plink", no second note.
+// 💬 Chat — single bright "pop", short and unobtrusive for a busy chat.
+// Same note as lw_chat.wav.
 function playChatPlinkTone() {
     const ctx = ensureAudioContext();
     if (!canPlayTone(ctx)) return;
     const now = ctx.currentTime;
 
-    playNote(ctx, { freq: 1568, start: now, duration: 0.13, type: 'sine', peakGain: 0.26, attack: 0.005 });
-    playNote(ctx, { freq: 3136, start: now, duration: 0.08, type: 'sine', peakGain: 0.07, attack: 0.005 }); // glassy overtone
+    playNote(ctx, { freq: 987.77, start: now, duration: 0.16, type: 'sine', peakGain: 0.30, attack: 0.004 });
+    playNote(ctx, { freq: 1975.5, start: now, duration: 0.10, type: 'sine', peakGain: 0.09, attack: 0.004 }); // glassy overtone
 }
 
 // Legacy/unrecognized-tone fallback — the original three-note run-up.
@@ -396,10 +384,12 @@ async function maybePromptFirstLaunchPermission() {
     }
 
     // Small delay so this doesn't compete with the boot loader / splash
-    // hide for a frame — same reasoning as onboarding.js's timing.
+    // hide for a frame — same reasoning as onboarding.js's timing. Kept
+    // short: this delay is UI pacing only, not the reason notifications
+    // take a while to start working after install (see note below).
     setTimeout(() => {
         enableLightWatchPush();
-    }, 900);
+    }, 350);
 }
 
 // ── Auto-init on page load: registers the SW and silently

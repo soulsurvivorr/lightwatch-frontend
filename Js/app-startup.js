@@ -32,15 +32,41 @@
     let pageSettled = false;
     let pendingReloadAfterSettle = false;
 
+    // A stale/waiting service worker left over from a previous test
+    // build (very common on a developer's own device, since reinstalling
+    // the app doesn't clear the WebView's site data) can activate and
+    // fire 'controllerchange' within the first second of a cold launch —
+    // right as index.html's first-run onboarding walkthrough is opening.
+    // "pageSettled" alone doesn't protect against that: it only waits
+    // for first paint, not for the user to actually finish the
+    // walkthrough, so a reload could still yank the onboarding overlay
+    // away mid-slide with no visible cause ("the words changed, then
+    // the whole overlay just vanished"). Treat an open onboarding
+    // overlay the same way as "page not settled yet" — defer the reload
+    // until it closes.
+    function isOnboardingBlocking() {
+        const overlay = document.getElementById('onboardingOverlay');
+        return !!(overlay && overlay.classList.contains('is-open'));
+    }
+
+    function attemptPendingReload() {
+        if (!pendingReloadAfterSettle || refreshing) return;
+        if (!pageSettled || isOnboardingBlocking()) return;
+        refreshing = true;
+        window.location.reload();
+    }
+
+    // onboarding.js dispatches this once the walkthrough is dismissed
+    // (see closeOnboarding()) — that's the cue to retry a reload that
+    // was held back solely because onboarding was still open.
+    window.addEventListener('lw-onboarding-closed', attemptPendingReload);
+
     function markPageSettled() {
         // A further beat after 'load' so images/fonts actually finish
         // painting, not just so the event has fired.
         setTimeout(() => {
             pageSettled = true;
-            if (pendingReloadAfterSettle && !refreshing) {
-                refreshing = true;
-                window.location.reload();
-            }
+            attemptPendingReload();
         }, 600);
     }
 
@@ -145,7 +171,7 @@
     navigator.serviceWorker.addEventListener('controllerchange', () => {
         if (refreshing) return;
 
-        if (!pageSettled) {
+        if (!pageSettled || isOnboardingBlocking()) {
             pendingReloadAfterSettle = true;
             return;
         }

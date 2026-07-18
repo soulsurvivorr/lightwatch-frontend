@@ -93,8 +93,13 @@ function setOnboardingSlide(index) {
 function closeOnboarding() {
   const overlay = document.getElementById('onboardingOverlay');
   if (!overlay) return;
+  markOnboardingShownThisSession();
   overlay.classList.remove('is-open');
   setTimeout(() => overlay.remove(), 250);
+  // Lets app-startup.js know it's now safe to run a service-worker
+  // reload it may have been holding back while onboarding was open —
+  // see isOnboardingBlocking() there.
+  window.dispatchEvent(new CustomEvent('lw-onboarding-closed'));
 }
 
 // The login form/page underneath sits behind html.auth-check (hidden)
@@ -136,7 +141,6 @@ function revealAuthCheckBody() {
 function openOnboardingInstant() {
   const overlay = document.getElementById('onboardingOverlay');
   if (!overlay) return;
-  markOnboardingShownThisSession();
   setOnboardingSlide(0);
 
   // Snap the dark backdrop to fully opaque with NO transition first.

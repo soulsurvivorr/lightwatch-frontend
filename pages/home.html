@@ -49,10 +49,35 @@
            (which scrolls with the page) instead of the viewport. That's
            why opening the popup after scrolling down showed it pinned
            near the top of the scrolled content instead of anchored to
-           the screen. A one-off 0.4s reveal doesn't need the will-change
-           perf hint anyway — dropping it removes the trap. */
+           the screen. Dropping will-change removes THAT trap, but it
+           doesn't fully fix this: `animation-fill-mode: both` holds the
+           100% keyframe's computed style forever once the animation ends
+           — and that keyframe is `transform: translateY(0)`, not `none`.
+           Any transform value other than the literal keyword "none" (an
+           identity translateY(0) included) still establishes a
+           containing block for fixed descendants, so #realPageContent
+           kept trapping .chat-card permanently, not just mid-animation.
+           The animationend listener below (see script) strips this class
+           once the reveal finishes, returning the element to its
+           default `transform: none` and closing the trap for good. */
       }
   </style>
+  <script>
+    // See the big comment on #realPageContent.lw-content-reveal above:
+    // that class's keyframes end on `transform: translateY(0)`, which
+    // (unlike the keyword `none`) still creates a containing block for
+    // any position:fixed descendant — trapping .chat-card's popup
+    // against this element's own (scrollable) box instead of the real
+    // viewport. The class only exists to play a one-off 0.4s reveal, so
+    // once that reveal has actually finished, drop the class entirely —
+    // #realPageContent has no other rule depending on it, so this is a
+    // no-op visually and simply removes the lingering transform.
+    document.addEventListener('animationend', function (e) {
+      if (e.target && e.target.id === 'realPageContent' && e.animationName === 'lwContentReveal') {
+        e.target.classList.remove('lw-content-reveal');
+      }
+    });
+  </script>
   <script>
     (function () {
       try {
