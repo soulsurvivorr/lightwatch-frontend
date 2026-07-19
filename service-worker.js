@@ -2,13 +2,28 @@
 //  SERVICE WORKER — LightWatch
 //  Handles: push notifications, versioned offline cache,
 //           fast automatic updates across iOS/Android/desktop
+//
+//  UPDATED for the SPA rewrite:
+//   - APP_VERSION bumped — this alone forces every existing
+//     installed worker to see this as a new version, install it,
+//     and (via the existing skipWaiting/clients.claim flow) wipe
+//     every old-named cache on activate. This is the single most
+//     important line in this file for getting unstuck right now.
+//   - PRECACHE_ASSETS rewritten to match the new css/js folder
+//     layout. The old list (/css/styles.css, /css/home.css,
+//     /css/areas.css, /Js/app-startup.js) 404s under the new
+//     structure, and cache.addAll() fails ENTIRELY if even one URL
+//     in the list 404s — so the old list wasn't precaching
+//     anything at all, silently (caught by the .catch() below).
+//   - OFFLINE_FALLBACK_PAGE now points at '/index.html' (the only
+//     HTML document that exists now) instead of '/pages/home.html'.
+//   - Push notification click-through now opens '/home' (a real
+//     pushState route the SPA's router understands on cold boot)
+//     instead of '/pages/home.html'.
 // ============================================================
 
 // ── 1. VERSIONED CACHE ────────────────────────────────────────
-// Bump this ONE string on every deploy. Everything else (cache
-// names, asset URLs pulled in below) derives from it, and the
-// activate handler wipes any cache that doesn't match it.
-const APP_VERSION   = '1.0.20';
+const APP_VERSION   = '2.0.0';
 const STATIC_CACHE  = `lightwatch-static-v${APP_VERSION}`;
 const HTML_CACHE     = `lightwatch-html-v${APP_VERSION}`;
 const CURRENT_CACHES = [STATIC_CACHE, HTML_CACHE];
@@ -20,18 +35,35 @@ const APP_BADGE = new URL(`/images/notification-badge.png?v=${APP_VERSION}`, sel
 // HTML pages are deliberately NOT precached — they're handled by
 // the network-first navigation strategy below, so users always
 // get the latest markup instead of a frozen shell page.
+//
+// NOTE: verify these exact paths exist in your deployed repo before
+// relying on this list — if your build ever adds cache-busting
+// query strings (the old app used ?v=1.0.20-style suffixes on
+// every <link>/<script> tag), these plain paths will just get
+// re-fetched and cached under a slightly different URL each time,
+// which is harmless but means the entries below are mostly here to
+// warm the cache for the first offline visit, not to matter long-term.
 const PRECACHE_ASSETS = [
-    `/css/styles.css?v=${APP_VERSION}`,
-    `/css/home.css?v=${APP_VERSION}`,
-    `/css/areas.css?v=${APP_VERSION}`,
-    `/Js/app-startup.js?v=${APP_VERSION}`,
-    `/images/dev-logo.png?v=${APP_VERSION}`,
-    `/images/areas.png?v=${APP_VERSION}`
+    '/index.html',
+    '/css/base/reset.css',
+    '/css/base/variables.css',
+    '/css/base/typography.css',
+    '/css/base/global.css',
+    '/css/layouts/app-shell.css',
+    '/css/components/buttons.css',
+    '/css/components/cards.css',
+    '/css/components/navbar.css',
+    '/js/config.js',
+    '/js/app.js',
+    '/js/services/auth.js',
+    '/images/dev-logo.png'
 ];
 
-// Used as the offline fallback when a page has never been visited
-// (and therefore isn't in HTML_CACHE) and the network is down.
-const OFFLINE_FALLBACK_PAGE = '/pages/home.html';
+// Used as the offline fallback when a route has never been visited
+// (and therefore isn't in HTML_CACHE) and the network is down. This
+// is now the SPA's single document — the router figures out which
+// view to show once it loads, same as any other cold boot.
+const OFFLINE_FALLBACK_PAGE = '/index.html';
 
 // API routes must never be served from cache — always hit the network.
 const API_PATH_RE = /^\/(admin|reports|lightstatus|chat|subscribe|user|stats)(\/|$)/;
@@ -75,6 +107,12 @@ self.addEventListener('fetch', event => {
     if (API_PATH_RE.test(url.pathname)) return;
 
     // 4. HTML navigations — network first, cache as a fallback.
+    // This now also covers the SPA's pushState routes (/home, /areas,
+    // /reports, /account, /login, /signup, /verification) — a browser
+    // treats a hard reload or deep link to any of those as a real
+    // navigation request, and Netlify needs its own rewrite rule
+    // (_redirects: "/* /index.html 200") to answer them with
+    // index.html in the first place, before this ever gets involved.
     const isNavigation = req.mode === 'navigate' || req.destination === 'document';
     if (isNavigation) {
         event.respondWith(networkFirstHTML(req));
@@ -147,18 +185,6 @@ self.addEventListener('push', event => {
         renotify: true,
         vibrate: Array.isArray(data.vibrate) ? data.vibrate : [200, 100, 200],
         requireInteraction: data.requireInteraction !== false,
-        // `silent` is the ONLY real lever the Notification API exposes for
-        // sound — true/false, nothing in between. There has never been a
-        // `sound` option in the spec (confirmed against Apple's own dev
-        // forum: iOS 17 discussion thread, June 2026 recheck), on any
-        // platform — Chrome, Firefox, and Safari all ignore it silently.
-        // A `sound: 'default'` field here did nothing at all; it wasn't
-        // "choosing" the default over something else, there was never a
-        // choice to make. Removed rather than leave code that implies a
-        // control that doesn't exist. When this fires while the page is
-        // open, the actual audible cue is the Web Audio tone played by
-        // notification.js's triggerForegroundSignal() — that's the only
-        // sound we can genuinely author ourselves.
         silent: false,
         actions: [
             {
@@ -167,7 +193,7 @@ self.addEventListener('push', event => {
             }
         ],
         timestamp: Date.now(),
-        data: { url: data.url || '/pages/home.html' }
+        data: { url: data.url || '/home' }
     };
 
     if (data.image) {
@@ -176,8 +202,6 @@ self.addEventListener('push', event => {
 
     const notifyPromise = self.registration.showNotification(data.title, options);
 
-    // Notify any open app window so it can play a foreground sound.
-    // Background audio playback is not available in service workers.
     const broadcastPromise = clients.matchAll({ type: 'window', includeUncontrolled: true })
         .then(list => {
             for (const client of list) {
@@ -195,7 +219,7 @@ self.addEventListener('push', event => {
 // ── Notification click: open the app ─────────────────────────
 self.addEventListener('notificationclick', event => {
     event.notification.close();
-    const targetUrl = new URL(event.notification.data?.url || '/pages/home.html', self.location.origin).href;
+    const targetUrl = new URL(event.notification.data?.url || '/home', self.location.origin).href;
 
     event.waitUntil((async () => {
         try {
@@ -211,17 +235,12 @@ self.addEventListener('notificationclick', event => {
                         return client.focus();
                     }
                 } catch (err) {
-                    // This particular client couldn't be navigated/focused
-                    // (e.g. it was closed mid-flight, or navigate() is
-                    // restricted on it) — try the next matching client
-                    // instead of giving up and opening nothing.
+                    // try the next matching client instead of giving up
                 }
             }
 
-            // No existing window could be reused — open a fresh one.
             return clients.openWindow(targetUrl);
         } catch (err) {
-            // Absolute last resort so a tap never does nothing.
             return clients.openWindow(targetUrl);
         }
     })());
