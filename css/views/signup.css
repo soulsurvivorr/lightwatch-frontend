@@ -528,6 +528,31 @@ footer {
     color: var(--text-faint);
 }
 
+/* Tablet/desktop: the base `section` rule above caps height at
+   100vh with overflow:hidden, which silently clips content that
+   doesn't fit (region/city fields, notify toggle) instead of
+   letting the user scroll to it. Let the card scroll internally,
+   and trim a couple of the larger type sizes so it needs to less
+   often. */
+@media (min-width: 701px) {
+    section {
+        max-height: 92vh;
+        overflow-y: auto;
+    }
+
+    .submit-info-section h3 {
+        font-size: 1.75rem;
+    }
+
+    .lead-copy {
+        margin-bottom: 1rem;
+    }
+
+    .feature-list {
+        gap: .5rem;
+    }
+}
+
 /* Laptop/desktop */
 @media (min-width: 1024px) {
     section {
@@ -547,16 +572,18 @@ footer {
 @media (max-width: 700px) {
     html,
     body {
-        height: auto;
+        height: 100dvh;
         min-height: 100dvh;
-        overflow-x: hidden;
-        overflow-y: auto;
+        overflow: hidden;
     }
 
     body {
+        position: fixed;
+        inset: 0;
         align-items: stretch;
         justify-content: stretch;
         padding: 0;
+        touch-action: none;
     }
 
     #main-content_wrapper {

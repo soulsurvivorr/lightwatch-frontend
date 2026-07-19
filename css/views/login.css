@@ -13,9 +13,37 @@
 */
 
 .login-shell {
-  min-height: 100vh;
+  width: 90%;
+  max-width: 1360px;
+  height: 92vh;
+  max-height: 900px;
+  margin: 4vh auto;
   display: grid;
-  grid-template-columns: 1.1fr 1fr;
+  grid-template-columns: 1fr 1fr;
+  align-items: stretch;
+  border-radius: var(--radius-lg, 20px);
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.18);
+}
+
+/* Other views' CSS (loaded later in the stylesheet order) sets
+   body/html to position:fixed + overflow:hidden for their own
+   layouts. That leaks onto this view since those are bare
+   element selectors. Scope a higher-specificity override so the
+   login page can always scroll on desktop regardless of load
+   order — only active while #view-login is actually on screen. */
+@media (min-width: 769px) {
+  body:has(#view-login:not([hidden])) {
+    position: static;
+    height: auto;
+    min-height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  html:has(#view-login:not([hidden])) {
+    height: auto;
+  }
 }
 
 /* ---- Visual side (hidden below 980px — see styles.css) ---- */
@@ -99,12 +127,14 @@
 
 .login-form-side {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 56px 32px 48px;
+  padding: 56px 32px 32px;
   background-color: var(--bg-panel);
   position: relative;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .login-box {
@@ -209,6 +239,7 @@
 
 .field__input-wrap {
   position: relative;
+  margin-bottom: 3px;
 }
 
 .field__input {
@@ -304,6 +335,7 @@
   font-size: 0.78rem;
 }
 
+a.btn.btn--ghost.login-create-btn,
 .login-create-btn {
   margin-top: 2px;
   background: var(--brand);
@@ -314,12 +346,14 @@
   box-shadow: 0 8px 20px rgba(214, 162, 74, 0.25);
 }
 
+a.btn.btn--ghost.login-create-btn:hover,
 .login-create-btn:hover {
   background: var(--brand-dim);
   border-color: transparent;
   color: white;
 }
 
+a.btn.btn--ghost.login-create-btn:focus-visible,
 .login-create-btn:focus-visible {
   outline: 2px solid var(--brand);
   outline-offset: 2px;
@@ -357,15 +391,14 @@
 .signup-prompt {
   text-align: center;
   margin-top: 22px;
-  font-size: 0.88rem;
+  font-size: 0.76rem;
   color: var(--text-muted);
 }
 
 .login-footer {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 14px;
+  width: 100%;
+  margin-top: auto;
+  padding-top: 24px;
   text-align: center;
   pointer-events: none;
 }
@@ -407,8 +440,15 @@
     position: relative;
     display: flex;
     flex-direction: column;
+    width: 100%;
+    max-width: none;
+    height: auto;
+    max-height: none;
+    margin: 0;
     min-height: var(--app-vh, 100dvh);
     background-color: var(--bg-panel);
+    border-radius: 0;
+    box-shadow: none;
     overflow-x: hidden;
   }
 

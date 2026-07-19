@@ -16,12 +16,19 @@
          - .verify-success (shown briefly on success, replaces .verify-body)
 */
 
-html {
+/* Scoped with :has() rather than the bare html/body selectors this
+   used to be — those are element selectors, so whichever of
+   login.css / signup.css / verification.css happened to load last
+   would win globally and lock every view's scrolling to whatever
+   this page needed, regardless of which view was actually on
+   screen. :has() keeps the exact same fixed, no-scroll behaviour,
+   but only while #view-verification is the visible one. */
+html:has(#view-verification:not([hidden])) {
     min-height: 100%;
     height: 100%;
 }
 
-body {
+body:has(#view-verification:not([hidden])) {
     margin: 0;
     gap: 0;
     display: flex;
