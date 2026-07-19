@@ -29,13 +29,13 @@ body {
 
 body {
     margin: 0;
-    height: 100vh;
-    height: 100svh;
-    height: 100dvh;
+    min-height: 100vh;
+    min-height: 100svh;
+    min-height: 100dvh;
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 0;
+    padding: 24px 0;
     background: var(--bg-deep);
     color: var(--text-bright);
     overflow-x: hidden;
@@ -530,14 +530,15 @@ footer {
 
 /* Tablet/desktop: the base `section` rule above caps height at
    100vh with overflow:hidden, which silently clips content that
-   doesn't fit (region/city fields, notify toggle) instead of
-   letting the user scroll to it. Let the card scroll internally,
-   and trim a couple of the larger type sizes so it needs to less
-   often. */
+   doesn't fit (region/city fields, notify toggle). Let the card
+   grow to its natural content height instead — the page itself
+   scrolls (single native scrollbar) rather than the card getting
+   its own inset one. Also trim a couple of the larger type sizes
+   so it needs to grow less often. */
 @media (min-width: 701px) {
     section {
-        max-height: 92vh;
-        overflow-y: auto;
+        max-height: none;
+        overflow: visible;
     }
 
     .submit-info-section h3 {
