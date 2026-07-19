@@ -1,0 +1,57 @@
+/* ============================================================
+   Base typography — body defaults, headings, links, lists
+   ============================================================ */
+
+
+body {
+  background-color: var(--bg-deep);
+  background-image:
+    radial-gradient(circle at 15% 0%, rgba(61, 217, 194, 0.06), transparent 45%),
+    radial-gradient(circle at 85% 100%, rgba(242, 179, 61, 0.05), transparent 45%);
+  color: var(--text-bright);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  /* 100vh alone can under-report the true edge-to-edge screen height
+     on Android once SystemBars.insetsHandling:"css" makes the status
+     bar and gesture-nav bar transparent (capacitor.config.json) —
+     that's what left a gap at the bottom where the WebView's default
+     background (not this app's) showed through instead of your
+     content's color. dvh tracks the real, current viewport including
+     that area. Matches the fallback chain login.css/verification.css/
+     signup.css already use. */
+  min-height: 100vh;
+  min-height: 100dvh;
+  transition: background-color 0.25s ease, color 0.25s ease, font-family 0.25s ease;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+p {
+  margin: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+button {
+  font-family: var(--font-body);
+}
+
+::selection {
+  background: var(--teal-dim);
+  color: var(--text-bright);
+}

@@ -1,0 +1,4 @@
+/* home-reminder.js's modal markup reuses the shared .card/.btn/
+   .modal-open primitives from components/cards.css, components/
+   buttons.css, and components/modals.css — it did not have
+   dedicated CSS of its own in the original app. */

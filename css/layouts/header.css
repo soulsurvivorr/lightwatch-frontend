@@ -1,0 +1,7 @@
+/* Header/topbar layout lives in components/navbar.css (it's a
+   visual component reused verbatim across every authenticated
+   view) — this file is kept per the requested structure for
+   header-specific LAYOUT rules (positioning/safe-area handling)
+   that don't belong to the visual component itself. Currently
+   empty: no such rules existed separately from navbar.css in the
+   original app. */

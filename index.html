@@ -1,55 +1,31 @@
 <!DOCTYPE html>
-<html lang="en" class="auth-check">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <style>
-    /* MUST come before the theme-detection script below, and before
-       every other tag — this is what actually closes the iOS white
-       flash. The theme script sets an inline `color-scheme:light` on
-       <html> for every mobile device (by design — the app itself is
-       light-themed on mobile). Inline styles apply the instant that
-       line of JS runs, which is BEFORE a <style> block placed after
-       it has even been parsed. That left a real window — however
-       short — where <html> had no dark override active yet and the
-       browser was free to paint its light UA-default canvas: the
-       stray white frame. Putting this block first means the
-       `!important` override is already in the CSSOM before the
-       script ever gets to set that inline style, so there's no gap
-       for a light paint to land in. (`!important` still matters
-       here too, since !important in a stylesheet rule always beats
-       a plain inline style regardless of source order.) */
-    /* Unconditional and first: the earliest possible paint on this
-       page, before the external styles.css has even been requested.
-       Android PWA cold opens were still showing a brief white frame
-       even with the html.auth-check rule below, because that rule
-       only applies once the auth-check class is present — this one
-       needs nothing to have run yet. */
-    html, body {
-      background: #1C1F26 !important;
+    html { background: #eeedf1; }
+    @media (min-width: 1024px) and (prefers-color-scheme: dark) {
+      html:not([data-theme="light"]) { background: #0f1318; }
     }
-
-    /* Zero flashes: hide the body content only while the
-       authentication check is running. */
-    html.auth-check body {
-      visibility: hidden;
-    }
-
-    /* NOTE: this used to also style a JS-drawn #appLaunchOverlay splash
-       (logo + glow, "opens wide" reveal) that covered the gap between
-       finding a session here and home.html actually rendering. That's
-       gone now — this is a native (Capacitor) app, so a real native
-       splash screen already sits on top of the webview from the
-       instant the app icon is tapped until we explicitly hide it
-       (Capacitor's SplashScreen plugin, configured natively with
-       launchAutoHide: false). There's nothing left for HTML/CSS to
-       paint over: the auth-check script below just decides where to
-       go, and either navigates away (splash stays up, home.html hides
-       it once it's ready) or reveals this page and hides the splash
-       at the same moment — see onboarding.js's revealAuthCheckBody(). */
+    /* Prevents a flash of the wrong shell before app.js resolves the
+       initial view on first paint. Router removes this class itself
+       once the first view is showing. */
+    html.lw-boot body > #authShell,
+    html.lw-boot body > #appShell { visibility: hidden; }
   </style>
+  <link rel="manifest" href="/manifest.json?v=2.0.0">
+  <meta name="theme-color" content="#1C1F26">
+  <link rel="apple-touch-icon" sizes="180x180" href="./images/dev-logo.png?v=2.0.0">
+  <link rel="apple-touch-icon" sizes="192x192" href="./images/dev-logo.png?v=2.0.0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="LightWatch">
   <script>
+    // Runs before first paint — same "follow system theme unless the
+    // user chose one" logic every page used to inline separately.
+    // components/theme.js takes over from here after boot.
     (function () {
+      document.documentElement.classList.add('lw-boot');
       const key = 'lw_theme_pref';
       const isLaptop = window.matchMedia('(min-width: 1024px)').matches;
       const stored = localStorage.getItem(key);
@@ -59,131 +35,78 @@
       document.documentElement.style.setProperty('color-scheme', theme);
     })();
   </script>
-  <link rel="manifest" href="/manifest.json?v=1.0.20" />
-  <script src="./Js/app-startup.js?v=1.0.20" defer></script>
-  <meta name="theme-color" content="#1C1F26" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/images/dev-logo.png?v=1.0.20" />
-  <link rel="apple-touch-icon" sizes="192x192" href="/images/dev-logo.png?v=1.0.20" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="LightWatch" />
-  <!-- iOS PWA "Add to Home Screen" splash workaround removed — this is
-       now a native Capacitor shell, so the launch screen is a real
-       native asset (configured in Xcode / Info.plist for iOS, and in
-       the Android splash resources), shown by the OS before the
-       webview even exists and kept up via SplashScreen({ launchAutoHide:
-       false }) until the JS below explicitly hides it. Nothing here
-       needs to fake that anymore. -->
-  <title>LightWatch - Sign In</title>
-  <link rel="icon" href="/images/dev-logo.png?v=1.0.20" type="image/png" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=optional" rel="stylesheet" />
-  <link rel="stylesheet" href="./css/styles.css?v=1.0.20" />
-  <link rel="stylesheet" href="./css/login.css?v=1.0.20" />
-  <link rel="stylesheet" href="./css/onboarding.css?v=1.0.20" />
+  <title>LightWatch GH</title>
+  <link rel="icon" href="./images/dev-logo.png?v=2.0.0" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- ==== CSS: base ==== -->
+  <link rel="stylesheet" href="./css/base/reset.css">
+  <link rel="stylesheet" href="./css/base/variables.css">
+  <link rel="stylesheet" href="./css/base/typography.css">
+  <link rel="stylesheet" href="./css/base/global.css">
+  <!-- ==== CSS: themes ==== -->
+  <link rel="stylesheet" href="./css/themes/light.css">
+  <link rel="stylesheet" href="./css/themes/dark.css">
+  <!-- ==== CSS: layouts ==== -->
+  <link rel="stylesheet" href="./css/layouts/app-shell.css">
+  <link rel="stylesheet" href="./css/layouts/header.css">
+  <link rel="stylesheet" href="./css/layouts/footer.css">
+  <!-- ==== CSS: components ==== -->
+  <link rel="stylesheet" href="./css/components/buttons.css">
+  <link rel="stylesheet" href="./css/components/cards.css">
+  <link rel="stylesheet" href="./css/components/forms.css">
+  <link rel="stylesheet" href="./css/components/loader.css">
+  <link rel="stylesheet" href="./css/components/modals.css">
+  <link rel="stylesheet" href="./css/components/navbar.css">
+  <link rel="stylesheet" href="./css/components/search.css">
+  <link rel="stylesheet" href="./css/components/toast.css">
+  <!-- ==== CSS: views ==== -->
+  <link rel="stylesheet" href="./css/views/login.css">
+  <link rel="stylesheet" href="./css/views/onboarding.css">
+  <link rel="stylesheet" href="./css/views/signup.css">
+  <link rel="stylesheet" href="./css/views/verification.css">
+  <link rel="stylesheet" href="./css/views/home.css">
+  <link rel="stylesheet" href="./css/views/chat.css">
+  <link rel="stylesheet" href="./css/views/lightstatus.css">
+  <link rel="stylesheet" href="./css/views/areas.css">
+  <link rel="stylesheet" href="./css/views/account.css">
+  <link rel="stylesheet" href="./css/views/reports.css">
+  <link rel="stylesheet" href="./css/views/profile.css">
+  <link rel="stylesheet" href="./css/views/home-reminder.css">
+  <link rel="stylesheet" href="./css/views/dashboard.css">
 </head>
 <body>
-  <script>
-    (function () {
-      try {
-        const AUTH_KEY = 'app_auth_token';
-        const USER_KEY = 'app_user';
-        const REMEMBER_KEY = 'app_remember';
-        const TEMP_AUTH_KEY = 'app_temp_auth_token';
-        const TEMP_USER_KEY = 'app_temp_user';
-        const TEMP_EXPIRES_KEY = 'app_temp_expires_at';
 
-        const safeParse = (value) => {
-          try {
-            return value ? JSON.parse(value) : null;
-          } catch {
-            return null;
-          }
-        };
+  <div class="lw-boot-loader" id="lwBootLoader" aria-hidden="true">
+    <div class="lw-loader-orbit">
+      <div class="lw-loader-halo"></div>
+      <svg class="lw-loader-ring" viewBox="0 0 84 84" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <circle class="lw-loader-track" cx="42" cy="42" r="36" />
+        <circle class="lw-loader-arc lw-loader-arc--1" cx="42" cy="42" r="36" />
+        <circle class="lw-loader-arc lw-loader-arc--2" cx="42" cy="42" r="36" />
+        <circle class="lw-loader-arc lw-loader-arc--3" cx="42" cy="42" r="36" />
+      </svg>
+      <div class="lw-loader-core">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z" fill="#F2B33D"/>
+        </svg>
+      </div>
+    </div>
+  </div>
 
-        const remembered = localStorage.getItem(REMEMBER_KEY) === 'true';
-        const token = remembered ? localStorage.getItem(AUTH_KEY) : sessionStorage.getItem(AUTH_KEY);
-        const user = remembered ? safeParse(localStorage.getItem(USER_KEY)) : safeParse(sessionStorage.getItem(USER_KEY));
+  <div id="lw-toast"></div>
 
-        let hasSession = Boolean(token && user);
+  <!-- ============================================================
+       AUTH SHELL — login / signup / verification. No topbar/sidebar/
+       bottom-nav here; shown whenever there's no session.
+       ============================================================ -->
+  <div id="authShell">
 
-        if (!hasSession) {
-          const tempToken = localStorage.getItem(TEMP_AUTH_KEY);
-          const tempUser = safeParse(localStorage.getItem(TEMP_USER_KEY));
-          const tempExpiresAt = Number(localStorage.getItem(TEMP_EXPIRES_KEY) || '0');
-          hasSession = Boolean(tempToken && tempUser && tempExpiresAt && Date.now() <= tempExpiresAt);
-        }
-
-        if (hasSession) {
-          // No more overlay to show here and no reason to delay the
-          // redirect for one — the native splash screen is already
-          // covering the whole screen at this point and stays up
-          // straight through the navigation (it's a native layer, not
-          // part of this page), so there's nothing for a JS-drawn
-          // splash to add. home.html hides the native splash itself
-          // once it's actually ready to be seen. This flag just stops
-          // onboarding.js from opening the walkthrough underneath a
-          // redirect that's already in flight, in the rare case its
-          // script tag runs before navigation takes over.
-          // NOTE: this key name must match exactly what home.html's own
-          // cold-boot script checks in its <head>. It previously said
-          // 'lw_redirect_pending' here while home.html checked
-          // 'lw_launch_overlay_pending' — two different keys that never
-          // matched, so home.html's dark cold-boot styling (and the
-          // native-splash hide it triggers) never actually activated on
-          // a real cold launch. That mismatch is the black-screen bug.
-          try { sessionStorage.setItem('lw_launch_overlay_pending', '1'); } catch {}
-          window.location.replace('./pages/home.html');
-          return;
-        }
-      } catch {
-        // If storage is blocked, fall back to normal sign-in rendering.
-      }
-
-      // We only reach this line when there's definitely no session and
-      // therefore definitely no redirect about to happen. So if
-      // 'lw_launch_overlay_pending' is still set to '1' here, it's a
-      // leftover from a previous sign-in that clearSession() failed to
-      // remove (fixed separately in auth.js) — and if left alone,
-      // onboarding.js's isSessionRedirectPending() would wrongly treat
-      // it as "a redirect is in flight," skip revealAuthCheckBody(),
-      // and leave the page hidden behind auth-check forever. Clearing
-      // it here self-heals any install already stuck in that state.
-      try { sessionStorage.removeItem('lw_launch_overlay_pending'); } catch {}
-
-      // Deliberately NOT removing 'auth-check' here. Body stays hidden
-      // — invisibly, underneath the native splash screen, so there's
-      // truly nothing to flash either way — until onboarding.js
-      // (runs on DOMContentLoaded) has synchronously decided whether
-      // to open the walkthrough or reveal the sign-in form, and hides
-      // the native splash at that exact moment. See
-      // revealAuthCheckBody() in onboarding.js.
-      //
-      // Safety net ONLY — onboarding.js's revealAuthCheckBody() is what
-      // normally hides the splash, at the exact moment content is ready
-      // to paint (see onboarding.js). This fixed timer used to be the
-      // ONLY thing that ever hid the splash on this page, which meant
-      // every signed-out launch sat on the native splash for a flat
-      // 2.5s no matter how fast the device actually was, and then the
-      // hide could still land a frame before real content painted —
-      // that gap is what showed as a black flash. Left here now only
-      // in case onboarding.js fails to load; pushed out to 4s so it
-      // never fires ahead of the real hide in normal operation.
-      setTimeout(() => {
-        document.documentElement.classList.remove('auth-check');
-        window.Capacitor?.Plugins?.SplashScreen?.hide();
-      }, 4000);
-    })();
-  </script>
-
-  <!-- Walkthrough. Only ever seen by signed-out visitors, since the
-       auth-check script above redirects anyone with a session straight
-       to home.html before this page renders. Shown once per browsing
-       session (sessionStorage-gated in onboarding.js, see
-       lw_onboarding_shown_session) — starts closed here so there's
-       nothing to flash before that check runs. Right after the native
-       splash hides, this is the first thing a signed-out visitor sees. -->
-  <div class="onboarding-overlay" id="onboardingOverlay">
+    <!-- ---- Home page section: (n/a — auth flow) ---- -->
+    <!-- Login view -->
+    <section id="view-login" data-view="login">
+<div class="onboarding-overlay" id="onboardingOverlay">
     <div class="onboarding-card" role="dialog" aria-modal="true" aria-label="Welcome to LightWatch">
       <div class="onboarding-slide is-active" data-slide="0">
         <span class="onboarding-slide__icon">
@@ -235,6 +158,17 @@
     </div>
   </div>
 
+
+  
+
+  <!-- Walkthrough. Only ever seen by signed-out visitors, since the
+       auth-check script above redirects anyone with a session straight
+       to home.html before this page renders. Shown once per browsing
+       session (sessionStorage-gated in onboarding.js, see
+       lw_onboarding_shown_session) — starts closed here so there's
+       nothing to flash before that check runs. Right after the native
+       splash hides, this is the first thing a signed-out visitor sees. -->
+  
   <main class="login-shell">
     <section class="login-visual" aria-label="LightWatch overview">
       <div class="login-visual__content">
@@ -299,7 +233,7 @@
           </div>
         </div>
 
-        <p id="error-msg" style="color:#c9302c; font-size:0.7rem; min-height:0.9em; margin-bottom: 10px; margin-top: 0px;"></p>
+        <p id="login-error-msg" style="color:#c9302c; font-size:0.7rem; min-height:0.9em; margin-bottom: 10px; margin-top: 0px;"></p>
 
         <div class="field-row">
           <label class="remember-me-label" for="rememberMe">
@@ -313,11 +247,11 @@
 
         <div class="divider">or</div>
 
-        <a href="./pages/signup.html" class="btn btn--ghost btn--block login-create-btn">Create account</a>
+        <a href="#" data-route-custom="signup" class="btn btn--ghost btn--block login-create-btn">Create account</a>
 
         <p class="signup-prompt">
           New to LightWatch?
-          <a href="./pages/signup.html" style="color: rgba(240, 172, 61, 1);">Create account</a>
+          <a href="#" data-route-custom="signup" style="color: rgba(240, 172, 61, 1);">Create account</a>
         </p>
 
       </div>
@@ -328,10 +262,1411 @@
     </section>
   </main>
 
-  <script src="./Js/theme.js?v=1.0.20"></script>
-  <script src="./Js/config.js?v=1.0.20"></script>
-  <script src="./Js/auth.js?v=1.0.20"></script>
-  <script src="./Js/login.js?v=1.0.20"></script>
-  <script src="./Js/onboarding.js?v=1.0.20"></script>
+  
+  
+  
+  
+  
+
+    </section>
+
+    <!-- Signup view -->
+    <section id="view-signup" data-view="signup" hidden>
+
+    <div class="lw-ambient" aria-hidden="true">
+        <span class="lw-blob lw-blob--amber"></span>
+        <span class="lw-blob lw-blob--blue"></span>
+        <span class="lw-blob lw-blob--teal"></span>
+    </div>
+
+    <section>
+        <div class="brand-row">
+            <img src="/images/dev-logo.png?v=1.0.18" alt="Site Logo" width="40" height="40" loading="eager" fetchpriority="high" decoding="async">
+            <p>LightWatch GH</p>
+        </div>
+
+        <div id="main-content_wrapper">
+            <div class="submit-info-section">
+                <p class="status-pill">
+                    <span class="status-dot" aria-hidden="true"></span>
+                    Monitoring all 16 regions, live
+                </p>
+
+                <h3>Never get<br>caught in the dark.</h3>
+                <p class="lead-copy">Create your account to get real-time power alerts for your exact area — outages, restorations, and everything between.</p>
+
+                <ul class="feature-list">
+                    <li>
+                        <span class="feature-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+                        </span>
+                        <span>Live status for your area</span>
+                    </li>
+                    <li>
+                        <span class="feature-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 3a5 5 0 0 0-5 5v3.2c0 .7-.24 1.38-.68 1.93L5 15h14l-1.32-1.87c-.44-.55-.68-1.23-.68-1.93V8a5 5 0 0 0-5-5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M10 18a2 2 0 0 0 4 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                        </span>
+                        <span>Instant outage alerts</span>
+                    </li>
+                    <li>
+                        <span class="feature-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="m5 13 4 4L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </span>
+                        <span>Know the moment power's back</span>
+                    </li>
+                </ul>
+            </div>
+
+            <div id="input-field-section">
+                <div class="user-icon-container">
+                    <button class="user-profile-btn" type="button" aria-hidden="true" tabindex="-1">
+                        <img src="/icons/user.png" alt="" loading="eager" fetchpriority="high" decoding="async">
+                    </button>
+                    <h3>Almost there!</h3>
+                    <p>Kindly provide a few details to get started.</p>
+                </div>
+
+                <form id="signupForm">
+                    <div class="prompt-input-tabs" style="--d: 0">
+                        <label for="name">Full Name</label>
+                        <input class="prompt-inputs" type="text" name="name" id="name" placeholder="e.g. Kofi Sarkodie" autocomplete="name" required>
+                    </div>
+                    <div class="prompt-input-tabs" style="--d: 1">
+                        <label for="email-phone">Email or Phone number</label>
+                        <input class="prompt-inputs" type="text" name="email-phone" id="email-phone" placeholder="e.g. sark@gmail.com or 123456789" autocomplete="email" required>
+                        <p id="email_phone-error" role="alert"></p>
+                    </div>
+                    <div class="prompt-input-tabs" style="--d: 2">
+                        <label for="region">Region</label>
+                        <select class="prompt-inputs" id="region" required>
+                            <option value="">Choose your region</option>
+                            <option value="Greater Accra">Greater Accra</option>
+                            <option value="Ashanti">Ashanti</option>
+                            <option value="Eastern">Eastern</option>
+                            <option value="Western">Western</option>
+                            <option value="Volta">Volta</option>
+                            <option value="Central">Central</option>
+                            <option value="Northern">Northern</option>
+                            <option value="Upper East">Upper East</option>
+                            <option value="Upper West">Upper West</option>
+                            <option value="Bono">Bono</option>
+                            <option value="Bono East">Bono East</option>
+                            <option value="Ahafo">Ahafo</option>
+                            <option value="Oti">Oti</option>
+                            <option value="Savannah">Savannah</option>
+                            <option value="North East">North East</option>
+                            <option value="Western North">Western North</option>
+                        </select>
+                    </div>
+                    <div class="prompt-input-tabs" style="--d: 3">
+                        <label for="city">City / Town</label>
+                        <input class="prompt-inputs" type="text" name="city" id="city" placeholder="Enter your city or town" autocomplete="address-level2" required>
+                    </div>
+
+                    <div class="notify-wrapper" style="--d: 4">
+                        <p class="notify-heading">Stay Updated</p>
+                        <label class="notify-toggle" for="notifyUpdates">
+                            <input class="notify-checkbox" type="checkbox" name="notifyUpdates" id="notifyUpdates" checked>
+                            <span class="notify-toggle-track" aria-hidden="true">
+                                <span class="notify-toggle-thumb">
+                                    <svg class="notify-check" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="m5 13 4 4L19 7" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                </span>
+                            </span>
+                            <span class="notify-toggle-text">Receive outage alerts and updates in my area</span>
+                        </label>
+                        <p class="notify-subtext">Turn this on to enable push notifications for your device.</p>
+                    </div>
+
+                    <button class="submit-btn" id="signUpBtn" type="submit">
+                        <span class="submit-btn-label">Submit &amp; Continue</span>
+                        <span class="submit-btn-spinner" aria-hidden="true"></span>
+                    </button>
+                </form>
+
+                <footer>Your information is secure and will never be shared</footer>
+            </div>
+        </div>
+    </section>
+
+    
+    
+    
+    
+    
+
+    </section>
+
+    <!-- Verification view -->
+    <section id="view-verification" data-view="verification" hidden>
+ 
+    <div class="lw-ambient" aria-hidden="true">
+        <span class="lw-blob lw-blob--amber"></span>
+        <span class="lw-blob lw-blob--blue"></span>
+        <span class="lw-blob lw-blob--teal"></span>
+    </div>
+
+    <header> 
+        <img src="/images/dev-logo.png?v=1.0.18" alt="LightWatch Logo" width="36" height="36" loading="eager" fetchpriority="high" decoding="async">
+        <h3>LightWatch GH</h3> 
+    </header> 
+ 
+    <main> 
+        <div class="verify-card" id="verifyCard"> 
+            <div class="verify-body">
+                <h2>Check your phone</h2>
+                <p class="contact-row">
+                    <span id="code-text"></span>
+                    <a href="../signup.html" id="editContactLink" class="edit-link">Edit</a>
+                </p>
+                <img class="verify-hero" src="/images/fb_prompt_code_img.png" alt="Verification code prompt" loading="eager" fetchpriority="high" decoding="async" width="320" height="240">
+                <div class="otp-boxes" id="otpBoxes">
+                    <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" autocomplete="one-time-code" class="otp-box" aria-label="Digit 1">
+                    <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" autocomplete="one-time-code" class="otp-box" aria-label="Digit 2">
+                    <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" autocomplete="one-time-code" class="otp-box" aria-label="Digit 3">
+                    <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" autocomplete="one-time-code" class="otp-box" aria-label="Digit 4">
+                </div>
+                <p id="error-msg" role="alert"></p>
+                <div class="resend-row"> 
+                    <img src="./icons/refresh.png" alt="" width="16" height="16">
+                    <p>It may take a few minutes for you to get this code. <span id="resendCodeLink">Get a new code</span></p> 
+                </div> 
+                <button id="continueBtn" disabled>
+                    <span class="btn-label">Continue</span>
+                    <span class="btn-spinner" aria-hidden="true"></span>
+                </button>
+            </div>
+
+            <div class="verify-success" id="verifySuccess" aria-hidden="true">
+                <svg class="success-check" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle class="success-ring" cx="32" cy="32" r="28" stroke="currentColor" stroke-width="3"/>
+                    <path class="success-tick" d="M20 33.5 28 41.5 44 24.5" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <p>Verified — taking you in…</p>
+            </div>
+        </div> 
+    </main> 
+
+    
+    
+    
+    
+
+    </section>
+  </div>
+
+  <!-- ============================================================
+       APP SHELL — authenticated chrome (topbar, sidebar, bottom
+       nav) shared by every protected view. Shown whenever there IS
+       a session.
+       ============================================================ -->
+  <div id="appShell" hidden>
+
+
+  <header class="topbar">
+    <div class="topbar__inner">
+       <div class="topbar__brand">
+          <img src="./images/dev-logo.png" alt="LightWatch Logo" width="32" height="32">
+          <p>LightWatch GH</p>
+        </div>
+      <input type="checkbox" id="nav-toggle" class="nav-toggle" />
+      <label for="nav-toggle" class="nav-toggle-label" aria-label="Toggle navigation">
+        <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+      </label>
+      <nav class="nav" id="primaryNav">
+        <a href="#" class="nav__link" data-nav="home" data-route="home">Home</a>
+        <a href="#" class="nav__link" data-nav="areas" data-route="areas">Areas</a>
+        <a href="#" class="nav__link" data-nav="reports" data-route="reports">Reports</a>
+        <a href="#" class="nav__link" data-nav="account" data-route="account">Account</a>
+      </nav>
+      <button type="button" id="profileMenuButton" class="topbar__user" aria-expanded="false" aria-controls="userSidebarPanel">
+        <span class="avatar-name" id="topbarUserName">Guest</span>
+        <span class="avatar" id="topbarAvatar">?</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Full-screen skeleton, shown while .app-loading is on <body>.
+       Built from the same layout classes as the real content below
+       (hero-banner, card, location-page-grid...) so it lines up
+       exactly, just filled with .skel shimmer blocks instead of
+       real text. home.js removes .app-loading once data is ready,
+       which hides this and reveals #realPageContent. -->
+
+
+    <!-- ==== Home page section ==== -->
+    <section id="view-home" data-view="home">
+  <div class="page" id="pageSkeleton" aria-hidden="true">
+
+    <div class="hero-banner">
+      <div class="hero-banner__location">
+        <span class="skel skel-dot"></span>
+        <span class="skel skel-line" style="width:110px;"></span>
+      </div>
+      <span class="skel skel-line" style="width:150px;height:11px;margin-top:14px;"></span>
+      <span class="skel skel-line" style="width:60%;height:28px;margin-top:10px;"></span>
+      <span class="skel skel-line" style="width:85%;height:13px;margin-top:10px;"></span>
+      <div class="hero-banner__stats">
+        <div class="hero-stat">
+          <span class="skel skel-line" style="width:60%;height:20px;"></span>
+          <span class="skel skel-line" style="width:80%;height:10px;margin-top:6px;"></span>
+        </div>
+        <div class="hero-stat">
+          <span class="skel skel-line" style="width:60%;height:20px;"></span>
+          <span class="skel skel-line" style="width:80%;height:10px;margin-top:6px;"></span>
+        </div>
+        <div class="hero-stat">
+          <span class="skel skel-line" style="width:60%;height:20px;"></span>
+          <span class="skel skel-line" style="width:80%;height:10px;margin-top:6px;"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="location-page-grid">
+      <section class="location-primary">
+
+        <div class="card location-card">
+          <div class="card__head">
+            <div style="flex:1;">
+              <span class="skel skel-line" style="width:55%;height:16px;"></span>
+              <span class="skel skel-line" style="width:35%;height:11px;margin-top:8px;"></span>
+            </div>
+            <span class="skel skel-pill"></span>
+          </div>
+
+          <div class="status-hero">
+            <span class="skel skel-circle"></span>
+            <div class="status-hero__text" style="width:100%;">
+              <span class="skel skel-line" style="width:65%;height:17px;"></span>
+              <span class="skel skel-line" style="width:45%;height:11px;margin-top:8px;"></span>
+            </div>
+          </div>
+
+          <div class="location-card__top">
+            <div class="location-card__info">
+              <div class="location-card__row"><span class="skel skel-line" style="width:55%;"></span></div>
+              <div class="location-card__row"><span class="skel skel-line" style="width:55%;"></span></div>
+              <div class="location-card__row"><span class="skel skel-line" style="width:55%;"></span></div>
+            </div>
+            <div class="location-card__meta-panel">
+              <span class="skel skel-block" style="height:34px;"></span>
+              <span class="skel skel-block" style="height:34px;margin-top:8px;"></span>
+            </div>
+          </div>
+
+          <span class="skel skel-block" style="height:46px;margin-top:6px;"></span>
+          <span class="skel skel-block" style="height:130px;margin-top:14px;"></span>
+        </div>
+
+        <div class="card chat-card">
+          <div class="card__head chat-card__head">
+            <span class="skel skel-line" style="width:130px;height:15px;"></span>
+          </div>
+          <span class="skel skel-block" style="height:150px;margin-top:10px;"></span>
+          <span class="skel skel-block" style="height:42px;margin-top:10px;"></span>
+        </div>
+
+      </section>
+
+      <aside class="location-sidebar">
+        <div class="card profile-card">
+          <span class="skel skel-circle skel-circle--lg" style="margin:0 auto;"></span>
+          <span class="skel skel-line" style="width:60%;height:15px;margin:12px auto 0;"></span>
+          <span class="skel skel-line" style="width:75%;height:11px;margin:8px auto 0;"></span>
+          <span class="skel skel-line" style="width:65%;height:11px;margin:6px auto 0;"></span>
+          <span class="skel skel-block" style="height:38px;margin-top:14px;"></span>
+        </div>
+
+        <div class="card add-location-card">
+          <span class="skel skel-line" style="width:50%;height:15px;"></span>
+          <span class="skel skel-block" style="height:38px;margin-top:14px;"></span>
+          <span class="skel skel-block" style="height:38px;margin-top:10px;"></span>
+          <span class="skel skel-block" style="height:40px;margin-top:14px;"></span>
+        </div>
+      </aside>
+    </div>
+
+  </div>
+
+
+  <main class="page" id="realPageContent">
+
+    <!-- Hero banner: greeting + quick stats -->
+    <div class="hero-banner">
+      <div class="hero-banner__location">
+        <span class="pulse pulse--on" style="width:8px;height:8px;"></span>
+        <span id="locationName" data-skel="line">Your location</span>
+      </div>
+      <div class="hero-banner__eyebrow">LightWatch · Live status</div>
+      <div class="hero-banner__greeting" id="pageGreeting" data-skel="line">Welcome back</div>
+      <div class="hero-banner__sub" id="locationSubtitle" data-skel="line">Real-time power reporting for your area.</div>
+
+      <!-- Shown only when the user has added a second location on the
+           Account page. Tapping it opens a side panel — kept out of the
+           main content flow rather than adding a whole new card here. -->
+      <button type="button" class="secondary-location-chip" id="secondaryLocationChip" hidden>
+        <span class="secondary-location-chip__dot" aria-hidden="true"></span>
+        <span id="secondaryLocationChipLabel">Second location</span>
+        <span class="secondary-location-chip__arrow" aria-hidden="true">›</span>
+      </button>
+
+      <div class="hero-banner__stats">
+        <div class="hero-stat">
+          <span class="hero-stat__value" id="heroContributors" data-skel="line"></span>
+          <span class="hero-stat__label">Contributors</span>
+        </div>
+        <div class="hero-stat">
+          <span class="hero-stat__value" id="heroChecks" data-skel="line"></span>
+          <span class="hero-stat__label">Total checks</span>
+        </div>
+        <div class="hero-stat">
+          <span class="hero-stat__value" id="heroUptime" data-skel="line"></span>
+          <span class="hero-stat__label">Uptime this week</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="location-page-grid">
+      <section class="location-primary">
+
+        <!-- Main status card -->
+        <div class="card location-card">
+          <div class="card__head">
+            <div>
+              <span class="card__title" id="locationNameCard" data-skel="line">Your chosen location</span>
+              <p class="card__meta" id="locationMeta" data-skel="line">Location set by you</p>
+            </div>
+            <span class="badge badge--low" id="statusBadge" data-skel="pill"></span>
+          </div>
+
+          <!-- Status hero row -->
+          <div class="status-hero">
+            <div class="status-hero__icon status-hero__icon--unknown" id="statusIcon"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:1.1em;height:1.1em;" aria-hidden="true"><circle cx="10" cy="10" r="8.3" stroke="currentColor" stroke-width="1.4"/><path d="M7.6 8.1a2.4 2.4 0 1 1 3.3 2.2c-0.7 0.3-1 0.8-1 1.5v0.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="10" cy="14.6" r="0.9" fill="currentColor"/></svg></div>
+            <div class="status-hero__text">
+              <!--Checking Live Status-->
+              <div class="status-hero__title" id="statusPillText" data-skel="line">unconfirmed light status</div>
+              <div class="status-hero__sub">
+                Last verified: <strong id="lastVerified" data-skel="line">—</strong>
+                &nbsp;·&nbsp;
+                <span class="pulse pulse--low" id="statusPulse" style="display:inline-block;width:8px;height:8px;vertical-align:middle;margin-right:8px;margin-left:8px;"></span>
+                Live
+              </div>
+            </div>
+          </div>
+
+          
+          <!-- Light toggle -->
+          <div class="light-toggle-row">
+            <div class="light-toggle-row__label">
+              <span class="light-toggle-row__title">Report current status</span>
+              <span class="light-toggle-row__sub">Flip this only if you can actually see the area right now</span>
+            </div>
+            <button type="button" class="light-switch" id="lightSwitch" role="switch" aria-checked="false" aria-label="Toggle light status">
+              <span class="light-switch__track">
+                <span class="light-switch__thumb"></span>
+              </span>
+              <span class="light-switch__state" id="lightSwitchState">CHECK</span>
+            </button>
+          </div>
+
+          <div class="location-card__top">
+            <div class="location-card__info">
+              <div class="location-card__row">
+                <span class="location-card__label">Average outage length</span>
+                <strong id="avgOutage" data-skel="line">—</strong>
+              </div>
+              <div class="location-card__row">
+                <span class="location-card__label">Outage frequency</span>
+                <strong id="outageFreq" data-skel="line">—</strong>
+              </div>
+              <div class="location-card__row location-card__row--confidence">
+                <span class="location-card__label">Source confidence</span>
+                <div class="confidence-bar" role="img" id="confidenceBarLabel" aria-label="Source confidence">
+                  <span class="confidence-bar__track">
+                    <span class="confidence-bar__fill" id="confidenceBarFill"></span>
+                  </span>
+                  <strong class="confidence-bar__value" id="confidenceBarValue">—</strong>
+                </div>
+              </div>
+              <p class="confidence-bar__caption" id="confidenceCaption">—</p>
+              <!-- Hidden data source — profile.js keeps writing the raw
+                   numbers here (used elsewhere too); confidenceBarFill above
+                   and the hero mini-card both read from these via
+                   lightstatus.js instead of duplicating the fetch. -->
+              <strong id="sourceConfidence" data-skel="line" hidden>—</strong>
+              <span id="heroContributorsPill" hidden>— contributors</span>
+              <span id="heroChecksPill" hidden>— total checks</span>
+            </div>
+            <div class="location-card__meta-panel">
+              <div class="hero-mini-card" id="heroMiniCard">
+                <div class="hero-mini-card__status">
+                  <span class="hero-mini-card__dot" id="heroMiniDot"><svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:0.85em;height:0.85em;vertical-align:middle;" aria-hidden="true"><circle cx="6" cy="6" r="5" fill="none" stroke="#9AA1AC" stroke-width="1.1"/></svg></span>
+                  <div>
+                    <strong>Current status</strong>
+                    <span id="heroMiniVerified">Verified —</span>
+                  </div>
+                </div>
+                <div class="hero-mini-card__row">
+                  <span aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:1em;height:1em;vertical-align:-0.15em;"><circle cx="7" cy="6.8" r="2.4" stroke="currentColor" stroke-width="1.3"/><circle cx="14" cy="7.6" r="2" stroke="currentColor" stroke-width="1.3"/><path d="M2.3 16.4c.6-2.9 2.4-4.5 4.7-4.5s4.1 1.6 4.7 4.5M12 12.6c1.9.1 3.3 1.5 3.8 3.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span>
+                  <span id="heroPeopleHelped">— people helped today</span>
+                </div>
+                <div class="hero-mini-card__row hero-mini-card__stars">
+                  <span class="hero-mini-card__stars-graphic" id="heroStarsGraphic" aria-hidden="true"><svg viewBox="0 0 18 18" fill="none" stroke="#C7CBD3" stroke-width="0.9" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" style="width:0.9em;height:0.9em;"><path d="M9 1.3 11.2 6l5.1.5-3.9 3.4 1.2 5-4.6-2.7-4.6 2.7 1.2-5-3.9-3.4L6.8 6Z"/></svg><svg viewBox="0 0 18 18" fill="none" stroke="#C7CBD3" stroke-width="0.9" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" style="width:0.9em;height:0.9em;"><path d="M9 1.3 11.2 6l5.1.5-3.9 3.4 1.2 5-4.6-2.7-4.6 2.7 1.2-5-3.9-3.4L6.8 6Z"/></svg><svg viewBox="0 0 18 18" fill="none" stroke="#C7CBD3" stroke-width="0.9" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" style="width:0.9em;height:0.9em;"><path d="M9 1.3 11.2 6l5.1.5-3.9 3.4 1.2 5-4.6-2.7-4.6 2.7 1.2-5-3.9-3.4L6.8 6Z"/></svg><svg viewBox="0 0 18 18" fill="none" stroke="#C7CBD3" stroke-width="0.9" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" style="width:0.9em;height:0.9em;"><path d="M9 1.3 11.2 6l5.1.5-3.9 3.4 1.2 5-4.6-2.7-4.6 2.7 1.2-5-3.9-3.4L6.8 6Z"/></svg><svg viewBox="0 0 18 18" fill="none" stroke="#C7CBD3" stroke-width="0.9" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" style="width:0.9em;height:0.9em;"><path d="M9 1.3 11.2 6l5.1.5-3.9 3.4 1.2 5-4.6-2.7-4.6 2.7 1.2-5-3.9-3.4L6.8 6Z"/></svg></span>
+                  <span class="hero-mini-card__stars-label">Community reliability</span>
+                </div>
+              </div>
+            </div>
+          </div>
+                <!-- Status insight panel — outer shell/classes left as-is
+               (status-insight-panel / __header / __title / __sub) so the
+               existing responsive + dark-theme rules for this card keep
+               working untouched. Only the inner body was redesigned:
+               a reliability meter, a trend banner, a same-day timeline,
+               and a recent-reports feed, in place of the old grid mosaic. -->
+          <div class="status-insight-panel">
+            <div class="status-insight__header">
+              <div>
+                <span class="status-insight__title">Live status pulse</span>
+                <p class="status-insight__sub" id="communityPulseLine">A quick read on your area, at a glance.</p>
+              </div>
+              <span class="badge badge--low">Live</span>
+            </div>
+
+            <div class="pulse-panel">
+
+              <!-- Community activity: how many reports this location has
+                   gotten today, plus how fresh the latest one is. Built
+                   from real /reports data (see lightstatus.js), scoped to
+                   just this location. -->
+              <div class="community-activity" id="communityActivity">
+                <span class="community-activity__headline" id="communityActivityHeadline"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:1em;height:1em;vertical-align:-0.15em;" aria-hidden="true"><circle cx="7" cy="6.8" r="2.4" stroke="currentColor" stroke-width="1.3"/><circle cx="14" cy="7.6" r="2" stroke="currentColor" stroke-width="1.3"/><path d="M2.3 16.4c.6-2.9 2.4-4.5 4.7-4.5s4.1 1.6 4.7 4.5M12 12.6c1.9.1 3.3 1.5 3.8 3.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg> Gathering today's activity…</span>
+                <div class="community-activity__meta">
+                  <span id="communityActivityLastReport">Last report —</span>
+                  <span id="communityActivityNow"><span class="community-activity__live-dot"></span> —</span>
+                </div>
+              </div>
+
+              <!-- Reliability meter: mirrors whatever confidence value ends
+                   up in #sourceConfidence above; falls back to a locally
+                   computed estimate from this device's report history until
+                   that's wired up. See lightstatus.js: syncReliabilityMeter(). -->
+              <div class="reliability-meter">
+                <div class="reliability-meter__head">
+                  <span class="reliability-meter__label">Reliability</span>
+                  <span class="reliability-meter__value" id="reliabilityMeterValue">—</span>
+                </div>
+                <div class="reliability-meter__track" role="progressbar" aria-label="Reliability" aria-valuemin="0" aria-valuemax="100" id="reliabilityMeterTrack">
+                  <div class="reliability-meter__fill" id="reliabilityMeterFill"></div>
+                </div>
+                <span class="reliability-meter__caption" id="reliabilityMeterCaption">Calculating from recent reports…</span>
+              </div>
+
+              <!-- Trend banner: "stable" vs "frequent outages", computed from
+                   the last 24h of the status log. -->
+              <div class="trend-banner trend-banner--stable" id="trendBanner">
+                <span class="trend-banner__icon" id="trendBannerIcon"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:1em;height:1em;" aria-hidden="true"><path d="M11.2 2.2 4.8 11.4a.8.8 0 0 0 .66 1.26h3.3l-.72 5.14a.8.8 0 0 0 1.44.58l6-8.3a.8.8 0 0 0-.65-1.27h-3.3l.72-5.13a.8.8 0 0 0-1.43-.58Z" fill="currentColor"/></svg></span>
+                <div class="trend-banner__text">
+                  <strong id="trendBannerTitle">Checking today's trend…</strong>
+                  <span id="trendBannerSub">—</span>
+                </div>
+              </div>
+
+              <!-- Today's activity timeline -->
+              <div class="pulse-section">
+                <span class="pulse-section__title">Today's activity</span>
+                <ul class="status-timeline" id="statusTimeline">
+                  <li class="status-timeline__empty">No status changes yet today.</li>
+                </ul>
+              </div>
+
+              <!-- Latest community reports, with a friendly display name per
+                   report (see GHANA_NAMES in lightstatus.js) rather than the
+                   raw anonymous chat handle — same spirit as the anon-*
+                   handle system, just warmer for a reports feed. -->
+              <div class="pulse-section">
+                <span class="pulse-section__title">Latest community reports</span>
+                <div class="report-list report-list--compact" id="recentReportsList"></div>
+              </div>
+
+              <!-- Nearby areas: live status pulled from /lightstatus for
+                   each neighboring location, using a hardcoded adjacency
+                   map since we don't have geocoding yet (see NEARBY_MAP in
+                   lightstatus.js). Statuses shown are real; "nearby" itself
+                   is an approximation worth double-checking against how you
+                   actually think about area groupings. -->
+              <div class="pulse-section">
+                <span class="pulse-section__title">Nearby</span>
+                <div class="nearby-list" id="nearbyList">
+                  <span class="nearby-list__empty">Loading nearby areas…</span>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Community chat -->
+        <div class="card chat-card">
+          <div class="card__head chat-card__head">
+            <div>
+              <span class="card__title">Community chat</span>
+              <span class="card__meta">Posting as <strong id="chatHandle" data-skel="line">anon-glow-291</strong></span>
+            </div>
+            <button type="button" id="mobileChatClose" class="chat-close-btn" aria-label="Close chat"><svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:0.9em;height:0.9em;" aria-hidden="true"><path d="M3 3l10 10M13 3 3 13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+          </div>
+          <div class="chat-scope-row" aria-label="Chat visibility scope">
+            <span class="chat-scope-label">Audience</span>
+            <div class="chat-scope-options" role="tablist" aria-label="Chat audience">
+              <button type="button" class="chat-scope-option is-active" id="chatScopeLocalBtn" data-scope="local" role="tab" aria-selected="true">Only your location</button>
+              <button type="button" class="chat-scope-option" id="chatScopeGlobalBtn" data-scope="global" role="tab" aria-selected="false">Everyone</button>
+            </div>
+          </div>
+          <div class="chat-thread-wrap">
+            <div class="chat-thread" id="chatThread"></div>
+            <button type="button" class="chat-scroll-bottom-btn" id="chatScrollBottomBtn" aria-label="Scroll to latest messages" hidden>
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 4v16M6 14l6 6 6-6"/>
+              </svg>
+            </button>
+          </div>
+          <form class="chat-form" id="chatForm" action="javascript:void(0)">
+            <div class="chat-reply-preview" id="chatReplyPreview" hidden>
+              <span class="chat-reply-preview__label">Replying to <strong id="chatReplyHandle">someone</strong></span>
+              <p class="chat-reply-preview__text" id="chatReplyText"></p>
+              <button type="button" class="chat-reply-preview__cancel" id="chatReplyCancel" aria-label="Cancel reply">×</button>
+            </div>
+            <textarea class="chat-form__input" id="chatInput" placeholder="Share an update..." maxlength="240" data-skel="input" rows="1" enterkeyhint="send"></textarea>
+            <button type="submit" class="btn btn--primary" id="chatSendBtn" disabled>Send</button>
+          </form>
+        </div>
+
+      </section>
+
+      <aside class="location-sidebar">
+
+        <div class="card profile-card">
+          <div class="card__head">
+            <span class="card__title">Logged in as</span>
+            <span class="card__meta" id="profileLastLogin" data-skel="line">—</span>
+          </div>
+          <div class="profile-card__avatar">
+            <span class="avatar avatar--large" id="profileAvatar">?</span>
+          </div>
+          <div class="profile-card__info">
+            <div class="profile-card__name" id="profileName" data-skel="line">Not signed in</div>
+          </div>
+          <div class="profile-card__details">
+            <div><span>Contact</span><strong id="profileContact" data-skel="line">—</strong></div>
+            <div><span>Location</span><strong id="profileRegion" data-skel="line">—</strong></div>
+          </div>
+          <button type="button" class="btn btn--ghost" id="profileSignOutBtn" data-action="signout">Log out</button>
+        </div>
+
+        <!-- "Add a location" moved off Home — it's a setup/management action,
+             not something people need in their 15-second daily check-in.
+             Belongs on the Areas page now. (Not touching the loading
+             skeleton above on purpose, per instructions.) -->
+
+        <!-- Achievements: real numbers from /user/:id (reportCount) and
+             /reports?userId=... (this week's reports) — see lightstatus.js.
+             "Points" is a simple, transparent formula (3 pts / report
+             today), not a hidden score. -->
+        <div class="card achievement-card" id="achievementCard" hidden>
+          <div class="achievement-card__head">
+            <span class="achievement-card__badge" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:1em;height:1em;"><circle cx="10" cy="12.5" r="5" fill="#D6A24A" stroke="#A66C14" stroke-width="1"/><path d="m7.3 2.5 2.7 4 2.7-4M8 8.2l-2.6-3.9M12 8.2l2.6-3.9" stroke="#A66C14" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8.6 13.1 9.7 11l1.1 2.1 2.2.3-1.6 1.5.4 2.2-2-1-2 1 .4-2.2-1.6-1.5Z" fill="#FCEBC8"/></svg></span>
+            <span class="achievement-card__title" id="achievementHeadline">You helped today</span>
+          </div>
+          <div class="achievement-card__points" id="achievementPoints">+0 <span>points</span></div>
+          <div class="achievement-card__stats">
+            <div class="achievement-card__stat">
+              <strong id="achievementWeekReports">—</strong>
+              <span>Reports this week</span>
+            </div>
+            <div class="achievement-card__stat">
+              <strong id="achievementTotalReports">—</strong>
+              <span>Total reports</span>
+            </div>
+          </div>
+        </div>
+
+      </aside>
+    </div>
+
+    <p class="footnote">LightWatch — meter &amp; grid status monitoring</p>
+  </main>
+
+  <!-- Sidebar overlay + panel -->
+
+  <div class="location-expand-overlay" id="secondaryLocationOverlay" aria-hidden="true">
+    <div class="location-expand-panel" id="secondaryLocationPanel" role="dialog" aria-modal="true" aria-labelledby="secondaryLocationPanelTitle">
+      <div class="location-expand-panel__head">
+        <div>
+          <span class="location-expand-panel__eyebrow" id="secondaryLocationPanelBadge">Second location</span>
+          <span class="location-expand-panel__title" id="secondaryLocationPanelTitle">—</span>
+          <span class="location-expand-panel__region" id="secondaryLocationPanelRegion"></span>
+        </div>
+        <button type="button" class="location-expand-panel__close" id="secondaryLocationClose" aria-label="Close location panel">
+          <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M3 3l10 10M13 3 3 13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+
+      <div class="location-expand-panel__body" id="secondaryLocationPanelBody">
+
+        <div class="location-expand-status" id="secondaryLocationStatusRow">
+          <span class="location-expand-status__dot" id="secondaryLocationStatusDot" aria-hidden="true"></span>
+          <div>
+            <div class="location-expand-status__label" id="secondaryLocationStatusLabel">Checking status…</div>
+            <div class="location-expand-status__sub" id="secondaryLocationStatusSub">—</div>
+          </div>
+        </div>
+
+        <div class="location-expand-stats" id="secondaryLocationStats">
+          <div class="location-expand-stat">
+            <span class="location-expand-stat__icon" aria-hidden="true">
+              <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="8" cy="8" r="6.3" stroke="currentColor" stroke-width="1.3"/><path d="M8 4.6V8l2.4 1.6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+            <strong id="secondaryLocationUptime">—</strong>
+            <span class="location-expand-stat__label">Uptime this week</span>
+          </div>
+          <div class="location-expand-stat">
+            <span class="location-expand-stat__icon" aria-hidden="true">
+              <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4.5 2.2h7M4.5 13.8h7M5.3 2.2v1.9c0 1 .5 1.9 1.4 2.4L8 7.2l1.3-.7c.9-.5 1.4-1.4 1.4-2.4V2.2M5.3 13.8v-1.9c0-1 .5-1.9 1.4-2.4L8 8.8l1.3.7c.9.5 1.4 1.4 1.4 2.4v1.9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+            <strong id="secondaryLocationAvgOutage">—</strong>
+            <span class="location-expand-stat__label">Avg. outage</span>
+          </div>
+          <div class="location-expand-stat">
+            <span class="location-expand-stat__icon" aria-hidden="true">
+              <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.6 8a5.4 5.4 0 0 1 9.1-3.9M13.4 8a5.4 5.4 0 0 1-9.1 3.9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M11.1 2.6v1.9h-1.9M4.9 13.4v-1.9h1.9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+            <strong id="secondaryLocationOutageFreq">—</strong>
+            <span class="location-expand-stat__label">Outages this wk</span>
+          </div>
+        </div>
+
+        <div class="location-expand-last-outage" id="secondaryLocationLastOutageRow" hidden>
+          <span class="location-expand-last-outage__icon" aria-hidden="true">
+            <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8.7 1.8 2.6 9.4a.7.7 0 0 0 .55 1.1h2.7l-.6 3.7a.7.7 0 0 0 1.25.5l5.3-6.9a.7.7 0 0 0-.55-1.1h-2.7l.6-3.7a.7.7 0 0 0-1.25-.5z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/></svg>
+          </span>
+          <span class="location-expand-last-outage__text">Most recent outage lasted <strong id="secondaryLocationLastOutage">—</strong></span>
+        </div>
+
+        <p class="location-expand-panel__note" id="secondaryLocationNote">This is a second spot you're keeping an eye on, separate from your primary location above. Status comes from the same community reports as Home.</p>
+
+        <label class="location-expand-notify" for="secondaryLocationNotifyToggle">
+          <input type="checkbox" id="secondaryLocationNotifyToggle" />
+          <span class="location-expand-notify__box" aria-hidden="true">
+            <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 8.5 6.3 12 13 4.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+          <span class="location-expand-notify__text">
+            <strong>Notify me here</strong>
+            <span id="secondaryLocationNotifySub">Get an alert if this location's power status changes</span>
+          </span>
+        </label>
+
+        <button type="button" class="btn btn--primary btn--block" onclick="window.LWRouter.navigate('account')">Manage in Account</button>
+      </div>
+    </div>
+  </div>
+
+
+  <button type="button" id="mobileChatToggle" class="mobile-chat-toggle" aria-label="Open chat">
+    <span class="mobile-chat-toggle__icon" aria-hidden="true">
+      <svg class="mobile-chat-toggle__icon-svg mobile-chat-toggle__icon-svg--chat" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 4.8h14a1 1 0 0 1 1 1V13a1 1 0 0 1-1 1H8.5L5 16.8V14H3a1 1 0 0 1-1-1V5.8a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+      <svg class="mobile-chat-toggle__icon-svg mobile-chat-toggle__icon-svg--close" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 3l10 10M13 3 3 13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+    </span>
+    <span class="mobile-chat-toggle__label">Report</span>
+  </button>
+
+
+  <div class="home-reminder-overlay" id="homeReminderOverlay" hidden>
+    <div class="home-reminder-card" role="dialog" aria-modal="true" aria-labelledby="homeReminderTitle">
+      <div class="card__head">
+        <span class="home-reminder-card__icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:1em;height:1em;"><path d="M10 2.6 18.3 16.6H1.7L10 2.6Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M10 8v3.6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="10" cy="14" r="0.95" fill="currentColor"/></svg></span>
+        <div>
+          <span class="card__title" id="homeReminderTitle">LightWatch reminder</span>
+          <span class="card__meta">Read before you post</span>
+        </div>
+      </div>
+      <div class="home-reminder-copy">
+        <p class="home-reminder-copy__lead">People make real movement and business decisions from this page. Treat every report as a public responsibility, not a guess.</p>
+        <ul class="home-reminder-points">
+          <li>Submit updates only after personally confirming power status in your area.</li>
+          <li>Wrong or outdated reports can waste transport cost, time, and business opportunities.</li>
+          <li>LightWatch is independent and not affiliated with ECG or any government agency.</li>
+        </ul>
+      </div>
+      <div class="home-reminder-actions">
+        <button type="button" class="btn btn--primary" id="homeReminderCloseBtn">Understood</button>
+      </div>
+    </div>
+  </div>
+
+    </section>
+
+    <!-- ==== Areas page section ==== -->
+    <section id="view-areas" data-view="areas" hidden>
+<main class="page">
+
+    <div class="hero-banner">
+      <div class="hero-banner__location">
+        <span class="pulse pulse--on" style="width:8px;height:8px;"></span>
+        <span>Kumasi, Ashanti</span>
+      </div>
+      <div class="hero-banner__eyebrow">LightWatch · Live status</div>
+      <div class="hero-banner__greeting">Areas</div>
+      <div class="hero-banner__sub">See how other neighborhoods around Kumasi are doing right now.</div>
+    </div>
+
+    <div class="areas-summary-strip">
+      <span class="areas-summary-strip__icon">
+        <img src="./images/areas.png?v=1.0.14" alt="Areas" width="18" height="18">
+      </span>
+      <span class="areas-summary-strip__text">
+        <span id="areasSummaryText">Loading area status…</span>
+        <span class="areas-summary-strip__sub">Updates automatically as the community reports in</span>
+      </span>
+    </div>
+
+    <div class="areas-controls">
+      <div class="areas-filter-tabs" id="areasFilterTabs">
+        <button type="button" class="areas-filter-tab is-active" data-filter="all">All</button>
+        <button type="button" class="areas-filter-tab" data-filter="on">On</button>
+        <button type="button" class="areas-filter-tab" data-filter="off">Off</button>
+        <button type="button" class="areas-filter-tab" data-filter="unknown">Checking</button>
+      </div>
+      <div class="areas-search">
+        <input type="text" id="areasSearchInput" placeholder="Search a city..." autocomplete="off">
+      </div>
+    </div>
+
+    <section class="areas-board card" aria-label="Areas liveboard">
+      <div class="card__head">
+        <span class="card__title">Cities status</span>
+        <span class="card__meta">Tap a filter or search to narrow the list</span>
+      </div>
+      <div class="area-grid" id="areaGrid" role="list" aria-label="City status list"></div>
+      <div class="areas-empty-state" id="areasEmptyState">
+        <strong>No cities match that search</strong>
+        <span>Try a different name or clear the filter</span>
+      </div>
+    </section>
+
+    <p class="footnote">LightWatch — meter &amp; grid status monitoring</p>
+  </main>
+    </section>
+
+    <!-- ==== Reports page section ==== -->
+    <section id="view-reports" data-view="reports" hidden>
+<main class="page">
+
+    <div class="page__header">
+      <div>
+        <div class="page__eyebrow">Reports</div>
+        <h1 class="page__title">All reports</h1>
+        <p class="page__subtitle">Every status report submitted across LightWatch locations in Kumasi.</p>
+      </div>
+    </div>
+
+    <div class="card report-card">
+      <div class="card__head">
+        <span class="card__title">Recent activity</span>
+        <span class="card__meta">Sorted by newest first</span>
+      </div>
+      <div class="report-list"></div>
+    </div>
+  </main>
+    </section>
+
+    <!-- ==== Account page section ==== -->
+    <section id="view-account" data-view="account" hidden>
+
+  <div class="page" id="accountSkeleton" aria-hidden="true">
+    <div class="page__header">
+      <div>
+        <span class="skel skel-line" style="width:110px;height:10px;margin-bottom:8px;"></span>
+        <span class="skel skel-line" style="width:210px;height:24px;"></span>
+        <span class="skel skel-line" style="width:300px;max-width:86vw;height:12px;margin-top:10px;"></span>
+      </div>
+    </div>
+
+    <div class="account-grid">
+      <div>
+        <div class="card" style="padding: 0; overflow: hidden;">
+          <div style="padding: 28px 20px 20px; text-align:center;">
+          <span class="skel skel-circle skel-circle--lg" style="margin:0 auto;"></span>
+          <span class="skel skel-line" style="width:70%;height:16px;margin:12px auto 0;"></span>
+          <span class="skel skel-line" style="width:50%;height:12px;margin:8px auto 0;"></span>
+          <span class="skel skel-pill" style="margin:12px auto 0;"></span>
+          </div>
+          <div style="padding: 0 20px 20px;">
+            <span class="skel skel-line" style="width:110px;height:10px;margin-bottom:12px;"></span>
+            <span class="skel skel-line" style="width:100%;height:13px;margin-top:10px;"></span>
+            <span class="skel skel-line" style="width:100%;height:13px;margin-top:12px;"></span>
+            <span class="skel skel-line" style="width:100%;height:13px;margin-top:12px;"></span>
+            <span class="skel skel-line" style="width:100%;height:13px;margin-top:12px;"></span>
+            <span class="skel skel-line" style="width:100%;height:13px;margin-top:12px;"></span>
+          </div>
+        </div>
+        <div class="card" style="margin-top: 16px;">
+          <span class="skel skel-line" style="width:90px;height:14px;"></span>
+          <span class="skel skel-line" style="width:100%;height:12px;margin-top:8px;"></span>
+          <span class="skel skel-block" style="height:38px;margin-top:12px;"></span>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div class="card">
+          <span class="skel skel-line" style="width:120px;height:14px;"></span>
+          <span class="skel skel-line" style="width:170px;height:10px;margin-top:8px;"></span>
+          <span class="skel skel-block" style="height:34px;margin-top:12px;"></span>
+          <span class="skel skel-block" style="height:34px;margin-top:10px;"></span>
+          <span class="skel skel-block" style="height:34px;margin-top:10px;"></span>
+        </div>
+        <div class="card">
+          <span class="skel skel-line" style="width:100px;height:14px;"></span>
+          <span class="skel skel-line" style="width:150px;height:10px;margin-top:8px;"></span>
+          <span class="skel skel-block" style="height:46px;margin-top:12px;"></span>
+          <span class="skel skel-block" style="height:38px;margin-top:12px;"></span>
+        </div>
+        <div class="card">
+          <span class="skel skel-line" style="width:70px;height:14px;"></span>
+          <span class="skel skel-line" style="width:130px;height:10px;margin-top:8px;"></span>
+          <span class="skel skel-block" style="height:34px;margin-top:12px;"></span>
+          <span class="skel skel-block" style="height:34px;margin-top:10px;"></span>
+        </div>
+        <div class="card">
+          <span class="skel skel-line" style="width:140px;height:14px;"></span>
+          <span class="skel skel-line" style="width:130px;height:10px;margin-top:8px;"></span>
+          <span class="skel skel-block" style="height:96px;margin-top:12px;"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <main class="page" id="accountRealContent">
+
+    <div class="page__header">
+      <div>
+        <div class="page__eyebrow">Your account</div>
+        <h1 class="page__title" id="acctPageGreeting">Account</h1>
+        <p class="page__subtitle">Manage your profile, preferences, and locations.</p>
+      </div>
+    </div>
+
+    <div class="account-grid">
+
+      <!-- Left: profile card -->
+      <div>
+        <div class="card profile-details-card" style="padding: 0; overflow: hidden;">
+          <div class="profile-hero">
+            <div class="profile-hero__ring">
+              <div class="profile-hero__avatar" id="profileAvatar">?</div>
+            </div>
+            <div class="profile-hero__name" id="profileName">Not signed in</div>
+            <div class="profile-hero__handle" id="profileHandle">—</div>
+            <span class="profile-hero__badge" id="profileBadge">
+              <span class="pulse pulse--on" style="width:8px;height:8px;"></span>
+              <span id="profileBadgeText">Community member</span>
+            </span>
+          </div>
+
+          <div style="padding: 0 18px 16px;">
+            <div class="section-label">Account details</div>
+            <div class="detail-list">
+              <div class="detail-row">
+                <span class="detail-row__icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2.5" y="4.5" width="15" height="11" rx="1.8" stroke="currentColor" stroke-width="1.4"/><path d="m3.2 5.4 6.8 5.4 6.8-5.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                <span class="detail-row__label">Contact</span>
+                <span class="detail-row__value" id="profileContact">—</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-row__icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 3.5 2.7 5v11.5L7 15m0-11.5 6 2m-6-2v11.5m6-9.5 4.3-1.5v11.5L13 17m0-11.5-6 2m6-2v11.5m-6-9.5v9.5" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg></span>
+                <span class="detail-row__label">Region</span>
+                <span class="detail-row__value" id="acctProfileRegion">—</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-row__icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.5 17V6.2L9 3v14M9 17V8.5l7.5 3V17" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M6 8h.01M6 11h.01M6 14h.01" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><rect x="3.5" y="17" width="13" height="0.01" stroke="currentColor"/></svg></span>
+                <span class="detail-row__label">City</span>
+                <span class="detail-row__value" id="profileCity">—</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-row__icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 4.8h14a1 1 0 0 1 1 1V13a1 1 0 0 1-1 1H8.5L5 16.8V14H3a1 1 0 0 1-1-1V5.8a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg></span>
+                <span class="detail-row__label">Chat handle</span>
+                <span class="detail-row__value" id="profileChatHandle">—</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-row__icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="4.2" width="14" height="12.3" rx="1.6" stroke="currentColor" stroke-width="1.4"/><path d="M3 7.8h14M6.4 2.8v3M13.6 2.8v3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span>
+                <span class="detail-row__label">Member since</span>
+                <span class="detail-row__value" id="acctProfileLastLogin">—</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="danger-zone" id="accountSignOutZone" style="margin-top: 16px;">
+          <div class="danger-zone__title">Sign out</div>
+          <div class="danger-zone__sub">You'll need to verify your contact to sign back in.</div>
+          <button type="button" class="btn btn--ghost" id="profileSignOutBtn" data-action="signout" style="border-color: var(--red); color: var(--red); width:100%;">
+            Log out of LightWatch
+          </button>
+        </div>
+      </div>
+
+      <!-- Right: settings & preferences -->
+      <div style="display: flex; flex-direction: column; gap: 16px;">
+
+        <div class="card">
+          <div class="card__head">
+            <span class="card__icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 18s6-5.686 6-10a6 6 0 1 0-12 0c0 4.314 6 10 6 10Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="10" cy="8" r="2.2" stroke="currentColor" stroke-width="1.6"/></svg></span>
+            <span class="card__head-text">
+              <span class="card__title">My locations</span>
+              <span class="card__meta">Areas you're monitoring</span>
+            </span>
+            <button type="button" class="card__collapse-btn" id="myLocationsCollapseBtn" aria-expanded="false" aria-controls="myLocationsCollapseBody" aria-label="Expand my locations">
+              <svg class="card__collapse-chevron" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="m4 6 4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+          <div class="card__collapse-body" id="myLocationsCollapseBody">
+            <div id="myLocationsList" class="location-row-list" style="margin-bottom: 4px;">
+              <div style="color: var(--text-faint); font-size: 0.85rem; padding: 8px 0;">Loading your locations…</div>
+            </div>
+
+            <div id="secondaryLocationBlock" class="secondary-location">
+              <button type="button" class="secondary-location__add" id="secondaryLocationAddBtn" hidden>
+                + Add another location, like Work
+              </button>
+
+              <form id="secondaryLocationForm" class="secondary-location__form" hidden action="javascript:void(0)">
+                <label class="form-field">
+                  <span>Label</span>
+                  <input type="text" id="secondaryLocationLabel" placeholder="e.g. Work" maxlength="40" />
+                </label>
+                <div class="secondary-location__row">
+                  <label class="form-field">
+                    <span>City / Town</span>
+                    <input type="text" id="secondaryLocationCity" placeholder="City or town" maxlength="60" required />
+                  </label>
+                  <label class="form-field">
+                    <span>Region</span>
+                    <select id="secondaryLocationRegion" required>
+                      <option value="">Choose a region</option>
+                      <option value="Greater Accra">Greater Accra</option>
+                      <option value="Ashanti">Ashanti</option>
+                      <option value="Eastern">Eastern</option>
+                      <option value="Western">Western</option>
+                      <option value="Volta">Volta</option>
+                      <option value="Central">Central</option>
+                      <option value="Northern">Northern</option>
+                      <option value="Upper East">Upper East</option>
+                      <option value="Upper West">Upper West</option>
+                      <option value="Bono">Bono</option>
+                      <option value="Bono East">Bono East</option>
+                      <option value="Ahafo">Ahafo</option>
+                      <option value="Oti">Oti</option>
+                      <option value="Savannah">Savannah</option>
+                      <option value="North East">North East</option>
+                      <option value="Western North">Western North</option>
+                    </select>
+                  </label>
+                </div>
+                <p id="secondaryLocationMessage" style="font-size:0.76rem;color:var(--text-faint);margin:0;"></p>
+                <div class="secondary-location__actions">
+                  <button type="button" class="btn btn--ghost" id="secondaryLocationCancelBtn">Cancel</button>
+                  <button type="submit" class="btn btn--primary" id="secondaryLocationSaveBtn">Save location</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card__head">
+            <span class="card__icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 2.5A4.2 4.2 0 0 0 5.8 6.7v2.2c0 .9-.35 1.77-.98 2.42L4 12.2V13h12v-.8l-.82-.86a3.42 3.42 0 0 1-.98-2.42V6.7A4.2 4.2 0 0 0 10 2.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M8.2 15.6a1.9 1.9 0 0 0 3.6 0" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span>
+            <span class="card__head-text">
+              <span class="card__title">Notifications</span>
+              <span class="card__meta">What to alert you about</span>
+            </span>
+            <button type="button" class="card__collapse-btn" id="notificationsCollapseBtn" aria-expanded="false" aria-controls="notificationsCollapseBody" aria-label="Expand notifications">
+              <svg class="card__collapse-chevron" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="m4 6 4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+          <div class="card__collapse-body" id="notificationsCollapseBody">
+            <button type="button" data-enable-push-btn onclick="enableLightWatchPush()" class="btn btn--ghost btn--block" style="margin-bottom: 12px; border-color: var(--brand); color: var(--brand);">
+              Enable notifications
+            </button>
+            <div class="pref-row">
+              <div class="pref-row__info">
+                <div class="pref-row__title">Outage alerts in my area</div>
+                <div class="pref-row__sub">Get notified when light goes off at your location</div>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" checked id="prefOutageAlerts">
+                <span class="toggle__track"></span>
+              </label>
+            </div>
+            <div class="pref-row">
+              <div class="pref-row__info">
+                <div class="pref-row__title">Power restored alerts</div>
+                <div class="pref-row__sub">Know the moment power comes back on</div>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" checked id="prefRestoredAlerts">
+                <span class="toggle__track"></span>
+              </label>
+            </div>
+            <div class="pref-row">
+              <div class="pref-row__info">
+                <div class="pref-row__title">Community chat mentions</div>
+                <div class="pref-row__sub">When someone replies to a message in your location</div>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" id="prefChatMentions">
+                <span class="toggle__track"></span>
+              </label>
+            </div>
+            <div class="pref-row">
+              <div class="pref-row__info">
+                <div class="pref-row__title">Mute everyone-audience chat alerts</div>
+                <div class="pref-row__sub">Stops push notifications from messages sent to Everyone audience</div>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" id="prefMuteGlobalChat">
+                <span class="toggle__track"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" id="cityEditCard">
+          <div class="card__head">
+            <span class="card__icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M13.4 3.5 16.5 6.6 7 16.1H3.9v-3.1L13.4 3.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg></span>
+            <span class="card__head-text">
+              <span class="card__title">Edit city/town</span>
+              <span class="card__meta" id="cityEditCardMeta">One-time correction only</span>
+            </span>
+            <button type="button" class="card__collapse-btn" id="cityEditCollapseBtn" aria-expanded="true" aria-controls="cityEditCollapseBody" aria-label="Collapse edit city/town">
+              <svg class="card__collapse-chevron" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="m4 6 4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+
+          <div class="card__collapse-body" id="cityEditCollapseBody">
+          <!-- Shown once the one-time edit has been used: a plain, clearly
+               non-editable summary instead of a disabled-looking form. -->
+          <div id="cityEditLockedView" class="locked-field" hidden>
+            <span class="locked-field__icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="4.5" y="9" width="11" height="8" rx="1.6" stroke="currentColor" stroke-width="1.4"/><path d="M6.8 9V6.5a3.2 3.2 0 0 1 6.4 0V9" stroke="currentColor" stroke-width="1.4"/><circle cx="10" cy="12.8" r="1.1" fill="currentColor"/></svg></span>
+            <div>
+              <div class="locked-field__value" id="cityEditLockedValue">—</div>
+              <div class="locked-field__sub">City/town is locked and can't be changed again.</div>
+            </div>
+          </div>
+
+          <div id="cityEditFormWrap">
+            <p style="font-size:0.8rem;color:var(--text-faint);margin-bottom:10px;line-height:1.45;">
+              Disclaimer: You can change your city/town only once. After saving, it cannot be changed again.
+            </p>
+            <form id="cityEditForm" action="javascript:void(0)">
+              <label class="form-field" style="margin-bottom:10px;">
+                <span>City / Town</span>
+                <div style="display:flex;gap:8px;align-items:stretch;">
+                  <input type="text" id="cityEditInput" placeholder="Enter your correct city or town" maxlength="60" disabled style="flex:1;" />
+                  <button type="button" class="btn btn--ghost" id="cityEditToggleBtn" style="flex-shrink:0;white-space:nowrap;">Edit</button>
+                </div>
+              </label>
+              <button type="submit" class="btn btn--primary btn--block" id="cityEditSaveBtn" disabled>Save city/town</button>
+              <p id="cityEditMessage" style="margin-top:8px;font-size:0.76rem;color:var(--text-faint);"></p>
+            </form>
+          </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card__head">
+            <span class="card__icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 17a7 7 0 1 1 0-14c3.5 0 6.5 2.4 6.5 5.4 0 1.9-1.4 3-3 3h-1.4c-.9 0-1.4.9-.9 1.6.6.8.2 2-.9 2.3-.1 0-.2.1-.3.1Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><circle cx="7" cy="8.2" r="1" fill="currentColor"/><circle cx="10" cy="6.2" r="1" fill="currentColor"/><circle cx="13" cy="8.2" r="1" fill="currentColor"/><circle cx="7.5" cy="11.5" r="1" fill="currentColor"/></svg></span>
+            <span class="card__head-text">
+              <span class="card__title">Display</span>
+              <span class="card__meta">Visual preferences</span>
+            </span>
+            <button type="button" class="card__collapse-btn" id="displayPrefsCollapseBtn" aria-expanded="false" aria-controls="displayPrefsCollapseBody" aria-label="Expand display preferences">
+              <svg class="card__collapse-chevron" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="m4 6 4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+          <div class="card__collapse-body" id="displayPrefsCollapseBody">
+          <div class="pref-row">
+            <div class="pref-row__info">
+              <div class="pref-row__title">Compact chat bubbles</div>
+              <div class="pref-row__sub">Show smaller message cards in community chat</div>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="prefCompactChat">
+              <span class="toggle__track"></span>
+            </label>
+          </div>
+          <div class="pref-row">
+            <div class="pref-row__info">
+              <div class="pref-row__title">Show outage stats on home</div>
+              <div class="pref-row__sub">Display average outage length and frequency</div>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" checked id="prefShowStats">
+              <span class="toggle__track"></span>
+            </label>
+          </div>
+          <div class="pref-row">
+            <div class="pref-row__info">
+              <div class="pref-row__title">Reduce motion</div>
+              <div class="pref-row__sub">Turn off page transitions and pulse animations</div>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="prefReduceMotion">
+              <span class="toggle__track"></span>
+            </label>
+          </div>
+          <div class="pref-row">
+            <div class="pref-row__info">
+              <div class="pref-row__title">Larger chat text</div>
+              <div class="pref-row__sub">Increase font size in community chat</div>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="prefLargeChatText">
+              <span class="toggle__track"></span>
+            </label>
+          </div>
+          <div class="pref-row">
+            <div class="pref-row__info">
+              <div class="pref-row__title">Home layout density</div>
+              <div class="pref-row__sub">How tightly packed the home screen cards are</div>
+            </div>
+            <select class="density-select" id="prefDensity">
+              <option value="comfortable">Comfortable</option>
+              <option value="compact">Compact</option>
+            </select>
+          </div>
+          <div class="pref-row">
+            <div class="pref-row__info">
+              <div class="pref-row__title">Accent color</div>
+              <div class="pref-row__sub">Used for buttons, badges, and highlights</div>
+              <div class="swatch-row" id="accentSwatchRow">
+                <button type="button" class="swatch" data-accent="teal" style="background:#3DD9C2;" aria-label="Teal accent" aria-pressed="true"></button>
+                <button type="button" class="swatch" data-accent="amber" style="background:#D6A24A;" aria-label="Amber accent" aria-pressed="false"></button>
+                <button type="button" class="swatch" data-accent="violet" style="background:#8B7CF6;" aria-label="Violet accent" aria-pressed="false"></button>
+              </div>
+            </div>
+          </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card__head">
+            <span class="card__icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 4.8h14a1 1 0 0 1 1 1V13a1 1 0 0 1-1 1H8.5L5 16.8V14H3a1 1 0 0 1-1-1V5.8a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg></span>
+            <span class="card__head-text">
+              <span class="card__title">Recent chat activity</span>
+              <span class="card__meta">Your last messages</span>
+            </span>
+          </div>
+          <div id="recentChatList">
+            <div style="color: var(--text-faint); font-size: 0.85rem; padding: 8px 0;">Loading activity…</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card__head">
+            <span class="card__icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="1.4"/><path d="M10 9v5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="10" cy="6.2" r="0.95" fill="currentColor"/></svg></span>
+            <span class="card__head-text">
+              <span class="card__title">About &amp; support</span>
+              <span class="card__meta">How LightWatch works, and how to get help</span>
+            </span>
+          </div>
+
+          <div class="accordion-list" id="accountAccordion">
+
+            <div class="accordion-item">
+              <button type="button" class="accordion-item__trigger" aria-expanded="false" aria-controls="acc-panel-about">
+                <span class="accordion-item__trigger-text">
+                  <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.5 17V6.2L9 3v14M9 17V8.5l7.5 3V17" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+                  How LightWatch works
+                </span>
+                <svg class="accordion-item__chevron" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="m6 8 4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+              <div class="accordion-item__panel" id="acc-panel-about">
+                <div class="accordion-item__panel-inner">
+                  <p>LightWatch is a crowd-sourced power-status tracker. Instead of waiting on official outage reports, people in your area flip a simple switch to confirm whether the light is currently on or off where they are — and the app rolls those individual reports up into a live status for the whole neighborhood.</p>
+                  <p>The more people who check in for a location, the more reliable that location's status becomes. That's what the "Reliability" and "Source confidence" numbers on your Home page reflect: how consistently recent reports agree with each other.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <button type="button" class="accordion-item__trigger" aria-expanded="false" aria-controls="acc-panel-privacy">
+                <span class="accordion-item__trigger-text">
+                  <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="4.5" y="9" width="11" height="8" rx="1.6" stroke="currentColor" stroke-width="1.4"/><path d="M6.8 9V6.5a3.2 3.2 0 0 1 6.4 0V9" stroke="currentColor" stroke-width="1.4"/></svg>
+                  Data &amp; privacy
+                </span>
+                <svg class="accordion-item__chevron" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="m6 8 4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+              <div class="accordion-item__panel" id="acc-panel-privacy">
+                <div class="accordion-item__panel-inner">
+                  <p>Your contact info is masked everywhere it's displayed in the app, and chat messages are posted under an anonymous handle (like <em>anon-glow-291</em>) rather than your name — other users never see who you are.</p>
+                  <p>Your city/town can only be changed once after signup, which keeps location-based status reports trustworthy for everyone else watching that area — see the note on the city edit card for details.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <button type="button" class="accordion-item__trigger" aria-expanded="false" aria-controls="acc-panel-guidelines">
+                <span class="accordion-item__trigger-text">
+                  <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 4.8h14a1 1 0 0 1 1 1V13a1 1 0 0 1-1 1H8.5L5 16.8V14H3a1 1 0 0 1-1-1V5.8a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+                  Community guidelines
+                </span>
+                <svg class="accordion-item__chevron" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="m6 8 4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+              <div class="accordion-item__panel" id="acc-panel-guidelines">
+                <div class="accordion-item__panel-inner">
+                  <p>Only flip the light switch or post a status update if you can <strong>actually see</strong> the area right now — reports feed directly into what your neighbors see, and bad data makes LightWatch less useful for everyone.</p>
+                  <p>In community chat, keep it local and practical: outage updates, generator/fuel tips, and questions for people nearby. Anything abusive or unrelated may be removed.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <button type="button" class="accordion-item__trigger" aria-expanded="false" aria-controls="acc-panel-help">
+                <span class="accordion-item__trigger-text">
+                  <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="10" cy="10" r="7.5" stroke="currentColor" stroke-width="1.4"/><path d="M7.8 8a2.2 2.2 0 1 1 3 2c-.6.3-.9.7-.9 1.4v.3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="10" cy="13.9" r="0.85" fill="currentColor"/></svg>
+                  Help &amp; support
+                </span>
+                <svg class="accordion-item__chevron" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="m6 8 4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+              <div class="accordion-item__panel" id="acc-panel-help">
+                <div class="accordion-item__panel-inner">
+                  <p>Status looks wrong for your area? Open community chat and ask — someone nearby can usually confirm within minutes. If notifications aren't arriving, check that they're enabled above and that your browser allows notifications for LightWatch.</p>
+                  <p>For anything else, reach the team at <strong>support@lightwatch.gh</strong>.</p>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <p class="footnote">LightWatch — meter &amp; grid status monitoring</p>
+  </main>
+
+  <div class="chat-popup-overlay" id="chatPopupOverlay" aria-hidden="true">
+    <div class="chat-popup" id="chatPopup">
+      <div class="chat-popup__head">
+        <span class="chat-popup__title">Community chat preview</span>
+        <button type="button" class="chat-popup__close" id="chatPopupCloseBtn" aria-label="Close chat preview">×</button>
+      </div>
+      <div class="chat-popup__body" id="chatPopupBody"></div>
+      <div class="chat-popup__note">This preview matches your saved display settings — open Home to chat live.</div>
+    </div>
+  </div>
+
+    </section>
+
+  <!-- Sidebar overlay + panel -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+  <aside class="user-sidebar-panel" id="userSidebarPanel" aria-hidden="true">
+    <button type="button" class="user-sidebar__close" id="userSidebarClose" aria-label="Close profile panel">×</button>
+    <div class="card profile-card profile-card--sidebar">
+      <div class="card__head">
+        <span class="card__title">Logged in as</span>
+        <span class="card__meta">User profile</span>
+      </div>
+      <div class="profile-card__avatar">
+        <span class="avatar avatar--large" id="sidebarAvatar">?</span>
+      </div>
+      <div class="profile-card__info">
+        <div class="profile-card__name" id="sidebarName">Not signed in</div>
+      </div>
+      <div class="profile-card__details">
+        <div><span>Contact</span><strong id="sidebarContact">—</strong></div>
+        <div><span>Location</span><strong id="sidebarRegion">—</strong></div>
+        <div><span>Last login</span><strong id="sidebarLastLogin">—</strong></div>
+      </div>
+      <button type="button" class="btn btn--primary btn--block" onclick="window.LWRouter.navigate('account')">Manage account</button>
+      <button type="button" class="btn btn--ghost btn--block" id="sidebarSignOutBtn" data-action="signout">Log out</button>
+    </div>
+  </aside>
+
+
+
+  <div id="bottom_nav_wrapper">
+    <div class="bottom-icons-container">
+      <a href="#" class="bottom-nav-link" data-nav="home" data-route="home" aria-label="Home">
+        <span class="bottom-nav-icon bottom-nav-icon--user">
+          <img src="./icons/home.png" alt="Home" class="bottom-nav-icon-img bottom-nav-icon-img--light">
+          <img src="./icons/home-gray.png" alt="" aria-hidden="true" class="bottom-nav-icon-img bottom-nav-icon-img--dark">
+        </span>
+        <span class="bottom-nav-label">Home</span>
+      </a>
+      <a href="#" class="bottom-nav-link" data-nav="areas" data-route="areas" aria-label="Areas">
+        <span class="bottom-nav-icon bottom-nav-icon--user">
+          <img src="./images/areas.png?v=1.0.18" alt="Areas" class="bottom-nav-icon-img bottom-nav-icon-img--light">
+          <img src="./images/areas.png?v=1.0.18" alt="" aria-hidden="true" class="bottom-nav-icon-img bottom-nav-icon-img--dark">
+        </span>
+        <span class="bottom-nav-label">Areas</span>
+      </a>
+      <a href="#" class="bottom-nav-link" data-nav="reports" data-route="reports" aria-label="Reports">
+        <span class="bottom-nav-icon bottom-nav-icon--user">
+          <img src="./icons/report_2.png" alt="reports" class="bottom-nav-icon-img bottom-nav-icon-img--light">
+          <img src="./icons/report-gray.png" alt="" aria-hidden="true" class="bottom-nav-icon-img bottom-nav-icon-img--dark">
+        </span>
+        <span class="bottom-nav-label">Reports</span>
+      </a>
+      <button type="button" class="bottom-nav-link bottom-nav-link--button" id="bottomNavUserBtn" data-nav="account" aria-label="User profile">
+        <span class="bottom-nav-icon bottom-nav-icon--user">
+          <img src="./icons/user.png" alt="You" class="bottom-nav-icon-img bottom-nav-icon-img--light">
+          <img src="./icons/user - gray.png" alt="" aria-hidden="true" class="bottom-nav-icon-img bottom-nav-icon-img--dark">
+        </span>
+        <span class="bottom-nav-label">Me</span>
+      </button>
+    </div>
+  </div>
+  
+
+  </div>
+
+  <!-- ==== JS: config + utils + services (order matters: classic
+       scripts, each depends on globals the previous one defined) ==== -->
+  <script src="./js/config.js"></script>
+  <script src="./js/utils/constants.js"></script>
+  <script src="./js/utils/validators.js"></script>
+  <script src="./js/utils/helpers.js"></script>
+  <script src="./js/services/auth.js"></script>
+  <script src="./js/services/storage.js"></script>
+  <script src="./js/services/cache.js"></script>
+  <script src="./js/services/api.js"></script>
+  <script src="./js/services/push.js"></script>
+
+  <!-- ==== JS: cross-cutting components ==== -->
+  <script src="./js/components/theme.js"></script>
+  <script src="./js/components/nav.js"></script>
+  <script src="./js/components/notification.js"></script>
+  <script src="./js/components/analytics.js"></script>
+
+  <!-- ==== JS: views (each wrapped so it can coexist with the others
+       in one document — see the header comment in each file) ==== -->
+  <script src="./js/views/onboarding.js"></script>
+  <script src="./js/views/login.js"></script>
+  <script src="./js/views/signup.js"></script>
+  <script src="./js/views/verification.js"></script>
+  <script src="./js/views/home-reminder.js"></script>
+  <script src="./js/views/chat.js"></script>
+  <script src="./js/views/home.js"></script>
+  <script src="./js/views/lightstatus.js"></script>
+  <script src="./js/views/profile.js"></script>
+  <script src="./js/views/areas.js"></script>
+  <script src="./js/views/reports.js"></script>
+  <script src="./js/views/account.js"></script>
+  <!-- views/dashboard.js intentionally not included — see that file's
+       header comment: it was never wired into any current page. -->
+
+  <!-- ==== JS: router — must load LAST, after every view has
+       registered itself on window.LWViews ==== -->
+  <script src="./js/app.js"></script>
+
 </body>
 </html>

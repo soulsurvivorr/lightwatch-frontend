@@ -1,0 +1,4 @@
+/* Sidebar/profile-card presentation lives in views/home.css
+   ("Profile card: sign-out state, sidebar trigger interactivity")
+   since it was written there in the original app and is shared by
+   every authenticated view. Kept there rather than duplicated. */

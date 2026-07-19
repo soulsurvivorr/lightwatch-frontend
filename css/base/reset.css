@@ -1,0 +1,35 @@
+/* ============================================================
+   Reset
+   ============================================================ */
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  /*overscroll-behavior: none;*/
+  touch-action: pan-y;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Kills Android's default translucent blue/grey tap-highlight rectangle
+   on every button and link app-wide (Chrome/Samsung Internet draw this
+   on any tappable element unless it's suppressed — iOS doesn't have
+   this artifact, which is why it only ever showed up on Android).
+   Individual components (e.g. .bottom-nav-link) already set this
+   locally; this is now the app-wide floor so nothing new needs to
+   remember to opt in. */
+/* Was only "button, a" before — that missed every checkbox-style
+   control in the app (Remember Me toggle, notify-updates toggle, and
+   any future ones), since those are built from <label>/<input>, not
+   <button>/<a>. That gap is exactly why tapping a checkmark still
+   flashed the default Android highlight even though buttons didn't. */
+button, a, label, input, select, [role="button"] {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+/* ============================================================

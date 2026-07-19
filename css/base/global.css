@@ -1,0 +1,103 @@
+/* Auth visibility gates + general utility classes, shared across every view. */
+
+/* ============================================================
+   Auth visibility gates — shared across every page (auth.js).
+
+   .auth-check: applied to <html> before the page's own auth
+   guard script has decided whether this visitor belongs here.
+   Removed (or the whole page redirected) synchronously by that
+   guard, so real content never paints for someone who shouldn't
+   see it — no flash of stale/guest data on load.
+
+   .lw-bfcache-hide: applied to <html> on 'pagehide' (auth.js),
+   right before the browser freezes the page for the
+   back/forward cache. If a back/forward gesture restores that
+   frozen frame for even a moment before the forced reload takes
+   over, this keeps it blank instead of showing whatever was on
+   screen the instant the user navigated away — which, right
+   after a sign-out, could be another account's data.
+   ============================================================ */
+html.auth-check body,
+html.lw-bfcache-hide body {
+  visibility: hidden !important;
+}
+
+@media (min-width: 721px) {
+  /* Hard guarantee: vertical scrolling must always work at desktop
+     widths. This overrides anything else in the cascade (short of an
+     inline style set by JS) so it can't be silently defeated by a
+     stray rule elsewhere. */
+  html, body {
+    overflow-y: auto !important;
+    height: auto !important;
+  }
+}
+/* body / heading / link / list base rules moved to base/typography.css */
+
+/* ============================================================
+
+/* ============================================================
+   Utility
+   ============================================================ */
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+.login-form-side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 25px 32px 48px 32px;
+  padding-top: calc(25px + env(safe-area-inset-top, 0px));
+  padding-bottom: calc(48px + env(safe-area-inset-bottom, 0px));
+  background-color: var(--bg-panel);
+}
+
+/* Desktop/laptop theme toggle (bottom-right) */
+.lw-theme-toggle {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 120;
+  border: 1px solid var(--border-soft);
+  background: color-mix(in srgb, var(--bg-panel) 92%, transparent);
+  color: var(--text-bright);
+  border-radius: 999px;
+  height: 44px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+}
+
+.lw-theme-toggle__icon {
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.lw-theme-toggle:hover {
+  border-color: color-mix(in srgb, var(--brand) 45%, var(--border-soft));
+}
+
+@media (max-width: 1023px) {
+  .lw-theme-toggle {
+    display: none;
+  }
+}
+
+/* ============================================================

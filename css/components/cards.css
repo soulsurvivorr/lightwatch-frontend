@@ -1,0 +1,33 @@
+/* ============================================================
+   Cards & panels
+   ============================================================ */
+
+.card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  padding: 22px;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
+}
+
+.card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0px;
+  gap: 12px;
+}
+
+.card__title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-bright);
+}
+
+.card__meta {
+  font-size: 0.78rem;
+  color: var(--text-faint);
+  margin: 0;
+}
+
+/* ============================================================

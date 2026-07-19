@@ -1,0 +1,16 @@
+/* ============================================================
+   Shared form-field primitives.
+   NOTE: most form styling in this app was historically written
+   per-view (login.css .field, signup.css .prompt-inputs,
+   verification.css .otp-box). Those stay in their view files —
+   moving them here would risk behavior/appearance drift without a
+   visual re-check. This file is the home for genuinely cross-view
+   primitives going forward.
+   ============================================================ */
+
+.form-error {
+  color: #c9302c;
+  font-size: 0.78rem;
+  min-height: 1em;
+  margin: 4px 0 0;
+}

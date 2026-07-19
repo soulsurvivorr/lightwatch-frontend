@@ -1,0 +1,155 @@
+/* ============================================================
+   Top navigation bar (dashboard + locations)
+   ============================================================ */
+
+.topbar {
+  border-bottom: 1px solid var(--border-soft);
+  background: linear-gradient(160deg, var(--dark-bg), var(--dark-bg-mid) 140%);
+  backdrop-filter: blur(6px);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  /* Extends the topbar's own dark background up underneath the status
+     bar / Dynamic Island / camera cutout instead of stopping short of
+     it (that gap is what read as "other apps reach further up than
+     ours"). Requires viewport-fit=cover in the page's <meta
+     name="viewport"> tag — without it this env() resolves to 0 and
+     nothing changes. The inner nav content keeps its own normal
+     padding (.topbar__inner below) so links/logo/avatar stay clear of
+     the notch; only the background bleeds under it. */
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.topbar__inner {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  gap: 24px;
+}
+
+.topbar__brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.topbar__brand p {
+  font-size: 1rem;
+  font-weight: 600;
+  color: white;
+  margin: 0;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.brand__mark {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, var(--teal), var(--teal-dim));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  color: white;
+  font-weight: 700;
+}
+
+.brand span {
+  color: white;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.nav__link {
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 0.92rem;
+  color: white;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.nav__link:hover {
+  background: var(--bg-panel-raised);
+  color: var(--text-bright);
+}
+
+.nav__link--active {
+  color: var(--teal);
+  background: var(--teal-dim);
+}
+
+.topbar__user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--bg-panel-raised);
+  border: 1px solid var(--border-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  color: var(--teal);
+  flex-shrink: 0;
+}
+
+.avatar svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.avatar-name {
+  color: white;
+}
+
+/* Mobile nav toggle (CSS-only, no JS: hidden checkbox technique) */
+
+.nav-toggle {
+  display: none;
+}
+
+.nav-toggle-label {
+  display: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-soft);
+  color: white;
+}
+
+.nav-toggle-label .bar {
+  display: block;
+  width: 20px;
+  height: 2px;
+  background: /*var(--text-bright)*/ rgb(206, 207, 206);
+  margin: 4px 0;
+  border-radius: 2px;
+}
+
+/* ============================================================

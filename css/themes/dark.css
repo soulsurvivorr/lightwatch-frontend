@@ -1,0 +1,26 @@
+/* Dark theme token overrides (desktop/laptop only — see app-shell
+   media query gating in the original variables.css) */
+
+:root[data-theme="dark"] {
+  --bg-deep: #0f1318;
+  --bg-panel: #161b22;
+  --bg-panel-raised: #1b212b;
+  --border-soft: #2a3240;
+  --border-strong: #3a4759;
+  --dark-bg: #0b1016;
+  --dark-bg-mid: #151d28;
+  --text-bright: #eef3fb;
+  --text-muted: #bdc8da;
+  --text-faint: #90a0b8;
+  --font-display: "Sora", "Segoe UI", sans-serif;
+  --font-body: "Manrope", "Segoe UI", sans-serif;
+
+  /* Higher-contrast nav appearance for dark mode */
+  --bottom-nav-surface: linear-gradient(165deg, rgba(46, 55, 69, 0.96), rgba(28, 35, 46, 0.94));
+  --bottom-nav-border: rgba(153, 178, 218, 0.45);
+  --bottom-nav-shadow: 0 16px 36px rgba(0, 0, 0, 0.52);
+  --bottom-nav-label: #c2d6f2;
+  --bottom-nav-label-active: #6eead7;
+  --bottom-nav-active-bg: rgba(84, 219, 199, 0.22);
+  --bottom-nav-icon-active-bg: rgba(84, 219, 199, 0.25);
+}

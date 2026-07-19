@@ -1,0 +1,28 @@
+/* ============================================================
+   Toast notifications (#lw-toast) — shown via window.lwToast(),
+   see js/components/notification.js.
+   ============================================================ */
+
+/* ---- Notification toast ---- */
+#lw-toast {
+  position: fixed;
+  bottom: 90px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--dark-bg);
+  color: white;
+  padding: 11px 20px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  border: 1px solid var(--teal);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  z-index: 9998;
+  opacity: 0;
+  transition: opacity 0.3s, transform 0.3s;
+  pointer-events: none;
+  white-space: nowrap;
+}
+#lw-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}

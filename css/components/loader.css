@@ -1,0 +1,229 @@
+/* ============================================================
+   Boot / route-transition loader (spinning ring + bolt mark)
+   ============================================================ */
+
+.lw-boot-loader {
+  display: none !important;
+}
+
+/* ------------------------------------------------------------
+   Full-screen skeleton
+   A separate shape-for-shape stand-in for the page content,
+   built from the same layout classes (.hero-banner, .card,
+   .location-page-grid, etc.) so it lines up pixel-for-pixel
+   with the real thing, just with .skel blocks instead of text.
+  Swaps with #realPageContent based on .page-data-loading — see the
+   two rules right below.
+   ------------------------------------------------------------ */
+
+#pageSkeleton {
+  display: none;
+  opacity: 1;
+  /* Was an instant display:none the moment .page-data-loading came
+     off body — real content and skeleton hard-swapped in the same
+     frame, which is the "not smooth" handoff. profile.js's
+     hideProfileLoader() now adds .lw-skel-fading a beat before
+     removing .page-data-loading, so this fades out first and
+     #realPageContent's existing lw-content-reveal animation (see
+     home.html's <head>) fades/slides the real page in right after —
+     a clean crossfade instead of a snap. */
+  transition: opacity 0.2s ease;
+}
+
+.page-data-loading #pageSkeleton {
+  display: block;
+}
+
+#pageSkeleton.lw-skel-fading {
+  opacity: 0;
+}
+
+.page-data-loading #realPageContent {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #pageSkeleton {
+    transition: none;
+  }
+}
+
+.skel {
+  display: block;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(100deg, var(--border-soft) 22%, var(--bg-panel-raised) 50%, var(--border-soft) 78%);
+  background-size: 220% 100%;
+  animation: skel-sweep 1.6s ease-in-out infinite;
+}
+
+.skel-line {
+  height: 14px;
+  border-radius: 6px;
+}
+
+.skel-pill {
+  width: 92px;
+  height: 26px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.skel-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.skel-circle {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.skel-circle--lg {
+  width: 72px;
+  height: 72px;
+}
+
+.skel-block {
+  width: 100%;
+  border-radius: var(--radius-md);
+}
+
+/* Gentle stagger so the sweep doesn't look perfectly synced
+   across every block on the screen — reads as more alive. */
+.skel:nth-of-type(3n+2) { animation-delay: 0.12s; }
+.skel:nth-of-type(3n+3) { animation-delay: 0.24s; }
+
+@keyframes skel-sweep {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skel {
+    animation: none;
+  }
+}
+
+.lw-boot-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 9997;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at 20% 15%, rgba(61, 217, 194, 0.14), transparent 34%),
+    radial-gradient(circle at 80% 85%, rgba(214, 162, 74, 0.14), transparent 34%),
+    rgba(7, 10, 28, 0.78);
+  backdrop-filter: blur(10px);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.08s ease, visibility 0.08s ease;
+}
+
+.lw-loader-orbit {
+  position: relative;
+  width: 84px;
+  height: 84px;
+  display: grid;
+  place-items: center;
+}
+
+.lw-loader-halo {
+  position: absolute;
+  inset: -14px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(61, 217, 194, 0.25), transparent 70%);
+  animation: lw-halo-breathe 1.3s ease-in-out infinite;
+}
+
+.lw-loader-ring {
+  position: absolute;
+  inset: 0;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.12));
+}
+
+.lw-loader-track,
+.lw-loader-arc {
+  fill: none;
+  stroke-linecap: round;
+}
+
+.lw-loader-track {
+  stroke: rgba(214, 162, 74, 0.2);
+  stroke-width: 1;
+}
+
+.lw-loader-arc {
+  stroke-width: 1;
+  stroke-dasharray: 58 168;
+  animation: lw-arc-orbit 0.78s linear infinite;
+  transform-origin: 42px 42px;
+}
+
+.lw-loader-arc--1 {
+  stroke: #f2b33d;
+  animation-duration: 0.72s;
+}
+
+.lw-loader-arc--2 {
+  stroke: #3dd9c2;
+  animation-duration: 0.88s;
+  animation-direction: reverse;
+}
+
+.lw-loader-arc--3 {
+  stroke: #d6a24a;
+  animation-duration: 1.04s;
+}
+
+.lw-loader-core {
+  position: relative;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  display: grid;
+  place-items: center;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+  animation: lw-core-pulse 0.72s ease-in-out infinite;
+}
+
+.lw-loader-core svg {
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+
+@keyframes lw-arc-orbit {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes lw-halo-breathe {
+  0%, 100% { transform: scale(0.92); opacity: 0.7; }
+  50%      { transform: scale(1.08); opacity: 1; }
+}
+
+@keyframes lw-core-pulse {
+  0%, 100% { transform: scale(0.96); }
+  50%      { transform: scale(1.04); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lw-loader-arc,
+  .lw-loader-halo,
+  .lw-loader-core {
+    animation: none;
+  }
+}
+
+/* Home now relies on skeleton loading rather than this full-screen overlay. */
+.app-loading .lw-boot-loader {
+  opacity: 0;
+  visibility: hidden;
+}
+

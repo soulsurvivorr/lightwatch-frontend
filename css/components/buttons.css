@@ -1,0 +1,57 @@
+/* ============================================================
+   Buttons & form elements
+   ============================================================ */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 20px;
+  border-radius: var(--radius-md);
+  font-size: 0.92rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: transform 0.1s ease, opacity 0.15s ease;
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+.btn--primary {
+  background: var(--brand);
+  color: white;
+}
+
+.btn--primary:hover {
+  background: var(--brand-dim);
+  opacity: 1;
+}
+
+.btn--ghost {
+  background: transparent;
+  border-color: var(--border-strong);
+  color: var(--text-muted);
+}
+
+.btn--ghost:hover {
+  border-color: var(--brand2);
+  color: var(--brand2);
+}
+
+.btn--block {
+  width: 100%;
+}
+
+
+.link {
+  color: var(--teal);
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+/* ============================================================

@@ -1,0 +1,11 @@
+/* ============================================================
+   Generic modal behavior shared by every overlay (onboarding,
+   home-reminder, location-expand, chat popup, sidebar panel).
+   Each overlay's own visual design still lives in its view CSS
+   file — this is just the shared "lock page scroll while a
+   modal is open" primitive.
+   ============================================================ */
+
+body.modal-open {
+  overflow: hidden;
+}

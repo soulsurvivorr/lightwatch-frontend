@@ -7,7 +7,7 @@
       "launchAutoHide": false
     },
     "SystemBars": {
-      "insetsHandling": "css",
+      "insetsHandling": "disable",
       "style": "DARK"
     }
   }

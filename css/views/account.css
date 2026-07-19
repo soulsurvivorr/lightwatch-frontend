@@ -1,0 +1,820 @@
+/* ============================================================
+   Account view — extracted from account.html's inline <style>
+   block (it was never a separate file in the original app).
+   ============================================================ */
+
+    .account-grid {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+
+    #accountSkeleton {
+      display: none;
+      opacity: 1;
+      /* See home.css's #pageSkeleton for why this exists — fades out
+         instead of hard-cutting via display:none the instant
+         .page-data-loading is removed. profile.js's hideProfileLoader()
+         adds .lw-skel-fading first. */
+      transition: opacity 0.2s ease;
+    }
+
+    .page-data-loading #accountSkeleton {
+      display: block;
+    }
+
+    #accountSkeleton.lw-skel-fading {
+      opacity: 0;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      #accountSkeleton {
+        transition: none;
+      }
+    }
+
+    .page-data-loading #accountRealContent {
+      display: none;
+    }
+
+    #accountRealContent.lw-content-reveal {
+      animation: lwContentReveal 0.4s cubic-bezier(.19,1,.22,1) both;
+    }
+
+    @keyframes lwContentReveal {
+      0%   { opacity: 0; transform: translateY(8px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      #accountRealContent.lw-content-reveal {
+        animation: none;
+      }
+    }
+
+    .page-data-loading .topbar,
+    .page-data-loading #bottom_nav_wrapper {
+      pointer-events: none;
+    }
+
+    /* ---- Profile card ---- */
+    .profile-hero {
+      text-align: center;
+      padding: 20px 20px 16px;
+    }
+
+    .profile-hero__avatar {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--teal), var(--teal-dim));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      font-family: var(--font-display);
+      font-size: 1.2rem;
+      color: white;
+      font-weight: 700;
+      margin: 0 auto 14px;
+      border: 3px solid var(--border-soft);
+    }
+
+    .profile-hero__avatar svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .profile-hero__name {
+      font-family: var(--font-display);
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--text-bright);
+      margin-bottom: 3px;
+    }
+
+    .profile-hero__handle {
+      font-size: 0.78rem;
+      color: var(--text-faint);
+      margin-bottom: 10px;
+    }
+
+    .profile-hero__badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: var(--teal-dim);
+      color: var(--teal);
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+
+    /* ---- Detail rows ---- */
+    .detail-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      margin-top: 4px;
+    }
+
+    .detail-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 0;
+      border-bottom: 1px solid var(--border-soft);
+      gap: 12px;
+    }
+
+    .detail-row:last-child { border-bottom: none; }
+
+    .detail-row__label {
+      font-size: 0.82rem;
+      color: var(--text-faint);
+      flex-shrink: 0;
+    }
+
+    .detail-row__value {
+      font-size: 0.88rem;
+      color: var(--text-bright);
+      font-weight: 500;
+      text-align: right;
+    }
+
+    /* ---- Stats row ---- */
+    .account-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .account-stat {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      text-align: center;
+    }
+
+    .account-stat__value {
+      font-family: var(--font-display);
+      font-size: 1.4rem;
+      font-weight: 600;
+      color: var(--text-bright);
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .account-stat__label {
+      font-size: 0.72rem;
+      color: var(--text-faint);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* ---- Section headings inside right column ---- */
+    .section-label {
+      font-size: 0.72rem;
+      color: var(--text-faint);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 10px;
+      margin-top: 4px;
+    }
+
+    /* ---- Preference toggles ---- */
+    .pref-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 13px 0;
+      border-bottom: 1px solid var(--border-soft);
+      gap: 16px;
+    }
+
+    .pref-row:last-child { border-bottom: none; }
+
+    .pref-row__info { flex: 1; }
+
+    .pref-row__title {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--text-bright);
+      margin-bottom: 2px;
+    }
+
+    .pref-row__sub {
+      font-size: 0.78rem;
+      color: var(--text-faint);
+    }
+
+    /* Toggle switch */
+    .toggle {
+      position: relative;
+      width: 42px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+
+    .toggle input { opacity: 0; width: 0; height: 0; }
+
+    .toggle__track {
+      position: absolute;
+      inset: 0;
+      border-radius: 999px;
+      background: var(--border-strong);
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .toggle__track::after {
+      content: "";
+      position: absolute;
+      left: 3px;
+      top: 3px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: white;
+      transition: transform 0.2s ease;
+    }
+
+    .toggle input:checked + .toggle__track {
+      background: var(--teal);
+    }
+
+    .toggle input:checked + .toggle__track::after {
+      transform: translateX(18px);
+    }
+
+    /* ---- Danger zone ---- */
+    .danger-zone {
+      border: 1px solid var(--red-dim);
+      border-radius: var(--radius-lg);
+      padding: 18px 20px;
+      margin-top: 20px;
+    }
+
+    .danger-zone__title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--red);
+      margin-bottom: 4px;
+    }
+
+    .danger-zone__sub {
+      font-size: 0.8rem;
+      color: var(--text-faint);
+      margin-bottom: 14px;
+    }
+
+    @media (max-width: 720px) {
+      .account-grid {
+        grid-template-columns: 1fr;
+      }
+      .account-stats {
+        grid-template-columns: 1fr 1fr;
+      }
+      /* Mobile only: flatten the two grid columns so every card becomes
+         a direct grid item and can be reordered independently. Desktop
+         keeps the original two-column layout untouched. */
+      .account-grid > div {
+        display: contents;
+      }
+      #accountSignOutZone {
+        order: 99;
+        margin-top: 0;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .account-stats {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 430px) {
+      .account-stat {
+        padding: 10px 12px;
+      }
+
+      .account-stat__value {
+        font-size: 1.05rem;
+      }
+
+      .account-stat__label,
+      .section-label,
+      .detail-row__label,
+      .pref-row__sub,
+      .danger-zone__sub {
+        font-size: 0.72rem;
+      }
+
+      .detail-row__value,
+      .pref-row__title,
+      .danger-zone__title {
+        font-size: 0.82rem;
+      }
+
+      .detail-row,
+      .pref-row {
+        padding: 9px 0;
+      }
+    }
+
+    /* ============================================================
+       MODERN ACCOUNT UI — visual pass over the structure above.
+       Keeps the same design tokens (--teal, --bg-panel, etc.) so it
+       stays on-brand with the rest of the app, just more considered:
+       icon badges, softer elevation, clearer empty/locked states.
+       ============================================================ */
+
+    .account-grid .card {
+      border-radius: var(--radius-lg, 16px);
+      box-shadow: 0 1px 0 rgba(255,255,255,0.02) inset, 0 10px 24px -18px rgba(0,0,0,0.5);
+      transition: box-shadow 0.2s ease;
+    }
+
+    .profile-hero {
+      position: relative;
+      background:
+        radial-gradient(120% 140% at 50% -10%, color-mix(in srgb, var(--teal) 22%, transparent), transparent 60%);
+    }
+
+    .profile-hero__ring {
+      width: 68px;
+      height: 68px;
+      margin: 0 auto 10px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: conic-gradient(from 200deg, var(--teal), var(--brand), var(--teal));
+      padding: 3px;
+    }
+
+    .profile-hero__ring .profile-hero__avatar {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      border: 3px solid var(--bg-panel);
+    }
+
+    .profile-hero__avatar {
+      box-shadow: 0 8px 22px -8px color-mix(in srgb, var(--teal) 60%, transparent);
+    }
+
+    .profile-details-card .section-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+
+    .profile-details-card .section-label::before {
+      content: "";
+      width: 12px;
+      height: 2px;
+      border-radius: 2px;
+      background: var(--teal);
+      display: inline-block;
+    }
+
+    .detail-row {
+      gap: 10px;
+    }
+
+    .detail-row__icon {
+      width: 22px;
+      height: 22px;
+      border-radius: 7px;
+      background: var(--bg-panel-raised, var(--bg-panel));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.68rem;
+      flex-shrink: 0;
+    }
+
+    .detail-row__label {
+      flex: 1;
+    }
+
+    #cityEditCard {
+      overflow: hidden;
+      transition: opacity 0.25s ease, max-height 0.3s ease, margin 0.3s ease, padding 0.3s ease;
+    }
+
+    #cityEditCard.card--collapsed {
+      opacity: 0;
+      max-height: 0;
+      margin-top: 0 !important;
+      margin-bottom: 0 !important;
+      padding-top: 0;
+      padding-bottom: 0;
+      border-width: 0;
+      pointer-events: none;
+    }
+
+    .card__head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .card__icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      flex-shrink: 0;
+      border-radius: 10px;
+      background: var(--teal-dim);
+      font-size: 0.95rem;
+    }
+
+    .card__icon svg { width: 17px; height: 17px; color: var(--teal); }
+
+    .card__head-text { display: flex; flex-direction: column; }
+
+    /* ---- Collapse chevron on a card header (My locations, Notifications) ---- */
+    .card__head { position: relative; }
+    .card__collapse-btn {
+      margin-left: auto;
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 1px solid var(--border-soft);
+      background: none;
+      color: var(--text-faint);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    }
+    .card__collapse-btn:hover { background: var(--border-soft); color: var(--text-bright); }
+    .card__collapse-chevron { width: 15px; height: 15px; transition: transform 0.25s ease; }
+    .card__collapse-btn[aria-expanded="false"] .card__collapse-chevron { transform: rotate(-90deg); }
+    .card__collapse-body {
+      overflow: hidden;
+      transition: max-height 0.3s ease, opacity 0.2s ease;
+    }
+    .card__collapse-body[data-collapsed="true"] { opacity: 0; }
+
+    /* ---- Toggle — slightly larger target + smoother knob ---- */
+    .toggle { width: 44px; height: 25px; }
+    .toggle__track::after { width: 19px; height: 19px; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+    .toggle input:checked + .toggle__track::after { transform: translateX(19px); }
+    .toggle__track { transition: background 0.2s ease, box-shadow 0.2s ease; }
+    .toggle input:focus-visible + .toggle__track { box-shadow: 0 0 0 3px color-mix(in srgb, var(--teal) 35%, transparent); }
+
+    /* ---- Notifications: "enabled" resting state ---- */
+    .btn--enabled-state {
+      background: var(--teal-dim) !important;
+      border-color: transparent !important;
+      color: var(--teal) !important;
+      cursor: default;
+      opacity: 1 !important;
+    }
+    .btn__check {
+      display: inline-flex;
+      margin-right: 4px;
+      font-weight: 700;
+    }
+
+    /* ---- Accordion (About & support) ---- */
+    .accordion-list { display: flex; flex-direction: column; }
+    .accordion-item { border-bottom: 1px solid var(--border-soft); }
+    .accordion-item:last-child { border-bottom: none; }
+    .accordion-item__trigger {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 13px 2px;
+      font-size: 0.88rem;
+      font-weight: 500;
+      color: var(--text-bright);
+      text-align: left;
+    }
+    .accordion-item__trigger-text {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .accordion-item__trigger-text svg {
+      width: 16px;
+      height: 16px;
+      color: var(--teal);
+      flex-shrink: 0;
+    }
+    .accordion-item__chevron {
+      width: 16px;
+      height: 16px;
+      color: var(--text-faint);
+      flex-shrink: 0;
+      transition: transform 0.25s ease;
+    }
+    .accordion-item__trigger[aria-expanded="true"] .accordion-item__chevron {
+      transform: rotate(180deg);
+      color: var(--teal);
+    }
+    .accordion-item__panel {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+    }
+    .accordion-item__panel-inner {
+      padding: 0 2px 16px 26px;
+      font-size: 0.82rem;
+      color: var(--text-faint);
+      line-height: 1.55;
+    }
+    .accordion-item__panel-inner p { margin: 0 0 10px; }
+    .accordion-item__panel-inner p:last-child { margin-bottom: 0; }
+    .accordion-item__panel-inner strong { color: var(--text-bright); }
+
+    /* ---- Locations list ---- */
+    .location-row-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .location-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px 12px;
+      padding: 14px 16px;
+      border-radius: var(--radius-md, 12px);
+      background: var(--bg-panel);
+      border: 1px solid var(--border-soft);
+      transition: border-color 0.15s ease;
+    }
+    .location-row:hover { border-color: var(--border-strong); }
+    .location-row__icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--teal-dim);
+      color: var(--teal);
+    }
+    .location-row__icon svg { width: 18px; height: 18px; }
+    /* Warm amber accent (matches the second-location panel on Home)
+       instead of flat gray, so a saved second spot reads as its own
+       clearly-styled thing rather than a muted/disabled variant. */
+    .location-row__icon--secondary { background: rgba(214, 162, 74, 0.14); color: #C77F3B; }
+    .location-row--secondary { border-color: rgba(214, 162, 74, 0.22); background: linear-gradient(135deg, rgba(214,162,74,0.05), transparent 60%); }
+    .location-row--secondary:hover { border-color: rgba(214, 162, 74, 0.4); }
+    .location-row__body {
+      flex: 1 1 160px;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .location-row__name {
+      font-size: 0.95rem;
+      font-weight: 600;
+      line-height: 1.35;
+      color: var(--text-bright);
+      overflow-wrap: break-word;
+    }
+    .location-row__badge {
+      display: inline-flex;
+      align-items: center;
+      align-self: flex-start;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 0.68rem;
+      line-height: 1.6;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--teal);
+      background: var(--teal-dim);
+    }
+    .location-row__badge--secondary { color: #C77F3B; background: rgba(214, 162, 74, 0.14); }
+    .location-row__actions {
+      display: flex;
+      gap: 6px;
+      flex-shrink: 0;
+      margin-left: auto;
+    }
+    .location-row__actions button {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: none;
+      border: 1px solid var(--border-soft);
+      color: var(--text-faint);
+      font-size: 0.78rem;
+      line-height: 1.4;
+      cursor: pointer;
+      padding: 7px 11px;
+      border-radius: 8px;
+      white-space: nowrap;
+      transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    }
+    .location-row__actions button svg { width: 14px; height: 14px; flex-shrink: 0; }
+    .location-row__actions button:hover {
+      color: var(--text-bright);
+      background: var(--border-soft);
+      border-color: var(--border-strong);
+    }
+    /* Below ~380px the icon+label buttons crowd the row and force awkward
+       wraps — drop to icon-only with an accessible label instead of
+       letting text clip or the row balloon in height. */
+    @media (max-width: 380px) {
+      .location-row { padding: 12px 12px; }
+      .location-row__actions button span { display: none; }
+      .location-row__actions button {
+        padding: 7px;
+        width: 32px;
+        height: 32px;
+        justify-content: center;
+      }
+    }
+
+    .secondary-location { margin-top: 12px; }
+    .secondary-location__add {
+      width: 100%;
+      border: 1px dashed var(--border-strong);
+      background: transparent;
+      color: var(--text-faint);
+      border-radius: var(--radius-md);
+      padding: 11px;
+      font-size: 0.84rem;
+      cursor: pointer;
+      transition: border-color 0.15s ease, color 0.15s ease;
+    }
+    .secondary-location__add:hover { border-color: var(--teal); color: var(--teal); }
+    .secondary-location__form {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 10px;
+      padding: 14px;
+      border-radius: var(--radius-md);
+      background: var(--bg-panel);
+      border: 1px solid var(--border-soft);
+    }
+    .secondary-location__row { display: flex; gap: 8px; }
+    .secondary-location__row .form-field { flex: 1; }
+    .secondary-location__actions { display: flex; gap: 8px; margin-top: 2px; }
+    .secondary-location__actions .btn { flex: 1; }
+
+    /* ---- Locked city state ---- */
+    .locked-field {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      border-radius: var(--radius-md);
+      background: var(--bg-panel);
+      border: 1px solid var(--border-soft);
+    }
+    .locked-field__icon {
+      width: 30px; height: 30px; border-radius: 9px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--border-soft); color: var(--text-faint); font-size: 0.9rem;
+    }
+    .locked-field__value { font-size: 0.9rem; color: var(--text-bright); font-weight: 500; }
+    .locked-field__sub { font-size: 0.74rem; color: var(--text-faint); margin-top: 2px; }
+
+    /* ---- Display prefs: extra controls ---- */
+    .swatch-row { display: flex; gap: 8px; margin-top: 4px; }
+    .swatch {
+      width: 26px; height: 26px; border-radius: 50%; cursor: pointer;
+      border: 2px solid transparent; padding: 0;
+    }
+    .swatch[aria-pressed="true"] { border-color: var(--text-bright); }
+    .density-select {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-soft);
+      color: var(--text-bright);
+      border-radius: var(--radius-md);
+      padding: 8px 10px;
+      font-size: 0.82rem;
+    }
+
+    /* ---- Compact chat popup preview ---- */
+    .chat-popup-overlay {
+      position: fixed; inset: 0; z-index: 9998;
+      background: rgba(0,0,0,0.4);
+      display: flex; align-items: flex-end; justify-content: center;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.18s ease;
+    }
+    .chat-popup-overlay--open { opacity: 1; pointer-events: auto; }
+    .chat-popup {
+      width: 100%; max-width: 420px;
+      background: var(--bg-panel, #20242c);
+      border: 1px solid var(--border-soft);
+      border-radius: 18px 18px 0 0;
+      max-height: 72vh;
+      display: flex; flex-direction: column;
+      transform: translateY(16px);
+      transition: transform 0.2s ease;
+    }
+    .chat-popup-overlay--open .chat-popup { transform: translateY(0); }
+    @media (min-width: 640px) {
+      .chat-popup-overlay { align-items: center; }
+      .chat-popup { border-radius: 18px; max-height: 80vh; }
+    }
+    .chat-popup__head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 16px; border-bottom: 1px solid var(--border-soft);
+    }
+    .chat-popup__title { font-size: 0.92rem; font-weight: 600; color: var(--text-bright); }
+    .chat-popup__close { background: none; border: none; color: var(--text-faint); font-size: 1.1rem; cursor: pointer; }
+    .chat-popup__body { padding: 14px 16px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 8px; }
+    .chat-bubble {
+      max-width: 78%;
+      padding: 8px 12px;
+      border-radius: 14px;
+      font-size: 0.82rem;
+      color: var(--text-bright);
+      background: var(--border-soft);
+      align-self: flex-start;
+    }
+    .chat-bubble--mine { align-self: flex-end; background: var(--teal-dim); color: var(--teal); }
+    .chat-popup--compact .chat-bubble { padding: 5px 10px; font-size: 0.76rem; border-radius: 10px; }
+    .chat-popup__note {
+      padding: 10px 16px; font-size: 0.72rem; color: var(--text-faint);
+      border-top: 1px solid var(--border-soft);
+    }
+
+    /* ============================================================
+       NARROW PHONES (iPhone SE ~375px and similar)
+       Placed last on purpose: several rules above set the same
+       properties without a media query, so this block has to come
+       after them in source order to actually win the cascade at
+       these widths.
+       ============================================================ */
+    @media (max-width: 380px) {
+      .profile-hero {
+        padding: 14px 14px 12px;
+      }
+      .profile-hero__ring {
+        width: 54px;
+        height: 54px;
+        margin: 0 auto 8px;
+      }
+      .profile-hero__avatar {
+        font-size: 0.95rem;
+        border-width: 2px;
+      }
+      .profile-hero__name {
+        font-size: 0.92rem;
+        margin-bottom: 2px;
+      }
+      .profile-hero__handle {
+        font-size: 0.7rem;
+        margin-bottom: 8px;
+      }
+      .profile-hero__badge {
+        padding: 3px 8px;
+        font-size: 0.66rem;
+      }
+      .profile-details-card > div[style*="padding"] {
+        padding: 0 14px 12px !important;
+      }
+      .section-label {
+        font-size: 0.66rem;
+        margin-bottom: 5px;
+      }
+      .detail-row {
+        padding: 6px 0;
+        gap: 8px;
+      }
+      .detail-row__icon {
+        width: 18px;
+        height: 18px;
+        border-radius: 6px;
+        font-size: 0.6rem;
+      }
+      .detail-row__label {
+        font-size: 0.7rem;
+      }
+      .detail-row__value {
+        font-size: 0.76rem;
+      }
+    }
+  

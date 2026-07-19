@@ -1,0 +1,5 @@
+/* The reports view's .report-list/.report-item/.report-card rules were
+   defined inside the original home.css (loaded on reports.html too) —
+   see views/home.css. Kept there rather than duplicated/split out, to
+   avoid a lossy manual re-split of rules that repeat at multiple
+   breakpoints. This file is kept for structural parity. */
