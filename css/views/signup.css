@@ -539,6 +539,11 @@ body.lw-leaving {
    its own inset one. Also trim a couple of the larger type sizes
    so it needs to grow less often. */
 @media (min-width: 701px) {
+    body:has(#view-signup:not([hidden])) {
+        align-items: center;
+        justify-content: center;
+    }
+
     #view-signup > section {
         max-height: none;
         overflow: visible;
@@ -565,14 +570,8 @@ body.lw-leaving {
 }
 
 /* ===== Responsiveness =====
-   Below 700px this becomes a single fixed card (no page scroll).
-   This base tier is tuned for compact phones (~375-414px wide, e.g.
-   iPhone SE/mini/standard) so the full form fits on one screen.
-   Wider phones (Pro Max-class, ~420px+) get bumped back up in the
-   "roomier" tier below them — otherwise the card reads as too small
-   on devices that actually have plenty of room. overflow-y: auto on
-   `section` stays only as a safety net for unusually short/zoomed
-   viewports; it should not be needed in normal use. */
+   Below 768px this becomes a single fixed card with mobile-safe
+   scrolling and tighter spacing. */
 body:has(#view-signup:not([hidden])) #authShell {
     width: 100%;
     min-height: 100%;
@@ -580,7 +579,7 @@ body:has(#view-signup:not([hidden])) #authShell {
     flex: 1;
 }
 
-@media (max-width: 700px) {
+@media (max-width: 768px) {
     html:has(#view-signup:not([hidden])),
     body:has(#view-signup:not([hidden])) {
         height: 100dvh;
@@ -652,6 +651,10 @@ body:has(#view-signup:not([hidden])) #authShell {
     .user-profile-btn {
         padding: 8px 10px;
         margin-bottom: 6px;
+    }
+
+    #view-signup > section {
+        min-height: 0;
     }
 
     .user-profile-btn img {

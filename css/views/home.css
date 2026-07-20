@@ -27,18 +27,19 @@ body:has(#appShell:not([hidden])) {
       background: linear-gradient(135deg, #1C1F26 0%, #2A2E38 55%, #123D36 100%);
       border-radius: var(--radius-lg);
       padding: 16px 18px 14px;
-      margin-bottom: 14px;
+      margin: 0 0 14px;
       position: relative;
       display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-columns: 1fr;
       grid-template-areas:
-        "eyebrow location"
-        "greeting greeting"
-        "sub sub"
-        "chip chip"
-        "stats stats";
+        "eyebrow"
+        "location"
+        "greeting"
+        "sub"
+        "chip"
+        "stats";
       align-items: start;
-      column-gap: 10px;
+      gap: 12px;
       overflow: hidden;
       border: 1px solid var(--border-soft);
       animation: fadeInUp 0.5s ease both;
@@ -79,7 +80,7 @@ body:has(#appShell:not([hidden])) {
     .hero-banner__stats {
       grid-area: stats;
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: 1fr;
       gap: 12px;
     }
     .hero-stat__value {
@@ -107,7 +108,7 @@ body:has(#appShell:not([hidden])) {
       display: flex;
       align-items: center;
       gap: 7px;
-      justify-self: end;
+      justify-self: start;
       align-self: center;
       background: rgba(255,255,255,0.08);
       border: 1px solid rgba(255,255,255,0.12);
@@ -500,10 +501,14 @@ body:has(#appShell:not([hidden])) {
 /* Single location page layout */
 .location-page-grid {
   display: grid;
-  grid-template-columns: 1.8fr 1fr;
+  grid-template-columns: 1fr;
   gap: 24px;
   align-items: start;
-  margin-bottom: 26px;
+  margin: 0 auto 26px;
+  width: 100%;
+  max-width: var(--max-width);
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .location-primary {
@@ -516,6 +521,7 @@ body:has(#appShell:not([hidden])) {
   display: flex;
   flex-direction: column;
   gap: 9px;
+  min-width: 0;
 }
 
 /* Status hero row (matches markup in home.html inside .location-card) */
@@ -572,7 +578,16 @@ body:has(#appShell:not([hidden])) {
 .location-card__info {
   display: grid;
   gap: 14px;
-  min-width: 240px;
+  min-width: 0;
+}
+
+.location-card__meta-panel {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 10px;
+  min-width: 0;
+  width: 100%;
 }
 
 .location-card__row {
@@ -580,6 +595,7 @@ body:has(#appShell:not([hidden])) {
   justify-content: space-between;
   gap: 10px;
   align-items: center;
+  min-width: 0;
 }
 
 .location-card__label {
@@ -613,6 +629,7 @@ body:has(#appShell:not([hidden])) {
   font-size: 0.84rem;
   font-weight: 600;
   white-space: nowrap;
+  min-width: 0;
 }
 
 .meta-pill::before {
@@ -1215,6 +1232,7 @@ body:has(#appShell:not([hidden])) {
   padding: 30px 22px 24px;
   overflow-y: auto;
   border-left: 1px solid rgba(214, 162, 74, 0.18);
+  display: none;
 }
 
 .user-sidebar-panel--open {
@@ -1224,19 +1242,18 @@ body:has(#appShell:not([hidden])) {
 .sidebar-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(10, 12, 20, 0.28);
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transition: opacity 0.25s ease, visibility 0.25s ease;
-  z-index: 30;
-  backdrop-filter: blur(2px);
-}
+    display: none;
+    background: rgba(10, 12, 20, 0.28);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+    z-index: 30;
+    backdrop-filter: blur(2px);
+  }
 
-.sidebar-overlay--visible {
-  opacity: 1;
-  visibility: visible;
-  pointer-events: auto;
+  .sidebar-overlay--visible {
+    display: none;
 }
 
 /* ---- Second-location detail panel ----
@@ -2128,6 +2145,48 @@ body.lw-location-panel-open .mobile-chat-toggle {
   width: 100%;
 }
 
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 1px;
+}
+
+.field__label {
+  font-size: 0.84rem;
+  color: var(--text-muted);
+}
+
+.field__input-wrap {
+  position: relative;
+}
+
+.field__input {
+  width: 100%;
+  background: var(--bg-deep);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  color: var(--text-bright);
+  font-size: 0.94rem;
+  font-family: var(--font-body);
+}
+
+.field__input::placeholder {
+  color: var(--text-faint);
+}
+
+.field__input:focus {
+  border-color: var(--teal);
+}
+
+.field-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.85rem;
+}
+
 .checkbox-row {
   display: flex;
   align-items: center;
@@ -2252,7 +2311,7 @@ body.lw-location-panel-open .mobile-chat-toggle {
    bottom nav both reliably trigger together.
    ============================================================ */
 
-@media (max-width: 720px) {
+@media (max-width: 768px) {
   .topbar {
     display: none;
   }
@@ -2269,6 +2328,7 @@ body.lw-location-panel-open .mobile-chat-toggle {
     padding: 20px 16px 54px;
     min-height: calc(100vh - 132px);
     animation-duration: 0.18s;
+    display: block;
   }
 
   .page__header {
@@ -2346,12 +2406,12 @@ body.lw-location-panel-open .mobile-chat-toggle {
     gap: 12px;
   }
 
-  .chat-card {
+  #view-home .chat-card {
     position: fixed;
     left: 10px;
     right: 10px;
     top: 10px; /* Stay at the top of the viewport, not the page */
-    bottom: calc(118px + env(safe-area-inset-bottom));
+    bottom: calc(82px + env(safe-area-inset-bottom));
     margin: 0 auto;
     width: auto;
     max-width: 420px;
@@ -2365,7 +2425,7 @@ body.lw-location-panel-open .mobile-chat-toggle {
        top edge — invisible, and with the scroll-lock active, unreachable.
        Sizing off --app-vh with no hard floor means the card always fits
        between its top/bottom anchors, however small that space is. */
-    height: min(44rem, calc(var(--app-vh, 100dvh) - 118px - env(safe-area-inset-bottom) - max(14px, env(safe-area-inset-top)) - 14px));
+    height: min(44rem, calc(var(--app-vh, 100dvh) - 82px - env(safe-area-inset-bottom) - max(14px, env(safe-area-inset-top)) - 14px));
     border-radius: 20px;
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.18);
     background: var(--bg-panel);
@@ -2380,7 +2440,7 @@ body.lw-location-panel-open .mobile-chat-toggle {
     overflow: hidden;
   }
 
-  .chat-card--mobile-open {
+  #view-home .chat-card--mobile-open {
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
@@ -2391,13 +2451,13 @@ body.lw-location-panel-open .mobile-chat-toggle {
   /* Keyboard-aware override — see applyChatKeyboardOffset() in chat.js.
      While the on-screen keyboard is up, chat.js measures the actual
      visible area itself via window.visualViewport (the one API that
-     reliably reports it, keyboard included, on this app's WebView) and
+     reliably reports it, keyboard included, in this app's WebView) and
      writes the result here as --chat-kb-top/--chat-kb-height, instead
      of trusting the top/bottom/height calc above to have already
      accounted for it. That calc block was sometimes leaving the
      input/Send button sitting under the keyboard instead of "flowing
      up" above it like a normal chat app. */
-  .chat-card--keyboard-adjust {
+  #view-home .chat-card--keyboard-adjust {
     top: var(--chat-kb-top, 10px) !important;
     bottom: auto !important;
     height: var(--chat-kb-height, auto) !important;
@@ -2491,7 +2551,7 @@ body.lw-location-panel-open .mobile-chat-toggle {
     display: none;
   }
 
-  .mobile-chat-toggle {
+  #view-home .mobile-chat-toggle {
     position: fixed;
     right: 16px;
     bottom: calc(132px + env(safe-area-inset-bottom));
@@ -2574,6 +2634,13 @@ body.lw-location-panel-open .mobile-chat-toggle {
      in chat.js. */
   body.mobile-chat-open #bottom_nav_wrapper {
     display: none;
+  }
+}
+
+@media (min-width: 769px) {
+  #bottom_nav_wrapper,
+  .mobile-chat-toggle {
+    display: none !important;
   }
 }
 

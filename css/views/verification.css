@@ -151,7 +151,7 @@ main {
     display: flex;
     flex: 1;
     justify-content: center;
-    align-items: center;
+    align-items: stretch;
     margin: 0;
     padding: .6rem .9rem;
     /* body is position:fixed + overflow:hidden (see above) — nothing on
@@ -167,6 +167,12 @@ main {
     padding-bottom: calc(.6rem + env(safe-area-inset-bottom, 0px));
     z-index: 1;
     position: relative;
+    min-height: 0;
+}
+
+main div.verify-card {
+    max-height: min(100%, calc(var(--app-vh, 100dvh) - 132px));
+    overflow-y: auto;
 }
 
 main h2, main p {
@@ -479,15 +485,33 @@ button#continueBtn.is-loading .btn-label {
         font-size: .95rem;
     }
 
+    main {
+        align-items: stretch;
+    }
+
     main div.verify-card {
+        width: 100%;
+        max-width: 100%;
         padding: 1.3rem 1.15rem 1.15rem;
         border-radius: 14px;
+    }
+
+    .verify-hero {
+        max-width: 100%;
+    }
+
+    .otp-boxes {
+        gap: 8px;
     }
 
     .otp-box {
         width: 44px;
         height: 52px;
         font-size: 1.3rem;
+    }
+
+    button#continueBtn {
+        width: 100%;
     }
 }
 

@@ -891,6 +891,7 @@ function initProfileChrome() {
 
     sidebarOverlay?.addEventListener('click', closeSidebar);
     sidebarClose?.addEventListener('click', closeSidebar);
+    window.addEventListener('lw:route-changed', closeSidebar);
 
     loadCurrentUserProfile();
 }

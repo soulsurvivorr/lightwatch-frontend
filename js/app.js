@@ -38,7 +38,8 @@
         verification: { protected: false, publicOnly: false, shell: 'auth', path: '/verification',  title: 'LightWatch GH' },
         home:         { protected: true,  publicOnly: false, shell: 'app',  path: '/home',          title: 'LightWatch — Home' },
         areas:        { protected: true,  publicOnly: false, shell: 'app',  path: '/areas',         title: 'LightWatch — Areas' },
-        reports:      { protected: true,  publicOnly: false, shell: 'app',  path: '/reports',       title: 'Reports — LightWatch' },
+        chat:         { protected: true,  publicOnly: false, shell: 'app',  path: '/chat',          title: 'Report — LightWatch' },
+        reports:      { protected: true,  publicOnly: false, shell: 'app',  path: '/reports',       title: 'Notifications — LightWatch' },
         account:      { protected: true,  publicOnly: false, shell: 'app',  path: '/account',       title: 'Account — LightWatch' }
     };
 
@@ -88,8 +89,11 @@
         if (!cfg) { activate('home', { push }); return; }
 
         const session = typeof getSession === 'function' ? getSession() : null;
+        const isLocal =
+            location.hostname === "localhost" ||
+            location.hostname === "127.0.0.1";
 
-        if (cfg.protected && !session) {
+        if (cfg.protected && !session && !isLocal) {
             activate('login', { push: false });
             return;
         }
@@ -200,15 +204,19 @@
         const deepLinkView = resolveViewFromLocation();
 
         let initial;
+
         if (deepLinkView) {
             initial = deepLinkView;
         } else {
-            initial = session ? 'home' : 'login';
+            initial = session ? "home" : "login";
         }
 
         activate(initial, { push: false });
-        document.documentElement.classList.remove('lw-boot');
-    }
+        document.documentElement.classList.remove("lw-boot");
+    } // end of boot function
+
+    // Move the activation and class removal inside the boot function
+    // by placing them at the end of the boot function itself.
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', boot);

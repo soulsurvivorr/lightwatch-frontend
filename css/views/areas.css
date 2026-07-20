@@ -115,6 +115,9 @@
 .areas-board {
   margin-bottom: 18px;
   padding: 9px 10px 7px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .areas-board .card__head {
@@ -127,6 +130,8 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+  width: 100%;
+  min-width: 0;
 }
 
 .area-row {
@@ -378,6 +383,23 @@
 }
 
 /* ---- Small screens: keep compact layout and preserve toggle target ---- */
+@media (max-width: 768px) {
+  .areas-board {
+    padding: 10px 12px 6px;
+  }
+
+  .area-row__main {
+    grid-template-columns: 7px minmax(0, 1fr) auto auto;
+    column-gap: 8px;
+    padding: 12px 8px;
+  }
+
+  .areas-filter-tab {
+    font-size: 0.75rem;
+    padding: 5px 10px;
+  }
+}
+
 @media (max-width: 520px) {
   .areas-board {
     padding: 8px 10px 4px;

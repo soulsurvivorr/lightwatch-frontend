@@ -5,9 +5,12 @@
 
     .account-grid {
       display: grid;
-      grid-template-columns: 300px 1fr;
+      grid-template-columns: minmax(0, 300px) minmax(0, 1fr);
       gap: 20px;
       align-items: start;
+      width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
     }
 
     #accountSkeleton {
@@ -273,7 +276,7 @@
       margin-bottom: 14px;
     }
 
-    @media (max-width: 720px) {
+    @media (max-width: 768px) {
       .account-grid {
         grid-template-columns: 1fr;
       }

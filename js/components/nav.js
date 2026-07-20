@@ -26,7 +26,7 @@ function applyNavVisibility() {
     navLinks.forEach(link => {
         const section = link.dataset.nav;
         if (isMobile) {
-            const allowedOnMobile = section === "home" || section === "areas" || section === "reports";
+            const allowedOnMobile = section === "home" || section === "areas" || section === "reports" || section === "chat";
             link.style.display = allowedOnMobile ? "" : "none";
         } else {
             link.style.display = "";

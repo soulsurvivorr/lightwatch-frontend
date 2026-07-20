@@ -1176,7 +1176,7 @@ window.setMobileChatOpen = setMobileChatOpen;
 // triggered by view switches instead of (or in addition to) tab
 // visibility — see file header.
 window.addEventListener('lw:route-changed', (e) => {
-    if (e.detail.view !== 'home') {
+    if (e.detail.view !== 'home' && e.detail.view !== 'chat') {
         clearInterval(pollInterval);
         clearInterval(typingPollInterval);
     } else if (chatScope === CHAT_SCOPE_GLOBAL || chatLocation) {

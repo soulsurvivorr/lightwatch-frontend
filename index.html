@@ -477,7 +477,8 @@
       <nav class="nav" id="primaryNav">
         <a href="#" class="nav__link" data-nav="home" data-route="home">Home</a>
         <a href="#" class="nav__link" data-nav="areas" data-route="areas">Areas</a>
-        <a href="#" class="nav__link" data-nav="reports" data-route="reports">Reports</a>
+        <a href="#" class="nav__link" data-nav="chat" data-route="chat">Report</a>
+        <a href="#" class="nav__link" data-nav="reports" data-route="reports">Notifications</a>
         <a href="#" class="nav__link" data-nav="account" data-route="account">Account</a>
       </nav>
       <button type="button" id="profileMenuButton" class="topbar__user" aria-expanded="false" aria-controls="userSidebarPanel">
@@ -808,40 +809,7 @@
         </div>
 
         <!-- Community chat -->
-        <div class="card chat-card">
-          <div class="card__head chat-card__head">
-            <div>
-              <span class="card__title">Community chat</span>
-              <span class="card__meta">Posting as <strong id="chatHandle" data-skel="line">anon-glow-291</strong></span>
-            </div>
-            <button type="button" id="mobileChatClose" class="chat-close-btn" aria-label="Close chat"><svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:0.9em;height:0.9em;" aria-hidden="true"><path d="M3 3l10 10M13 3 3 13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
-          </div>
-          <div class="chat-scope-row" aria-label="Chat visibility scope">
-            <span class="chat-scope-label">Audience</span>
-            <div class="chat-scope-options" role="tablist" aria-label="Chat audience">
-              <button type="button" class="chat-scope-option is-active" id="chatScopeLocalBtn" data-scope="local" role="tab" aria-selected="true">Only your location</button>
-              <button type="button" class="chat-scope-option" id="chatScopeGlobalBtn" data-scope="global" role="tab" aria-selected="false">Everyone</button>
-            </div>
-          </div>
-          <div class="chat-thread-wrap">
-            <div class="chat-thread" id="chatThread"></div>
-            <button type="button" class="chat-scroll-bottom-btn" id="chatScrollBottomBtn" aria-label="Scroll to latest messages" hidden>
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M12 4v16M6 14l6 6 6-6"/>
-              </svg>
-            </button>
-          </div>
-          <form class="chat-form" id="chatForm" action="javascript:void(0)">
-            <div class="chat-reply-preview" id="chatReplyPreview" hidden>
-              <span class="chat-reply-preview__label">Replying to <strong id="chatReplyHandle">someone</strong></span>
-              <p class="chat-reply-preview__text" id="chatReplyText"></p>
-              <button type="button" class="chat-reply-preview__cancel" id="chatReplyCancel" aria-label="Cancel reply">×</button>
-            </div>
-            <textarea class="chat-form__input" id="chatInput" placeholder="Share an update..." maxlength="240" data-skel="input" rows="1" enterkeyhint="send"></textarea>
-            <button type="submit" class="btn btn--primary" id="chatSendBtn" disabled>Send</button>
-          </form>
-        </div>
-
+  
       </section>
 
       <aside class="location-sidebar">
@@ -972,15 +940,6 @@
   </div>
 
 
-  <button type="button" id="mobileChatToggle" class="mobile-chat-toggle" aria-label="Open chat">
-    <span class="mobile-chat-toggle__icon" aria-hidden="true">
-      <svg class="mobile-chat-toggle__icon-svg mobile-chat-toggle__icon-svg--chat" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 4.8h14a1 1 0 0 1 1 1V13a1 1 0 0 1-1 1H8.5L5 16.8V14H3a1 1 0 0 1-1-1V5.8a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
-      <svg class="mobile-chat-toggle__icon-svg mobile-chat-toggle__icon-svg--close" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 3l10 10M13 3 3 13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-    </span>
-    <span class="mobile-chat-toggle__label">Report</span>
-  </button>
-
-
   <div class="home-reminder-overlay" id="homeReminderOverlay" hidden>
     <div class="home-reminder-card" role="dialog" aria-modal="true" aria-labelledby="homeReminderTitle">
       <div class="card__head">
@@ -1004,6 +963,53 @@
     </div>
   </div>
 
+    </section>
+
+    <!-- ==== Report page section ==== -->
+    <section id="view-chat" data-view="chat" hidden>
+      <main class="page">
+        <div class="page__header">
+          <div>
+            <div class="page__eyebrow">Report</div>
+            <h1 class="page__title">Community chat</h1>
+            <p class="page__subtitle">Share updates and see local reports from your area.</p>
+          </div>
+        </div>
+
+        <div class="card chat-card">
+          <div class="card__head chat-card__head">
+            <div>
+              <span class="card__title">Community chat</span>
+              <span class="card__meta">Posting as <strong id="chatHandle" data-skel="line">anon-glow-291</strong></span>
+            </div>
+            <button type="button" id="mobileChatClose" class="chat-close-btn" aria-label="Close chat"><svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:0.9em;height:0.9em;" aria-hidden="true"><path d="M3 3l10 10M13 3 3 13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+          </div>
+          <div class="chat-scope-row" aria-label="Chat visibility scope">
+            <span class="chat-scope-label">Audience</span>
+            <div class="chat-scope-options" role="tablist" aria-label="Chat audience">
+              <button type="button" class="chat-scope-option is-active" id="chatScopeLocalBtn" data-scope="local" role="tab" aria-selected="true">Only your location</button>
+              <button type="button" class="chat-scope-option" id="chatScopeGlobalBtn" data-scope="global" role="tab" aria-selected="false">Everyone</button>
+            </div>
+          </div>
+          <div class="chat-thread-wrap">
+            <div class="chat-thread" id="chatThread"></div>
+            <button type="button" class="chat-scroll-bottom-btn" id="chatScrollBottomBtn" aria-label="Scroll to latest messages" hidden>
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 4v16M6 14l6 6 6-6"/>
+              </svg>
+            </button>
+          </div>
+          <form class="chat-form" id="chatForm" action="javascript:void(0)">
+            <div class="chat-reply-preview" id="chatReplyPreview" hidden>
+              <span class="chat-reply-preview__label">Replying to <strong id="chatReplyHandle">someone</strong></span>
+              <p class="chat-reply-preview__text" id="chatReplyText"></p>
+              <button type="button" class="chat-reply-preview__cancel" id="chatReplyCancel" aria-label="Cancel reply">×</button>
+            </div>
+            <textarea class="chat-form__input" id="chatInput" placeholder="Share an update..." maxlength="240" data-skel="input" rows="1" enterkeyhint="send"></textarea>
+            <button type="submit" class="btn btn--primary" id="chatSendBtn" disabled>Send</button>
+          </form>
+        </div>
+      </main>
     </section>
 
     <!-- ==== Areas page section ==== -->
@@ -1568,7 +1574,7 @@
 
     </section>
 
-  <!-- Sidebar overlay + panel -->
+  <!-- Sidebar overlay + panel 
   <div class="sidebar-overlay" id="sidebarOverlay"></div>
   <aside class="user-sidebar-panel" id="userSidebarPanel" aria-hidden="true">
     <button type="button" class="user-sidebar__close" id="userSidebarClose" aria-label="Close profile panel">×</button>
@@ -1592,6 +1598,7 @@
       <button type="button" class="btn btn--ghost btn--block" id="sidebarSignOutBtn" data-action="signout">Log out</button>
     </div>
   </aside>
+  -->
 
 
 
@@ -1611,12 +1618,19 @@
         </span>
         <span class="bottom-nav-label">Areas</span>
       </a>
-      <a href="#" class="bottom-nav-link" data-nav="reports" data-route="reports" aria-label="Reports">
+      <a href="#" class="bottom-nav-link" data-nav="chat" data-route="chat" aria-label="Report">
         <span class="bottom-nav-icon bottom-nav-icon--user">
-          <img src="./icons/report_2.png" alt="reports" class="bottom-nav-icon-img bottom-nav-icon-img--light">
+          <img src="./icons/report_2.png" alt="Report" class="bottom-nav-icon-img bottom-nav-icon-img--light">
           <img src="./icons/report-gray.png" alt="" aria-hidden="true" class="bottom-nav-icon-img bottom-nav-icon-img--dark">
         </span>
-        <span class="bottom-nav-label">Reports</span>
+        <span class="bottom-nav-label">Report</span>
+      </a>
+      <a href="#" class="bottom-nav-link" data-nav="reports" data-route="reports" aria-label="Notifications">
+        <span class="bottom-nav-icon bottom-nav-icon--user">
+          <img src="./icons/report_2.png" alt="Notifications" class="bottom-nav-icon-img bottom-nav-icon-img--light">
+          <img src="./icons/report-gray.png" alt="" aria-hidden="true" class="bottom-nav-icon-img bottom-nav-icon-img--dark">
+        </span>
+        <span class="bottom-nav-label">Notifications</span>
       </a>
       <button type="button" class="bottom-nav-link bottom-nav-link--button" id="bottomNavUserBtn" data-nav="account" aria-label="User profile">
         <span class="bottom-nav-icon bottom-nav-icon--user">

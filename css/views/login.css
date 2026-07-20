@@ -14,8 +14,8 @@
 
 
 
-  html:has(#view-signup:not([hidden])),
-  body:has(#view-signup:not([hidden])) {
+  html:has(#view-login:not([hidden])),
+  body:has(#view-login:not([hidden])) {
       height: 100vh;
       height: 100svh;
       height: 100dvh;
@@ -461,8 +461,8 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
 
 /* Phone layout: render only the form pane. */
 @media (max-width: 768px) {
-  html,
-  body {
+  html:has(#view-login:not([hidden])),
+  body:has(#view-login:not([hidden])) {
     height: auto;
     /* Fallback stack, not a single value: some Android browsers (esp.
        Samsung Internet) return a --app-vh reading that's a beat behind
@@ -483,7 +483,7 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
     min-height: var(--app-vh, 100dvh);
     background-color: var(--bg-panel);
     overflow-x: hidden;
-    overflow-y: hidden;
+    overflow-y: auto;
     overscroll-behavior: none;
   }
 
@@ -501,7 +501,7 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
     gap: 0;
     background-color: var(--bg-panel);
     overflow-x: hidden;
-    overflow-y: hidden;
+    overflow-y: auto;
   }
 
   .login-visual,
@@ -519,8 +519,9 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
     width: 100%;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: flex-start; /* Start from top down */
+    align-items: stretch;
+    justify-content: space-between;
+    min-height: 0;
     /* Keep the notch/Dynamic Island clearance from styles.css's base
        .login-form-side rule — this block only needs to change layout
        (height/overflow) for the phone breakpoint, not padding, but it
@@ -572,6 +573,17 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
   .login-box {
     position: relative;
     z-index: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 0;
+    flex: 1;
+  }
+
+  .login-footer {
+    padding-top: 20px;
+    padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+    flex-shrink: 0;
   }
 
   @keyframes bubble-float-a {
