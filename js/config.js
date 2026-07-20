@@ -5,6 +5,6 @@
 //  read directly — exactly like the original multi-page app.
 // ============================================================
 const API_URL =
-    location.hostname === "localhost"
+    ["localhost", "127.0.0.1"].includes(location.hostname)
         ? "http://localhost:3000"
         : "https://lightwatch-backend.onrender.com";

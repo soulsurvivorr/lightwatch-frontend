@@ -137,6 +137,7 @@ body.lw-leaving {
 .brand-row {
     display: flex;
     align-items: center;
+    justify-content: flex-start;
     gap: .55rem;
     margin-bottom: .65rem;
     animation: lw-fade-up .5s ease .05s both;

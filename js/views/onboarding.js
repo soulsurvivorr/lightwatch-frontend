@@ -85,7 +85,7 @@
         if (!overlay) return;
         markOnboardingShownThisSession();
         overlay.classList.remove('is-open');
-        setTimeout(() => { overlay.hidden = true; }, 100);
+        setTimeout(() => { overlay.hidden = true; }, 150);
         window.dispatchEvent(new CustomEvent('lw-onboarding-closed'));
     }
 

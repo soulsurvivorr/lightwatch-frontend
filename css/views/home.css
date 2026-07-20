@@ -2128,49 +2128,6 @@ body.lw-location-panel-open .mobile-chat-toggle {
   width: 100%;
 }
 
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 18px;
-}
-
-.field__label {
-  font-size: 0.84rem;
-  color: var(--text-muted);
-}
-
-.field__input-wrap {
-  position: relative;
-}
-
-.field__input {
-  width: 100%;
-  background: var(--bg-deep);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-md);
-  padding: 12px 14px;
-  color: var(--text-bright);
-  font-size: 0.94rem;
-  font-family: var(--font-body);
-}
-
-.field__input::placeholder {
-  color: var(--text-faint);
-}
-
-.field__input:focus {
-  border-color: var(--teal);
-}
-
-.field-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 20px;
-  font-size: 0.85rem;
-}
-
 .checkbox-row {
   display: flex;
   align-items: center;

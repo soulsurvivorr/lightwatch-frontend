@@ -12,12 +12,25 @@
        - #sendCodebtn / .login-create-btn
 */
 
+
+
+  html:has(#view-signup:not([hidden])),
+  body:has(#view-signup:not([hidden])) {
+      height: 100vh;
+      height: 100svh;
+      height: 100dvh;
+      overflow-x: hidden;
+      overflow-y: auto;  /* allow scrolling when keyboard resizes the viewport */
+      overscroll-behavior: none;
+  }
+
 .login-shell {
   width: 100%;
   max-width: none;
   min-height: 100vh;
   min-height: var(--app-vh, 100dvh);
   margin: 0;
+  padding: 0;
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -41,6 +54,7 @@
     max-width: none;
     min-height: 100vh;
     margin: 0;
+    padding: 0;
     display: grid;
     grid-template-columns: 1fr 1fr;
     align-items: stretch;
@@ -79,8 +93,8 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  justify-content: space-around;
-  padding: 20px;
+  justify-content: space-between;
+  padding: 20px 25px;
   overflow: hidden;
   color: white;
 }
@@ -155,8 +169,8 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 20px 32px;
-  background-color: var(--bg-panel);
+  padding: 20px 0px;
+  /*background-color: var(--bg-panel);*/
   position: relative;
 }
 
@@ -252,7 +266,8 @@
   display: flex;
   flex-direction: column;
   gap: 5px;
-  margin-bottom: 0px;
+  margin: 0;
+  padding: 0;
 }
 
 .field__label {
@@ -262,7 +277,6 @@
 
 .field__input-wrap {
   position: relative;
-  margin-bottom: 3px;
 }
 
 .field__input {
@@ -275,6 +289,7 @@
   font-size: 0.94rem;
   font-family: var(--font-body);
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  margin: 0;
 }
 
 .field__input::placeholder {
@@ -292,8 +307,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 2px;
   font-size: 0.85rem;
+  margin: 20px 0 6px 0;
+  padding: 0;   
 }
 
 /* Remember Me toggle */
@@ -302,7 +318,7 @@
   align-items: center;
   gap: 10px;
   cursor: pointer;
-  font-size: 0.86rem;
+  font-size: 0.7rem;
   color: var(--text-muted);
   user-select: none;
 }
@@ -448,14 +464,26 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
   html,
   body {
     height: auto;
-    /* dvh is meant to track the real viewport, but in this app's
+    /* Fallback stack, not a single value: some Android browsers (esp.
+       Samsung Internet) return a --app-vh reading that's a beat behind
+       the real screen — usually shorter — before the browser chrome
+       has settled. Stacking units means the browser keeps the LAST
+       one it understands, so if --app-vh is momentarily wrong we still
+       land on 100svh (the guaranteed-visible, no-chrome-yet baseline)
+       instead of a too-short box. This is what was causing the gap
+       under the footer — the box was rendering shorter than the real
+       screen, not the footer being mispositioned within it.
+       dvh is meant to track the real viewport, but in this app's
        WebView it doesn't reliably re-resolve back to full height once
        the on-screen keyboard has opened and closed (see the --app-vh
        fix in app-startup.js). --app-vh is measured live via
        visualViewport and falls back to dvh before that script runs. */
+    min-height: 100vh;
+    min-height: 100svh;
     min-height: var(--app-vh, 100dvh);
+    background-color: var(--bg-panel);
     overflow-x: hidden;
-    overflow-y: auto;
+    overflow-y: hidden;
     overscroll-behavior: none;
   }
 
@@ -465,11 +493,15 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
     flex-direction: column;
     width: 100%;
     max-width: none;
+    min-height: 100vh;
+    min-height: 100svh;
     min-height: var(--app-vh, 100dvh);
     margin: 0;
+    padding: 0 0 0 0;
     gap: 0;
     background-color: var(--bg-panel);
     overflow-x: hidden;
+    overflow-y: hidden;
   }
 
   .login-visual,
@@ -494,8 +526,10 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
        (height/overflow) for the phone breakpoint, not padding, but it
        shares a selector with that rule so it has to restate this or
        lose it. */
-    padding-top: calc(25px + 2em + env(safe-area-inset-top, 0px));
+    padding-top: 10em;
     padding-bottom: calc(48px + env(safe-area-inset-bottom, 0px));
+    padding-left: 24px;
+    padding-right: 24px;
   }
 
   .login-form-side::before,
@@ -587,15 +621,20 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
 }
 
 /* ============================================================
-   Narrow phones (Galaxy S8 ~360px, iPhone 12 ~390px)
+   Narrow-to-mid phones (Galaxy S8 ~360px, iPhone 12 ~390px,
+   Galaxy S9+ ~412-430px, most phones under tablet width)
    Tighter type + tighter spacing so more of the form is
-   visible without scrolling.
+   visible without scrolling. Was capped at 400px, which left a
+   gap between this and the default mobile sizing above — phones
+   landing in that gap (e.g. S9+) got noticeably larger type than
+   their neighbors just below and above them. 480px covers the
+   whole common phone-width range in one consistent scale.
    ============================================================ */
 
-@media (max-width: 400px) {
+@media (max-width: 480px) {
   .login-form-side {
-    padding: 20px 18px 32px;
-    padding-top: calc(20px + 2em + env(safe-area-inset-top, 0px));
+    padding: 6em 18px 32px;
+    /*padding-top: calc(20px + 2em + env(safe-area-inset-top, 0px));*/
     padding-bottom: calc(32px + env(safe-area-inset-bottom, 0px));
   }
 
@@ -603,12 +642,16 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
     margin-bottom: 2em;
   }
 
+  .brand-loop-text {
+    font-size: 0.64rem;
+  }
+
   .login-box h2 {
-    font-size: 1.28rem;
+    font-size: 1.1rem;
   }
 
   .login-box__subtitle {
-    font-size: 0.74rem;
+    font-size: 0.64rem;
     margin-bottom: 20px;
   }
 
@@ -618,7 +661,7 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
   }
 
   .field__label {
-    font-size: 0.76rem;
+    font-size: 0.66rem;
   }
 
   .field__input {
@@ -627,7 +670,7 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
   }
 
   .remember-me-label {
-    font-size: 0.78rem;
+    font-size: 0.68rem;
   }
 
   .divider {
@@ -635,7 +678,7 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
   }
 
   .signup-prompt {
-    font-size: 0.8rem;
+    font-size: 0.6rem;
     margin-top: 22px;
   }
   
@@ -663,5 +706,53 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
       radial-gradient(circle at 44% 70%, rgba(214, 162, 74, 0.66), rgba(166, 108, 20, 0.3) 48%, transparent 68%);
     filter: blur(1.4px) saturate(0.92);
     animation-duration: 4.8s;
+  }
+}
+
+/* ============================================================
+   Short viewports (landscape phones, small-height devices)
+   Same idea as the narrow-width breakpoint above, but keyed off
+   height instead of width: tighten vertical rhythm so the form
+   has a real chance of fitting in one screen without scrolling.
+   Only touches spacing, never layout/colors.
+   ============================================================ */
+
+@media (max-width: 768px) and (max-height: 700px) {
+  .login-form-side {
+   /* padding-top: calc(16px + env(safe-area-inset-top, 0px));*/
+    padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .login-box__brand {
+    margin-bottom: 0.8rem;
+  }
+
+  .login-box h2 {
+    font-size: 1.3rem;
+    margin-bottom: 4px;
+  }
+
+  .login-box__subtitle {
+    margin-bottom: 10px;
+  }
+
+  .field-row {
+    margin: 10px 0 6px 0;
+  }
+
+  .divider {
+    margin: 8px 0;
+  }
+
+  .signup-prompt {
+    margin-top: 12px;
+  }
+
+  .login-footer {
+    padding-top: 0px;
+  }
+
+  .login-footer {
+    padding-bottom: 0px;
   }
 }

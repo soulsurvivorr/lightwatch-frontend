@@ -269,3 +269,47 @@
     font-size: 0.9rem;
   }
 }
+
+/* ============================================================
+   Short viewports (landscape phones, small-height devices)
+   .onboarding-card intentionally has no scroll (overflow-y:hidden),
+   so on a short screen the fix has to be shrinking the content,
+   not letting it scroll. Only spacing/sizing, same layout.
+   ============================================================ */
+
+@media (max-height: 700px) {
+  .onboarding-card {
+    padding-top: calc(16px + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .onboarding-slide {
+    justify-content: center;
+    gap: 10px;
+    min-height: calc(100dvh - 120px);
+  }
+
+  .onboarding-slide__icon {
+    width: 42px;
+    height: 42px;
+    margin-bottom: 0;
+  }
+
+  .onboarding-slide h2 {
+    font-size: clamp(1.3rem, 3vw, 1.7rem);
+  }
+
+  .onboarding-slide p {
+    font-size: 0.92rem;
+    line-height: 1.5;
+  }
+
+  .onboarding-slide__points li {
+    padding: 9px 12px;
+    font-size: 0.88rem;
+  }
+
+  .onboarding-footer {
+    padding-top: 12px;
+  }
+}
