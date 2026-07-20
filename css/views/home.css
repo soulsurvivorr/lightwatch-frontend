@@ -16,7 +16,8 @@
   4) #bottom_nav_wrapper
 */
 
-html, body {
+html:has(#appShell:not([hidden])),
+body:has(#appShell:not([hidden])) {
     height: 100dvh !important;
     height: 100svh !important;
 }
@@ -2303,7 +2304,7 @@ body.lw-location-panel-open .mobile-chat-toggle {
     display: block;
   }
 
-  body {
+  body:has(#appShell:not([hidden])) {
     padding-bottom: calc(132px + env(safe-area-inset-bottom));
   }
 

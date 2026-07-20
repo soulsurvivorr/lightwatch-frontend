@@ -32,6 +32,16 @@
     let onboardingCurrentSlide = 0;
     let initialized = false;
 
+    // Same fix as chat.js's card reparenting — guarantees this
+    // fixed-position overlay can never be mispositioned by any
+    // ancestor's transform/filter/contain, present or future.
+    function ensureOverlayOnBody() {
+        const overlay = document.getElementById('onboardingOverlay');
+        if (overlay && overlay.parentElement !== document.body) {
+            document.body.appendChild(overlay);
+        }
+    }
+
     function consumeSkipOnboardingOnce() {
         try {
             const skip = sessionStorage.getItem(SKIP_ONBOARDING_ONCE_KEY) === '1';
@@ -75,7 +85,7 @@
         if (!overlay) return;
         markOnboardingShownThisSession();
         overlay.classList.remove('is-open');
-        setTimeout(() => { overlay.hidden = true; }, 250);
+        setTimeout(() => { overlay.hidden = true; }, 100);
         window.dispatchEvent(new CustomEvent('lw-onboarding-closed'));
     }
 
@@ -93,6 +103,8 @@
     function init() {
         if (initialized) return; // login view only needs this wired once
         initialized = true;
+
+        ensureOverlayOnBody();
 
         const overlay = document.getElementById('onboardingOverlay');
         if (!overlay) return;

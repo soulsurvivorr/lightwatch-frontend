@@ -13,14 +13,20 @@
 */
 
 .login-shell {
-  width: 92%;
-  max-width: 1500px;
-  min-height: 88vh;
-  margin: 6vh auto;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  align-items: stretch;
-  gap: 32px;
+  width: 100%;
+  max-width: none;
+  min-height: 100vh;
+  min-height: var(--app-vh, 100dvh);
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* Mobile-first default: only the form pane renders. Re-enabled for
+   the split desktop layout inside the min-width:769px block below. */
+.login-visual {
+  display: none;
 }
 
 /* Other views' CSS (loaded later in the stylesheet order) sets
@@ -30,10 +36,25 @@
    login page can always scroll on desktop regardless of load
    order — only active while #view-login is actually on screen. */
 @media (min-width: 769px) {
+  .login-shell {
+    width: 100%;
+    max-width: none;
+    min-height: 100vh;
+    margin: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: stretch;
+    gap: 0;
+  }
+
+  .login-visual {
+    display: flex;
+  }
+
   body:has(#view-login:not([hidden])) {
     position: static;
     height: auto;
-    min-height: 100vh;
+    min-height: max-content;
     overflow-y: auto;
     overflow-x: hidden;
   }
@@ -42,13 +63,12 @@
     height: auto;
   }
 
-  /* Each panel is now its own card (separated by the gap above)
-     rather than one fused box, so each needs its own rounding
-     and shadow. */
+  /* Edge-to-edge split — no gap between panels, no floating
+     cards, no rounding/shadow. */
   .login-visual,
   .login-form-side {
-    border-radius: var(--radius-lg, 20px);
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.16);
+    border-radius: 0;
+    box-shadow: none;
   }
 }
 
@@ -59,8 +79,8 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  padding: 48px;
+  justify-content: space-around;
+  padding: 20px;
   overflow: hidden;
   color: white;
 }
@@ -135,7 +155,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 56px 32px;
+  padding: 20px 32px;
   background-color: var(--bg-panel);
   position: relative;
 }
@@ -272,7 +292,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 6.5px;
+  margin-bottom: 2px;
   font-size: 0.85rem;
 }
 

@@ -4,4 +4,7 @@
 //  plain global every other script (view modules, services) can
 //  read directly — exactly like the original multi-page app.
 // ============================================================
-const API_URL = "https://lightwatch-backend.onrender.com";
+const API_URL =
+    location.hostname === "localhost"
+        ? "http://localhost:3000"
+        : "https://lightwatch-backend.onrender.com";

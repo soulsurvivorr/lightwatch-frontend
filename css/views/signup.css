@@ -17,8 +17,10 @@
 */
 
 
-html,
-body {
+/* Scoped with :has() — bare html/body selectors leaked onto login/home
+   because every view CSS loads globally in index.html. */
+html:has(#view-signup:not([hidden])),
+body:has(#view-signup:not([hidden])) {
     height: 100vh;
     height: 100svh;
     height: 100dvh;
@@ -27,7 +29,7 @@ body {
     overscroll-behavior: none;
 }
 
-body {
+body:has(#view-signup:not([hidden])) {
     margin: 0;
     min-height: 100vh;
     min-height: 100svh;
@@ -108,7 +110,7 @@ body.lw-leaving {
 }
 
 /* ===== Shell ===== */
-section {
+#view-signup > section {
     position: relative;
     z-index: 1;
     padding: 1.15rem 1.35rem 1.35rem;
@@ -521,7 +523,7 @@ section {
     to { transform: rotate(360deg); }
 }
 
-footer {
+#view-signup footer {
     text-align: center;
     font-size: .7rem;
     margin-top: .8rem;
@@ -536,7 +538,7 @@ footer {
    its own inset one. Also trim a couple of the larger type sizes
    so it needs to grow less often. */
 @media (min-width: 701px) {
-    section {
+    #view-signup > section {
         max-height: none;
         overflow: visible;
     }
@@ -556,7 +558,7 @@ footer {
 
 /* Laptop/desktop */
 @media (min-width: 1024px) {
-    section {
+    #view-signup > section {
         padding: 1.4rem 1.6rem 1.6rem;
     }
 }
@@ -570,15 +572,34 @@ footer {
    on devices that actually have plenty of room. overflow-y: auto on
    `section` stays only as a safety net for unusually short/zoomed
    viewports; it should not be needed in normal use. */
+body:has(#view-signup:not([hidden])) #authShell {
+    width: 100%;
+    min-height: 100%;
+    display: flex;
+    flex: 1;
+}
+
 @media (max-width: 700px) {
-    html,
-    body {
+    html:has(#view-signup:not([hidden])),
+    body:has(#view-signup:not([hidden])) {
         height: 100dvh;
         min-height: 100dvh;
         overflow: hidden;
     }
 
-    body {
+    body:has(#view-signup:not([hidden])) #authShell {
+        height: 100%;
+        align-items: stretch;
+    }
+
+    #view-signup:not([hidden]) {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    body:has(#view-signup:not([hidden])) {
         position: fixed;
         inset: 0;
         align-items: stretch;
@@ -596,11 +617,12 @@ footer {
         display: none;
     }
 
-    section {
+    #view-signup > section {
         position: relative;
+        flex: 1;
         width: 100%;
         max-width: 100%;
-        min-height: 100dvh;
+        min-height: 0;
         border-radius: 0;
         box-shadow: none;
         overflow-y: auto;
@@ -609,7 +631,6 @@ footer {
         display: flex;
         flex-direction: column;
         padding: 1rem 1.1rem 1.5rem;
-        /* Balanced spacing to match Screenshot 1 */
         padding-top: calc(1.5rem + env(safe-area-inset-top, 0px));
         padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
     }
@@ -681,7 +702,7 @@ footer {
         padding: 11px;
     }
 
-    footer {
+    #view-signup footer {
         margin-top: .5rem;
     }
 }
@@ -692,7 +713,7 @@ footer {
    so scale the card and its contents back up rather than reusing the
    small-phone sizing. */
 @media (min-width: 421px) and (max-width: 700px) {
-    section {
+    #view-signup > section {
         padding: 1.15rem 1.3rem 1.3rem;
         padding-top: calc(1.15rem + 2em + env(safe-area-inset-top, 0px));
         padding-bottom: calc(1.3rem + env(safe-area-inset-bottom, 0px));
@@ -760,7 +781,7 @@ footer {
         font-size: .95rem;
     }
 
-    footer {
+    #view-signup footer {
         margin-top: .8rem;
         font-size: .72rem;
     }
@@ -772,7 +793,7 @@ footer {
    catch Pro Max-class devices and made them look cramped — narrowed
    to 400px so it's reserved for actually small screens). */
 @media (max-width: 400px) {
-    section {
+    #view-signup > section {
         padding: .7rem .85rem .85rem;
         padding-top: calc(.7rem + 2em + env(safe-area-inset-top, 0px));
         padding-bottom: calc(.85rem + env(safe-area-inset-bottom, 0px));
@@ -800,7 +821,7 @@ footer {
         font-size: 1rem;
     }
 
-    footer {
+    #view-signup footer {
         font-size: .65rem;
         margin-top: .4rem;
     }
@@ -838,7 +859,7 @@ footer {
         margin-top: .6rem;
     }
 
-    footer {
+    #view-signup footer {
         display: none;
     }
 }
