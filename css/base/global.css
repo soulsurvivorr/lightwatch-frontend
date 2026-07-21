@@ -52,10 +52,22 @@ html.lw-bfcache-hide body {
     overflow-x: hidden !important;
     -webkit-overflow-scrolling: touch;
   }
+}
 
-  #appShell {
-    overflow: visible !important;
-  }
+/* ---- FIX: this needs to apply at EVERY width, not just mobile ----
+   Previous pass only put this inside the max-width:720px block, which
+   meant desktop was still broken: html/body were correctly scrollable
+   above, but if #appShell (or whatever the real app-shell wrapper
+   turns out to be) has a fixed height + overflow:hidden set somewhere
+   else in the cascade — the classic app-shell pattern — the overflow
+   is clipped *inside* #appShell and never reaches body at all. Body
+   then has nothing to scroll (nothing of its own overflows the
+   viewport) even though real content is being cut off invisibly one
+   level in. Unconditional (no media query) so it's never missed at
+   any breakpoint again. */
+#appShell {
+  overflow: visible !important;
+  height: auto !important;
 }
 /* body / heading / link / list base rules moved to base/typography.css */
 

@@ -297,7 +297,7 @@
       .hero-banner__greeting { font-size: 1.1rem; }
       .hero-banner__stats { gap: 0px; }
       .hero-stat__value { font-size: 1rem; }
-      .hero-stat__label { font-size: 0.62rem; }
+      .hero-stat__label { font-size: 0.5rem; }
     }
 
 /* ============================================================
@@ -1217,8 +1217,7 @@
 }
 
 .page-data-loading .topbar,
-.page-data-loading #bottom_nav_wrapper,
-.page-data-loading .mobile-chat-toggle {
+.page-data-loading #bottom_nav_wrapper {
   opacity: 1;
   filter: none;
   pointer-events: none;
@@ -1262,7 +1261,10 @@
   }
 
   .sidebar-overlay--visible {
-    display: none;
+    display: block;
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
 }
 
 /* ---- Second-location detail panel ----
@@ -1308,15 +1310,8 @@ body.lw-location-panel-open {
   overflow: hidden;
   overscroll-behavior: none;
 }
-/* The floating "Report"/"Close" chat toggle (.mobile-chat-toggle) sits
-   at z-index: 82, above this panel's overlay (z-index: 60), so it was
-   floating on top of the second-location sheet whenever both could be
-   on screen at once. Hide it for as long as the panel is open -- the
-   panel has its own close button/backdrop-tap, so the chat toggle has
-   nothing useful to do here anyway. */
-body.lw-location-panel-open .mobile-chat-toggle {
-  display: none;
-}
+/* .mobile-chat-toggle removed along with the chat popup — this rule
+   no longer has anything to target. */
 .location-expand-panel {
   width: 100%;
   /* This is a status card, not a document — cap it to a width that
@@ -1752,14 +1747,28 @@ body.lw-location-panel-open .mobile-chat-toggle {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   z-index: 12000;
+  /* FIX: previously this had no closed state of its own — it relied
+     entirely on JS adding/removing the [hidden] attribute below. If
+     that attribute is ever missing even briefly (route change, a
+     race on load, etc.) there was nothing stopping a full-viewport,
+     z-index:12000 layer from silently intercepting every wheel/touch/
+     click on the page. This makes "not open" the safe default at the
+     CSS level too, independent of [hidden]. */
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.home-reminder-overlay.is-open {
+  opacity: 1;
+  pointer-events: auto;
+  visibility: visible;
+  animation: fadeIn 0.2s ease both;
 }
 
 .home-reminder-overlay[hidden] {
   display: none !important;
-}
-
-.home-reminder-overlay.is-open {
-  animation: fadeIn 0.2s ease both;
 }
 
 .home-reminder-card {
@@ -2412,71 +2421,34 @@ body.lw-location-panel-open .mobile-chat-toggle {
   }
 
   #view-home .chat-card {
-    position: fixed;
-    left: 10px;
-    right: 10px;
-    top: 10px; /* Stay at the top of the viewport, not the page */
-    bottom: calc(82px + env(safe-area-inset-bottom));
-    margin: 0 auto;
-    width: auto;
-    max-width: 420px;
-    /* Keep the empty chat state tall and immersive so the page feels
-       filled rather than blank. On phone screens this uses roughly 70%
-       of the visible viewport height and leaves the composer pinned near
-       the bottom of the screen even when there are no messages yet. */
-    height: min(46rem, calc(var(--app-vh, 100dvh) * 0.72));
-    max-height: calc(var(--app-vh, 100dvh) * 0.72);
-    border-radius: 20px;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.18);
+    /* FIX: was position:fixed with a translateY/opacity/visibility
+       toggle driven by .chat-card--mobile-open — a full popup
+       mechanism (see chat.js, now removed) for something that's just
+       meant to be a normal card in the page like it already is on
+       desktop. Inline, in-flow, always visible; no open/close state
+       needed. */
+    position: static;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    height: auto;
+    max-height: none;
+    border-radius: 16px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
     background: var(--bg-panel);
-    transform: translateY(22px) scale(0.98);
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-    transition: transform 0.34s cubic-bezier(0.2, 0.75, 0.15, 1), opacity 0.24s ease, visibility 0s linear 0.34s;
-    z-index: 70;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-
-  #view-home .chat-card--mobile-open {
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
-    transform: translateY(0) scale(1);
-    transition: transform 0.34s cubic-bezier(0.2, 0.75, 0.15, 1), opacity 0.24s ease;
-  }
-
-  /* Keyboard-aware override — see applyChatKeyboardOffset() in chat.js.
-     While the on-screen keyboard is up, chat.js measures the actual
-     visible area itself via window.visualViewport (the one API that
-     reliably reports it, keyboard included, in this app's WebView) and
-     writes the result here as --chat-kb-top/--chat-kb-height, instead
-     of trusting the top/bottom/height calc above to have already
-     accounted for it. That calc block was sometimes leaving the
-     input/Send button sitting under the keyboard instead of "flowing
-     up" above it like a normal chat app. */
-  #view-home .chat-card--keyboard-adjust {
-    top: var(--chat-kb-top, 10px) !important;
-    bottom: auto !important;
-    height: var(--chat-kb-height, auto) !important;
-    transition: top 0.15s ease, height 0.15s ease;
+    transform: none;
+    transition: none;
+    z-index: auto;
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
   }
 
   /* Header and form stay fixed height; the thread fills whatever
-     space is left between them.
-
-     IMPORTANT: these live on the bare .chat-card selector, not gated
-     behind .chat-card--mobile-open. The form's sticky positioning,
-     border, and padding used to only apply once --mobile-open was
-     added — which meant they snapped in (unanimated) in the exact
-     same frame the popup opened, showing up as the input/send button
-     visibly settling ~2px down right after tapping Report. Since the
-     card is fully hidden (visibility: hidden) while closed, applying
-     these unconditionally has no visible effect until it opens, but
-     it means the form's box model is already correct *before* it
-     becomes visible, so nothing shifts at open time. */
+     space is left between them. */
   .chat-card__head,
   .chat-form {
     flex-shrink: 0;
@@ -2492,17 +2464,6 @@ body.lw-location-panel-open .mobile-chat-toggle {
     padding-bottom: calc(8px + env(safe-area-inset-bottom));
   }
 
-  /* Same fix as the head/form comment above: apply this sizing
-     unconditionally instead of scoping it to --mobile-open. It used to
-     be scoped, which meant the thread's max-height snapped from "none"
-     back to a fixed 240px the instant the open class was removed on
-     close -- while the card was still visibly sliding/fading away --
-     so the messages list visibly collapsed mid-animation. That made
-     closing look jarring and asymmetric compared to opening (which
-     never had this problem, since the card is invisible until its box
-     model is already correct). Applying it unconditionally means the
-     box model never changes at open/close time -- only the outer
-     transform/opacity/visibility do -- so closing now mirrors opening. */
   .chat-card .chat-thread-wrap {
     flex: 1 1 auto;
     min-height: 0;
@@ -2511,8 +2472,6 @@ body.lw-location-panel-open .mobile-chat-toggle {
   .chat-card .chat-thread {
     flex: 1 1 auto;
     min-height: 0;
-    height: 100%;
-    max-height: none;
     overflow-y: auto;
     padding-bottom: 6px;
   }
@@ -2524,22 +2483,7 @@ body.lw-location-panel-open .mobile-chat-toggle {
   }
 
   .chat-close-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 34px;
-    height: 34px;
-    border-radius: 12px;
-    border: 1px solid var(--border-soft);
-    background: var(--bg-panel-raised);
-    color: var(--text-faint);
-    font-size: 1rem;
-    cursor: pointer;
-  }
-
-  .chat-close-btn:hover {
-    color: var(--text-bright);
-    border-color: var(--teal);
+    display: none;
   }
 
   /* The standalone in-page profile card hides on mobile (it's redundant with
@@ -2551,107 +2495,17 @@ body.lw-location-panel-open .mobile-chat-toggle {
     display: none;
   }
 
-  #view-home .mobile-chat-toggle {
-    position: fixed;
-    right: 16px;
-    bottom: calc(132px + env(safe-area-inset-bottom));
-    z-index: 82;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 14px;
-    border-radius: 999px;
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    background: rgba(2, 43, 37, 0.95);
-    color: white;
-    font-size: 0.82rem;
-    font-weight: 700;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-    backdrop-filter: blur(10px);
-    transform: translateY(0);
-    transition: bottom 0.24s cubic-bezier(0.22, 0.74, 0.2, 1), top 0.24s cubic-bezier(0.22, 0.74, 0.2, 1), transform 0.22s cubic-bezier(0.22, 0.74, 0.2, 1), box-shadow 0.22s ease;
-  }
-
-  .mobile-chat-toggle__icon {
-    position: relative;
-    display: inline-block;
-    width: 1.05rem;
-    height: 1.05rem;
-    font-size: 1.05rem;
-  }
-
-  /* Both icons stay mounted at all times and cross-fade + rotate into
-     one another, instead of the old innerHTML swap which cut instantly
-     from one glyph to the other with nothing in between. */
-  .mobile-chat-toggle__icon-svg {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    transition: opacity 0.22s ease, transform 0.26s cubic-bezier(.22,.9,.32,1);
-  }
-  .mobile-chat-toggle__icon-svg--chat {
-    opacity: 1;
-    transform: rotate(0deg) scale(1);
-  }
-  .mobile-chat-toggle__icon-svg--close {
-    opacity: 0;
-    transform: rotate(-45deg) scale(0.6);
-  }
-  .mobile-chat-toggle--open .mobile-chat-toggle__icon-svg--chat {
-    opacity: 0;
-    transform: rotate(45deg) scale(0.6);
-  }
-  .mobile-chat-toggle--open .mobile-chat-toggle__icon-svg--close {
-    opacity: 1;
-    transform: rotate(0deg) scale(1);
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .mobile-chat-toggle__icon-svg { transition: opacity 0.12s linear; transform: none !important; }
-  }
-
-  html.mobile-chat-open,
-  body.mobile-chat-open {
-    overflow: hidden;
-    overscroll-behavior: none;
-    touch-action: none;
-  }
-
-  /* While the chat popup is open, the underlying bottom nav pill has
-     nothing useful to do (it's hidden behind the popup anyway) — and
-     left visible, it gets dragged up along with the on-screen keyboard
-     the moment the chat input is focused, which reads as a layout
-     glitch. Hiding it for the duration the popup is open removes
-     anything that could jump.
-
-     The floating toggle still stays visible and doubles as the close
-     control (icon flips to ✕) — chat.js docks it just below the popup
-     by reading the popup's actual on-screen position (getBoundingClientRect)
-     rather than guessing a static px offset here. A fixed CSS offset kept
-     landing wrong on some devices depending on their real dvh/safe-area
-     values (e.g. it collided with the send button on iPhone 12 Pro), so
-     the offset is computed live instead — see positionMobileChatToggle()
-     in chat.js. */
-  body.mobile-chat-open #bottom_nav_wrapper {
-    display: none;
-  }
+  /* .mobile-chat-toggle and the .mobile-chat-open scroll-lock are both
+     removed — chat has no popup/toggle anymore, it's always inline on
+     the page, so there's nothing left to dock a floating button under
+     or lock scroll for. See chat.js for the (now much smaller)
+     inline-scroll replacement. */
 }
 
 @media (min-width: 769px) {
   #bottom_nav_wrapper,
   .mobile-chat-toggle {
     display: none !important;
-  }
-}
-
-@media (min-width: 721px) {
-  /* Failsafe: the "chat open" scroll-lock is only meant for the narrow
-     mobile popup. If the browser window gets resized wider while the
-     chat is open (e.g. testing breakpoints in dev tools), this makes
-     sure the lock can never leave the page unscrollable at desktop
-     widths, regardless of what class got left on <body>. */
-  body.mobile-chat-open {
-    overflow: auto;
   }
 }
 
@@ -3120,7 +2974,7 @@ body.lw-location-panel-open .mobile-chat-toggle {
   }
 
   .hero-stat__label {
-    font-size: 0.56rem;
+    font-size: 0.4rem;
   }
 
   .status-hero {
@@ -3248,7 +3102,7 @@ body.lw-location-panel-open .mobile-chat-toggle {
   }
 
   .hero-stat__label {
-    font-size: 0.58rem;
+    font-size: 0.4rem;
   }
 
   .hero-banner__location {
@@ -3441,30 +3295,9 @@ body.lw-location-panel-open .mobile-chat-toggle {
   }
 }
 
-@media (max-width: 390px) {
-  .chat-card--mobile-open {
-    height: min(40rem, calc(var(--app-vh, 100dvh) * 0.74));
-    max-height: calc(var(--app-vh, 100dvh) * 0.74);
-  }
-
-  .mobile-chat-toggle {
-    right: 12px;
-    bottom: calc(124px + env(safe-area-inset-bottom));
-    gap: 6px;
-    padding: 8px 10px;
-    font-size: 0.74rem;
-    border-radius: 999px;
-  }
-
-  .mobile-chat-toggle__icon {
-    font-size: 0.9rem;
-  }
-
-  .mobile-chat-toggle__label {
-    font-size: 0.7rem;
-    line-height: 1;
-  }
-}
+/* Popup-specific sizing (.chat-card--mobile-open height clamp, the
+   floating .mobile-chat-toggle button) removed at 390px along with
+   the rest of the popup mechanism — chat is inline now. */
 
 /* ------------------------------------------------------------
    Chat popup — final, single source of truth for phone sizing.
@@ -4137,15 +3970,10 @@ body.lw-location-panel-open .mobile-chat-toggle {
   }
 }
 
-/* Mobile chat popup — sit above everything else, including
-   .home-reminder-overlay (z-index: 12000), which is the actual
-   element that was covering it. This project's real popup class is
-   .chat-card--mobile-open (toggled from chat.js, setMobileChatOpen).
-   There is no #mobileChatPopup or .chat-popup--open element in this
-   codebase, so those selectors are intentionally omitted here. */
-.chat-card--mobile-open {
-  z-index: 12001 !important;
-}
+/* Mobile chat popup removed — chat is inline on the page at every
+   screen size now (see chat.js and the #view-home .chat-card rules
+   above), so there's no floating popup left that needs a z-index
+   fight with .home-reminder-overlay or anything else. */
 
 /* ============================================================
    FIX SECTION (appended)
@@ -4190,14 +4018,115 @@ body.lw-location-panel-open .mobile-chat-toggle {
 
 @media (min-width: 981px) {
   /* Desktop was getting an even taller version (20-22px padding,
-     10px row-gap) layered on top of the base rule — scaled back. */
+     10px row-gap) layered on top of the base rule — scaled back
+     further still (was 16px 20px 14px / row-gap 8px). */
   #view-home .hero-banner {
-    padding: 16px 20px 14px;
-    row-gap: 8px;
+    padding: 12px 20px 10px;
+    row-gap: 4px;
   }
 
   #view-home .hero-banner__greeting {
-    font-size: 1.2rem;
+    font-size: 1.15rem;
+  }
+
+  #view-home .hero-banner__sub {
+    margin-top: 0;
+  }
+
+  #view-home .hero-banner__stats {
+    margin-top: 4px;
+  }
+}
+
+/* ---- 1b) Samsung S8/S9-width phones (~360px) ----
+   The existing 430px "extra-compact phone" tier still left the hero
+   banner and bottom-nav labels a bit large on true 360px devices —
+   this tightens both further at that narrower width. */
+@media (max-width: 380px) {
+  .hero-banner,
+  #view-home .hero-banner {
+    padding: 10px 10px 9px;
+  }
+
+  .hero-banner__greeting,
+  #view-home .hero-banner__greeting {
+    font-size: 0.94rem;
+  }
+
+  .hero-banner__sub,
+  #view-home .hero-banner__sub {
+    font-size: 0.72rem;
+  }
+
+  .hero-banner__eyebrow,
+  #view-home .hero-banner__eyebrow {
+    font-size: 0.62rem;
+  }
+
+  .hero-stat__value,
+  #view-home .hero-stat__value {
+    font-size: 0.88rem;
+  }
+
+  .hero-stat__label {
+    font-size: 0.6rem;
+  }
+
+  .bottom-nav-label {
+    font-size: 0.6rem;
+  }
+
+  /* ---- rest of the app: page chrome, cards, status hero, chat ----
+     the existing 430px tier softened these a bit; true 360px S8/S9
+     screens need another notch down. */
+  .page__title {
+    font-size: 1.08rem;
+  }
+
+  .page__eyebrow {
+    font-size: 0.64rem;
+  }
+
+  .page__subtitle {
+    font-size: 0.76rem;
+  }
+
+  .card__title {
+    font-size: 0.86rem;
+  }
+
+  .card__meta,
+  .location-card__label,
+  .meta-pill {
+    font-size: 0.66rem;
+  }
+
+  .status-hero__title {
+    font-size: 0.88rem;
+  }
+
+  .status-hero__sub,
+  .light-toggle-row__sub,
+  .status-insight__sub {
+    font-size: 0.66rem;
+  }
+
+  .location-card__row strong,
+  .status-insight__stats strong {
+    font-size: 0.8rem;
+  }
+
+  .chat-message__text,
+  .chat-form__input {
+    font-size: 0.72rem;
+  }
+
+  .btn {
+    font-size: 0.82rem;
+  }
+
+  .nav__link {
+    font-size: 0.85rem;
   }
 }
 
@@ -4245,5 +4174,28 @@ body.lw-location-panel-open .mobile-chat-toggle {
   body:has(#appShell:not([hidden])) {
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* ---- 3) Desktop: mouse-wheel scrolling not working on Home ----
+   global.css already forces html/body overflow-y:auto !important at
+   desktop widths, which is why dragging the browser's own scrollbar
+   still scrolls the page — that always acts directly on html/body.
+   Wheel input, though, resolves against whatever element is under the
+   cursor first. .page-data-loading (used as a body class while the
+   initial skeleton is showing) sets pointer-events:none on .topbar/
+   #bottom_nav_wrapper/.mobile-chat-toggle only, but nothing here
+   guarantees the *main content* stays a normal, non-scroll-trapping,
+   pointer-events:auto box once that skeleton class is gone — so this
+   pins it explicitly for the actual content the wheel is over. */
+@media (min-width: 721px) {
+  #view-home,
+  #realPageContent,
+  .location-page-grid,
+  .location-primary,
+  .page {
+    pointer-events: auto;
+    overflow: visible;
+    touch-action: auto;
   }
 }

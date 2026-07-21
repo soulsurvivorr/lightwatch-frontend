@@ -163,12 +163,65 @@
 
 .bottom-nav-icon {
   position: relative;
+  transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Soft gradient pill that blooms in behind the active icon — sits
+   behind the <img> elements since ::before is generated as the
+   first child, so it paints under them without needing z-index. */
+.bottom-nav-icon::before {
+  content: '';
+  position: absolute;
+  inset: -9px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--teal-dim), color-mix(in srgb, var(--teal) 22%, transparent));
+  opacity: 0;
+  transform: scale(0.6);
+  transition: opacity 0.24s ease, transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.24s ease;
+}
+
+.bottom-nav-link--active .bottom-nav-icon {
+  transform: translateY(-3px);
+}
+
+.bottom-nav-link--active .bottom-nav-icon::before {
+  opacity: 1;
+  transform: scale(1);
+  box-shadow: 0 8px 18px -8px color-mix(in srgb, var(--teal) 60%, transparent);
 }
 
 .bottom-nav-icon img {
   position: absolute;
   inset: 0;
   margin: auto;
+  transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.24s ease;
+}
+
+.bottom-nav-link--active .bottom-nav-icon-img--active {
+  filter: drop-shadow(0 2px 4px color-mix(in srgb, var(--teal) 45%, transparent));
+}
+
+.bottom-nav-link:active .bottom-nav-icon {
+  transform: scale(0.86);
+}
+
+/* Small glowing dot under the label — extra confirmation of the
+   active tab beyond just the icon/label color change. */
+.bottom-nav-link {
+  position: relative;
+}
+
+.bottom-nav-link--active::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--teal);
+  transform: translateX(-50%);
+  box-shadow: 0 0 6px 1px color-mix(in srgb, var(--teal) 70%, transparent);
 }
 
 .bottom-nav-icon-img--active {
@@ -184,6 +237,16 @@
 
 .bottom-nav-link--active .bottom-nav-icon-img--active {
   opacity: 1 !important;
+}
+
+.bottom-nav-label {
+  transition: color 0.2s ease, font-weight 0.2s ease, transform 0.24s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.bottom-nav-link--active .bottom-nav-label {
+  color: var(--teal);
+  font-weight: 700;
+  transform: translateY(-2px);
 }
 
 /* ============================================================

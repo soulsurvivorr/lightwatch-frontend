@@ -14,17 +14,38 @@
    rather than edits to the original rule, to guarantee they win
    regardless of what navbar.css contains. */
 
-/* ---- Brand pinned to the far left, more breathing room in the bar ---- */
+/* ---- Brand pinned to the far left, more breathing room in the bar ----
+   topbar__inner is a centered max-width column (navbar.css), so a brand
+   that just sits first-in-flow inside it is only ever flush with the
+   left edge of that centered column — on any screen wider than
+   --max-width there's a visible gap between the brand and the true
+   left edge of the browser window. Taking the brand out of that flow
+   entirely (absolute, positioned off .topbar itself) pins it to the
+   real left edge of the bar regardless of viewport width, fully
+   independent of wherever topbar__inner's content is centered. */
+.topbar {
+  position: relative !important;
+}
+
+.topbar__brand {
+  position: absolute !important;
+  left: 24px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  margin-right: 0 !important;
+  flex-shrink: 0;
+}
+
 .topbar__inner {
   display: flex !important;
   align-items: center !important;
   justify-content: flex-start !important;
   gap: 28px !important;
+  padding-left: 190px !important; /* clears the absolutely-positioned brand */
 }
 
-.topbar__brand {
-  margin-right: auto !important; /* pushes everything else (nav, user menu) away from it */
-  flex-shrink: 0;
+.topbar__user {
+  margin-left: auto !important; /* pushes just the account/avatar button to the far right, independent of .nav */
 }
 
 .nav {

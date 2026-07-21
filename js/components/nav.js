@@ -44,7 +44,11 @@ function applyActiveNav(section) {
 }
 
 function bindRouteLinks() {
-    document.querySelectorAll('.bottom-nav-link[data-nav]').forEach(link => {
+    // '#primaryNav .nav__link' is the desktop topbar nav — it was never
+    // being queried here, only the mobile '.bottom-nav-link' elements
+    // were, so clicking Home/Areas/Report/Notifications/Account in the
+    // desktop topbar had no listener attached and did nothing.
+    document.querySelectorAll('.bottom-nav-link[data-nav], #primaryNav .nav__link[data-nav]').forEach(link => {
         if (link.dataset.navBound === '1') return;
         link.dataset.navBound = '1';
         link.addEventListener('click', (e) => {

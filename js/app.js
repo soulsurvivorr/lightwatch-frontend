@@ -214,7 +214,12 @@
         activate(initial, { push: false });
 
         const shouldWaitForOnboarding = initial === 'login' && typeof window.LWOnboarding?.init === 'function';
-        if (!shouldWaitForOnboarding) {
+        if (shouldWaitForOnboarding) {
+            // onboarding.js's init() decides whether to actually open the
+            // walkthrough (SHOWN_THIS_SESSION_KEY / skip-once) and is
+            // responsible for removing 'lw-boot' itself either way.
+            window.LWOnboarding.init();
+        } else {
             requestAnimationFrame(() => {
                 document.documentElement.classList.remove("lw-boot");
             });

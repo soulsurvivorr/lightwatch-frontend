@@ -17,19 +17,30 @@
     html.lw-boot body > #authShell > :not(.onboarding-overlay) {
       visibility: hidden !important;
     }
-    html.lw-boot .onboarding-overlay {
+    /* lw-guest (added by the inline script below, before first paint)
+       is what actually scopes this to "no session" — lw-boot alone
+       applies on every load, including a signed-in visitor reloading
+       on /home, which is why onboarding was flashing there: this
+       rule used to fire for everyone regardless of session. */
+    html.lw-boot.lw-guest .onboarding-overlay {
       display: flex !important;
       visibility: visible !important;
       opacity: 1 !important;
       pointer-events: auto !important;
       transition: none !important;
     }
-    html.lw-boot .onboarding-overlay .onboarding-card {
+    html.lw-boot.lw-guest .onboarding-overlay .onboarding-card {
       opacity: 1 !important;
       transform: translateY(0) !important;
       transition: none !important;
     }
   </style>
+  <!-- Moved up from the bottom of </body>: config.js and constants.js
+       are both dependency-free, and the inline script right below
+       needs AUTH_KEY/TEMP_AUTH_KEY etc. (from constants.js) to decide
+       lw-guest synchronously, before first paint. -->
+  <script src="./js/config.js"></script>
+  <script src="./js/utils/constants.js"></script>
   <link rel="manifest" href="/manifest.json?v=2.0.0">
   <meta name="theme-color" content="#1C1F26">
   <link rel="apple-touch-icon" sizes="180x180" href="./images/dev-logo.png?v=2.0.0">
@@ -49,6 +60,23 @@
       const theme = isPhoneViewport ? 'light' : ((stored === 'dark' || stored === 'light') ? stored : (prefersDark ? 'dark' : 'light'));
       document.documentElement.setAttribute('data-theme', theme);
       document.documentElement.style.setProperty('color-scheme', theme);
+
+      // Lightweight, network-free "is someone signed in?" check —
+      // mirrors auth.js's getSession() presence checks (not its full
+      // JSON-parsing/expiry validation, which isn't needed just to
+      // decide whether to force-show the onboarding overlay). Runs
+      // before first paint so a signed-in visitor landing on Home
+      // never sees onboarding flash on screen first.
+      try {
+        const remembered = localStorage.getItem(REMEMBER_KEY) === 'true';
+        const hasStandardSession = remembered
+          ? Boolean(localStorage.getItem(AUTH_KEY))
+          : Boolean(sessionStorage.getItem(AUTH_KEY));
+        const hasTempSession = Boolean(localStorage.getItem(TEMP_AUTH_KEY));
+        document.documentElement.classList.toggle('lw-guest', !(hasStandardSession || hasTempSession));
+      } catch {
+        document.documentElement.classList.add('lw-guest');
+      }
     })();
   </script>
   <title>LightWatch GH</title>
@@ -1663,8 +1691,6 @@
 
   <!-- ==== JS: config + utils + services (order matters: classic
        scripts, each depends on globals the previous one defined) ==== -->
-  <script src="./js/config.js"></script>
-  <script src="./js/utils/constants.js"></script>
   <script src="./js/utils/validators.js"></script>
   <script src="./js/utils/helpers.js"></script>
   <script src="./js/services/auth.js"></script>

@@ -52,11 +52,11 @@
   background: var(--brand);
 }
 
-/* Hidden by default -- this floating toggle button is only meant to
-   exist on the narrow/mobile popup layout. It previously had no base
-   rule at all, so it was sitting on the page (visible and clickable)
-   at desktop widths too, which is how the popup + scroll-lock could
-   get triggered on a laptop in the first place. */
+/* The floating "Report" toggle button and its popup are gone — chat is
+   inline on the page at every screen size now (see chat.js and
+   home.css's #view-home .chat-card rules). This selector is kept at
+   display:none in case the button markup is still present in some
+   page's HTML, so it can never render even if it exists in the DOM. */
 .mobile-chat-toggle {
   display: none;
 }
@@ -216,12 +216,20 @@
   backdrop-filter: blur(2px);
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.18s ease;
+  /* FIX: add visibility:hidden as a second layer of defense on top of
+     pointer-events:none -- the other overlays in this app (e.g.
+     .location-expand-overlay in home.css) all pair the two together;
+     this one was missing visibility, so it was one CSS property away
+     from being able to swallow scroll/click input if pointer-events
+     were ever overridden elsewhere. */
+  visibility: hidden;
+  transition: opacity 0.18s ease, visibility 0.18s ease;
 }
 
 .chat-popup-overlay--open {
   opacity: 1;
   pointer-events: auto;
+  visibility: visible;
 }
 
 .chat-popup {

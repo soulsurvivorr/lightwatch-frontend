@@ -192,12 +192,10 @@ const markedSeenIds = new Set();
 
 // A message being *loaded* (fetched into memory so the thread is ready)
 // is not the same as a message being *seen* (actually on the user's
-// screen). Two separate ways that gap shows up:
-//  - mobile: chat lives in a popup that's closed by default
-//  - desktop/website: the chat card is on the home page, but "on the
-//    page" isn't "on screen" — it can be below the fold, or the window
-//    itself might not even have focus. Just loading the home page must
-//    not count as seeing it in either case.
+// screen). Chat is inline on the page on every screen size now, so
+// "on the page" isn't "on screen" — it can be below the fold, or the
+// window itself might not even have focus. Just loading the home page
+// must not count as seeing it.
 let chatCardIntersecting = false;
 let chatVisibilityObserver = null;
 function setupChatVisibilityObserver() {
@@ -219,12 +217,12 @@ function isChatVisibleToUser() {
     if (typeof document.hasFocus === 'function' && !document.hasFocus()) return false;
     const card = getVisibleChatCard();
     if (!card) return false;
-    const onMobile = window.matchMedia('(max-width: 720px)').matches;
-    if (onMobile) return card.classList.contains('chat-card--mobile-open');
-    // Desktop/website: only counts once the card is actually scrolled
-    // into view. If this browser has no IntersectionObserver support,
-    // fall back to the old "on-page" assumption rather than never
-    // marking anything seen.
+    // Chat is always inline on the page now (no separate mobile popup
+    // state to check), so "visible" means the same thing on every
+    // screen size: actually scrolled into view, on a focused/visible
+    // tab. Falls back to the old "on-page" assumption on browsers with
+    // no IntersectionObserver support rather than never marking
+    // anything seen.
     if (!('IntersectionObserver' in window)) return true;
     return chatCardIntersecting;
 }
@@ -510,10 +508,6 @@ function focusTargetMessageIfPresent() {
     const target = [...chatThread.querySelectorAll('.chat-message')]
         .find(el => el.dataset.chatId === pendingFocusChatId);
     if (!target) return;
-
-    if (window.matchMedia('(max-width: 720px)').matches) {
-        setMobileChatOpen(true);
-    }
 
     target.scrollIntoView({ block: 'center', behavior: 'smooth' });
     target.classList.add('chat-message--highlight');
@@ -899,205 +893,42 @@ chatScopeLocalBtn?.addEventListener('click', () => setChatScope(CHAT_SCOPE_LOCAL
 chatScopeGlobalBtn?.addEventListener('click', () => setChatScope(CHAT_SCOPE_GLOBAL));
 
 // -------------------------------------------------------
-// MOBILE PANEL
+// INLINE CHAT (formerly a mobile popup)
 // -------------------------------------------------------
+// Chat used to live in a fixed-position popup below 720px, toggled
+// open/closed by a floating "Report" button, with its own scroll-lock
+// and on-screen-keyboard-aware repositioning. It's inline on the page
+// on every screen size now — no popup, no toggle button, no scroll
+// lock — so all of that machinery is gone. setMobileChatOpen is kept
+// as a thin compatibility shim (still exported on window below) since
+// other code may call it to "jump to" the chat, e.g. from a deep link
+// or a button elsewhere in the app; it now just scrolls the card into
+// view instead of opening an overlay.
 function getVisibleChatCard() {
     return document.querySelector('#realPageContent .chat-card') || document.querySelector('.chat-card');
 }
 
-let lockedScrollY = 0;
-
-function setMobileScrollLock(locked) {
-    const onMobile = window.matchMedia('(max-width: 720px)').matches;
-    if (!onMobile) locked = false;
-
-    if (locked) {
-        lockedScrollY = window.scrollY || window.pageYOffset || 0;
-        document.documentElement.classList.add('mobile-chat-open');
-        document.body.classList.add('mobile-chat-open');
-        document.body.style.position = 'fixed';
-        document.body.style.top = `-${lockedScrollY}px`;
-        document.body.style.left = '0';
-        document.body.style.right = '0';
-        document.body.style.width = '100%';
-    } else {
-        document.documentElement.classList.remove('mobile-chat-open');
-        document.body.classList.remove('mobile-chat-open');
-        document.body.style.position = '';
-        document.body.style.top = '';
-        document.body.style.left = '';
-        document.body.style.right = '';
-        document.body.style.width = '';
-        window.scrollTo(0, lockedScrollY);
-    }
-}
-
 function setMobileChatOpen(open) {
     const card = getVisibleChatCard();
-    if (!card) return;
-    card.classList.toggle('chat-card--mobile-open', open);
-    setMobileScrollLock(open);
+    if (!card || !open) return;
 
-    // The popup going from closed -> open is the actual "seen" moment on
-    // mobile. isChatVisibleToUser() only returns true once the class
-    // above is applied, so fire a poll right now rather than waiting for
-    // the next 1.5s tick to catch up.
-    if (open) pollChatsOnce();
+    card.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    pollChatsOnce();
 
-    // Jump straight to the latest message on open, unless we're mid a
-    // deep-link to a specific message (focusTargetMessageIfPresent
-    // handles that scroll itself). The popup's layout only settles
-    // after the open transition/reflow, so wait a tick before scrolling.
-    if (open && !pendingFocusChatId) {
+    if (!pendingFocusChatId) {
         requestAnimationFrame(() => {
             requestAnimationFrame(() => scrollChatToBottom(false));
         });
     }
-
-    const toggle = document.getElementById('mobileChatToggle');
-    if (toggle) {
-        // Both the chat and close glyphs stay in the DOM (see home.html) and
-        // CSS cross-fades/rotates between them off this class — smoother
-        // than the old innerHTML swap, which cut instantly from one icon
-        // to the other with no transition in between.
-        const label = toggle.querySelector('.mobile-chat-toggle__label');
-        toggle.classList.toggle('mobile-chat-toggle--open', open);
-        if (label) label.textContent = open ? 'Close' : 'Report';
-        toggle.setAttribute('aria-label', open ? 'Close chat' : 'Open chat');
-    }
-
-    if (open) {
-        // Wait for the same reflow the scroll-to-bottom logic waits for,
-        // then measure the popup for real instead of guessing its height
-        // via a static CSS bottom offset.
-        requestAnimationFrame(() => {
-            requestAnimationFrame(positionMobileChatToggle);
-        });
-        window.addEventListener('resize', positionMobileChatToggle);
-        window.addEventListener('orientationchange', positionMobileChatToggle);
-        window.visualViewport?.addEventListener('resize', onChatKeyboardViewportChange);
-        window.visualViewport?.addEventListener('scroll', onChatKeyboardViewportChange);
-    } else {
-        clearMobileChatTogglePosition();
-        clearChatKeyboardOffset();
-        window.removeEventListener('resize', positionMobileChatToggle);
-        window.removeEventListener('orientationchange', positionMobileChatToggle);
-        window.visualViewport?.removeEventListener('resize', onChatKeyboardViewportChange);
-        window.visualViewport?.removeEventListener('scroll', onChatKeyboardViewportChange);
-    }
 }
 
-// Docks the floating toggle just below the popup by reading the popup's
-// actual on-screen bottom edge (getBoundingClientRect), rather than a
-// static CSS px offset. A static offset kept landing wrong on some
-// devices depending on their real dvh/safe-area values (it collided
-// with the send button on iPhone 12 Pro) — measuring the real box
-// guarantees the gap is correct no matter what the device reports.
-const MOBILE_CHAT_TOGGLE_GAP = 12; // px of breathing room below the popup
-
-function positionMobileChatToggle() {
-    const toggle = document.getElementById('mobileChatToggle');
-    const card = getVisibleChatCard();
-    if (!toggle || !card) return;
-    if (!card.classList.contains('chat-card--mobile-open')) return;
-    if (!window.matchMedia('(max-width: 720px)').matches) {
-        clearMobileChatTogglePosition();
-        return;
-    }
-
-    const rect = card.getBoundingClientRect();
-    toggle.style.bottom = 'auto';
-    toggle.style.top = `${Math.round(rect.bottom + MOBILE_CHAT_TOGGLE_GAP)}px`;
-}
-
-function clearMobileChatTogglePosition() {
-    const toggle = document.getElementById('mobileChatToggle');
-    if (!toggle) return;
-    toggle.style.top = '';
-    toggle.style.bottom = '';
-}
-
-// ── Keyboard-aware popup positioning ──────────────────────────
-// CSS alone (top/bottom/height driven by var(--app-vh, 100dvh)) assumes
-// the on-screen keyboard is fully reflected in that one number. That
-// didn't hold up for this popup: tapping into the textarea could leave
-// the input and Send button sitting underneath the keyboard instead of
-// "flowing up" above it like a normal chat app. window.visualViewport
-// reliably reports the actual visible area (keyboard included, any
-// browser auto-scroll-into-view included via offsetTop) regardless of
-// how the native WebView itself handles the resize, so measure it
-// directly and drive the popup's position from real numbers instead of
-// trusting CSS units alone.
-let chatKeyboardRaf = null;
-
-function applyChatKeyboardOffset() {
-    const card = getVisibleChatCard();
-    const vv = window.visualViewport;
-    if (!card || !vv) return;
-    if (!card.classList.contains('chat-card--mobile-open')) return;
-    if (!window.matchMedia('(max-width: 720px)').matches) return;
-    // Only bother while the textarea is actually focused — the rest of
-    // the time the normal (full-height) CSS layout is already correct.
-    if (document.activeElement !== chatInput) return;
-
-    const topGap = Math.round(vv.offsetTop) + 10;
-    const bottomGap = 14;
-    const availableHeight = Math.round(vv.height) - 10 - bottomGap;
-    if (availableHeight <= 120) return; // keyboard covering almost everything — don't crush the card
-
-    card.style.setProperty('--chat-kb-top', `${topGap}px`);
-    card.style.setProperty('--chat-kb-height', `${availableHeight}px`);
-    card.classList.add('chat-card--keyboard-adjust');
-}
-
-function clearChatKeyboardOffset() {
-    const card = getVisibleChatCard();
-    if (!card) return;
-    card.classList.remove('chat-card--keyboard-adjust');
-    card.style.removeProperty('--chat-kb-top');
-    card.style.removeProperty('--chat-kb-height');
-}
-
-function onChatKeyboardViewportChange() {
-    if (chatKeyboardRaf) cancelAnimationFrame(chatKeyboardRaf);
-    chatKeyboardRaf = requestAnimationFrame(applyChatKeyboardOffset);
-}
-
+// Nudge the input into view above the on-screen keyboard on focus.
+// The old popup needed window.visualViewport math to reposition a
+// fixed-position card around the keyboard; an inline card just needs
+// the browser's own scroll-into-view, since the page itself scrolls.
 chatInput?.addEventListener('focus', () => {
-    // The keyboard animates in over a few frames — a single immediate
-    // measurement can still catch the pre-keyboard size, so re-check a
-    // couple of times as it settles rather than trusting the first read.
-    applyChatKeyboardOffset();
-    setTimeout(applyChatKeyboardOffset, 80);
-    setTimeout(applyChatKeyboardOffset, 320);
     chatInput.scrollIntoView({ block: 'end', behavior: 'smooth' });
 });
-
-chatInput?.addEventListener('blur', clearChatKeyboardOffset);
-
-document.getElementById('mobileChatToggle')?.addEventListener('click', () => {
-    const card = getVisibleChatCard();
-    if (!card) return;
-    const isOpen = card.classList.contains('chat-card--mobile-open');
-    setMobileChatOpen(!isOpen);
-});
-document.getElementById('mobileChatClose')?.addEventListener('click', () => {
-    setMobileChatOpen(false);
-});
-
-// Safety net: the mobile chat popup + its scroll-lock are only meant to
-// exist below the 720px breakpoint. If the popup gets opened and the
-// window is then resized past that point (dev tools, laptop window
-// resizing, etc.), force both off immediately rather than trusting CSS
-// alone to sort it out.
-function closeMobileChatPopup() {
-    setMobileChatOpen(false);
-}
-const desktopBreakpoint = window.matchMedia('(min-width: 721px)');
-desktopBreakpoint.addEventListener('change', (e) => {
-    if (e.matches) closeMobileChatPopup();
-});
-if (desktopBreakpoint.matches) closeMobileChatPopup();
 
 // -------------------------------------------------------
 // SEND A MESSAGE
