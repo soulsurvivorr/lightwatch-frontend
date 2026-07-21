@@ -200,6 +200,7 @@
 
 .bottom-nav-icon .bottom-nav-icon-img--light {
   display: block !important;
+  opacity: 1;
 }
 
 .bottom-nav-icon .bottom-nav-icon-img--dark {
@@ -220,6 +221,14 @@
 
 :root[data-theme="dark"] .bottom-nav-icon .bottom-nav-icon-img--dark {
   display: block !important;
+}
+
+.bottom-nav-link--active .bottom-nav-icon .bottom-nav-icon-img--light {
+  opacity: 0 !important;
+}
+
+.bottom-nav-link--active .bottom-nav-icon .bottom-nav-icon-img--active {
+  opacity: 1 !important;
 }
 
 @media (prefers-color-scheme: dark) {

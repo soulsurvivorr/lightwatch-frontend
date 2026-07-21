@@ -20,9 +20,19 @@
       height: 100svh;
       height: 100dvh;
       overflow-x: hidden;
-      overflow-y: auto;  /* allow scrolling when keyboard resizes the viewport */
+      overflow-y: auto;  /* default: allow scrolling; mobile override below */
       overscroll-behavior: none;
   }
+
+    /* On small screens, prevent the underlying page from scrolling while
+       the login view is active to avoid layout shifts and background scroll. */
+    @media (max-width: 768px) {
+      html:has(#view-login:not([hidden])),
+      body:has(#view-login:not([hidden])) {
+        overflow-y: hidden !important;
+        height: 100dvh;
+      }
+    }
 
 .login-shell {
   width: 100%;

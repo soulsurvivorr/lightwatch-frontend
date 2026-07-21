@@ -36,8 +36,8 @@ body:has(#view-signup:not([hidden])) {
     min-height: 100dvh;
     display: flex;
     justify-content: center;
-    align-items: center;
-    padding: 24px 0;
+    align-items: flex-start;
+    padding: 24px 16px 32px;
     background: var(--bg-deep);
     color: var(--text-bright);
     overflow-x: hidden;
@@ -114,17 +114,15 @@ body.lw-leaving {
     position: relative;
     z-index: 1;
     padding: 1.15rem 1.35rem 1.35rem;
-    width: 100%;
-    max-width: 940px;
-    max-height: 100vh;
-    max-height: 100svh;
-    max-height: 100dvh;
+    width: min(100%, 980px);
+    max-width: 980px;
+    max-height: none;
     background: color-mix(in srgb, var(--bg-panel) 60%, transparent);
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
     border-radius: 18px;
     border: 1px solid var(--border-soft);
-    overflow: hidden;
+    overflow: visible;
     box-shadow: 0 24px 60px rgba(0, 0, 0, 0.16);
     animation: lw-panel-in .5s cubic-bezier(.2, .8, .2, 1) both;
 }
@@ -540,13 +538,16 @@ body.lw-leaving {
    so it needs to grow less often. */
 @media (min-width: 701px) {
     body:has(#view-signup:not([hidden])) {
-        align-items: center;
+        align-items: flex-start;
         justify-content: center;
+        padding: 28px 20px 40px;
+        min-height: 100dvh;
     }
 
     #view-signup > section {
-        max-height: none;
         overflow: visible;
+        min-height: auto;
+        margin: 0 auto;
     }
 
     .submit-info-section h3 {

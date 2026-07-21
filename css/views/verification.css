@@ -154,6 +154,7 @@ main {
     align-items: stretch;
     margin: 0;
     padding: .6rem .9rem;
+    overflow-x: hidden;
     /* body is position:fixed + overflow:hidden (see above) — nothing on
        this page could ever scroll. Fine on a resting layout, but once
        the keyboard opens for the OTP boxes (now correctly shrinking the
@@ -173,6 +174,10 @@ main {
 main div.verify-card {
     max-height: min(100%, calc(var(--app-vh, 100dvh) - 132px));
     overflow-y: auto;
+    overflow-x: hidden;
+    width: min(100%, 420px);
+    min-width: 0;
+    margin: 0 auto;
 }
 
 main h2, main p {
@@ -250,10 +255,12 @@ main h2 {
 
 /* ---- OTP boxes: boxed, modern style with pop + error states ---- */
 .otp-boxes {
-    display: flex;
-    gap: 10px;
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: clamp(6px, 2vw, 10px);
     justify-content: center;
-    margin: .2rem 0;
+    margin: .2rem auto;
+    width: min(100%, 320px);
 }
 
 .otp-boxes.is-shaking {
@@ -267,12 +274,13 @@ main h2 {
 }
 
 .otp-box {
-    width: 52px;
-    height: 58px;
+    width: 100%;
+    aspect-ratio: 1 / 1.15;
+    min-width: 0;
     padding: 0;
     text-align: center;
     font-family: var(--font-display);
-    font-size: 1.5rem;
+    font-size: clamp(1.1rem, 3.5vw, 1.5rem);
     font-weight: 700;
     border: 1.5px solid var(--border-soft);
     border-radius: 10px;
@@ -309,6 +317,8 @@ main h2 {
     display: flex;
     flex-direction: row;
     align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
     gap: 8px;
 }
 
@@ -475,39 +485,31 @@ button#continueBtn.is-loading .btn-label {
     border-color: #2a3240;
 }
 
-@media (max-width: 480px) {
+@media (max-width: 560px) {
     header {
-        padding: .5rem 1rem;
-        padding-top: calc(.5rem + env(safe-area-inset-top, 0px));
-    }
-
-    header h3 {
-        font-size: .95rem;
+        padding: .55rem 1rem;
+        padding-top: calc(.55rem + env(safe-area-inset-top, 0px));
     }
 
     main {
         align-items: stretch;
+        padding: .6rem .75rem;
     }
 
     main div.verify-card {
-        width: 100%;
+        width: min(100%, 100%);
         max-width: 100%;
-        padding: 1.3rem 1.15rem 1.15rem;
+        padding: 1.2rem 1rem 1rem;
         border-radius: 14px;
     }
 
     .verify-hero {
-        max-width: 100%;
+        max-width: min(100%, 220px);
     }
 
-    .otp-boxes {
-        gap: 8px;
-    }
-
-    .otp-box {
-        width: 44px;
-        height: 52px;
-        font-size: 1.3rem;
+    .contact-row {
+        justify-content: center;
+        text-align: center;
     }
 
     button#continueBtn {
@@ -515,9 +517,9 @@ button#continueBtn.is-loading .btn-label {
     }
 }
 
-@media (max-width: 400px) {
+@media (max-width: 420px) {
     main {
-        padding: .45rem .55rem;
+        padding: .45rem .5rem;
         padding-bottom: calc(.45rem + env(safe-area-inset-bottom, 0px));
     }
 
@@ -533,18 +535,34 @@ button#continueBtn.is-loading .btn-label {
         font-size: .88rem;
     }
 
+    .verify-card {
+        padding: 1rem .85rem .95rem;
+    }
+
     .otp-boxes {
-        gap: 8px;
+        gap: 6px;
     }
 
     .otp-box {
-        width: 40px;
-        height: 48px;
-        font-size: 1.15rem;
+        border-radius: 8px;
     }
 
     .resend-row p {
         font-size: .78rem;
+    }
+}
+
+@media (max-width: 320px) {
+    .otp-boxes {
+        gap: 5px;
+    }
+
+    .otp-box {
+        font-size: 1rem;
+    }
+
+    .verify-card {
+        padding: .9rem .7rem .85rem;
     }
 }
 

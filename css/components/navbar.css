@@ -153,3 +153,37 @@
 }
 
 /* ============================================================
+   Bottom nav — active icon swap
+   nav.js (LWNav.applyActiveNav) toggles exactly one class on the
+   current route's link: .bottom-nav-link--active. That's the only
+   selector this needs — the .is-active / --dark / aria-current
+   variants below were guesses made without nav.js and are removed
+   now that the real class is confirmed.
+   ============================================================ */
+
+.bottom-nav-icon {
+  position: relative;
+}
+
+.bottom-nav-icon img {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+}
+
+.bottom-nav-icon-img--active {
+  display: block !important;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.16s ease;
+}
+
+.bottom-nav-link--active .bottom-nav-icon-img--light {
+  opacity: 0 !important;
+}
+
+.bottom-nav-link--active .bottom-nav-icon-img--active {
+  opacity: 1 !important;
+}
+
+/* ============================================================

@@ -53,7 +53,7 @@
   --bottom-nav-shadow: 0 10px 28px rgba(0, 0, 0, 0.16);
   --bottom-nav-label: var(--text-faint);
   --bottom-nav-label-active: var(--teal);
-  --bottom-nav-active-bg: rgba(61, 217, 194, 0.1);
+  --bottom-nav-active-bg:  rgba(61, 217, 194, 0.1);
   --bottom-nav-icon-active-bg: rgba(61, 217, 194, 0.12);
 }
 

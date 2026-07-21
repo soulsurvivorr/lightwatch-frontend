@@ -64,6 +64,10 @@
         try { sessionStorage.setItem(SHOWN_THIS_SESSION_KEY, '1'); } catch {}
     }
 
+    function revealBootContent() {
+        document.documentElement.classList.remove('lw-boot');
+    }
+
     function setOnboardingSlide(index) {
         const slides = document.querySelectorAll('.onboarding-slide');
         const dots = document.querySelectorAll('.onboarding-dots__dot');
@@ -85,6 +89,9 @@
         if (!overlay) return;
         markOnboardingShownThisSession();
         overlay.classList.remove('is-open');
+        // remove page scroll lock when closing
+        document.documentElement.classList.remove('lw-onboarding-open');
+        document.body.classList.remove('lw-onboarding-open');
         setTimeout(() => { overlay.hidden = true; }, 150);
         window.dispatchEvent(new CustomEvent('lw-onboarding-closed'));
     }
@@ -94,10 +101,23 @@
         if (!overlay) return;
         setOnboardingSlide(0);
         overlay.hidden = false;
+        overlay.style.visibility = 'visible';
+        overlay.style.display = 'flex';
+        overlay.classList.add('is-instant');
+        // lock page scroll while onboarding is open to avoid layout
+        // shifts from scrollbar toggling underneath the overlay.
+        document.documentElement.classList.add('lw-onboarding-open');
+        document.body.classList.add('lw-onboarding-open');
         // Force a reflow before adding .is-open so the entrance
         // transition actually plays instead of being skipped.
         void overlay.offsetWidth;
         overlay.classList.add('is-open');
+        requestAnimationFrame(() => {
+            overlay.classList.remove('is-instant');
+            requestAnimationFrame(() => {
+                revealBootContent();
+            });
+        });
     }
 
     function init() {
@@ -109,8 +129,14 @@
         const overlay = document.getElementById('onboardingOverlay');
         if (!overlay) return;
 
-        if (consumeSkipOnboardingOnce()) return;
-        if (hasShownOnboardingThisSession()) return;
+        if (consumeSkipOnboardingOnce()) {
+            revealBootContent();
+            return;
+        }
+        if (hasShownOnboardingThisSession()) {
+            revealBootContent();
+            return;
+        }
 
         document.getElementById('onboardingNextBtn')?.addEventListener('click', () => {
             const totalSlides = document.querySelectorAll('.onboarding-slide').length;

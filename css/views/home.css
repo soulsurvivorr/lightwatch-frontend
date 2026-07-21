@@ -16,10 +16,23 @@
   4) #bottom_nav_wrapper
 */
 
-html:has(#appShell:not([hidden])),
-body:has(#appShell:not([hidden])) {
-    height: 100dvh !important;
-    height: 100svh !important;
+@media (max-width: 720px) {
+  html:has(#appShell:not([hidden])),
+  body:has(#appShell:not([hidden])) {
+      height: 100dvh !important;
+      height: 100svh !important;
+  }
+}
+
+@media (min-width: 721px) {
+  body:has(#appShell:not([hidden])) {
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  #appShell {
+    min-height: 100%;
+  }
 }
 
 /* ---- Hero greeting banner ---- */
@@ -29,17 +42,22 @@ body:has(#appShell:not([hidden])) {
       padding: 16px 18px 14px;
       margin: 0 0 14px;
       position: relative;
-      display: grid;
-      grid-template-columns: 1fr;
-      grid-template-areas:
-        "eyebrow"
-        "location"
-        "greeting"
-        "sub"
-        "chip"
-        "stats";
-      align-items: start;
-      gap: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+      /* Auto-placed (implicit) grid rows instead of named
+         grid-template-areas. A named-area grid reserves a row — and
+         the gap around it — for every area whether or not an item
+         fills it, which was the old "too much space" bug on pages
+         whose hero has no chip/stats, or when the chip is [hidden].
+         With implicit rows, a row only exists when an actual
+         (rendered, non-hidden) element is placed into it, so the gap
+         only ever applies between rows that are really there — same
+         guarantee the old flex layout had, but as a grid, so the
+         eyebrow and location pill can still share row 1. */
+      row-gap: 8px;
+      column-gap: 10px;
       overflow: hidden;
       border: 1px solid var(--border-soft);
       animation: fadeInUp 0.5s ease both;
@@ -53,35 +71,30 @@ body:has(#appShell:not([hidden])) {
       background: radial-gradient(circle, rgba(61,217,194,0.18), transparent 70%);
     }
     .hero-banner__eyebrow {
-      grid-area: eyebrow;
       font-size: 0.7rem;
       color: var(--teal);
       text-transform: uppercase;
       letter-spacing: 0.1em;
       margin: 0;
-      align-self: center;
     }
     .hero-banner__greeting {
-      grid-area: greeting;
       font-family: var(--font-display);
       font-size: 1.25rem;
       font-weight: 700;
       color: white;
       line-height: 1.2;
-      margin-bottom: 5px;
     }
     .hero-banner__sub {
-      grid-area: sub;
       font-size: 0.82rem;
       color: rgba(255,255,255,0.65);
-      margin-bottom: 14px;
       max-width: 580px;
     }
     .hero-banner__stats {
-      grid-area: stats;
+      width: 100%;
       display: grid;
-      grid-template-columns: 1fr;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 12px;
+      margin-top: 4px;
     }
     .hero-stat__value {
       font-size: 1.05rem;
@@ -104,12 +117,10 @@ body:has(#appShell:not([hidden])) {
       letter-spacing: 0.05em;
     }
     .hero-banner__location {
-      grid-area: location;
       display: flex;
       align-items: center;
       gap: 7px;
-      justify-self: start;
-      align-self: center;
+      align-self: flex-start;
       background: rgba(255,255,255,0.08);
       border: 1px solid rgba(255,255,255,0.12);
       border-radius: 999px;
@@ -128,8 +139,7 @@ body:has(#appShell:not([hidden])) {
     }
 
     .secondary-location-chip {
-      grid-area: chip;
-      justify-self: start;
+      align-self: flex-start;
       display: inline-flex;
       align-items: center;
       gap: 7px;
@@ -141,7 +151,6 @@ body:has(#appShell:not([hidden])) {
       font-size: 0.78rem;
       font-weight: 500;
       cursor: pointer;
-      margin-bottom: 12px;
       transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
       max-width: 100%;
     }
@@ -286,7 +295,7 @@ body:has(#appShell:not([hidden])) {
     @media (max-width: 400px) {
       .hero-banner { padding: 14px 14px 12px; }
       .hero-banner__greeting { font-size: 1.1rem; }
-      .hero-banner__stats { gap: 8px; }
+      .hero-banner__stats { gap: 0px; }
       .hero-stat__value { font-size: 1rem; }
       .hero-stat__label { font-size: 0.62rem; }
     }
@@ -1538,11 +1547,7 @@ body.lw-location-panel-open .mobile-chat-toggle {
 .location-expand-panel__close svg { width: 14px; height: 14px; }
 .location-expand-panel__close:hover { background: rgba(0,0,0,0.07); }
 
-.location-expand-panel__body {
-  /* No longer animates its own height — the panel's slide-up already
-     carries the "opening" motion, and content is visible the moment
-     it lands instead of waiting on a second, fetch-dependent reveal. */
-}
+
 
 .location-expand-status {
   display: flex;
@@ -2415,17 +2420,12 @@ body.lw-location-panel-open .mobile-chat-toggle {
     margin: 0 auto;
     width: auto;
     max-width: 420px;
-    /* Was: clamp(38rem, 90vh, 44rem) — that 38rem (608px) FLOOR forced
-       the card to that height no matter how short the real visible
-       viewport was, and raw vh/svh don't reliably reflect it either in
-       this app's Android WebView (see app-startup.js's --app-vh, built
-       for exactly this reason but not used here). On shorter real
-       viewports that floor made the card taller than the visible
-       screen, shoving its top (including the close button) above the
-       top edge — invisible, and with the scroll-lock active, unreachable.
-       Sizing off --app-vh with no hard floor means the card always fits
-       between its top/bottom anchors, however small that space is. */
-    height: min(44rem, calc(var(--app-vh, 100dvh) - 82px - env(safe-area-inset-bottom) - max(14px, env(safe-area-inset-top)) - 14px));
+    /* Keep the empty chat state tall and immersive so the page feels
+       filled rather than blank. On phone screens this uses roughly 70%
+       of the visible viewport height and leaves the composer pinned near
+       the bottom of the screen even when there are no messages yet. */
+    height: min(46rem, calc(var(--app-vh, 100dvh) * 0.72));
+    max-height: calc(var(--app-vh, 100dvh) * 0.72);
     border-radius: 20px;
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.18);
     background: var(--bg-panel);
@@ -3443,8 +3443,8 @@ body.lw-location-panel-open .mobile-chat-toggle {
 
 @media (max-width: 390px) {
   .chat-card--mobile-open {
-    height: clamp(35rem, 84vh, 39rem);
-    height: clamp(35rem, 84dvh, 39rem);
+    height: min(40rem, calc(var(--app-vh, 100dvh) * 0.74));
+    max-height: calc(var(--app-vh, 100dvh) * 0.74);
   }
 
   .mobile-chat-toggle {
@@ -3861,6 +3861,279 @@ body.lw-location-panel-open .mobile-chat-toggle {
 
   .nearby-list {
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  }
+}
+
+/* ---- Legacy home-page layout override ----
+   Mirrors the older www/pages/home.html + www/css/home.css structure
+   so the current SPA home view feels closer to the original page. */
+#view-home .hero-banner {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "eyebrow location"
+    "greeting greeting"
+    "sub sub"
+    "chip chip"
+    "stats stats";
+  align-items: start;
+  column-gap: 10px;
+  row-gap: 8px;
+  padding: 16px 18px 14px;
+  margin: 0 0 14px;
+  overflow: hidden;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, #1C1F26 0%, #2A2E38 55%, #123D36 100%);
+  animation: fadeInUp 0.5s ease both;
+}
+
+@media (min-width: 981px) {
+  #view-home .hero-banner {
+    padding: 20px 22px 18px;
+    row-gap: 10px;
+  }
+
+  #view-home .hero-banner__greeting {
+    font-size: 1.35rem;
+  }
+
+  #view-home .hero-banner__sub {
+    margin-bottom: 16px;
+  }
+
+  #view-home .hero-banner__stats {
+    gap: 14px;
+  }
+
+  #view-home .hero-stat__value {
+    font-size: 1.25rem;
+  }
+}
+
+#view-home .hero-banner::before {
+  content: "";
+  position: absolute;
+  right: -36px;
+  top: -36px;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(61, 217, 194, 0.18), transparent 70%);
+}
+
+#view-home .hero-banner__eyebrow {
+  grid-area: eyebrow;
+  margin: 0;
+  align-self: center;
+  font-size: 0.7rem;
+  color: var(--teal);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+#view-home .hero-banner__greeting {
+  grid-area: greeting;
+  margin-bottom: 5px;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: white;
+  line-height: 1.2;
+}
+
+#view-home .hero-banner__sub {
+  grid-area: sub;
+  margin-bottom: 14px;
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.65);
+  max-width: 580px;
+}
+
+#view-home .hero-banner__stats {
+  grid-area: stats;
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 4px;
+}
+
+#view-home .hero-stat__value {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: white;
+}
+
+#view-home .hero-stat__label {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+#view-home .hero-banner__location {
+  grid-area: location;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  justify-self: end;
+  align-self: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.85);
+  max-width: 100%;
+  min-width: 0;
+}
+
+#view-home .hero-banner__location span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 18ch;
+}
+
+#view-home .secondary-location-chip {
+  grid-area: chip;
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: rgba(61, 217, 194, 0.1);
+  border: 1px solid rgba(61, 217, 194, 0.3);
+  color: rgba(255, 255, 255, 0.9);
+  border-radius: 999px;
+  padding: 6px 10px 6px 12px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  margin-bottom: 12px;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+  max-width: 100%;
+}
+
+#view-home .secondary-location-chip:hover {
+  background: rgba(61, 217, 194, 0.18);
+  border-color: rgba(61, 217, 194, 0.5);
+}
+
+#view-home .secondary-location-chip:active {
+  transform: scale(0.98);
+}
+
+#view-home .secondary-location-chip__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--teal);
+  box-shadow: 0 0 0 3px rgba(61, 217, 194, 0.25);
+}
+
+#view-home .secondary-location-chip__arrow {
+  opacity: 0.6;
+  font-size: 0.9rem;
+}
+
+#view-home #secondaryLocationChipLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 40ch;
+}
+
+/* Layout: hero banner stays full-width at the top of the page; the
+   status card + profile sidebar sit in a normal 2-column row below
+   it (main content + narrow sidebar). Previously this block forced
+   #realPageContent into a 2-column grid with the hero banner pinned
+   into a tall left-hand panel spanning two rows — that fought with
+   the rules above and caused the cards to collapse/overlap on
+   desktop widths. Reverted to the simple stacked composition. */
+
+#view-home #realPageContent {
+  display: block;
+}
+
+#view-home .location-page-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 320px);
+  gap: 24px;
+  align-items: start;
+  margin: 0 auto 26px;
+  width: 100%;
+  max-width: var(--max-width);
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+@media (min-width: 981px) {
+  #view-home .location-card__top {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  #view-home .location-card__info {
+    display: grid;
+    gap: 14px;
+    min-width: 240px;
+  }
+
+  #view-home .location-card__meta-panel {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 10px;
+    min-width: 0;
+    width: 100%;
+  }
+}
+
+#view-home .location-primary {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+#view-home .location-card {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  min-width: 0;
+}
+
+@media (min-width: 981px) {
+  #view-home .location-card {
+    gap: 12px;
+  }
+
+  #view-home .location-sidebar {
+    gap: 24px;
+  }
+}
+
+#view-home .location-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+#view-home .profile-card,
+#view-home .achievement-card {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+@media (max-width: 980px) {
+  #view-home .location-page-grid {
+    grid-template-columns: 1fr;
   }
 }
 

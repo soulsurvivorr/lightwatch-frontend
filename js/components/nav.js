@@ -44,14 +44,21 @@ function applyActiveNav(section) {
 }
 
 function bindRouteLinks() {
-    document.querySelectorAll('[data-route]').forEach(link => {
+    document.querySelectorAll('.bottom-nav-link[data-nav]').forEach(link => {
         if (link.dataset.navBound === '1') return;
         link.dataset.navBound = '1';
         link.addEventListener('click', (e) => {
-            e.preventDefault();
-            const view = link.dataset.route;
+            const view = link.dataset.route || link.dataset.nav;
             if (!view) return;
-            window.LWRouter.navigate(view);
+
+            applyActiveNav(link.dataset.nav || view);
+
+            if (link.hasAttribute('data-route')) {
+                e.preventDefault();
+                if (typeof window.LWRouter?.navigate === 'function') {
+                    window.LWRouter.navigate(view);
+                }
+            }
         });
     });
 }

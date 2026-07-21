@@ -29,7 +29,13 @@ html.lw-bfcache-hide body {
      stray rule elsewhere. */
   html, body {
     overflow-y: auto !important;
+    overflow-x: hidden !important;
     height: auto !important;
+    min-height: 100% !important;
+  }
+
+  body {
+    padding-bottom: 24px;
   }
 }
 /* body / heading / link / list base rules moved to base/typography.css */

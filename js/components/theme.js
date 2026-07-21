@@ -7,19 +7,25 @@
     const THEME_KEY = 'lw_theme_pref';
     const DARK_QUERY = '(prefers-color-scheme: dark)';
     const LAPTOP_QUERY = '(min-width: 1024px)';
+    const PHONE_QUERY = '(max-width: 1023px)';
 
     const root = document.documentElement;
     const darkMedia = window.matchMedia(DARK_QUERY);
     const laptopMedia = window.matchMedia(LAPTOP_QUERY);
+    const phoneMedia = window.matchMedia(PHONE_QUERY);
 
     function getStoredTheme() {
         const value = localStorage.getItem(THEME_KEY);
         return value === 'light' || value === 'dark' ? value : null;
     }
 
+    function isPhoneViewport() {
+        return phoneMedia.matches;
+    }
+
     function getResolvedTheme() {
         const stored = getStoredTheme();
-        if (!laptopMedia.matches) return 'light';
+        if (isPhoneViewport()) return 'light';
         return stored || (darkMedia.matches ? 'dark' : 'light');
     }
 
@@ -30,11 +36,11 @@
     }
 
     function applyTheme(theme) {
-        const constrainedTheme = laptopMedia.matches ? theme : 'light';
-        root.setAttribute('data-theme', constrainedTheme);
-        root.style.setProperty('color-scheme', constrainedTheme);
-        setMetaThemeColor(constrainedTheme);
-        syncToggleUI(constrainedTheme);
+        const resolvedTheme = theme === 'dark' ? 'dark' : 'light';
+        root.setAttribute('data-theme', resolvedTheme);
+        root.style.setProperty('color-scheme', resolvedTheme);
+        setMetaThemeColor(resolvedTheme);
+        syncToggleUI(resolvedTheme);
     }
 
     function syncToggleUI(theme) {
@@ -88,11 +94,12 @@
 
     darkMedia.addEventListener('change', () => {
         // Keep following device theme only if user has not explicitly chosen one.
-        if (!getStoredTheme()) {
+        if (!getStoredTheme() && !isPhoneViewport()) {
             applyTheme(getResolvedTheme());
         }
     });
 
     laptopMedia.addEventListener('change', ensureToggleButton);
     laptopMedia.addEventListener('change', () => applyTheme(getResolvedTheme()));
+    phoneMedia.addEventListener('change', () => applyTheme(getResolvedTheme()));
 })();

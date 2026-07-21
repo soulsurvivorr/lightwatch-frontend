@@ -5,12 +5,24 @@
 
     .account-grid {
       display: grid;
-      grid-template-columns: minmax(0, 300px) minmax(0, 1fr);
-      gap: 20px;
+      /* Single column at every width — desktop now mirrors the phone
+         layout instead of splitting into a 300px sidebar + main
+         column. Flattening the two wrapper divs below into `contents`
+         (previously a <=768px-only rule) makes every card a direct
+         grid item on all screens too, so they stack top-to-bottom the
+         same way regardless of viewport. */
+      grid-template-columns: 1fr;
+      max-width: 640px;
+      gap: 16px;
       align-items: start;
       width: 100%;
+      margin: 0 auto;
       min-width: 0;
       box-sizing: border-box;
+    }
+
+    .account-grid > div {
+      display: contents;
     }
 
     #accountSkeleton {
@@ -276,22 +288,17 @@
       margin-bottom: 14px;
     }
 
+    /* #accountSignOutZone is a grid child (via the .account-grid > div
+       display:contents flatten above) on every width now, so this
+       reorder applies everywhere, not just <=768px. */
+    #accountSignOutZone {
+      order: 99;
+      margin-top: 0;
+    }
+
     @media (max-width: 768px) {
-      .account-grid {
-        grid-template-columns: 1fr;
-      }
       .account-stats {
         grid-template-columns: 1fr 1fr;
-      }
-      /* Mobile only: flatten the two grid columns so every card becomes
-         a direct grid item and can be reordered independently. Desktop
-         keeps the original two-column layout untouched. */
-      .account-grid > div {
-        display: contents;
-      }
-      #accountSignOutZone {
-        order: 99;
-        margin-top: 0;
       }
     }
 
@@ -820,4 +827,3 @@
         font-size: 0.76rem;
       }
     }
-  

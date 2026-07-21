@@ -6,6 +6,7 @@
   max-width: var(--max-width);
   margin: 0 auto;
   padding: 20px 24px 64px;
+  min-height: 100%;
 }
 
 .page__header {

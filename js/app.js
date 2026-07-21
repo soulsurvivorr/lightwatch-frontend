@@ -212,7 +212,13 @@
         }
 
         activate(initial, { push: false });
-        document.documentElement.classList.remove("lw-boot");
+
+        const shouldWaitForOnboarding = initial === 'login' && typeof window.LWOnboarding?.init === 'function';
+        if (!shouldWaitForOnboarding) {
+            requestAnimationFrame(() => {
+                document.documentElement.classList.remove("lw-boot");
+            });
+        }
     } // end of boot function
 
     // Move the activation and class removal inside the boot function

@@ -11,8 +11,24 @@
     /* Prevents a flash of the wrong shell before app.js resolves the
        initial view on first paint. Router removes this class itself
        once the first view is showing. */
+    html.lw-boot body { overflow: hidden; }
     html.lw-boot body > #authShell,
     html.lw-boot body > #appShell { visibility: hidden; }
+    html.lw-boot body > #authShell > :not(.onboarding-overlay) {
+      visibility: hidden !important;
+    }
+    html.lw-boot .onboarding-overlay {
+      display: flex !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+      pointer-events: auto !important;
+      transition: none !important;
+    }
+    html.lw-boot .onboarding-overlay .onboarding-card {
+      opacity: 1 !important;
+      transform: translateY(0) !important;
+      transition: none !important;
+    }
   </style>
   <link rel="manifest" href="/manifest.json?v=2.0.0">
   <meta name="theme-color" content="#1C1F26">
@@ -27,10 +43,10 @@
     (function () {
       document.documentElement.classList.add('lw-boot');
       const key = 'lw_theme_pref';
-      const isLaptop = window.matchMedia('(min-width: 1024px)').matches;
       const stored = localStorage.getItem(key);
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      const theme = isLaptop ? ((stored === 'dark' || stored === 'light') ? stored : (prefersDark ? 'dark' : 'light')) : 'light';
+      const isPhoneViewport = window.matchMedia('(max-width: 1023px)').matches;
+      const theme = isPhoneViewport ? 'light' : ((stored === 'dark' || stored === 'light') ? stored : (prefersDark ? 'dark' : 'light'));
       document.documentElement.setAttribute('data-theme', theme);
       document.documentElement.style.setProperty('color-scheme', theme);
     })();
@@ -139,7 +155,7 @@
 
       <div class="onboarding-slide onboarding-slide--areas" data-slide="2">
         <span class="onboarding-slide__icon">
-          <img src="./images/areas.png?v=1.0.20" alt="" aria-hidden="true" width="24" height="24" />
+          <img src="./images/location.png?v=1.0.20" alt="" aria-hidden="true" width="24" height="24" />
         </span>
         <h2>Before you continue</h2>
         <ul class="onboarding-slide__points onboarding-slide__points--disclaimer">
@@ -971,7 +987,7 @@
         <div class="page__header">
           <div>
             <div class="page__eyebrow">Report</div>
-            <h1 class="page__title">Community chat</h1>
+            <h1 class="page__title">Community reports</h1>
             <p class="page__subtitle">Share updates and see local reports from your area.</p>
           </div>
         </div>
@@ -979,7 +995,7 @@
         <div class="card chat-card">
           <div class="card__head chat-card__head">
             <div>
-              <span class="card__title">Community chat</span>
+              <span class="card__title">Community reports</span>
               <span class="card__meta">Posting as <strong id="chatHandle" data-skel="line">anon-glow-291</strong></span>
             </div>
             <button type="button" id="mobileChatClose" class="chat-close-btn" aria-label="Close chat"><svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:0.9em;height:0.9em;" aria-hidden="true"><path d="M3 3l10 10M13 3 3 13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
@@ -1028,7 +1044,7 @@
 
     <div class="areas-summary-strip">
       <span class="areas-summary-strip__icon">
-        <img src="./images/areas.png?v=1.0.14" alt="Areas" width="18" height="18">
+        <img src="./images/location.png?v=1.0.14" alt="Areas" width="18" height="18">
       </span>
       <span class="areas-summary-strip__text">
         <span id="areasSummaryText">Loading area status…</span>
@@ -1325,7 +1341,7 @@
             </div>
             <div class="pref-row">
               <div class="pref-row__info">
-                <div class="pref-row__title">Community chat mentions</div>
+                <div class="pref-row__title">Community reports mentions</div>
                 <div class="pref-row__sub">When someone replies to a message in your location</div>
               </div>
               <label class="toggle">
@@ -1403,7 +1419,7 @@
           <div class="pref-row">
             <div class="pref-row__info">
               <div class="pref-row__title">Compact chat bubbles</div>
-              <div class="pref-row__sub">Show smaller message cards in community chat</div>
+              <div class="pref-row__sub">Show smaller message cards in community reports</div>
             </div>
             <label class="toggle">
               <input type="checkbox" id="prefCompactChat">
@@ -1433,7 +1449,7 @@
           <div class="pref-row">
             <div class="pref-row__info">
               <div class="pref-row__title">Larger chat text</div>
-              <div class="pref-row__sub">Increase font size in community chat</div>
+              <div class="pref-row__sub">Increase font size in community reports</div>
             </div>
             <label class="toggle">
               <input type="checkbox" id="prefLargeChatText">
@@ -1531,7 +1547,7 @@
               <div class="accordion-item__panel" id="acc-panel-guidelines">
                 <div class="accordion-item__panel-inner">
                   <p>Only flip the light switch or post a status update if you can <strong>actually see</strong> the area right now — reports feed directly into what your neighbors see, and bad data makes LightWatch less useful for everyone.</p>
-                  <p>In community chat, keep it local and practical: outage updates, generator/fuel tips, and questions for people nearby. Anything abusive or unrelated may be removed.</p>
+                  <p>In community report, keep it local and practical: outage updates, generator/fuel tips, and questions for people nearby. Anything abusive or unrelated may be removed.</p>
                 </div>
               </div>
             </div>
@@ -1546,7 +1562,7 @@
               </button>
               <div class="accordion-item__panel" id="acc-panel-help">
                 <div class="accordion-item__panel-inner">
-                  <p>Status looks wrong for your area? Open community chat and ask — someone nearby can usually confirm within minutes. If notifications aren't arriving, check that they're enabled above and that your browser allows notifications for LightWatch.</p>
+                  <p>Status looks wrong for your area? Open community report and ask — someone nearby can usually confirm within minutes. If notifications aren't arriving, check that they're enabled above and that your browser allows notifications for LightWatch.</p>
                   <p>For anything else, reach the team at <strong>support@lightwatch.gh</strong>.</p>
                 </div>
               </div>
@@ -1564,7 +1580,7 @@
   <div class="chat-popup-overlay" id="chatPopupOverlay" aria-hidden="true">
     <div class="chat-popup" id="chatPopup">
       <div class="chat-popup__head">
-        <span class="chat-popup__title">Community chat preview</span>
+        <span class="chat-popup__title">Community report preview</span>
         <button type="button" class="chat-popup__close" id="chatPopupCloseBtn" aria-label="Close chat preview">×</button>
       </div>
       <div class="chat-popup__body" id="chatPopupBody"></div>
@@ -1607,35 +1623,35 @@
       <a href="#" class="bottom-nav-link" data-nav="home" data-route="home" aria-label="Home">
         <span class="bottom-nav-icon bottom-nav-icon--user">
           <img src="./icons/home.png" alt="Home" class="bottom-nav-icon-img bottom-nav-icon-img--light">
-          <img src="./icons/home-gray.png" alt="" aria-hidden="true" class="bottom-nav-icon-img bottom-nav-icon-img--dark">
+          <img src="./icons/home-active.png" alt="" aria-hidden="true" class="bottom-nav-icon-img bottom-nav-icon-img--active">
         </span>
         <span class="bottom-nav-label">Home</span>
       </a>
       <a href="#" class="bottom-nav-link" data-nav="areas" data-route="areas" aria-label="Areas">
         <span class="bottom-nav-icon bottom-nav-icon--user">
-          <img src="./images/areas.png?v=1.0.18" alt="Areas" class="bottom-nav-icon-img bottom-nav-icon-img--light">
-          <img src="./images/areas.png?v=1.0.18" alt="" aria-hidden="true" class="bottom-nav-icon-img bottom-nav-icon-img--dark">
+          <img src="./icons/location.png" alt="Areas" class="bottom-nav-icon-img bottom-nav-icon-img--light">
+          <img src="./icons/location-active.png" alt="" aria-hidden="true" class="bottom-nav-icon-img bottom-nav-icon-img--active">
         </span>
-        <span class="bottom-nav-label">Areas</span>
+        <span class="bottom-nav-label">Locations</span>
       </a>
       <a href="#" class="bottom-nav-link" data-nav="chat" data-route="chat" aria-label="Report">
         <span class="bottom-nav-icon bottom-nav-icon--user">
-          <img src="./icons/report_2.png" alt="Report" class="bottom-nav-icon-img bottom-nav-icon-img--light">
-          <img src="./icons/report-gray.png" alt="" aria-hidden="true" class="bottom-nav-icon-img bottom-nav-icon-img--dark">
+          <img src="./icons/chat.png" alt="Chat" class="bottom-nav-icon-img bottom-nav-icon-img--light">
+          <img src="./icons/chat-active.png" alt="" aria-hidden="true" class="bottom-nav-icon-img bottom-nav-icon-img--active">
         </span>
         <span class="bottom-nav-label">Report</span>
       </a>
       <a href="#" class="bottom-nav-link" data-nav="reports" data-route="reports" aria-label="Notifications">
         <span class="bottom-nav-icon bottom-nav-icon--user">
-          <img src="./icons/report_2.png" alt="Notifications" class="bottom-nav-icon-img bottom-nav-icon-img--light">
-          <img src="./icons/report-gray.png" alt="" aria-hidden="true" class="bottom-nav-icon-img bottom-nav-icon-img--dark">
+          <img src="./icons/notification.png" alt="Notifications" class="bottom-nav-icon-img bottom-nav-icon-img--light">
+          <img src="./icons/notification-active.png" alt="" aria-hidden="true" class="bottom-nav-icon-img bottom-nav-icon-img--active">
         </span>
         <span class="bottom-nav-label">Notifications</span>
       </a>
       <button type="button" class="bottom-nav-link bottom-nav-link--button" id="bottomNavUserBtn" data-nav="account" aria-label="User profile">
         <span class="bottom-nav-icon bottom-nav-icon--user">
           <img src="./icons/user.png" alt="You" class="bottom-nav-icon-img bottom-nav-icon-img--light">
-          <img src="./icons/user - gray.png" alt="" aria-hidden="true" class="bottom-nav-icon-img bottom-nav-icon-img--dark">
+          <img src="./icons/user-active.png" alt="" aria-hidden="true" class="bottom-nav-icon-img bottom-nav-icon-img--active">
         </span>
         <span class="bottom-nav-label">Me</span>
       </button>

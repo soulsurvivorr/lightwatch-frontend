@@ -78,6 +78,15 @@
   transform: translateY(0);
 }
 
+/* When the overlay is open, lock scrolling on the document to avoid
+   the underlying page changing layout (scrollbar width, reflow)
+   which caused the onboarding card to 'shake' on open. */
+html.lw-onboarding-open,
+body.lw-onboarding-open {
+  overflow: hidden !important;
+  height: 100dvh !important;
+}
+
 .onboarding-slide {
   display: none;
   flex-direction: column;
