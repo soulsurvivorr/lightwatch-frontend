@@ -9,6 +9,57 @@
   gap: 8px;
 }
 
+#view-chat .page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
+}
+
+#view-chat .chat-card {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+#view-chat .chat-card__head,
+#view-chat .chat-form {
+  flex-shrink: 0;
+}
+
+#view-chat .chat-thread-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+#view-chat .chat-thread {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: 8px;
+}
+
+#view-chat .chat-close-btn {
+  display: none;
+}
+
+/* Empty thread placeholder shown when there are no reports yet. */
+.chat-thread__empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 22px 16px;
+  min-height: 100%;
+  color: var(--text-faint);
+  font-size: 0.88rem;
+  line-height: 1.5;
+  text-align: center;
+}
+
 /* Sits just above the send button, inside the card, so it works the
    same whether the card is the inline desktop panel or the mobile
    popup. Only shown once the thread has scrolled away from the

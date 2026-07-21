@@ -752,10 +752,24 @@ async function loadCurrentUserProfile() {
     const session = getSession(); // defined in auth.js
     const userId = session?.user?.id || localStorage.getItem("currentUserId");
     const fallbackUser = session?.user || JSON.parse(localStorage.getItem("currentUserData") || localStorage.getItem("signupUser") || "null");
+    const isLocalOnlySession =
+        (session?.user?.role === 'admin') ||
+        (session?.user?.email === 'sarkdev@yahoo.com') ||
+        (typeof userId === 'string' && !/^[0-9a-fA-F]{24}$/.test(userId));
 
     // Stage cached profile data under the overlay.
     if (fallbackUser) {
         renderUserEverywhere(fallbackUser);
+    }
+
+    if (isLocalOnlySession) {
+        if (fallbackUser) {
+            await renderLocationPage(fallbackUser);
+        } else {
+            renderSignedOutEverywhere();
+        }
+        hideProfileLoader();
+        return;
     }
 
     if (!userId) {

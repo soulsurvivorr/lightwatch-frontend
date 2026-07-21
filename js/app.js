@@ -226,12 +226,49 @@
         }
     } // end of boot function
 
+    // ---- Topbar hide/show on scroll ----
+    // Hide topbar when scrolling down, show when scrolling up
+    let lastScrollTop = 0;
+    let scrollTimeout;
+    const topbar = document.querySelector('.topbar');
+
+    function handleHeaderScroll() {
+        if (!topbar) return;
+
+        const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
+
+        if (currentScroll > lastScrollTop && currentScroll > 100) {
+            // Scrolling DOWN - hide header
+            topbar.style.transform = 'translateY(-100%)';
+        } else {
+            // Scrolling UP or at top - show header
+            topbar.style.transform = 'translateY(0)';
+        }
+
+        lastScrollTop = currentScroll <= 0 ? 0 : currentScroll;
+    }
+
+    // Only enable on desktop (min-width: 981px)
+    function enableHeaderScroll() {
+        if (window.innerWidth >= 981) {
+            window.addEventListener('scroll', handleHeaderScroll, { passive: true });
+        } else {
+            window.removeEventListener('scroll', handleHeaderScroll);
+        }
+    }
+
+    window.addEventListener('resize', enableHeaderScroll);
+
     // Move the activation and class removal inside the boot function
     // by placing them at the end of the boot function itself.
 
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', boot);
+        document.addEventListener('DOMContentLoaded', () => {
+            boot();
+            enableHeaderScroll();
+        });
     } else {
         boot();
+        enableHeaderScroll();
     }
 })();

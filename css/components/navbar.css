@@ -18,6 +18,7 @@
      padding (.topbar__inner below) so links/logo/avatar stay clear of
      the notch; only the background bleeds under it. */
   padding-top: env(safe-area-inset-top, 0px);
+  transition: transform 0.3s ease;
 }
 
 .topbar__inner {

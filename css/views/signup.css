@@ -41,7 +41,7 @@ body:has(#view-signup:not([hidden])) {
     background: var(--bg-deep);
     color: var(--text-bright);
     overflow-x: hidden;
-    overflow-y: auto;
+    overflow-y: hidden;
     overscroll-behavior: none;
     position: relative;
     transition: opacity .26s ease;
@@ -116,13 +116,15 @@ body.lw-leaving {
     padding: 1.15rem 1.35rem 1.35rem;
     width: min(100%, 980px);
     max-width: 980px;
-    max-height: none;
+    max-height: calc(100dvh - 48px);
     background: color-mix(in srgb, var(--bg-panel) 60%, transparent);
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
     border-radius: 18px;
     border: 1px solid var(--border-soft);
-    overflow: visible;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
     box-shadow: 0 24px 60px rgba(0, 0, 0, 0.16);
     animation: lw-panel-in .5s cubic-bezier(.2, .8, .2, 1) both;
 }

@@ -1059,51 +1059,85 @@
     <!-- ==== Areas page section ==== -->
     <section id="view-areas" data-view="areas" hidden>
 <main class="page">
+      <div class="areas-layout">
+        <div class="areas-main">
+          <div class="hero-banner">
+            <div class="hero-banner__location">
+              <span class="pulse pulse--on" style="width:8px;height:8px;"></span>
+              <span>Kumasi, Ashanti</span>
+            </div>
+            <div class="hero-banner__eyebrow">LightWatch · Live status</div>
+            <div class="hero-banner__greeting">Areas</div>
+            <div class="hero-banner__sub">See how other neighborhoods around Kumasi are doing right now.</div>
+          </div>
 
-    <div class="hero-banner">
-      <div class="hero-banner__location">
-        <span class="pulse pulse--on" style="width:8px;height:8px;"></span>
-        <span>Kumasi, Ashanti</span>
-      </div>
-      <div class="hero-banner__eyebrow">LightWatch · Live status</div>
-      <div class="hero-banner__greeting">Areas</div>
-      <div class="hero-banner__sub">See how other neighborhoods around Kumasi are doing right now.</div>
-    </div>
+          <div class="areas-summary-strip">
+            <span class="areas-summary-strip__icon">
+              <img src="./images/location.png?v=1.0.14" alt="Areas" width="18" height="18">
+            </span>
+            <span class="areas-summary-strip__text">
+              <span id="areasSummaryText">Loading area status…</span>
+              <span class="areas-summary-strip__sub">Updates automatically as the community reports in</span>
+            </span>
+          </div>
 
-    <div class="areas-summary-strip">
-      <span class="areas-summary-strip__icon">
-        <img src="./images/location.png?v=1.0.14" alt="Areas" width="18" height="18">
-      </span>
-      <span class="areas-summary-strip__text">
-        <span id="areasSummaryText">Loading area status…</span>
-        <span class="areas-summary-strip__sub">Updates automatically as the community reports in</span>
-      </span>
-    </div>
+          <div class="areas-controls">
+            <div class="areas-filter-tabs" id="areasFilterTabs">
+              <button type="button" class="areas-filter-tab is-active" data-filter="all">All</button>
+              <button type="button" class="areas-filter-tab" data-filter="on">On</button>
+              <button type="button" class="areas-filter-tab" data-filter="off">Off</button>
+              <button type="button" class="areas-filter-tab" data-filter="unknown">Checking</button>
+            </div>
+            <div class="areas-search">
+              <input type="text" id="areasSearchInput" placeholder="Search a city..." autocomplete="off">
+            </div>
+          </div>
 
-    <div class="areas-controls">
-      <div class="areas-filter-tabs" id="areasFilterTabs">
-        <button type="button" class="areas-filter-tab is-active" data-filter="all">All</button>
-        <button type="button" class="areas-filter-tab" data-filter="on">On</button>
-        <button type="button" class="areas-filter-tab" data-filter="off">Off</button>
-        <button type="button" class="areas-filter-tab" data-filter="unknown">Checking</button>
-      </div>
-      <div class="areas-search">
-        <input type="text" id="areasSearchInput" placeholder="Search a city..." autocomplete="off">
-      </div>
-    </div>
+          <section class="areas-board card" aria-label="Areas liveboard">
+            <div class="card__head">
+              <span class="card__title">Cities status</span>
+              <span class="card__meta">Tap a filter or search to narrow the list</span>
+            </div>
+            <div class="area-grid" id="areaGrid" role="list" aria-label="City status list"></div>
+            <div class="areas-empty-state" id="areasEmptyState">
+              <strong>No cities match that search</strong>
+              <span>Try a different name or clear the filter</span>
+            </div>
+          </section>
+        </div>
 
-    <section class="areas-board card" aria-label="Areas liveboard">
-      <div class="card__head">
-        <span class="card__title">Cities status</span>
-        <span class="card__meta">Tap a filter or search to narrow the list</span>
+        <aside class="areas-sidebar" aria-label="Areas overview">
+          <div class="card areas-sidebar__card">
+            <div class="card__head">
+              <span class="card__title">Overview</span>
+              <span class="card__meta">Quick scan</span>
+            </div>
+            <div class="areas-sidebar__body">
+              <div class="areas-sidebar__item">
+                <span class="areas-sidebar__dot areas-sidebar__dot--on"></span>
+                <div>
+                  <strong>Live neighborhoods</strong>
+                  <span>See which communities are currently active.</span>
+                </div>
+              </div>
+              <div class="areas-sidebar__item">
+                <span class="areas-sidebar__dot areas-sidebar__dot--off"></span>
+                <div>
+                  <strong>Needs attention</strong>
+                  <span>Spot areas that may be reporting outages.</span>
+                </div>
+              </div>
+              <div class="areas-sidebar__item">
+                <span class="areas-sidebar__dot areas-sidebar__dot--checking"></span>
+                <div>
+                  <strong>Still checking</strong>
+                  <span>Watch for pending or unverified updates.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </aside>
       </div>
-      <div class="area-grid" id="areaGrid" role="list" aria-label="City status list"></div>
-      <div class="areas-empty-state" id="areasEmptyState">
-        <strong>No cities match that search</strong>
-        <span>Try a different name or clear the filter</span>
-      </div>
-    </section>
-
     <p class="footnote">LightWatch — meter &amp; grid status monitoring</p>
   </main>
     </section>

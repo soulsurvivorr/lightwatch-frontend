@@ -2304,6 +2304,10 @@ body.lw-location-panel-open {
   border: none;
   padding: 4px;
   border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.15s ease;
 }
 
 .topbar__user:hover {
@@ -4159,10 +4163,8 @@ body.lw-location-panel-open {
    so a fix placed here would just get overridden by chat.css's
    fixed sizes.) */
 
-/* ---- 2) Scrolling: home/areas sections not scrollable ----
-   Belt-and-braces alongside the html/body fix in global.css — makes
-   sure nothing inside the app shell itself is capped to a height
-   that would clip content instead of letting the page scroll. */
+/* ---- 2) Scrolling: mobile sections scrollable ----
+   On mobile, make sections scrollable with native momentum scrolling. */
 #realPageContent,
 .location-page-grid,
 .page {
@@ -4177,25 +4179,171 @@ body.lw-location-panel-open {
   }
 }
 
-/* ---- 3) Desktop: mouse-wheel scrolling not working on Home ----
-   global.css already forces html/body overflow-y:auto !important at
-   desktop widths, which is why dragging the browser's own scrollbar
-   still scrolls the page — that always acts directly on html/body.
-   Wheel input, though, resolves against whatever element is under the
-   cursor first. .page-data-loading (used as a body class while the
-   initial skeleton is showing) sets pointer-events:none on .topbar/
-   #bottom_nav_wrapper/.mobile-chat-toggle only, but nothing here
-   guarantees the *main content* stays a normal, non-scroll-trapping,
-   pointer-events:auto box once that skeleton class is gone — so this
-   pins it explicitly for the actual content the wheel is over. */
+/* ---- 3) Desktop: scrollable page content ----
+   On desktop, allow page content to scroll while maintaining pointer-events.
+   The body already has overflow-y:auto !important from global.css. */
 @media (min-width: 721px) {
   #view-home,
+  #view-reports,
+  #view-areas,
+  #view-account,
   #realPageContent,
-  .location-page-grid,
-  .location-primary,
   .page {
     pointer-events: auto;
-    overflow: visible;
+    overflow-y: auto;
+    overflow-x: hidden;
     touch-action: auto;
+  }
+
+  .location-page-grid,
+  .location-primary {
+    overflow: visible;
+  }
+}
+
+/* ============================================================
+   Reports section - Desktop styling
+   ============================================================ */
+@media (min-width: 981px) {
+  #view-reports .page__header {
+    margin-bottom: 28px;
+  }
+
+  #view-reports .page__title {
+    font-size: 1.65rem;
+  }
+
+  #view-reports .page__subtitle {
+    font-size: 0.94rem;
+    margin-top: 6px;
+  }
+
+  #view-reports .report-card {
+    padding: 26px;
+  }
+
+  #view-reports .card__title {
+    font-size: 1.08rem;
+  }
+
+  #view-reports .card__meta {
+    font-size: 0.82rem;
+  }
+
+  #view-reports .report-list {
+    gap: 14px;
+  }
+
+  #view-reports .report-item {
+    padding: 18px 20px;
+  }
+
+  #view-reports .report-item strong {
+    font-size: 0.98rem;
+    margin-bottom: 8px;
+  }
+
+  #view-reports .report-item__text {
+    font-size: 0.9rem;
+  }
+
+  #view-reports .report-item__time {
+    font-size: 0.8rem;
+  }
+}
+
+/* ============================================================
+   Areas section - Desktop styling
+   ============================================================ */
+@media (min-width: 981px) {
+  #view-areas .page__header {
+    margin-bottom: 28px;
+  }
+
+  #view-areas .page__title {
+    font-size: 1.65rem;
+  }
+
+  #view-areas .page__subtitle {
+    font-size: 0.94rem;
+    margin-top: 6px;
+  }
+
+  #view-areas .areas-board {
+    padding: 12px 14px 10px;
+    margin-bottom: 22px;
+  }
+
+  #view-areas .card__title {
+    font-size: 1.08rem;
+  }
+
+  #view-areas .card__meta {
+    font-size: 0.82rem;
+  }
+
+  #view-areas .area-row__main {
+    column-gap: 10px;
+    padding: 15px 10px;
+  }
+
+  #view-areas .area-row__name {
+    font-size: 0.88rem;
+  }
+
+  #view-areas .area-row__status-text {
+    font-size: 0.86rem;
+  }
+
+  #view-areas .areas-summary-strip {
+    padding: 12px 14px;
+    margin-bottom: 14px;
+  }
+
+  #view-areas #areasSummaryText {
+    font-size: 0.96rem;
+  }
+
+  #view-areas .areas-summary-strip__sub {
+    font-size: 0.78rem;
+  }
+
+  #view-areas .areas-filter-tab {
+    font-size: 0.78rem;
+    padding: 6px 12px;
+  }
+
+  #view-areas .areas-search input {
+    font-size: 0.82rem;
+  }
+}
+
+/* ============================================================
+   Account section - Desktop styling
+   ============================================================ */
+@media (min-width: 981px) {
+  #view-account .page__header {
+    margin-bottom: 28px;
+  }
+
+  #view-account .page__title {
+    font-size: 1.65rem;
+  }
+
+  #view-account .page__subtitle {
+    font-size: 0.94rem;
+    margin-top: 6px;
+  }
+
+  #view-account .card {
+    padding: 26px;
+  }
+
+  #view-account .card__title {
+    font-size: 1.08rem;
+  }
+
+  #view-account .card__meta {
+    font-size: 0.82rem;
   }
 }

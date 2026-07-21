@@ -5,6 +5,86 @@
    once rather than a handful of large cards.
    ============================================================ */
 
+.areas-layout {
+  display: grid;
+  gap: 24px;
+  width: 100%;
+  max-width: var(--max-width);
+  margin: 0 auto 26px;
+  align-items: start;
+  grid-template-columns: minmax(0, 3fr) minmax(300px, 1fr);
+}
+
+.areas-main {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+
+.areas-sidebar {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  width: 100%;
+}
+
+.areas-sidebar__card {
+  height: fit-content;
+}
+
+.areas-sidebar__body {
+  display: grid;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.areas-sidebar__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.areas-sidebar__item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.areas-sidebar__item strong {
+  display: block;
+  font-size: 0.84rem;
+  color: var(--text-bright);
+  margin-bottom: 3px;
+}
+
+.areas-sidebar__item span {
+  font-size: 0.74rem;
+  color: var(--text-faint);
+  line-height: 1.4;
+}
+
+.areas-sidebar__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-top: 5px;
+  flex-shrink: 0;
+}
+
+.areas-sidebar__dot--on {
+  background: var(--teal);
+}
+
+.areas-sidebar__dot--off {
+  background: var(--red);
+}
+
+.areas-sidebar__dot--checking {
+  background: var(--brand);
+}
+
 .areas-summary-strip {
   display: flex;
   align-items: center;
@@ -383,6 +463,51 @@
 }
 
 /* ---- Small screens: keep compact layout and preserve toggle target ---- */
+@media (min-width: 981px) {
+  .areas-layout {
+    grid-template-columns: minmax(0, 3fr) minmax(300px, 1fr);
+    gap: 28px;
+  }
+
+  .areas-main {
+    gap: 24px;
+  }
+
+  .areas-summary-strip {
+    padding: 16px 18px;
+    border-radius: 18px;
+  }
+
+  .areas-controls {
+    align-items: center;
+    gap: 14px;
+  }
+
+  .areas-search {
+    max-width: 420px;
+  }
+
+  .areas-board {
+    padding: 18px 20px 14px;
+    border-radius: 18px;
+  }
+
+  .areas-sidebar {
+    align-self: start;
+  }
+
+  .areas-sidebar__card {
+    padding: 18px 20px;
+    border-radius: 18px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-soft);
+  }
+
+  .area-row__main {
+    padding: 16px 12px;
+  }
+}
+
 @media (max-width: 768px) {
   .areas-board {
     padding: 10px 12px 6px;
