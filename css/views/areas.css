@@ -7,12 +7,16 @@
 
 .areas-layout {
   display: grid;
-  gap: 24px;
+  gap: 20px;
   width: 100%;
   max-width: var(--max-width);
   margin: 0 auto 26px;
   align-items: start;
-  grid-template-columns: minmax(0, 3fr) minmax(300px, 1fr);
+  /* Mobile-first: single column by default. The 3fr/1fr split is
+     desktop-only (see the min-width: 981px block below) — without
+     this, phones inherited the two-column grid with a 300px-minimum
+     sidebar track and had no width to fit it in. */
+  grid-template-columns: 1fr;
 }
 
 .areas-main {
@@ -586,4 +590,3 @@
     grid-template-columns: 7px minmax(0, 1fr) auto 18px;
   }
 }
-
