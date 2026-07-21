@@ -2,6 +2,52 @@
    visual component reused verbatim across every authenticated
    view) — this file is kept per the requested structure for
    header-specific LAYOUT rules (positioning/safe-area handling)
-   that don't belong to the visual component itself. Currently
-   empty: no such rules existed separately from navbar.css in the
-   original app. */
+   that don't belong to the visual component itself.
+
+   IMPORTANT — load order note: index.html loads this file BEFORE
+   components/navbar.css. That means anything declared here loses
+   to navbar.css on equal specificity, which is almost certainly
+   why the brand/gap/nav tweaks below need !important — without
+   it they'd be silently overridden the moment navbar.css loads.
+   navbar.css wasn't available when writing this, so these are
+   deliberately written as high-specificity/!important overrides
+   rather than edits to the original rule, to guarantee they win
+   regardless of what navbar.css contains. */
+
+/* ---- Brand pinned to the far left, more breathing room in the bar ---- */
+.topbar__inner {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 28px !important;
+}
+
+.topbar__brand {
+  margin-right: auto !important; /* pushes everything else (nav, user menu) away from it */
+  flex-shrink: 0;
+}
+
+.nav {
+  gap: 20px !important; /* more spacing between individual nav links too */
+}
+
+/* ---- Guarantee the primary nav is visible/usable on desktop ----
+   If the nav is only ever shown via ".nav-toggle:checked ~ .nav"
+   (a mobile-menu pattern) and navbar.css never adds an unconditional
+   "show it on wide screens" rule, clicking a nav link on desktop
+   does nothing because the nav itself is never displayed. This
+   forces it open at desktop widths regardless of checkbox state. */
+@media (min-width: 769px) {
+  .nav-toggle-label {
+    display: none !important;
+  }
+
+  .nav {
+    display: flex !important;
+    position: static !important;
+    flex-direction: row !important;
+    background: none !important;
+    border: none !important;
+    padding: 0 !important;
+  }
+}

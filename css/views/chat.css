@@ -629,3 +629,68 @@
   }
 }
 
+
+/* ============================================================
+   FIX (appended): community report / chat-message containers had
+   one fixed size for every screen — no phone vs. tablet vs. desktop
+   tuning at all (only the user-toggled compact/large-text prefs
+   changed anything). This scales bubble width/padding, thread
+   height and type size to the actual device. Placed last so it
+   wins over the fixed-size rules earlier in this file and the
+   min-width:721px rule directly above.
+   ============================================================ */
+@media (min-width: 769px) {
+  .chat-thread {
+    max-height: min(50vh, 380px);
+  }
+
+  .chat-message {
+    max-width: 62%;
+    font-size: 0.85rem;
+  }
+
+  .chat-message__text {
+    font-size: 0.85rem;
+  }
+
+  .chat-message__author {
+    font-size: 0.68rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .chat-thread {
+    max-height: min(40vh, 260px);
+    gap: 4px;
+  }
+
+  .chat-message {
+    max-width: 86%;
+    padding: 6px 9px;
+    font-size: 0.82rem;
+  }
+
+  .chat-message__text {
+    font-size: 0.82rem;
+    line-height: 1.35;
+  }
+
+  .chat-message__author {
+    font-size: 0.66rem;
+  }
+
+  .chat-message__time {
+    font-size: 0.6rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .chat-message {
+    max-width: 90%;
+    font-size: 0.78rem;
+  }
+
+  .chat-message__text {
+    font-size: 0.78rem;
+  }
+}

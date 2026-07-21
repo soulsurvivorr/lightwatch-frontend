@@ -4146,3 +4146,104 @@ body.lw-location-panel-open .mobile-chat-toggle {
 .chat-card--mobile-open {
   z-index: 12001 !important;
 }
+
+/* ============================================================
+   FIX SECTION (appended)
+   ------------------------------------------------------------
+   home.css has accumulated several overlapping .hero-banner and
+   .chat-card/.chat-message blocks over time (search the file for
+   "hero-banner" or "chat-card" and you'll find the same properties
+   redeclared 4-5 times at different breakpoints). Rather than risk
+   breaking something by deleting those blind, this section sits
+   last in the file so it wins the cascade on equal specificity and
+   is the actual source of truth for the properties below. A future
+   cleanup pass should fold these back into the earlier blocks and
+   delete the duplicates.
+   ============================================================ */
+
+/* ---- 1) Hero banner: too tall on both desktop and phone ----
+   Tightened padding/gaps and removed the extra bottom margins that
+   were reserved even when optional rows (chip, stats) weren't
+   contributing real content. */
+.hero-banner,
+#view-home .hero-banner {
+  padding: 14px 16px 12px;
+  row-gap: 6px;
+  gap: 6px;
+}
+
+.hero-banner__sub,
+#view-home .hero-banner__sub {
+  margin-bottom: 0;
+}
+
+.secondary-location-chip,
+#view-home .secondary-location-chip {
+  margin-bottom: 0;
+}
+
+.hero-banner__stats,
+#view-home .hero-banner__stats {
+  margin-top: 2px;
+  gap: 10px;
+}
+
+@media (min-width: 981px) {
+  /* Desktop was getting an even taller version (20-22px padding,
+     10px row-gap) layered on top of the base rule — scaled back. */
+  #view-home .hero-banner {
+    padding: 16px 20px 14px;
+    row-gap: 8px;
+  }
+
+  #view-home .hero-banner__greeting {
+    font-size: 1.2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-banner,
+  #view-home .hero-banner {
+    padding: 12px 14px 10px;
+    row-gap: 5px;
+    gap: 5px;
+  }
+
+  .hero-banner__greeting,
+  #view-home .hero-banner__greeting {
+    font-size: 1.05rem;
+  }
+
+  .hero-banner__sub,
+  #view-home .hero-banner__sub {
+    font-size: 0.78rem;
+  }
+
+  .hero-stat__value,
+  #view-home .hero-stat__value {
+    font-size: 1.05rem;
+  }
+}
+
+/* (Community-report/chat-message per-device sizing lives in
+   chat.css, appended at its end — chat.css loads after this file,
+   so a fix placed here would just get overridden by chat.css's
+   fixed sizes.) */
+
+/* ---- 2) Scrolling: home/areas sections not scrollable ----
+   Belt-and-braces alongside the html/body fix in global.css — makes
+   sure nothing inside the app shell itself is capped to a height
+   that would clip content instead of letting the page scroll. */
+#realPageContent,
+.location-page-grid,
+.page {
+  overflow: visible;
+}
+
+@media (max-width: 720px) {
+  html:has(#appShell:not([hidden])),
+  body:has(#appShell:not([hidden])) {
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+}

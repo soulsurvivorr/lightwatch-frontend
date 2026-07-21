@@ -38,6 +38,25 @@ html.lw-bfcache-hide body {
     padding-bottom: 24px;
   }
 }
+
+/* ---- FIX: matching guarantee for phone widths ----
+   views/home.css locks html/body to a fixed 100dvh/100svh on mobile
+   (see its "@media (max-width: 720px)" block) but never pairs that
+   with overflow-y: auto, so once real content is taller than one
+   screen it has nowhere to go — the page (Home, Areas, etc.) simply
+   can't scroll. This adds the missing piece without touching the
+   height rule those mobile layouts depend on. */
+@media (max-width: 720px) {
+  html, body {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #appShell {
+    overflow: visible !important;
+  }
+}
 /* body / heading / link / list base rules moved to base/typography.css */
 
 /* ============================================================
