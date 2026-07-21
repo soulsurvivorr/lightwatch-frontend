@@ -214,14 +214,17 @@
         activate(initial, { push: false });
 
         const shouldWaitForOnboarding = initial === 'login' && typeof window.LWOnboarding?.init === 'function';
+
+        // Ensure app starts in a loading state if we have skeletons
+        document.body.classList.add('app-loading');
+
         if (shouldWaitForOnboarding) {
-            // onboarding.js's init() decides whether to actually open the
-            // walkthrough (SHOWN_THIS_SESSION_KEY / skip-once) and is
-            // responsible for removing 'lw-boot' itself either way.
             window.LWOnboarding.init();
         } else {
             requestAnimationFrame(() => {
                 document.documentElement.classList.remove("lw-boot");
+                // The individual view modules are responsible for removing .app-loading
+                // after their first data fetch (home.js, areas.js, etc.)
             });
         }
     } // end of boot function
@@ -237,22 +240,27 @@
 
         const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
 
-        if (currentScroll > lastScrollTop && currentScroll > 100) {
+        if (currentScroll > lastScrollTop && currentScroll > 80) {
             // Scrolling DOWN - hide header
             topbar.style.transform = 'translateY(-100%)';
+            topbar.style.opacity = '0';
         } else {
             // Scrolling UP or at top - show header
             topbar.style.transform = 'translateY(0)';
+            topbar.style.opacity = '1';
+            topbar.style.boxShadow = currentScroll > 20 ? '0 4px 20px rgba(0,0,0,0.15)' : 'none';
         }
 
         lastScrollTop = currentScroll <= 0 ? 0 : currentScroll;
     }
 
-    // Only enable on desktop (min-width: 981px)
+    // Enable on desktop and tablet (min-width: 769px)
     function enableHeaderScroll() {
-        if (window.innerWidth >= 981) {
+        if (window.innerWidth >= 769) {
             window.addEventListener('scroll', handleHeaderScroll, { passive: true });
         } else {
+            topbar.style.transform = 'translateY(0)';
+            topbar.style.opacity = '1';
             window.removeEventListener('scroll', handleHeaderScroll);
         }
     }

@@ -183,7 +183,7 @@
 
       <div class="onboarding-slide onboarding-slide--areas" data-slide="2">
         <span class="onboarding-slide__icon">
-          <img src="./images/location.png?v=1.0.20" alt="" aria-hidden="true" width="24" height="24" />
+          <img src="./icons/location.png?v=1.0.20" alt="" aria-hidden="true" width="24" height="24" />
         </span>
         <h2>Before you continue</h2>
         <ul class="onboarding-slide__points onboarding-slide__points--disclaimer">
@@ -1058,7 +1058,34 @@
 
     <!-- ==== Areas page section ==== -->
     <section id="view-areas" data-view="areas" hidden>
-<main class="page">
+  <div class="page" id="areasSkeleton" aria-hidden="true">
+    <div class="hero-banner">
+      <span class="skel skel-line" style="width:120px;height:10px;"></span>
+      <span class="skel skel-line" style="width:180px;height:24px;margin-top:10px;"></span>
+      <span class="skel skel-line" style="width:80%;height:12px;margin-top:10px;"></span>
+    </div>
+    <div class="areas-layout">
+      <div class="areas-main">
+        <span class="skel skel-block" style="height:48px;margin-bottom:16px;"></span>
+        <div class="card" style="padding:16px;">
+          <span class="skel skel-line" style="width:140px;height:14px;margin-bottom:12px;"></span>
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <span class="skel skel-block" style="height:52px;"></span>
+            <span class="skel skel-block" style="height:52px;"></span>
+            <span class="skel skel-block" style="height:52px;"></span>
+          </div>
+        </div>
+      </div>
+      <aside class="areas-sidebar">
+        <div class="card" style="height:200px;">
+          <span class="skel skel-line" style="width:100px;height:14px;"></span>
+          <span class="skel skel-block" style="height:120px;margin-top:14px;"></span>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+<main class="page" id="areasRealContent">
       <div class="hero-banner">
         <div class="hero-banner__location">
           <span class="pulse pulse--on" style="width:8px;height:8px;"></span>

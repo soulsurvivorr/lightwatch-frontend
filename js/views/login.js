@@ -161,8 +161,8 @@
             return;
 
         } catch (err) {
-            console.error(err);
-            errorMsg.textContent = 'Server not running or unreachable';
+            console.error("Login fetch error:", err);
+            errorMsg.textContent = `Connection failed to ${API_URL}. Is the server running?`;
         } finally {
             sendCodeBtn.disabled = false;
             sendCodeBtn.textContent = 'Send code';

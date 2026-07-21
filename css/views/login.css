@@ -19,31 +19,21 @@
       height: 100vh;
       height: 100svh;
       height: 100dvh;
-      overflow-x: hidden;
-      overflow-y: auto;  /* default: allow scrolling; mobile override below */
+      overflow: hidden !important; /* Block scrolling on both desktop and mobile */
       overscroll-behavior: none;
   }
-
-    /* On small screens, prevent the underlying page from scrolling while
-       the login view is active to avoid layout shifts and background scroll. */
-    @media (max-width: 768px) {
-      html:has(#view-login:not([hidden])),
-      body:has(#view-login:not([hidden])) {
-        overflow-y: hidden !important;
-        height: 100dvh;
-      }
-    }
 
 .login-shell {
   width: 100%;
   max-width: none;
-  min-height: 100vh;
-  min-height: var(--app-vh, 100dvh);
+  height: 100vh;
+  height: var(--app-vh, 100dvh);
   margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
   gap: 0;
+  overflow: hidden;
 }
 
 /* Mobile-first default: only the form pane renders. Re-enabled for
@@ -62,13 +52,14 @@
   .login-shell {
     width: 100%;
     max-width: none;
-    min-height: 100vh;
+    height: 100vh;
     margin: 0;
     padding: 0;
     display: grid;
     grid-template-columns: 1fr 1fr;
     align-items: stretch;
     gap: 0;
+    overflow: hidden;
   }
 
   .login-visual {
@@ -76,15 +67,15 @@
   }
 
   body:has(#view-login:not([hidden])) {
-    position: static;
-    height: auto;
-    min-height: max-content;
-    overflow-y: auto;
-    overflow-x: hidden;
+    position: fixed;
+    inset: 0;
+    height: 100vh;
+    overflow: hidden !important;
   }
 
   html:has(#view-login:not([hidden])) {
-    height: auto;
+    height: 100vh;
+    overflow: hidden !important;
   }
 
   /* Edge-to-edge split — no gap between panels, no floating
@@ -532,13 +523,8 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
     align-items: stretch;
     justify-content: space-between;
     min-height: 0;
-    /* Keep the notch/Dynamic Island clearance from styles.css's base
-       .login-form-side rule — this block only needs to change layout
-       (height/overflow) for the phone breakpoint, not padding, but it
-       shares a selector with that rule so it has to restate this or
-       lose it. */
-    padding-top: 10em;
-    padding-bottom: calc(48px + env(safe-area-inset-bottom, 0px));
+    padding-top: 6em;
+    padding-bottom: calc(5px + env(safe-area-inset-bottom, 0px)); /* Footer 5px from bottom */
     padding-left: 24px;
     padding-right: 24px;
   }
@@ -550,8 +536,10 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
     border-radius: 999px;
     z-index: 0;
     pointer-events: none;
-    /* Static bubbles on mobile to improve keyboard speed */
-    will-change: auto;
+    will-change: transform;
+    animation-duration: 4s;
+    animation-iteration-count: infinite;
+    animation-timing-function: ease-in-out;
   }
 
   /* Top-right bubble cluster */
@@ -565,6 +553,7 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
       radial-gradient(circle at 46% 46%, rgba(214, 162, 74, 0.92), rgba(166, 108, 20, 0.5) 46%, transparent 66%),
       radial-gradient(circle at 66% 68%, rgba(28, 90, 158, 0.88), transparent 58%);
     filter: blur(0.5px);
+    animation-name: bubble-float-a;
   }
 
   /* Bottom-left bubble cluster */
@@ -578,6 +567,7 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
       radial-gradient(circle at 58% 42%, rgba(28, 90, 158, 0.85), transparent 55%),
       radial-gradient(circle at 44% 70%, rgba(214, 162, 74, 0.9), rgba(166, 108, 20, 0.45) 48%, transparent 66%);
     filter: blur(0.5px);
+    animation-name: bubble-float-b;
   }
 
   .login-box {
@@ -591,8 +581,8 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
   }
 
   .login-footer {
-    padding-top: 20px;
-    padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+    padding-top: 0;
+    padding-bottom: calc(5px + env(safe-area-inset-bottom, 0px));
     flex-shrink: 0;
   }
 

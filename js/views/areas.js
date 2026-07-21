@@ -176,11 +176,13 @@
             const cached = LWCache.read(AREAS_CACHE_KEY, CACHE_MAX_AGE_MEDIUM_MS);
             if (cached) {
                 renderAreas([cached, ...DEMO_AREAS]);
+                document.body.classList.remove('app-loading');
             }
         }
         const liveBantama = await fetchLiveTowns();
         renderAreas([liveBantama, ...DEMO_AREAS]);
         LWCache.write(AREAS_CACHE_KEY, liveBantama);
+        document.body.classList.remove('app-loading');
     }
 
     function bindControls() {

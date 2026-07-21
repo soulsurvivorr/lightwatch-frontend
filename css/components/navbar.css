@@ -203,7 +203,23 @@
 }
 
 .bottom-nav-link:active .bottom-nav-icon {
-  transform: scale(0.86);
+  transform: scale(0.86) translateY(-2px);
+  transition: transform 0.1s ease;
+}
+
+/* Added feedback animation for mobile click */
+.bottom-nav-link:active::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  animation: navClickPulse 0.4s ease-out;
+}
+
+@keyframes navClickPulse {
+  from { opacity: 1; transform: scale(0.9); }
+  to { opacity: 0; transform: scale(1.1); }
 }
 
 /* Small glowing dot under the label — extra confirmation of the

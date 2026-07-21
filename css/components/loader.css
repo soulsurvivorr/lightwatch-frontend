@@ -16,28 +16,22 @@
    two rules right below.
    ------------------------------------------------------------ */
 
-#pageSkeleton {
+/* Select any skeleton div/main pair inside a section */
+[id$="Skeleton"] {
   display: none;
   opacity: 1;
-  /* Was an instant display:none the moment .page-data-loading came
-     off body — real content and skeleton hard-swapped in the same
-     frame, which is the "not smooth" handoff. profile.js's
-     hideProfileLoader() now adds .lw-skel-fading a beat before
-     removing .page-data-loading, so this fades out first and
-     #realPageContent's existing lw-content-reveal animation (see
-     home.html's <head>) fades/slides the real page in right after —
-     a clean crossfade instead of a snap. */
   transition: opacity 0.2s ease;
 }
 
-.page-data-loading #pageSkeleton {
+.page-data-loading [id$="Skeleton"] {
   display: block;
 }
 
-#pageSkeleton.lw-skel-fading {
+[id$="Skeleton"].lw-skel-fading {
   opacity: 0;
 }
 
+.page-data-loading [id$="RealContent"],
 .page-data-loading #realPageContent {
   display: none;
 }

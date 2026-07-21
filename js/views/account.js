@@ -612,7 +612,7 @@ async function loadAccountExtras() {
     // loading now — release the flag profile.js's hideProfileLoader() was
     // respecting, and reveal the real content if the skeleton is still up.
     if (document.body) delete document.body.dataset.accountExtrasLoading;
-    document.body?.classList.remove('page-data-loading');
+    document.body?.classList.remove('page-data-loading', 'app-loading');
 }
 
 // ------------------------------------------------------------

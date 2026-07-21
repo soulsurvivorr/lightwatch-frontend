@@ -163,9 +163,13 @@ body.lw-leaving {
 
 #main-content_wrapper {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap; /* Prevent wrapping on desktop if possible, or handle overflow */
     justify-content: center;
-    gap: 1.1rem;
+    align-items: stretch;
+    gap: 1.5rem;
+    width: max-content;
+    max-width: 100%;
+    margin: 0 auto;
 }
 
 /* ===== Left: info panel ===== */
@@ -271,8 +275,8 @@ body.lw-leaving {
 
 /* ===== Right: form panel ===== */
 #input-field-section {
-    flex: 3;
-    min-width: 270px;
+    flex: 0 0 380px; /* Fixed width on desktop to prevent overflow */
+    width: 380px;
     background: color-mix(in srgb, var(--bg-panel) 96%, transparent);
     border: 1px solid var(--border-soft);
     padding: 1.5rem 1.3rem;
@@ -613,6 +617,8 @@ body:has(#view-signup:not([hidden])) #authShell {
 
     #main-content_wrapper {
         flex-direction: column;
+        flex-wrap: wrap;
+        width: 100%;
         gap: .5rem;
     }
 
@@ -620,30 +626,10 @@ body:has(#view-signup:not([hidden])) #authShell {
         display: none;
     }
 
-    #view-signup > section {
-        position: relative;
+    #input-field-section {
         flex: 1;
         width: 100%;
-        max-width: 100%;
-        min-height: 0;
-        border-radius: 0;
-        box-shadow: none;
-        overflow-y: auto;
-        overflow-x: hidden;
-        -webkit-overflow-scrolling: touch;
-        display: flex;
-        flex-direction: column;
-        padding: 1rem 1.1rem 1.5rem;
-        padding-top: calc(1.5rem + env(safe-area-inset-top, 0px));
-        padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
-    }
-
-    .brand-row {
-        margin-bottom: 1.2rem;
-        justify-content: center; /* Center header like Screenshot 1 */
-    }
-
-    #input-field-section {
+        min-width: 0;
         padding: 1rem .95rem;
     }
 

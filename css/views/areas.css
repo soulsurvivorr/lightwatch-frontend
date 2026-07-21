@@ -468,6 +468,68 @@
 
 /* ---- Small screens: keep compact layout and preserve toggle target ---- */
 @media (min-width: 981px) {
+  #view-areas .hero-banner {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "eyebrow location"
+      "greeting greeting"
+      "sub sub";
+    align-items: start;
+    column-gap: 10px;
+    row-gap: 8px;
+    padding: 16px 18px 14px;
+    margin: 0 0 14px;
+    overflow: hidden;
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-lg);
+    background: linear-gradient(135deg, #1C1F26 0%, #2A2E38 55%, #123D36 100%);
+  }
+
+  #view-areas .hero-banner__eyebrow {
+    grid-area: eyebrow;
+    margin: 0;
+    align-self: center;
+    font-size: 0.7rem;
+    color: var(--teal);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  #view-areas .hero-banner__greeting {
+    grid-area: greeting;
+    font-family: var(--font-display);
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: white;
+    line-height: 1.2;
+    margin-bottom: 5px;
+  }
+
+  #view-areas .hero-banner__sub {
+    grid-area: sub;
+    font-size: 0.82rem;
+    color: rgba(255, 255, 255, 0.65);
+    max-width: 580px;
+    margin-bottom: 16px;
+  }
+
+  #view-areas .hero-banner__location {
+    grid-area: location;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    justify-self: end;
+    align-self: center;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.85);
+  }
+
   .areas-layout {
     grid-template-columns: minmax(0, 3fr) minmax(300px, 1fr);
     gap: 28px;

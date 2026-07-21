@@ -1,10 +1,8 @@
 // ============================================================
 //  CONFIG.JS — single source of truth for the backend base URL.
-//  Loaded first, as a classic (non-module) script, so API_URL is a
-//  plain global every other script (view modules, services) can
-//  read directly — exactly like the original multi-page app.
 // ============================================================
-const API_URL =
-    ["localhost", "127.0.0.1"].includes(location.hostname)
-        ? "http://localhost:3000"
-        : "https://lightwatch-backend.onrender.com";
+
+// Production backend URL - used by all platforms (Web & Android)
+const API_URL = "https://lightwatch-backend.onrender.com";
+
+console.log("[Config] API_URL set to:", API_URL);
