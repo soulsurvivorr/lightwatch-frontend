@@ -1,4 +1,0 @@
-/* dashboard.js only sets a greeting/avatar initial on the home view —
-   it doesn't own any CSS of its own; the greeting/avatar styling it
-   touches lives in views/home.css. This file is kept for structural
-   parity with the requested folder layout. */
