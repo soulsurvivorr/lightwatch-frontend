@@ -122,7 +122,10 @@ function formatSecondaryDuration(ms) {
     return `${hours}h ${minutes}m`;
 }
 
-async function loadSecondaryLocationStatus(sec) {
+const SECONDARY_LOCATION_CACHE_PREFIX = 'lw_cache_secondary_status_';
+const SECONDARY_LOCATION_CACHE_MAX_AGE_MS = 30 * 60 * 1000; // matches profile.js's light-status cache
+
+function paintSecondaryLocationStatus(data, loc) {
     const labelEl = document.getElementById('secondaryLocationStatusLabel');
     const subEl = document.getElementById('secondaryLocationStatusSub');
     const uptimeEl = document.getElementById('secondaryLocationUptime');
@@ -132,62 +135,91 @@ async function loadSecondaryLocationStatus(sec) {
     const lastOutageEl = document.getElementById('secondaryLocationLastOutage');
     const noteEl = document.getElementById('secondaryLocationNote');
 
-    setSecondaryStatusDot('unknown');
-    if (labelEl) labelEl.textContent = 'Checking status…';
-    if (subEl) subEl.textContent = '—';
-    if (uptimeEl) uptimeEl.textContent = '—';
-    if (avgOutageEl) avgOutageEl.textContent = '—';
-    if (outageFreqEl) outageFreqEl.textContent = '—';
-    if (lastOutageRowEl) lastOutageRowEl.hidden = true;
+    setSecondaryStatusDot(data.status);
+    if (labelEl) {
+        labelEl.textContent = data.status === 'on' ? 'Light is on'
+            : data.status === 'off' ? 'Light is off'
+            : 'No reports yet for this area';
+    }
+    if (subEl) {
+        subEl.textContent = data.reportedAt
+            ? `Last verified ${new Date(data.reportedAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}`
+            : 'Be the first to report here — set it as your primary location to check in.';
+    }
+
+    // Real outage-history stats the backend already computes
+    // (getLightStatusStats in server.js) — this is what actually
+    // matters to someone deciding whether to head over to this
+    // location, unlike a raw contributor/check count.
+    const stats = data.stats;
+    if (stats) {
+        if (uptimeEl) uptimeEl.textContent = stats.uptimePercent != null ? `${stats.uptimePercent}%` : '—';
+        if (avgOutageEl) avgOutageEl.textContent = stats.avgOutageMs != null ? formatSecondaryDuration(stats.avgOutageMs) : 'No data';
+        if (outageFreqEl) outageFreqEl.textContent = stats.outageFreq != null ? String(stats.outageFreq) : '—';
+
+        if (lastOutageRowEl && lastOutageEl && stats.lastOutageMs != null) {
+            lastOutageEl.textContent = formatSecondaryDuration(stats.lastOutageMs);
+            lastOutageRowEl.hidden = false;
+        }
+    } else {
+        if (uptimeEl) uptimeEl.textContent = '—';
+        if (avgOutageEl) avgOutageEl.textContent = '—';
+        if (outageFreqEl) outageFreqEl.textContent = '—';
+        if (lastOutageRowEl) lastOutageRowEl.hidden = true;
+    }
+
+    if (noteEl) {
+        noteEl.textContent = stats && stats.totalChecks > 0
+            ? `Based on ${stats.totalChecks} community report${stats.totalChecks === 1 ? '' : 's'} for ${loc.split(',')[0]}, separate from your primary location above.`
+            : `No community reports for ${loc.split(',')[0]} yet — this is a second spot you're keeping an eye on, separate from your primary location above.`;
+    }
+}
+
+async function loadSecondaryLocationStatus(sec) {
+    const labelEl = document.getElementById('secondaryLocationStatusLabel');
+    const subEl = document.getElementById('secondaryLocationStatusSub');
 
     const loc = `${sec.city}, ${sec.region || ''}`.replace(/,\s*$/, '');
+    const cacheKey = SECONDARY_LOCATION_CACHE_PREFIX + loc.toLowerCase().trim();
+
+    // Paint the last-known status/stats for this second location
+    // instantly if we have them (same stale-while-revalidate pattern as
+    // the primary location's hero card and the Areas list), instead of
+    // forcing "Checking status…" every single time the panel reopens
+    // for a location the user has already looked at this session.
+    const cached = LWCache.read(cacheKey, SECONDARY_LOCATION_CACHE_MAX_AGE_MS);
+    if (cached) {
+        paintSecondaryLocationStatus(cached, loc);
+    } else {
+        setSecondaryStatusDot('unknown');
+        if (labelEl) labelEl.textContent = 'Checking status…';
+        if (subEl) subEl.textContent = '—';
+    }
 
     try {
         const res = await fetch(`${API_URL}/lightstatus?location=${encodeURIComponent(loc)}`);
         if (!res.ok) throw new Error('bad response');
         const data = await res.json();
 
-        setSecondaryStatusDot(data.status);
-        if (labelEl) {
-            labelEl.textContent = data.status === 'on' ? 'Light is on'
-                : data.status === 'off' ? 'Light is off'
-                : 'No reports yet for this area';
-        }
-        if (subEl) {
-            subEl.textContent = data.reportedAt
-                ? `Last verified ${new Date(data.reportedAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}`
-                : 'Be the first to report here — set it as your primary location to check in.';
-        }
-
-        // Real outage-history stats the backend already computes
-        // (getLightStatusStats in server.js) — this is what actually
-        // matters to someone deciding whether to head over to this
-        // location, unlike a raw contributor/check count.
-        const stats = data.stats;
-        if (stats) {
-            if (uptimeEl) uptimeEl.textContent = stats.uptimePercent != null ? `${stats.uptimePercent}%` : '—';
-            if (avgOutageEl) avgOutageEl.textContent = stats.avgOutageMs != null ? formatSecondaryDuration(stats.avgOutageMs) : 'No data';
-            if (outageFreqEl) outageFreqEl.textContent = stats.outageFreq != null ? String(stats.outageFreq) : '—';
-
-            if (lastOutageRowEl && lastOutageEl && stats.lastOutageMs != null) {
-                lastOutageEl.textContent = formatSecondaryDuration(stats.lastOutageMs);
-                lastOutageRowEl.hidden = false;
-            }
-        }
-
-        if (noteEl) {
-            noteEl.textContent = stats && stats.totalChecks > 0
-                ? `Based on ${stats.totalChecks} community report${stats.totalChecks === 1 ? '' : 's'} for ${loc.split(',')[0]}, separate from your primary location above.`
-                : `No community reports for ${loc.split(',')[0]} yet — this is a second spot you're keeping an eye on, separate from your primary location above.`;
-        }
+        paintSecondaryLocationStatus(data, loc);
+        LWCache.write(cacheKey, {
+            status: data.status || 'unknown',
+            stats: data.stats || null,
+            reportedAt: data.reportedAt || null
+        });
 
         // (Status-change alerts are now handled server-side — see the
         // NOTIFY-ME-HERE section below — so there's nothing to record
         // here beyond the display update above.)
     } catch (err) {
-        setSecondaryStatusDot('unknown');
-        if (labelEl) labelEl.textContent = 'Could not load status';
-        if (subEl) subEl.textContent = 'Check your connection and try again.';
+        // A failed refresh shouldn't wipe out real (if slightly stale)
+        // cached data that's already on screen — only fall back to the
+        // error state if we never had anything to show at all.
+        if (!cached) {
+            setSecondaryStatusDot('unknown');
+            if (labelEl) labelEl.textContent = 'Could not load status';
+            if (subEl) subEl.textContent = 'Check your connection and try again.';
+        }
     }
 }
 

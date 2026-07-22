@@ -573,6 +573,38 @@ function initSecondaryLocationForm() {
 // status data only). That's what used to make the page feel slow:
 // the whole skeleton used to wait on these secondary fetches too.
 // ------------------------------------------------------------
+// Fills every account-extras field (region, chat handle, member-since
+// date, greeting, badge) from a user object. Pulled out of
+// loadAccountExtras() so it can run twice: once synchronously from
+// whatever's already cached, so nothing on this page ever sits on a
+// raw "—" placeholder while the network call below is in flight, and
+// once again when the fresh response actually lands.
+function paintAccountExtras(user) {
+    if (el('profileCity')) el('profileCity').textContent = user.city || '—';
+    if (el('acctProfileRegion')) el('acctProfileRegion').textContent = user.region || '—';
+
+    // The badge used to say "Active contributor" for everyone, whether
+    // or not they'd ever done anything — swap it for something true:
+    // the area LightWatch is actually watching for them.
+    const badgeTextEl = el('profileBadgeText');
+    if (badgeTextEl) {
+        badgeTextEl.textContent = user.city ? `Monitoring ${user.city}` : 'Community member';
+    }
+
+    const chatHandleValue = user.chatHandle || localStorage.getItem('chatHandle') || '—';
+    if (el('profileChatHandle')) el('profileChatHandle').textContent = chatHandleValue;
+    if (el('profileHandle')) el('profileHandle').textContent = user.chatHandle || localStorage.getItem('chatHandle') || '';
+
+    if (user.createdAt && el('acctProfileLastLogin')) {
+        el('acctProfileLastLogin').textContent = new Date(user.createdAt).toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric' });
+    }
+
+    const hour = new Date().getHours();
+    const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+    const firstName = (user.name || '').trim().split(/\s+/)[0] || 'there';
+    if (el('acctPageGreeting')) el('acctPageGreeting').textContent = `${greeting}, ${firstName}`;
+}
+
 async function loadAccountExtras() {
     const userId = getCurrentUserId();
     if (!userId) {
@@ -581,35 +613,27 @@ async function loadAccountExtras() {
         return;
     }
 
+    // Paint instantly from whatever's already cached for this user —
+    // profile.js's own fetch (or a previous visit to this page) already
+    // wrote region/chatHandle/city/createdAt into currentUserData, so
+    // there's no reason to make every field on this page sit blank
+    // while the network round trip below is in flight. The fetch still
+    // always runs and overwrites this with the live copy the moment it
+    // lands.
+    const cachedSnapshot = getCurrentUserData();
+    const hasCachedSnapshot = cachedSnapshot && Object.keys(cachedSnapshot).length > 0;
+    if (hasCachedSnapshot) {
+        paintAccountExtras(cachedSnapshot);
+        renderLocationsList(cachedSnapshot);
+        initCityEditForm(cachedSnapshot);
+    }
+
     try {
         const res = await fetch(`${API_URL}/user/${userId}`);
         if (!res.ok) return;
         const user = await res.json();
 
-        if (el('profileCity')) el('profileCity').textContent = user.city || '—';
-        if (el('acctProfileRegion')) el('acctProfileRegion').textContent = user.region || '—';
-
-        // The badge used to say "Active contributor" for everyone, whether
-        // or not they'd ever done anything — swap it for something true:
-        // the area LightWatch is actually watching for them.
-        const badgeTextEl = el('profileBadgeText');
-        if (badgeTextEl) {
-            badgeTextEl.textContent = user.city ? `Monitoring ${user.city}` : 'Community member';
-        }
-
-        const chatHandleValue = user.chatHandle || localStorage.getItem('chatHandle') || '—';
-        if (el('profileChatHandle')) el('profileChatHandle').textContent = chatHandleValue;
-        if (el('profileHandle')) el('profileHandle').textContent = user.chatHandle || localStorage.getItem('chatHandle') || '';
-
-        if (user.createdAt && el('acctProfileLastLogin')) {
-            el('acctProfileLastLogin').textContent = new Date(user.createdAt).toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric' });
-        }
-
-        const hour = new Date().getHours();
-        const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
-        const firstName = (user.name || '').trim().split(/\s+/)[0] || 'there';
-        if (el('acctPageGreeting')) el('acctPageGreeting').textContent = `${greeting}, ${firstName}`;
-
+        paintAccountExtras(user);
         renderLocationsList(user);
         initCityEditForm(user);
 

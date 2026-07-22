@@ -350,30 +350,23 @@ function lightStatusCacheKey(location) {
     return LIGHT_STATUS_CACHE_PREFIX + location.toLowerCase().trim();
 }
 
+// Now backed by services/cache.js's LWCache (memory + localStorage)
+// instead of a bespoke inline localStorage read/write. Behavior for
+// existing callers is identical — read still returns null once past
+// LIGHT_STATUS_CACHE_MAX_AGE_MS — the difference is invisible from
+// here: repeat calls within the same running app instance no longer
+// need a localStorage round trip at all, since LWCache already has it
+// warm in memory.
 function readLightStatusCache(location) {
-    try {
-        const raw = localStorage.getItem(lightStatusCacheKey(location));
-        if (!raw) return null;
-        const parsed = JSON.parse(raw);
-        if (!parsed || typeof parsed !== 'object' || !parsed.cachedAt) return null;
-        if (Date.now() - parsed.cachedAt > LIGHT_STATUS_CACHE_MAX_AGE_MS) return null;
-        return parsed;
-    } catch {
-        return null;
-    }
+    return LWCache.read(lightStatusCacheKey(location), LIGHT_STATUS_CACHE_MAX_AGE_MS);
 }
 
 function writeLightStatusCache(location, data) {
-    try {
-        localStorage.setItem(lightStatusCacheKey(location), JSON.stringify({
-            status: data.status || 'unknown',
-            stats: data.stats || null,
-            reportedAt: data.reportedAt || null,
-            cachedAt: Date.now()
-        }));
-    } catch {
-        // Storage full/blocked — caching is a nice-to-have, never fatal.
-    }
+    LWCache.write(lightStatusCacheKey(location), {
+        status: data.status || 'unknown',
+        stats: data.stats || null,
+        reportedAt: data.reportedAt || null
+    });
 }
 
 function renderLocationPage(user) {
@@ -667,27 +660,62 @@ function renderSignedOutEverywhere() {
 // -----------------------------------------------------
 let profileLoaderSafetyTimer = null;
 
+// True once THIS running app instance has successfully painted the
+// profile/light-status chrome at least once. Reset to false only by a
+// real reload (a fresh page-load creates a fresh copy of this
+// variable) — so switching Home -> Areas -> Home, or Account -> Home,
+// never re-triggers the skeleton, satisfying "once the first skeleton
+// shows, it never shows again while the app is still running."
+let profileLoadedThisSession = false;
+
+// Is there real, renderable data sitting in storage right now — a
+// cached user snapshot AND (if we know their location) a light-status
+// cache that hasn't expired? If so, loadCurrentUserProfile() below is
+// about to paint it synchronously before any network call returns, so
+// there's nothing for a blocking skeleton to usefully hide.
+//
+// This replaces the old FIRST_BOOT_DONE_KEY flag, which was a ONE-TIME
+// localStorage marker: once set (which happened after literally the
+// first successful load ever), the skeleton was skipped forever after
+// — including on a cold reopen days later, once the 30-minute
+// light-status cache had long since expired. That's what caused the
+// bug: no skeleton to cover the gap, so the raw "—"/"Checking status"
+// placeholders sat on screen and visibly filled in as the network
+// calls landed. Checking real data freshness here instead of a
+// permanent flag means the skeleton correctly comes back exactly when
+// there's genuinely nothing current to show yet.
+function hasReadyToPaintData() {
+    try {
+        const raw = localStorage.getItem('currentUserData')
+            || sessionStorage.getItem('currentUserData')
+            || localStorage.getItem('signupUser');
+        if (!raw) return false;
+        const user = JSON.parse(raw);
+        if (!user) return false;
+
+        let rawCity = (user.city || '').replace(/,\s*(kumasi|ghana|accra)\s*,?.*/gi, '').trim();
+        const location = rawCity
+            ? `${rawCity}, ${user.region || ''}`.replace(/,\s*$/, '').trim()
+            : (user.location || user.region || '');
+
+        // No location on file yet (e.g. mid-signup) — the name/avatar/
+        // contact fields are still real data worth painting immediately.
+        if (!location) return true;
+
+        return Boolean(readLightStatusCache(location));
+    } catch {
+        return false;
+    }
+}
+
 function showProfileLoader(maxDuration = 8000) {
-    // The old "lw_skeleton_seen_<key>" flag tried to skip the skeleton on
-    // repeat visits, but it was scoped to individual data (per-location,
-    // per-view) rather than "has this device ever booted the app before" —
-    // in practice that meant it barely ever matched, so the skeleton
-    // showed on basically every open: raw/empty content painting first,
-    // then real data popping in 1-2s later, which reads as broken/janky.
-    //
-    // The actual fix: gate the skeleton on FIRST_BOOT_DONE_KEY, a
-    // localStorage flag that survives app close/reopen on this native
-    // install. True cold start (flag absent) → show the full skeleton,
-    // there's nothing else to paint yet. Every later open (flag present)
-    // → skip it entirely; the real content is already sitting there with
-    // cached/fallback data from loadCurrentUserProfile(), so blocking it
-    // behind a skeleton would just be extra motion for no reason.
-    //
-    // This function runs exactly once per page-load — the first time the
-    // app shell (home/account) is entered, whether that's immediately at
-    // boot (session already existed) or right after a fresh login later
-    // in the same load (see app.js's enteringAppShellFirstTime).
-    if (!localStorage.getItem(FIRST_BOOT_DONE_KEY)) {
+    // Skip the blocking skeleton only when we have an actual reason to:
+    // this running app instance already loaded successfully once, or
+    // there's fresh-enough cached data to paint immediately instead.
+    // Otherwise (true first-ever open, or a cache that's gone stale
+    // since the last visit) show it — there's really nothing else to
+    // display yet.
+    if (!profileLoadedThisSession && !hasReadyToPaintData()) {
         document.body?.classList.add('page-data-loading');
     }
 
@@ -703,6 +731,7 @@ function showProfileLoader(maxDuration = 8000) {
 
 function hideProfileLoader() {
   clearTimeout(profileLoaderSafetyTimer);
+  profileLoadedThisSession = true;
 
   // Generic — matches #pageSkeleton on Home and #accountSkeleton on
   // Account (whichever is actually on screen), so both views share this
