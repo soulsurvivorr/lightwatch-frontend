@@ -313,12 +313,6 @@
   margin-bottom: 18px;
 }
 
-/* Mobile-only intro copy — hidden by default (desktop + tablet split
-   view). Only switched on inside the max-width:768px phone block. */
-.login-mobile-intro {
-  display: none;
-}
-
 .field {
   display: flex;
   flex-direction: column;
@@ -578,33 +572,6 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
     padding-right: 24px;
   }
 
-  /* ---- FIX: field__label doesn't scale with phone width ----
-     Was a single fixed size (default 0.84rem, or 0.66rem past the
-     480px breakpoint) with nothing in between, so mid-size phones
-     rendered a label that felt oversized relative to the input
-     below it. clamp() ties it to viewport width instead: it holds
-     at the existing 0.84rem down to ~497px (matching current
-     behavior exactly, so nothing above phone width changes), then
-     scales smoothly down to the existing 0.66rem floor used by the
-     narrowest phones, instead of jumping between two fixed sizes. */
-  .field__label {
-    font-size: clamp(0.66rem, 2.7vw, 0.84rem);
-  }
-
-  /* ---- ADD: mobile-only intro line ----
-     Fills the empty space above the form on tall phone screens.
-     Desktop/tablet never see this (default is display:none, see
-     base rule near .login-box__subtitle) — this override only
-     exists inside this phone-width block. */
-  .login-mobile-intro {
-    display: block;
-    font-size: 0.78rem;
-    line-height: 1.45;
-    color: var(--text-muted);
-    margin: 0 0 20px;
-    max-width: 34ch;
-  }
-
   .login-form-side::before,
   .login-form-side::after {
     content: "";
@@ -656,33 +623,18 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
     flex: 1;
   }
 
-  /* ---- FIX: footer not landing flush at the bottom on phones ----
-     .login-box's flex:1 above and .login-footer's margin-top:auto
-     below are what's supposed to pin the footer to the very bottom
-     of .login-form-side. That math only holds if nothing else with
-     equal-or-higher specificity re-declares flex/margin-top on these
-     same classes later in the cascade — and .login-box / .login-footer
-     are generic enough names that another view's stylesheet (loaded
-     after this one in index.html) redeclaring them with a bare
-     selector would silently win and leave the footer stranded with
-     a gap underneath it, same leakage pattern already called out in
-     global.css. Repeating the two load-bearing properties here with
-     a more specific parent-scoped selector + !important closes that
-     gap without changing anything about the desktop split layout,
-     which never reaches this block. */
-  .login-form-side > .login-box {
-    flex: 1 1 0% !important;
-    min-height: 0 !important;
-  }
-
   .login-footer {
+    /* FIX: explicit margin-top: auto guarantees the footer is always
+       pushed to the very bottom of .login-form-side's flex column —
+       previously this relied only on .login-box's flex:1 consuming
+       all remaining space, so any future change to that rule (or a
+       box shorter than its allotted space in a taller flex context)
+       could leave the footer floating mid-screen instead of flush
+       at the bottom on every phone size. */
+    margin-top: auto;
     padding-top: 0;
     padding-bottom: calc(5px + env(safe-area-inset-bottom, 0px));
-  }
-
-  .login-form-side > .login-footer {
-    margin-top: auto !important;
-    flex-shrink: 0 !important;
+    flex-shrink: 0;
   }
 
   @keyframes bubble-float-a {
