@@ -56,7 +56,15 @@ const PRECACHE_ASSETS = [
     '/js/config.js',
     '/js/app.js',
     '/js/services/auth.js',
-    '/images/dev-logo.png'
+    '/images/dev-logo.png',
+    // Status icons profile.js swaps in on every light-status render
+    // (setLightStatus) and the push-notification badge — small, never
+    // change, and used constantly, so they're worth having in the
+    // static cache from install rather than waiting on their first
+    // successful online fetch to warm staleWhileRevalidate() below.
+    '/images/light-on.png',
+    '/images/light-off.png',
+    '/images/notification-badge.png'
 ];
 
 // Used as the offline fallback when a route has never been visited
