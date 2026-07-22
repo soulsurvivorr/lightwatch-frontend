@@ -116,13 +116,13 @@ body.lw-leaving {
     padding: 1.15rem 1.35rem 1.35rem;
     width: min(100%, 980px);
     max-width: 980px;
-    max-height: calc(100dvh - 48px);
+    max-height: none;
     background: color-mix(in srgb, var(--bg-panel) 60%, transparent);
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
     border-radius: 18px;
     border: 1px solid var(--border-soft);
-    overflow-y: auto;
+    overflow: visible;
     overflow-x: hidden;
     overscroll-behavior: contain;
     box-shadow: 0 24px 60px rgba(0, 0, 0, 0.16);
@@ -169,6 +169,7 @@ body.lw-leaving {
     gap: 1.5rem;
     width: max-content;
     max-width: 100%;
+    min-width: 0;
     margin: 0 auto;
 }
 
@@ -176,7 +177,7 @@ body.lw-leaving {
 .submit-info-section {
     display: flex;
     flex: 2;
-    min-width: 250px;
+    min-width: 0;
     justify-content: center;
     flex-direction: column;
     padding: .4rem .3rem;
@@ -543,17 +544,34 @@ body.lw-leaving {
    its own inset one. Also trim a couple of the larger type sizes
    so it needs to grow less often. */
 @media (min-width: 701px) {
+    html:has(#view-signup:not([hidden])),
+    body:has(#view-signup:not([hidden])) {
+        height: auto;
+        min-height: 100%;
+        overflow-y: auto;
+    }
+
     body:has(#view-signup:not([hidden])) {
         align-items: flex-start;
         justify-content: center;
         padding: 28px 20px 40px;
+        min-height: 100vh;
         min-height: 100dvh;
+        overflow-y: auto;
     }
 
     #view-signup > section {
         overflow: visible;
+        overflow-x: visible;
         min-height: auto;
+        width: max-content;
+        max-width: 100%;
         margin: 0 auto;
+    }
+
+    #main-content_wrapper {
+        width: max-content;
+        max-width: 100%;
     }
 
     .submit-info-section h3 {
@@ -589,19 +607,20 @@ body:has(#view-signup:not([hidden])) #authShell {
 @media (max-width: 768px) {
     html:has(#view-signup:not([hidden])),
     body:has(#view-signup:not([hidden])) {
-        height: 100dvh;
-        min-height: 100dvh;
+        height: 100svh;
+        min-height: 100svh;
         overflow: hidden;
     }
 
     body:has(#view-signup:not([hidden])) #authShell {
-        height: 100%;
+        height: 100svh;
         align-items: stretch;
     }
 
     #view-signup:not([hidden]) {
         width: 100%;
-        height: 100%;
+        height: 100svh;
+        min-height: 100svh;
         display: flex;
         flex-direction: column;
     }
@@ -612,7 +631,7 @@ body:has(#view-signup:not([hidden])) #authShell {
         align-items: stretch;
         justify-content: stretch;
         padding: 0;
-        touch-action: none;
+        touch-action: manipulation;
     }
 
     #main-content_wrapper {
@@ -631,6 +650,8 @@ body:has(#view-signup:not([hidden])) #authShell {
         width: 100%;
         min-width: 0;
         padding: 1rem .95rem;
+        transform: translateY(var(--signup-keyboard-shift, 0px));
+        transition: transform .18s ease-out;
     }
 
     .user-icon-container {
@@ -643,7 +664,18 @@ body:has(#view-signup:not([hidden])) #authShell {
     }
 
     #view-signup > section {
-        min-height: 0;
+        width: 100%;
+        height: 100%;
+        min-height: 100%;
+        max-height: none;
+        padding-top: calc(1rem + env(safe-area-inset-top, 0px));
+        padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+        background: var(--bg-panel);
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+        overflow: hidden;
+        overscroll-behavior: none;
     }
 
     .user-profile-btn img {

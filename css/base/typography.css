@@ -23,7 +23,7 @@ body {
      signup.css already use. */
   min-height: 100vh;
   min-height: 100dvh;
-  transition: background-color 0.25s ease, color 0.25s ease, font-family 0.25s ease;
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 h1, h2, h3, h4 {

@@ -127,7 +127,7 @@ function showPageTransitionOverlay(message = 'Loading…') {
             @keyframes lwSignOutFadeIn { from { opacity: 0; } to { opacity: 1; } }
             @keyframes lwSignOutPulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(0.92); opacity: 0.7; } }
             #lwPageTransitionOverlay .lw-mark { width: 64px; height: 64px; border-radius: 18px; animation: lwSignOutPulse 1.1s ease-in-out infinite; }
-            #lwPageTransitionOverlay .lw-text { margin-top: 14px; font-family: 'Manrope', sans-serif; font-size: 0.85rem; color: rgba(255,255,255,0.75); letter-spacing: 0.02em; }
+            #lwPageTransitionOverlay .lw-text { margin-top: 14px; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 0.85rem; color: rgba(255,255,255,0.75); letter-spacing: 0.02em; }
         </style>
         <div style="display:flex;flex-direction:column;align-items:center;">
             <img class="lw-mark" src="./images/dev-logo.png" alt="LightWatch">

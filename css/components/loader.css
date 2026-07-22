@@ -6,6 +6,11 @@
   display: none !important;
 }
 
+/* Force hidden elements to stay hidden even if children have display rules */
+[hidden] {
+  display: none !important;
+}
+
 /* ------------------------------------------------------------
    Full-screen skeleton
    A separate shape-for-shape stand-in for the page content,
@@ -29,6 +34,7 @@
 
 [id$="Skeleton"].lw-skel-fading {
   opacity: 0;
+  pointer-events: none; /* Prevent clicks during fade */
 }
 
 .page-data-loading [id$="RealContent"],

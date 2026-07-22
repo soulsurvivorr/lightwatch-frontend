@@ -120,6 +120,36 @@
         errorEl = document.getElementById('email_phone-error');
         submitBtn = document.getElementById('signUpBtn');
 
+        const signupFields = document.querySelectorAll('#view-signup .prompt-inputs');
+        const inputFieldSection = document.getElementById('input-field-section');
+        let focusedField = null;
+        const updateKeyboardShift = () => {
+            if (!focusedField) return;
+            const viewportBottom = (window.visualViewport?.height || window.innerHeight) - 18;
+            const fieldBottom = focusedField.getBoundingClientRect().bottom;
+            const shift = Math.min(0, viewportBottom - fieldBottom);
+            inputFieldSection?.style.setProperty('--signup-keyboard-shift', `${shift}px`);
+        };
+        const clearKeyboardShift = () => {
+            inputFieldSection?.style.removeProperty('--signup-keyboard-shift');
+        };
+        signupFields.forEach((field) => {
+            field.addEventListener('focus', () => {
+                focusedField = field;
+                requestAnimationFrame(updateKeyboardShift);
+                setTimeout(updateKeyboardShift, 180);
+            });
+            field.addEventListener('blur', () => {
+                if (focusedField === field) {
+                    focusedField = null;
+                    clearKeyboardShift();
+                }
+            });
+        });
+        window.visualViewport?.addEventListener('resize', () => {
+            if (focusedField) requestAnimationFrame(updateKeyboardShift);
+        });
+
         prefillFromPriorAttempt();
 
         form.addEventListener("submit", (e) => {

@@ -26,6 +26,7 @@
     let brandLoopActive = false;
     let brandLoopStarted = false;
     let userCountLoaded = false;
+    let keyboardViewportCleanup = null;
 
     const brandLoopTexts = [
         'Community-powered. Stay ahead of outages',
@@ -176,6 +177,36 @@
         sendCodeBtn?.addEventListener('click', e => { e.preventDefault(); handleSubmit(); });
         userInput?.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); handleSubmit(); } });
 
+        if (window.visualViewport && userInput) {
+            const loginFormSide = document.querySelector('#view-login .login-form-side');
+            const updateKeyboardShift = () => {
+                if (!loginFormSide || document.activeElement !== userInput) {
+                    loginFormSide?.style.removeProperty('--login-keyboard-shift');
+                    return;
+                }
+
+                const viewportBottom = window.visualViewport.height - 16;
+                const inputBottom = userInput.getBoundingClientRect().bottom;
+                const shift = Math.min(0, viewportBottom - inputBottom);
+                loginFormSide.style.setProperty('--login-keyboard-shift', `${shift}px`);
+            };
+            const clearKeyboardShift = () => {
+                loginFormSide.style.removeProperty('--login-keyboard-shift');
+            };
+
+            userInput.addEventListener('focus', updateKeyboardShift);
+            userInput.addEventListener('blur', clearKeyboardShift);
+            window.visualViewport.addEventListener('resize', updateKeyboardShift);
+            window.visualViewport.addEventListener('scroll', updateKeyboardShift);
+            keyboardViewportCleanup = () => {
+                userInput.removeEventListener('focus', updateKeyboardShift);
+                userInput.removeEventListener('blur', clearKeyboardShift);
+                window.visualViewport.removeEventListener('resize', updateKeyboardShift);
+                window.visualViewport.removeEventListener('scroll', updateKeyboardShift);
+                clearKeyboardShift();
+            };
+        }
+
         document.querySelectorAll('#view-login [data-route-custom="signup"]').forEach(link => {
             link.addEventListener('click', e => {
                 e.preventDefault();
@@ -205,6 +236,8 @@
 
     function hide() {
         brandLoopActive = false;
+        keyboardViewportCleanup?.();
+        keyboardViewportCleanup = null;
     }
 
     window.LWViews = window.LWViews || {};

@@ -205,7 +205,8 @@ main div.verify-card {
 .verify-body {
     display: flex;
     flex-direction: column;
-    gap: .75rem;
+    gap: .5rem;
+    margin-top: .35rem;
     animation: lw-fade-up .45s ease .08s both;
 }
 
@@ -258,7 +259,7 @@ main h2 {
     justify-content: center;
     align-items: center;
     gap: 10px;
-    margin: 0.85rem auto;
+    margin: 0.45rem auto 0.1rem;
     width: 100%;
     max-width: 100%;
 }
@@ -277,6 +278,7 @@ main h2 {
     width: 48px;
     height: 56px;
     min-width: 0;
+    margin: 0;
     padding: 0;
     text-align: center;
     font-family: var(--font-display);
@@ -309,7 +311,8 @@ main h2 {
 #error-msg {
     font-size: .78rem;
     color: var(--red, #E5484D);
-    min-height: 1em;
+    min-height: 0;
+    line-height: 1.2;
     margin: 0;
 }
 
@@ -319,7 +322,7 @@ main h2 {
     align-items: center;
     justify-content: center;
     gap: 8px;
-    margin: 0.5rem 0;
+    margin: 0.15rem 0 0.25rem;
 }
 
 .resend-row img {
@@ -428,10 +431,14 @@ button#continueBtn.is-loading .btn-label {
 /* ---- Success state: swaps in over the form, then we redirect ---- */
 .verify-success {
     display: none;
+    flex: 1;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     gap: .6rem;
-    padding: 1.4rem 0 .6rem;
+    width: 100%;
+    min-height: 180px;
+    padding: 0;
     text-align: center;
     animation: lw-fade-up .4s ease both;
 }
@@ -442,6 +449,11 @@ button#continueBtn.is-loading .btn-label {
 
 .verify-card.is-success .verify-success {
     display: flex;
+}
+
+.verify-card.is-success {
+    min-height: 260px;
+    justify-content: center;
 }
 
 .success-check {
@@ -493,13 +505,13 @@ button#continueBtn.is-loading .btn-label {
     }
 
     main {
-        align-items: stretch;
+        align-items: center;
         padding: .6rem .75rem;
     }
 
     main div.verify-card {
-        width: min(100%, 100%);
-        max-width: 100%;
+        width: min(100%, 380px);
+        max-width: 380px;
         padding: 1.2rem 1rem 1rem;
         border-radius: 14px;
     }
@@ -542,7 +554,7 @@ button#continueBtn.is-loading .btn-label {
 
     .otp-boxes {
         gap: 8px;
-        margin: 0.6rem auto;
+        margin: 0.35rem auto 0.05rem;
     }
 
     .otp-box {
@@ -555,12 +567,17 @@ button#continueBtn.is-loading .btn-label {
     .resend-row p {
         font-size: .78rem;
     }
+
+    .verify-body {
+        gap: .4rem;
+        margin-top: .25rem;
+    }
 }
 
 @media (max-width: 320px) {
     .otp-boxes {
         gap: 6px;
-        margin: 0.5rem auto;
+        margin: 0.3rem auto 0;
     }
 
     .otp-box {

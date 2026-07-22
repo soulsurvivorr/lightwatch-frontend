@@ -19,21 +19,22 @@
       height: 100vh;
       height: 100svh;
       height: 100dvh;
-      overflow: hidden !important; /* Block scrolling on both desktop and mobile */
+      overflow-y: auto !important; /* Allow scrolling for keyboard */
+      overflow-x: hidden !important;
       overscroll-behavior: none;
   }
 
 .login-shell {
   width: 100%;
   max-width: none;
-  height: 100vh;
-  height: var(--app-vh, 100dvh);
+  min-height: 100vh;
+  min-height: var(--app-vh, 100dvh);
   margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
   gap: 0;
-  overflow: hidden;
+  overflow-y: auto;
 }
 
 /* Mobile-first default: only the form pane renders. Re-enabled for
@@ -70,14 +71,12 @@
     position: fixed;
     inset: 0;
     height: 100vh;
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow: hidden !important; /* No scrolling on desktop */
   }
 
   html:has(#view-login:not([hidden])) {
     height: 100vh;
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow: hidden !important;
   }
 
   /* Edge-to-edge split — no gap between panels, no floating
@@ -526,7 +525,7 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
        visualViewport and falls back to dvh before that script runs. */
     height: 100vh;
     height: 100svh;
-    height: var(--app-vh, 100dvh);
+    min-height: 100svh;
     background-color: var(--bg-panel);
     overflow: hidden !important;
     overscroll-behavior: none;
@@ -540,7 +539,7 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
     max-width: none;
     height: 100vh;
     height: 100svh;
-    height: var(--app-vh, 100dvh);
+    min-height: 100svh;
     margin: 0;
     padding: 0 0 0 0;
     gap: 0;
@@ -559,15 +558,17 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
   }
 
   .login-form-side {
+    position: relative;
     flex: 1;
     width: 100%;
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    justify-content: space-between;
-    min-height: 0;
+    justify-content: flex-start; /* Don't space-between on mobile */
+    height: 100%;
+    min-height: 100svh;
     padding-top: 6em;
-    padding-bottom: calc(5px + env(safe-area-inset-bottom, 0px)); /* Footer 5px from bottom */
+    padding-bottom: calc(62px + env(safe-area-inset-bottom, 0px));
     padding-left: 24px;
     padding-right: 24px;
   }
@@ -620,22 +621,28 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
     flex-direction: column;
     justify-content: center;
     min-height: 0;
-    flex: 1;
+    margin-bottom: 2rem; /* Ensure space for footer */
+    transform: translateY(var(--login-keyboard-shift, 0px));
+    transition: transform 0.18s ease-out;
   }
 
   .login-footer {
-    /* FIX: explicit margin-top: auto guarantees the footer is always
-       pushed to the very bottom of .login-form-side's flex column —
-       previously this relied only on .login-box's flex:1 consuming
-       all remaining space, so any future change to that rule (or a
-       box shorter than its allotted space in a taller flex context)
-       could leave the footer floating mid-screen instead of flush
-       at the bottom on every phone size. */
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 2;
     margin-top: auto;
     padding-top: 0;
-    padding-bottom: calc(5px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
     flex-shrink: 0;
     margin: 0;
+    background: var(--bg-panel);
+  }
+
+  #view-login .field__input:focus {
+    border-color: rgb(224, 218, 214);
+    box-shadow: 0 0 0 3px rgba(240, 172, 61, 0.15);
   }
 
   @keyframes bubble-float-a {
@@ -691,7 +698,7 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
     }
 
     .signup-prompt {
-      font-size: .7rem;
+      font-size: .825rem;
     }
 }
 
@@ -753,7 +760,7 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
   }
 
   .signup-prompt {
-    font-size: 0.6rem;
+    font-size: 0.725rem;
     margin-top: 22px;
   }
   
@@ -794,7 +801,7 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
    sizing every phone to the narrowest one. */
 @media (min-width: 401px) and (max-width: 480px) {
   .signup-prompt {
-    font-size: 0.74rem;
+    font-size: 0.865rem;
   }
 }
 

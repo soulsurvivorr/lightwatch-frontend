@@ -64,6 +64,12 @@
         try { sessionStorage.setItem(SHOWN_THIS_SESSION_KEY, '1'); } catch {}
     }
 
+    function hideOverlay(overlay) {
+        overlay.hidden = true;
+        overlay.style.removeProperty('display');
+        overlay.style.removeProperty('visibility');
+    }
+
     function revealBootContent() {
         document.documentElement.classList.remove('lw-boot');
     }
@@ -89,6 +95,7 @@
         if (!overlay) return;
         markOnboardingShownThisSession();
         overlay.classList.remove('is-open');
+        document.documentElement.classList.remove('lw-onboarding-needed');
         // remove page scroll lock when closing
         document.documentElement.classList.remove('lw-onboarding-open');
         document.body.classList.remove('lw-onboarding-open');
@@ -99,6 +106,7 @@
     function openOnboarding() {
         const overlay = document.getElementById('onboardingOverlay');
         if (!overlay) return;
+        markOnboardingShownThisSession();
         setOnboardingSlide(0);
         overlay.hidden = false;
         overlay.style.visibility = 'visible';
@@ -134,6 +142,7 @@
             return;
         }
         if (hasShownOnboardingThisSession()) {
+            hideOverlay(overlay);
             revealBootContent();
             return;
         }

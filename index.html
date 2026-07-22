@@ -22,14 +22,14 @@
        applies on every load, including a signed-in visitor reloading
        on /home, which is why onboarding was flashing there: this
        rule used to fire for everyone regardless of session. */
-    html.lw-boot.lw-guest .onboarding-overlay {
+    html.lw-boot.lw-guest.lw-onboarding-needed .onboarding-overlay {
       display: flex !important;
       visibility: visible !important;
       opacity: 1 !important;
       pointer-events: auto !important;
       transition: none !important;
     }
-    html.lw-boot.lw-guest .onboarding-overlay .onboarding-card {
+    html.lw-boot.lw-guest.lw-onboarding-needed .onboarding-overlay .onboarding-card {
       opacity: 1 !important;
       transform: translateY(0) !important;
       transition: none !important;
@@ -73,17 +73,19 @@
           ? Boolean(localStorage.getItem(AUTH_KEY))
           : Boolean(sessionStorage.getItem(AUTH_KEY));
         const hasTempSession = Boolean(localStorage.getItem(TEMP_AUTH_KEY));
-        document.documentElement.classList.toggle('lw-guest', !(hasStandardSession || hasTempSession));
+        const isGuest = !(hasStandardSession || hasTempSession);
+        const onboardingShown = sessionStorage.getItem('lw_onboarding_shown_session') === '1';
+        const onboardingSkipped = sessionStorage.getItem('lw_skip_onboarding_once') === '1';
+        document.documentElement.classList.toggle('lw-guest', isGuest);
+        document.documentElement.classList.toggle('lw-onboarding-needed', isGuest && !onboardingShown && !onboardingSkipped);
       } catch {
         document.documentElement.classList.add('lw-guest');
+        document.documentElement.classList.add('lw-onboarding-needed');
       }
     })();
   </script>
   <title>LightWatch GH</title>
   <link rel="icon" href="./images/dev-logo.png?v=2.0.0" type="image/png">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-
   <!-- ==== CSS: base ==== -->
   <link rel="stylesheet" href="./css/base/reset.css">
   <link rel="stylesheet" href="./css/base/variables.css">
