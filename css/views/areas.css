@@ -61,10 +61,10 @@
 
 .areas-layout {
   display: grid;
-  gap: 20px;
+  gap: 12px;
   width: 100%;
   max-width: var(--max-width);
-  margin: 0 auto 26px;
+  margin: 0 auto 14px;
   align-items: start;
   /* Mobile-first: single column by default. The 3fr/1fr split is
      desktop-only (see the min-width: 981px block below) — without
@@ -76,7 +76,7 @@
 .areas-main {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 10px;
   min-width: 0;
 }
 
@@ -151,7 +151,7 @@
   border-radius: var(--radius-md);
   border: 1px solid var(--border-soft);
   background: var(--bg-panel);
-  margin-bottom: 10px;
+  margin-bottom: 0;
 }
 
 .areas-summary-strip__icon {
@@ -194,8 +194,8 @@
 .areas-controls {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 10px;
+  gap: 6px;
+  margin-bottom: 0;
   flex-wrap: wrap;
 }
 
@@ -251,7 +251,7 @@
 }
 
 .areas-board {
-  margin-bottom: 18px;
+  margin-bottom: 0;
   padding: 9px 10px 7px;
   width: 100%;
   min-width: 0;
@@ -521,24 +521,29 @@
 }
 
 /* ---- Small screens: keep compact layout and preserve toggle target ---- */
+#view-areas .hero-banner {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "eyebrow location"
+    "greeting greeting"
+    "sub sub";
+  align-items: start;
+  column-gap: 10px;
+  row-gap: 6px;
+  padding: 14px 16px 12px;
+  margin: 0 0 12px;
+  overflow: hidden;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, #1C1F26 0%, #2A2E38 55%, #123D36 100%);
+}
+
 @media (min-width: 981px) {
   #view-areas .hero-banner {
-    position: relative;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-areas:
-      "eyebrow location"
-      "greeting greeting"
-      "sub sub";
-    align-items: start;
-    column-gap: 10px;
-    row-gap: 8px;
     padding: 16px 18px 14px;
-    margin: 0 0 14px;
-    overflow: hidden;
-    border: 1px solid var(--border-soft);
-    border-radius: var(--radius-lg);
-    background: linear-gradient(135deg, #1C1F26 0%, #2A2E38 55%, #123D36 100%);
+    margin: 0 0 12px;
   }
 
   #view-areas .hero-banner__eyebrow {
@@ -582,15 +587,24 @@
     padding: 6px 14px;
     font-size: 0.8rem;
     color: rgba(255, 255, 255, 0.85);
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  #view-areas .hero-banner__location span:last-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 18ch;
   }
 
   .areas-layout {
     grid-template-columns: minmax(0, 3fr) minmax(300px, 1fr);
-    gap: 28px;
+    gap: 14px;
   }
 
   .areas-main {
-    gap: 24px;
+    gap: 10px;
   }
 
   .areas-summary-strip {

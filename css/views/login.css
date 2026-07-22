@@ -513,21 +513,12 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
 @media (max-width: 768px) {
   html:has(#view-login:not([hidden])),
   body:has(#view-login:not([hidden])) {
-    /* Fixed height + overflow:hidden, not min-height + overflow-y:auto —
-       this page should never scroll on phones. The stacked height
-       values are still needed as a fallback chain (some Android
-       browsers, esp. Samsung Internet, resolve --app-vh a beat behind
-       the real screen right after the WebView boots), but the box now
-       always CLAMPS to that height instead of growing past it and
-       scrolling. The height-based breakpoint below (max-height: 700px,
-       and the tighter one further down) is what actually keeps the
-       content compact enough to fit — --app-vh is measured live via
-       visualViewport and falls back to dvh before that script runs. */
     height: 100vh;
     height: 100svh;
     min-height: 100svh;
     background-color: var(--bg-panel);
-    overflow: hidden !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
     overscroll-behavior: none;
   }
 
@@ -537,14 +528,13 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
     flex-direction: column;
     width: 100%;
     max-width: none;
-    height: 100vh;
-    height: 100svh;
     min-height: 100svh;
+    height: auto;
     margin: 0;
-    padding: 0 0 0 0;
+    padding: 0;
     gap: 0;
     background-color: var(--bg-panel);
-    overflow: hidden;
+    overflow: visible;
   }
 
   .login-visual,
@@ -564,11 +554,10 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    justify-content: flex-start; /* Don't space-between on mobile */
-    height: 100%;
+    justify-content: flex-start;
     min-height: 100svh;
     padding-top: 6em;
-    padding-bottom: calc(62px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
     padding-left: 24px;
     padding-right: 24px;
   }
@@ -621,19 +610,16 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
     flex-direction: column;
     justify-content: center;
     min-height: 0;
-    margin-bottom: 2rem; /* Ensure space for footer */
+    margin-bottom: 1rem;
     transform: translateY(var(--login-keyboard-shift, 0px));
     transition: transform 0.18s ease-out;
   }
 
   .login-footer {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    position: static;
     z-index: 2;
     margin-top: auto;
-    padding-top: 0;
+    padding-top: 14px;
     padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
     flex-shrink: 0;
     margin: 0;
@@ -725,7 +711,7 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
   }
 
   .brand-loop-text {
-    font-size: 0.64rem;
+    font-size: 0.78rem;
   }
 
   .login-box h2 {
@@ -760,7 +746,7 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
   }
 
   .signup-prompt {
-    font-size: 0.725rem;
+    font-size: 0.82rem;
     margin-top: 22px;
   }
   
@@ -801,7 +787,7 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
    sizing every phone to the narrowest one. */
 @media (min-width: 401px) and (max-width: 480px) {
   .signup-prompt {
-    font-size: 0.865rem;
+    font-size: 0.84rem;
   }
 }
 

@@ -180,7 +180,10 @@ function computeRepliedToIds(chats) {
 // so the first own message we hit IS the latest one.
 function getLatestOwnMessageId(chats, myId) {
     if (!myId) return null;
-    const latest = chats.find(c => resolveUserId(c) === myId);
+    const latest = chats.find(c => {
+        const userId = resolveUserId(c);
+        return userId && userId === myId;
+    });
     if (!latest) return null;
     return String(latest._id || latest.id || '');
 }
@@ -214,7 +217,14 @@ function setupChatVisibilityObserver() {
 
 function isChatVisibleToUser() {
     if (document.hidden) return false;
-    if (typeof document.hasFocus === 'function' && !document.hasFocus()) return false;
+    // NOTE: previously also required document.hasFocus(), but that API is
+    // unreliable in installed/standalone contexts (this app is a PWA —
+    // see manifest.json / apple-mobile-web-app-capable) where some Android
+    // WebViews never report window focus at all. That silently made this
+    // function return false permanently, so read receipts (seenBy) never
+    // got sent for anyone, on any device — which is why the "seen" eye
+    // never showed up. document.hidden + the IntersectionObserver check
+    // below are enough on their own to know the thread is actually on screen.
     const card = getVisibleChatCard();
     if (!card) return false;
     // Chat is always inline on the page now (no separate mobile popup
@@ -253,14 +263,18 @@ function syncSeenIndicators(chats) {
     const myId = getCurrentUserId();
     const latestOwnId = getLatestOwnMessageId(chats, myId);
     const byId = new Map(chats.map(c => [String(c._id || c.id || ''), c]));
+
     chatThread?.querySelectorAll('.chat-message--own').forEach(el => {
         try {
             const id = el.dataset.chatId;
             if (!id) return;
             const seenEl = el.querySelector('.chat-message__seen');
             if (!seenEl) return;
+            seenEl.classList.remove('is-visible');
+
             const chat = byId.get(id);
-            const hasBeenSeen = Boolean(chat?.seenBy && chat.seenBy.length > 0);
+            const seenByIds = normalizeSeenByIds(chat);
+            const hasBeenSeen = seenByIds.some(seenById => seenById && seenById !== myId);
             const hasReply = repliedToIds.has(id);
             const isLatestOwn = id === latestOwnId;
             seenEl.classList.toggle('is-visible', isLatestOwn && hasBeenSeen && !hasReply);
@@ -277,6 +291,16 @@ function resolveUserId(chat) {
     if (!chat.userId) return null;
     if (typeof chat.userId === 'object') return String(chat.userId._id || chat.userId);
     return String(chat.userId);
+}
+
+function normalizeSeenByIds(chat) {
+    const seenBy = Array.isArray(chat?.seenBy) ? chat.seenBy : [];
+    return seenBy
+        .map(entry => {
+            if (entry && typeof entry === 'object') return String(entry._id || entry.id || '');
+            return String(entry || '');
+        })
+        .filter(Boolean);
 }
 
 // iOS Safari's Date parser is much stricter than Chrome's: a timestamp
@@ -922,13 +946,34 @@ function setMobileChatOpen(open) {
     }
 }
 
-// Nudge the input into view above the on-screen keyboard on focus.
-// The old popup needed window.visualViewport math to reposition a
-// fixed-position card around the keyboard; an inline card just needs
-// the browser's own scroll-into-view, since the page itself scrolls.
+function syncChatInputViewportState() {
+    if (!chatInput) return;
+    const viewport = window.visualViewport;
+    const viewportHeight = viewport?.height || window.innerHeight;
+    const keyboardVisible = viewportHeight < window.innerHeight - 140;
+    const shouldHideBottomNav = document.activeElement === chatInput && keyboardVisible;
+    document.body.classList.toggle('lw-chat-input-focused', shouldHideBottomNav);
+}
+
+// Keep the inline chat card anchored in normal page flow. On mobile,
+// calling scrollIntoView() here makes the whole page jump upward and
+// pulls the card away from where the user is already reading. Instead,
+// just enter a temporary "keyboard open" mode that hides the fixed
+// bottom nav while the composer is focused, then let the browser's
+// native viewport resize handle the space the keyboard needs.
 chatInput?.addEventListener('focus', () => {
-    chatInput.scrollIntoView({ block: 'end', behavior: 'smooth' });
+    document.body.classList.add('lw-chat-input-focused');
+    syncChatInputViewportState();
 });
+
+chatInput?.addEventListener('blur', () => {
+    document.body.classList.remove('lw-chat-input-focused');
+});
+
+if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', syncChatInputViewportState);
+    window.visualViewport.addEventListener('scroll', syncChatInputViewportState);
+}
 
 // -------------------------------------------------------
 // SEND A MESSAGE

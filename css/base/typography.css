@@ -13,16 +13,7 @@ body {
   font-size: 16px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
-  /* 100vh alone can under-report the true edge-to-edge screen height
-     on Android once SystemBars.insetsHandling:"css" makes the status
-     bar and gesture-nav bar transparent (capacitor.config.json) —
-     that's what left a gap at the bottom where the WebView's default
-     background (not this app's) showed through instead of your
-     content's color. dvh tracks the real, current viewport including
-     that area. Matches the fallback chain login.css/verification.css/
-     signup.css already use. */
-  min-height: 100vh;
-  min-height: 100dvh;
+  min-height: auto;
   transition: background-color 0.25s ease, color 0.25s ease;
 }
 

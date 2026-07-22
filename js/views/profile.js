@@ -605,7 +605,7 @@ function showLightConfirmPopup(nextStatus, onConfirm) {
             #lw-confirm-card { background: #fff; border-radius: 16px; padding: 28px 24px; max-width: 340px; width: 100%; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.25); }
             #lw-confirm-card .lw-icon { font-size: 2.4rem; margin-bottom: 12px; }
             #lw-confirm-card .lw-icon svg { width: 1em; height: 1em; }
-            #lw-confirm-card h3 { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 1.1rem; margin: 0 0 8px; color: #111; }
+            #lw-confirm-card h3 { font-family: var(--font-display); font-size: 1.1rem; margin: 0 0 8px; color: #111; }
             #lw-confirm-card p { font-size: 0.88rem; color: #555; margin: 0 0 22px; line-height: 1.5; }
             .lw-confirm-btns { display: flex; gap: 10px; }
             .lw-confirm-btns button { flex: 1; padding: 12px; border-radius: 10px; border: none; font-size: 0.92rem; font-weight: 600; cursor: pointer; transition: opacity 0.15s; }
@@ -709,13 +709,12 @@ function hasReadyToPaintData() {
 }
 
 function showProfileLoader(maxDuration = 8000) {
-    // Skip the blocking skeleton only when we have an actual reason to:
-    // this running app instance already loaded successfully once, or
-    // there's fresh-enough cached data to paint immediately instead.
-    // Otherwise (true first-ever open, or a cache that's gone stale
-    // since the last visit) show it — there's really nothing else to
-    // display yet.
-    if (!profileLoadedThisSession && !hasReadyToPaintData()) {
+    // On the very first successful reveal of this running app instance,
+    // keep the full-page skeleton over the app instead of letting the
+    // raw content snap into place. This avoids the visible refresh jolt
+    // that users see when a signed-in open lands while the app is still
+    // doing its initial mount/reveal sequence.
+    if (!profileLoadedThisSession) {
         document.body?.classList.add('page-data-loading');
     }
 

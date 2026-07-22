@@ -33,14 +33,16 @@ body:has(#view-verification:not([hidden])) {
     gap: 0;
     display: flex;
     flex-direction: column;
-    position: fixed;
-    inset: 0;
+    position: relative;
+    min-height: 100svh;
+    min-height: 100dvh;
     background-color: var(--bg-deep);
     color: var(--text-bright);
     font-family: var(--font-body);
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
     overscroll-behavior: none;
-    touch-action: none; /* kills pull-to-refresh + the vertical/horizontal rubber-band drag — no legit pan gesture on this page, OTP boxes handle their own touch input fine without it */
+    touch-action: manipulation;
     transition: opacity .28s ease;
 }
 
@@ -109,14 +111,8 @@ body.lw-leaving {
 header {
     display: flex;
     align-items: center;
-    padding: .6rem 1.2rem;
-    /* Adds the notch/Dynamic Island clearance on top of the existing
-       .6rem — the background (backdrop-filter blur) still starts at
-       the very top of the sticky box, so it bleeds up underneath the
-       status bar; only the logo/title (the actual content) shifts
-       down to stay clear of it. Requires viewport-fit=cover in the
-       page's <meta name="viewport"> tag. */
-    padding-top: calc(.6rem + env(safe-area-inset-top, 0px));
+    padding: .8rem 1.2rem;
+    padding-top: calc(.8rem + env(safe-area-inset-top, 0px));
     gap: 10px;
     position: sticky;
     top: 0;
@@ -151,11 +147,11 @@ main {
     display: flex;
     flex: 1;
     justify-content: center;
-    align-items: center; /* Center vertically */
+    align-items: center;
     margin: 0;
     padding: 1rem;
     overflow-x: hidden;
-    overflow-y: auto;
+    overflow-y: visible;
     padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
     z-index: 1;
     position: relative;
@@ -163,12 +159,13 @@ main {
 }
 
 main div.verify-card {
-    max-height: min(100%, calc(var(--app-vh, 100dvh) - 132px));
-    overflow-y: auto;
-    overflow-x: hidden;
-    width: min(100%, 420px);
+    max-height: none;
+    overflow: visible;
+    width: min(100%, 380px);
     min-width: 0;
     margin: 0 auto;
+    transform: translateY(var(--verify-keyboard-shift, 0px));
+    transition: transform .18s ease-out;
 }
 
 main h2, main p {
@@ -176,7 +173,7 @@ main h2, main p {
 }
 
 main p {
-    font-size: 1rem;
+    font-size: .9rem;
     color: var(--text-muted);
 }
 
@@ -185,13 +182,13 @@ main div.verify-card {
     display: flex;
     flex-direction: column;
     width: 100%;
-    max-width: 420px;
+    max-width: 380px;
     background-color: color-mix(in srgb, var(--bg-panel) 88%, transparent);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border: 1px solid var(--border-soft);
-    padding: 1.6rem 1.55rem 1.55rem;
-    border-radius: 18px;
+    padding: 1.2rem 1rem 1rem;
+    border-radius: 16px;
     box-shadow: 0 20px 48px rgba(0, 0, 0, 0.14);
     overflow: hidden;
     animation: lw-panel-in .5s cubic-bezier(.2, .8, .2, 1) both;
@@ -205,14 +202,14 @@ main div.verify-card {
 .verify-body {
     display: flex;
     flex-direction: column;
-    gap: .5rem;
-    margin-top: .35rem;
+    gap: .38rem;
+    margin-top: .24rem;
     animation: lw-fade-up .45s ease .08s both;
 }
 
 main h2 {
     font-family: var(--font-display);
-    font-size: 1.4rem;
+    font-size: 1.18rem;
     font-weight: 800;
     letter-spacing: -.01em;
 }
@@ -221,11 +218,11 @@ main h2 {
     display: flex;
     align-items: baseline;
     flex-wrap: wrap;
-    gap: .5rem .6rem;
+    gap: .4rem .5rem;
 }
 
 .edit-link {
-    font-size: .78rem;
+    font-size: .74rem;
     font-weight: 700;
     color: var(--brand2);
     text-decoration: none;
@@ -239,7 +236,7 @@ main h2 {
 .verify-hero {
     height: auto;
     width: 100%;
-    max-width: 260px;
+    max-width: 220px;
     margin: 0 auto;
     border-radius: 12px;
     border: 1px solid var(--border-soft);
@@ -258,8 +255,8 @@ main h2 {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 10px;
-    margin: 0.45rem auto 0.1rem;
+    gap: 8px;
+    margin: 0.32rem auto 0.06rem;
     width: 100%;
     max-width: 100%;
 }
@@ -275,17 +272,17 @@ main h2 {
 }
 
 .otp-box {
-    width: 48px;
-    height: 56px;
+    width: 42px;
+    height: 50px;
     min-width: 0;
     margin: 0;
     padding: 0;
     text-align: center;
     font-family: var(--font-display);
-    font-size: 1.2rem;
+    font-size: 1.05rem;
     font-weight: 700;
     border: 1.5px solid var(--border-soft);
-    border-radius: 10px;
+    border-radius: 9px;
     background: var(--bg-panel);
     color: var(--text-bright);
     transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s cubic-bezier(.3, 1.4, .5, 1);
@@ -309,7 +306,7 @@ main h2 {
 }
 
 #error-msg {
-    font-size: .78rem;
+    font-size: .72rem;
     color: var(--red, #E5484D);
     min-height: 0;
     line-height: 1.2;
@@ -322,18 +319,18 @@ main h2 {
     align-items: center;
     justify-content: center;
     gap: 8px;
-    margin: 0.15rem 0 0.25rem;
+    margin: 0.1rem 0 0.18rem;
 }
 
 .resend-row img {
     height: 16px;
     width: 16px;
     flex-shrink: 0;
-    display: block; /* Align with text */
+    display: block;
 }
 
 .resend-row p {
-    font-size: .8rem;
+    font-size: .74rem;
     color: var(--text-muted);
 }
 
@@ -358,13 +355,13 @@ main h2 {
 
 button#continueBtn {
     position: relative;
-    padding: 14px;
+    padding: 12px;
     background-color: #c5cbd3;
     color: white;
-    border-radius: 26px;
+    border-radius: 22px;
     border: none;
     font-family: var(--font-body);
-    font-size: 1rem;
+    font-size: .92rem;
     font-weight: 600;
     cursor: pointer;
     display: inline-flex;
@@ -452,7 +449,7 @@ button#continueBtn.is-loading .btn-label {
 }
 
 .verify-card.is-success {
-    min-height: 260px;
+    min-height: 240px;
     justify-content: center;
 }
 
@@ -479,7 +476,7 @@ button#continueBtn.is-loading .btn-label {
 }
 
 .verify-success p {
-    font-size: .9rem;
+    font-size: .82rem;
     font-weight: 600;
     color: var(--text-muted);
 }
@@ -500,8 +497,8 @@ button#continueBtn.is-loading .btn-label {
 
 @media (max-width: 560px) {
     header {
-        padding: .55rem 1rem;
-        padding-top: calc(.55rem + env(safe-area-inset-top, 0px));
+        padding: .65rem 1rem;
+        padding-top: calc(.65rem + env(safe-area-inset-top, 0px));
     }
 
     main {
@@ -510,14 +507,14 @@ button#continueBtn.is-loading .btn-label {
     }
 
     main div.verify-card {
-        width: min(100%, 380px);
-        max-width: 380px;
-        padding: 1.2rem 1rem 1rem;
+        width: min(100%, 360px);
+        max-width: 360px;
+        padding: 1rem .9rem .95rem;
         border-radius: 14px;
     }
 
     .verify-hero {
-        max-width: min(100%, 220px);
+        max-width: min(100%, 210px);
     }
 
     .contact-row {
@@ -541,36 +538,36 @@ button#continueBtn.is-loading .btn-label {
     }
 
     main h2 {
-        font-size: 1.15rem;
-    }
-
-    main p {
-        font-size: .88rem;
-    }
-
-    .verify-card {
-        padding: 1rem .85rem .95rem;
-    }
-
-    .otp-boxes {
-        gap: 8px;
-        margin: 0.35rem auto 0.05rem;
-    }
-
-    .otp-box {
-        width: 42px;
-        height: 50px;
-        border-radius: 8px;
         font-size: 1.05rem;
     }
 
+    main p {
+        font-size: .82rem;
+    }
+
+    .verify-card {
+        padding: .95rem .8rem .9rem;
+    }
+
+    .otp-boxes {
+        gap: 7px;
+        margin: 0.28rem auto 0.03rem;
+    }
+
+    .otp-box {
+        width: 38px;
+        height: 46px;
+        border-radius: 8px;
+        font-size: 1rem;
+    }
+
     .resend-row p {
-        font-size: .78rem;
+        font-size: .72rem;
     }
 
     .verify-body {
-        gap: .4rem;
-        margin-top: .25rem;
+        gap: .32rem;
+        margin-top: .18rem;
     }
 }
 

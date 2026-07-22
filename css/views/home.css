@@ -511,9 +511,9 @@
 .location-page-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 24px;
+  gap: 14px;
   align-items: start;
-  margin: 0 auto 26px;
+  margin: 0 auto 16px;
   width: 100%;
   max-width: var(--max-width);
   min-width: 0;
@@ -523,13 +523,13 @@
 .location-primary {
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: 12px;
 }
 
 .location-card {
   display: flex;
   flex-direction: column;
-  gap: 9px;
+  gap: 7px;
   min-width: 0;
 }
 
@@ -985,6 +985,25 @@
 }
 
 @media (max-width: 480px) {
+  .report-item {
+    padding: 12px 14px;
+    gap: 12px;
+  }
+
+  .report-item strong {
+    font-size: 0.82rem;
+    margin-bottom: 4px;
+  }
+
+  .report-item__text {
+    font-size: 0.72rem;
+    line-height: 1.32;
+  }
+
+  .report-item__time {
+    font-size: 0.64rem;
+  }
+
   .pulse-panel {
     gap: 13px;
   }
@@ -2080,35 +2099,35 @@ body.lw-location-panel-open {
 
 .report-list {
   display: grid;
-  gap: 14px;
+  gap: 12px;
 }
 
 .report-item {
   background: var(--bg-panel);
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-md);
-  padding: 16px 18px;
+  padding: 14px 16px;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 16px;
+  gap: 14px;
 }
 
 .report-item strong {
   display: block;
-  font-size: 0.96rem;
-  margin-bottom: 6px;
+  font-size: 0.88rem;
+  margin-bottom: 5px;
 }
 
 .report-item__text {
   color: var(--text-muted);
-  font-size: 0.88rem;
-  line-height: 1.45;
+  font-size: 0.78rem;
+  line-height: 1.4;
 }
 
 .report-item__time {
   color: var(--text-faint);
-  font-size: 0.78rem;
+  font-size: 0.7rem;
   white-space: nowrap;
 }
 
@@ -2191,12 +2210,13 @@ body.lw-location-panel-open {
 }
 
 .btn--primary {
-  background: var(--teal);
-  color: #06241f;
+  background: var(--brand);
+  color: #fff;
 }
 
 .btn--primary:hover {
-  opacity: 0.92;
+  background: var(--brand-dim);
+  opacity: 1;
 }
 
 .btn--ghost {
@@ -2399,7 +2419,7 @@ body.lw-location-panel-open {
 
   .page {
     padding: 20px 16px 54px;
-    min-height: calc(100vh - 132px);
+    min-height: auto;
     animation-duration: 0.18s;
     display: block;
   }
@@ -2470,8 +2490,10 @@ body.lw-location-panel-open {
   }
 
   .light-toggle-row {
-    padding: 12px 14px;
+    padding: 10px 12px;
     width: 100%;
+    gap: 10px;
+    align-items: center;
   }
 
   .status-hero {
@@ -2938,21 +2960,107 @@ body.lw-location-panel-open {
   }
 
   .hero-banner {
-    padding: 12px 10px 10px;
-    border-radius: 14px;
+    padding: 10px 10px 8px;
+    border-radius: 12px;
+    gap: 4px;
+    row-gap: 4px;
   }
 
   .hero-banner__greeting {
-    font-size: 1.04rem;
+    font-size: 0.96rem;
+  }
+
+  .hero-banner__stats {
+    gap: 6px;
+    margin-top: 2px;
   }
 
   .hero-stat__value {
-    font-size: 1rem;
+    font-size: 0.92rem;
   }
 
-   .hero-banner__stats {
+  .hero-stat__label {
+    font-size: 0.6rem;
+  }
+
+  .status-hero {
     gap: 8px;
-   }
+    padding: 0 0 4px;
+    margin-bottom: 4px;
+  }
+
+  .status-hero__icon {
+    width: 42px;
+    height: 42px;
+    font-size: 1.2rem;
+  }
+
+  .status-hero__title {
+    font-size: 0.9rem;
+  }
+
+  .status-hero__sub {
+    font-size: 0.7rem;
+  }
+
+  .status-insight-panel {
+    padding: 12px;
+    border-radius: 16px;
+  }
+
+  .status-insight__header {
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .status-insight__title {
+    font-size: 0.84rem;
+  }
+
+  .status-insight__sub {
+    font-size: 0.68rem;
+  }
+
+  .status-insight__body {
+    gap: 10px;
+  }
+
+  .status-insight__graphic {
+    width: 94px;
+    min-width: 94px;
+    gap: 8px;
+  }
+
+  .status-grid__legend {
+    font-size: 0.6rem;
+    gap: 8px;
+  }
+
+  .status-insight__stats {
+    gap: 6px;
+  }
+
+  .status-insight__stats div {
+    gap: 10px;
+  }
+
+  .status-insight__label {
+    font-size: 0.68rem;
+  }
+
+  .status-insight__stats strong {
+    font-size: 0.8rem;
+  }
+
+  .checkbox-row {
+    gap: 6px;
+    font-size: 0.72rem;
+  }
+
+  .checkbox-row input {
+    width: 14px;
+    height: 14px;
+  }
 
   .card,
   .location-card,
@@ -3226,35 +3334,45 @@ body.lw-location-panel-open {
   }
 
   .light-toggle-row {
-    padding: 9px 10px;
-    gap: 10px;
-  }
-
-  .light-toggle-row__title {
-    font-size: 0.82rem;
-  }
-
-  .light-switch {
+    padding: 8px 9px;
     gap: 8px;
   }
 
+  .light-toggle-row__label {
+    gap: 2px;
+    min-width: 0;
+    flex: 1;
+  }
+
+  .light-toggle-row__title {
+    font-size: 0.78rem;
+  }
+
+  .light-switch {
+    gap: 6px;
+    padding: 2px;
+  }
+
   .light-switch__track {
-    width: 46px;
-    height: 24px;
+    width: 42px;
+    height: 22px;
   }
 
   .light-switch__thumb {
-    width: 18px;
-    height: 18px;
+    width: 16px;
+    height: 16px;
+    top: 3px;
+    left: 3px;
   }
 
   .light-switch--on .light-switch__thumb {
-    transform: translateX(22px);
+    transform: translateX(20px);
   }
 
   .light-switch__state {
-    font-size: 0.66rem;
+    font-size: 0.62rem;
     letter-spacing: 0.04em;
+    min-width: 24px;
   }
 
   .chat-thread {
@@ -4034,6 +4152,12 @@ body:not(.page-data-loading) #view-home #realPageContent {
   }
 }
 
+@media (max-width: 768px) {
+  #view-home .location-sidebar {
+    display: none;
+  }
+}
+
 /* Mobile chat popup removed — chat is inline on the page at every
    screen size now (see chat.js and the #view-home .chat-card rules
    above), so there's no floating popup left that needs a z-index
@@ -4223,6 +4347,25 @@ body:not(.page-data-loading) #view-home #realPageContent {
     font-size: 0.72rem;
   }
 
+  .report-item {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+
+  .report-item strong {
+    font-size: 0.78rem;
+    margin-bottom: 3px;
+  }
+
+  .report-item__text {
+    font-size: 0.68rem;
+    line-height: 1.28;
+  }
+
+  .report-item__time {
+    font-size: 0.6rem;
+  }
+
   .btn {
     font-size: 0.82rem;
   }
@@ -4304,36 +4447,36 @@ body:not(.page-data-loading) #view-home #realPageContent {
   }
 
   #view-reports .report-card {
-    padding: 26px;
+    padding: 24px;
   }
 
   #view-reports .card__title {
-    font-size: 1.08rem;
+    font-size: 1.02rem;
   }
 
   #view-reports .card__meta {
-    font-size: 0.82rem;
+    font-size: 0.78rem;
   }
 
   #view-reports .report-list {
-    gap: 14px;
+    gap: 12px;
   }
 
   #view-reports .report-item {
-    padding: 18px 20px;
+    padding: 16px 18px;
   }
 
   #view-reports .report-item strong {
-    font-size: 0.98rem;
-    margin-bottom: 8px;
+    font-size: 0.92rem;
+    margin-bottom: 6px;
   }
 
   #view-reports .report-item__text {
-    font-size: 0.9rem;
+    font-size: 0.82rem;
   }
 
   #view-reports .report-item__time {
-    font-size: 0.8rem;
+    font-size: 0.72rem;
   }
 }
 

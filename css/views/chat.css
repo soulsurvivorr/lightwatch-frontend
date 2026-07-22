@@ -9,38 +9,75 @@
   gap: 8px;
 }
 
-#view-chat .page {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-  padding-bottom: calc(16px + env(safe-area-inset-bottom));
+/* Full-bleed "app panel" layout for the Report page — desktop only.
+   This used to apply unconditionally, but #view-chat .page (an ID
+   selector) always wins over the plain .page rule in home.css that
+   reserves 132px of height for the fixed bottom nav on mobile
+   (@media max-width:768px), no matter which stylesheet loads last.
+   Forcing min-height:100vh + display:flex here on mobile meant the
+   card ignored that reserved space entirely and grew past the bottom
+   nav / off the bottom of the screen. Desktop has no bottom nav and
+   no competing .page rule, so the full-height flex column is safe
+   there and is what keeps the thread/composer pinned in one panel. */
+@media (min-width: 721px) {
+  #view-chat .page {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  }
+
+  #view-chat .chat-card {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  #view-chat .chat-card__head,
+  #view-chat .chat-form {
+    flex-shrink: 0;
+  }
+
+  #view-chat .chat-thread-wrap {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  #view-chat .chat-thread {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    padding-bottom: 8px;
+  }
 }
 
-#view-chat .chat-card {
-  flex: 1 1 auto;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+/* Mobile: let the card size to its content within the normal .page
+   block flow (home.css already reserves room for the bottom nav
+   there). The thread keeps its own max-height via the base
+   .chat-thread rule + the max-width breakpoints further down this
+   file, so it scrolls internally instead of stretching the page. */
+@media (max-width: 720px) {
+  #view-chat .chat-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
 }
 
-#view-chat .chat-card__head,
-#view-chat .chat-form {
-  flex-shrink: 0;
-}
-
-#view-chat .chat-thread-wrap {
-  flex: 1 1 auto;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-#view-chat .chat-thread {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
-  padding-bottom: 8px;
+/* Toggled by chat.js on chatInput focus/blur. Hides the fixed bottom
+   nav for the duration of typing so it can't ride up the screen when
+   the on-screen keyboard resizes the viewport (see chat.js for the
+   full explanation), and frees the extra height the composer needs
+   instead of squeezing the layout at the same time the keyboard is
+   still animating in. */
+@media (max-width: 720px) {
+  body.lw-chat-input-focused #bottom_nav_wrapper {
+    display: none;
+  }
 }
 
 #view-chat .chat-close-btn {
@@ -68,7 +105,7 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  min-height: 0;
+  min-height: clamp(220px, 38vh, 360px);
 }
 
 .chat-scroll-bottom-btn {
@@ -116,7 +153,8 @@
   display: flex;
   flex-direction: column;
   gap: 3px;
-  max-height: 230px;
+  min-height: clamp(200px, 34vh, 320px);
+  max-height: clamp(240px, 44vh, 360px);
   overflow-y: auto;
   padding-right: 2px;
 }
@@ -125,11 +163,11 @@
   background: var(--bg-panel-raised);
   border: 1px solid var(--border-soft);
   border-radius: 12px;
-  padding: 5px 8px;
+  padding: 4px 7px;
   display: grid;
   gap: 1px;
-  font-size: 0.78rem;
-  max-width: 76%;
+  font-size: 0.74rem;
+  max-width: 74%;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
   animation: chat-message-in 0.22s ease both;
 }
@@ -143,9 +181,9 @@
 }
 
 .chat-message__text {
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   color: var(--text-bright);
-  line-height: 1.32;
+  line-height: 1.3;
   font-family: var(--font-body);
   font-weight: 500;
   word-break: break-word;
@@ -718,38 +756,58 @@
 }
 
 @media (max-width: 480px) {
+  .chat-card {
+    gap: 8px;
+  }
+
+  .chat-thread-wrap {
+    min-height: clamp(240px, 42vh, 300px);
+  }
+
   .chat-thread {
-    max-height: min(40vh, 260px);
+    min-height: clamp(220px, 38vh, 280px);
+    max-height: min(38vh, 260px);
     gap: 4px;
   }
 
   .chat-message {
-    max-width: 86%;
-    padding: 6px 9px;
-    font-size: 0.82rem;
+    max-width: 84%;
+    padding: 4px 7px;
+    font-size: 0.74rem;
   }
 
   .chat-message__text {
-    font-size: 0.82rem;
-    line-height: 1.35;
+    font-size: 0.7rem;
+    line-height: 1.28;
   }
 
   .chat-message__author {
-    font-size: 0.66rem;
+    font-size: 0.62rem;
   }
 
   .chat-message__time {
-    font-size: 0.6rem;
+    font-size: 0.56rem;
   }
 }
 
 @media (max-width: 380px) {
+  .chat-thread-wrap {
+    min-height: clamp(220px, 40vh, 270px);
+  }
+
+  .chat-thread {
+    min-height: clamp(200px, 34vh, 240px);
+    max-height: min(34vh, 220px);
+  }
+
   .chat-message {
-    max-width: 90%;
-    font-size: 0.78rem;
+    max-width: 82%;
+    padding: 3px 6px;
+    font-size: 0.68rem;
   }
 
   .chat-message__text {
-    font-size: 0.78rem;
+    font-size: 0.66rem;
+    line-height: 1.24;
   }
 }

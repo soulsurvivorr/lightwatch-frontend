@@ -21,6 +21,8 @@
     let cooldownInterval = null;
     let verifyInFlight = false;
     let mounted = false;
+    let keyboardViewportCleanup = null;
+    let focusedOtp = null;
 
     function getVerificationValue(key) {
         return sessionStorage.getItem(key) || localStorage.getItem(key);
@@ -197,12 +199,42 @@
         resendLink = document.getElementById('resendCodeLink');
         editLink = document.getElementById('editContactLink');
 
+        const updateKeyboardShift = () => {
+            if (!verifyCard || !focusedOtp) return;
+            const viewportBottom = (window.visualViewport?.height || window.innerHeight) - 18;
+            const fieldBottom = focusedOtp.getBoundingClientRect().bottom;
+            const shift = Math.min(0, viewportBottom - fieldBottom - 72);
+            verifyCard.style.setProperty('--verify-keyboard-shift', `${shift}px`);
+        };
+
+        const clearKeyboardShift = () => {
+            verifyCard?.style.removeProperty('--verify-keyboard-shift');
+        };
+
+        keyboardViewportCleanup = () => {
+            window.visualViewport?.removeEventListener('resize', updateKeyboardShift);
+            window.visualViewport?.removeEventListener('scroll', updateKeyboardShift);
+            clearKeyboardShift();
+            focusedOtp = null;
+        };
+
         editLink?.addEventListener('click', (e) => {
             e.preventDefault();
             window.LWRouter.navigate('signup');
         });
 
         otpBoxes.forEach((box, index) => {
+            box.addEventListener('focus', () => {
+                focusedOtp = box;
+                requestAnimationFrame(updateKeyboardShift);
+                setTimeout(updateKeyboardShift, 120);
+            });
+            box.addEventListener('blur', () => {
+                if (focusedOtp === box) {
+                    focusedOtp = null;
+                    clearKeyboardShift();
+                }
+            });
             box.addEventListener('input', () => {
                 const digits = box.value.replace(/[^0-9]/g, '');
 
@@ -242,6 +274,9 @@
                 autoSubmitWhenFull();
             });
         });
+
+        window.visualViewport?.addEventListener('resize', updateKeyboardShift);
+        window.visualViewport?.addEventListener('scroll', updateKeyboardShift);
 
         continueBtn.addEventListener('click', e => { e.preventDefault(); checkOTP(); });
 
@@ -297,6 +332,8 @@
 
     function hide() {
         clearInterval(cooldownInterval);
+        keyboardViewportCleanup?.();
+        keyboardViewportCleanup = null;
     }
 
     window.LWViews = window.LWViews || {};

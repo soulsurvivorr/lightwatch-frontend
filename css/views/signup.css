@@ -548,7 +548,7 @@ body.lw-leaving {
     body:has(#view-signup:not([hidden])) {
         height: auto;
         min-height: 100%;
-        overflow-y: auto;
+        overflow: hidden;
     }
 
     body:has(#view-signup:not([hidden])) {
@@ -557,16 +557,18 @@ body.lw-leaving {
         padding: 28px 20px 40px;
         min-height: 100vh;
         min-height: 100dvh;
-        overflow-y: auto;
+        overflow: hidden;
     }
 
     #view-signup > section {
-        overflow: visible;
-        overflow-x: visible;
+        overflow-y: auto;
+        overflow-x: hidden;
         min-height: auto;
+        max-height: calc(100dvh - 56px);
         width: max-content;
         max-width: 100%;
         margin: 0 auto;
+        scrollbar-gutter: stable;
     }
 
     #main-content_wrapper {
@@ -609,25 +611,26 @@ body:has(#view-signup:not([hidden])) #authShell {
     body:has(#view-signup:not([hidden])) {
         height: 100svh;
         min-height: 100svh;
-        overflow: hidden;
+        overflow-x: hidden;
+        overflow-y: auto;
     }
 
     body:has(#view-signup:not([hidden])) #authShell {
-        height: 100svh;
+        min-height: 100svh;
         align-items: stretch;
     }
 
     #view-signup:not([hidden]) {
         width: 100%;
-        height: 100svh;
         min-height: 100svh;
+        height: auto;
         display: flex;
         flex-direction: column;
     }
 
     body:has(#view-signup:not([hidden])) {
-        position: fixed;
-        inset: 0;
+        position: relative;
+        inset: auto;
         align-items: stretch;
         justify-content: stretch;
         padding: 0;
@@ -649,7 +652,7 @@ body:has(#view-signup:not([hidden])) #authShell {
         flex: 1;
         width: 100%;
         min-width: 0;
-        padding: 1rem .95rem;
+        padding: 1rem .95rem 2rem;
         transform: translateY(var(--signup-keyboard-shift, 0px));
         transition: transform .18s ease-out;
     }
@@ -665,8 +668,8 @@ body:has(#view-signup:not([hidden])) #authShell {
 
     #view-signup > section {
         width: 100%;
-        height: 100%;
-        min-height: 100%;
+        height: auto;
+        min-height: 100svh;
         max-height: none;
         padding-top: calc(1rem + env(safe-area-inset-top, 0px));
         padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
@@ -674,8 +677,8 @@ body:has(#view-signup:not([hidden])) #authShell {
         border: 0;
         border-radius: 0;
         box-shadow: none;
-        overflow: hidden;
-        overscroll-behavior: none;
+        overflow: visible;
+        overscroll-behavior: contain;
     }
 
     .user-profile-btn img {

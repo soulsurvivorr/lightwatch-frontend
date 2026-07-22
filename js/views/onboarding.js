@@ -66,6 +66,7 @@
 
     function hideOverlay(overlay) {
         overlay.hidden = true;
+        overlay.classList.remove('is-open', 'is-instant');
         overlay.style.removeProperty('display');
         overlay.style.removeProperty('visibility');
     }
