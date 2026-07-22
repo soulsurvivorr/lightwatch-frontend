@@ -570,26 +570,6 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
     padding-bottom: calc(5px + env(safe-area-inset-bottom, 0px)); /* Footer 5px from bottom */
     padding-left: 24px;
     padding-right: 24px;
-    /* FIX: keyboard-safe scroll container. .login-shell/html/body stay
-       overflow:hidden (no page bounce, no whole-shell reflow), but this
-       pane can now scroll internally. When the on-screen keyboard
-       occludes part of the viewport, this is what absorbs that lost
-       space — instead of .login-box/.login-footer overflowing their
-       flex tracks and overlapping (native app), or the focused field
-       having no scrollable ancestor to be revealed through at all
-       (Chrome, where the layout viewport correctly never resizes
-       per interactive-widget=overlays-content). */
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
-  }
-
-  /* .login-box no longer needs to stretch/flex — with a scrolling
-     parent it can just take its natural size, so it can't push the
-     footer past the bottom of the pane or overlap it when space is
-     tight. */
-  .login-shell .login-form-side .login-box {
-    flex: none;
   }
 
   .login-form-side::before,

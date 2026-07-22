@@ -239,10 +239,13 @@
         // time this page-load, that call chain (LWProfile.init() ->
         // loadCurrentUserProfile() -> showProfileLoader(), all synchronous
         // up to their first await) has already decided whether the
-        // full-page skeleton belongs on screen, based on whether this
-        // device has ever completed a boot before (FIRST_BOOT_DONE_KEY).
-        // See profile.js for that logic — keeping it in one place avoids
-        // the two ever disagreeing about which class name to use.
+        // full-page skeleton belongs on screen, based on whether there's
+        // real cached data ready to paint right now (see profile.js's
+        // hasReadyToPaintData()) — not a one-time "has this device ever
+        // booted" flag, so the skeleton correctly comes back on a reload
+        // once the cache has actually gone stale. Keeping the decision in
+        // one place avoids the two ever disagreeing about which class
+        // name to use.
 
         if (shouldWaitForOnboarding) {
             window.LWOnboarding.init();

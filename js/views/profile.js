@@ -805,22 +805,32 @@ async function loadCurrentUserProfile() {
         renderUserEverywhere(fallbackUser);
     }
 
+    // Paint the location/status hero card from whatever's cached right
+    // now, before the network round trip below even starts. This used
+    // to only happen in the isLocalOnlySession/!userId/fetch-failed
+    // branches further down — meaning the common case (valid session,
+    // working network) left the hero card on its raw placeholder HTML
+    // until /user/:id resolved. That's exactly the gap
+    // showProfileLoader()'s hasReadyToPaintData() check assumes is
+    // already filled when it decides to skip the skeleton, so leaving
+    // it empty meant a reload with a fresh cache showed no skeleton
+    // AND no real data for a beat — the flash this is fixing.
+    // renderLocationPage() is safe to call twice (it clears its own
+    // polling intervals on repeat calls) — this first call paints
+    // instantly from cache if there is any, and the second call further
+    // down repaints with the live data once it lands.
+    let locationPaintedPromise = fallbackUser ? renderLocationPage(fallbackUser) : Promise.resolve();
+
     if (isLocalOnlySession) {
-        if (fallbackUser) {
-            await renderLocationPage(fallbackUser);
-        } else {
-            renderSignedOutEverywhere();
-        }
+        if (!fallbackUser) renderSignedOutEverywhere();
+        await locationPaintedPromise;
         hideProfileLoader();
         return;
     }
 
     if (!userId) {
-        if (fallbackUser) {
-            await renderLocationPage(fallbackUser);
-        } else {
-            renderSignedOutEverywhere();
-        }
+        if (!fallbackUser) renderSignedOutEverywhere();
+        await locationPaintedPromise;
         hideProfileLoader();
         return;
     }
@@ -859,9 +869,7 @@ async function loadCurrentUserProfile() {
 
     } catch (error) {
         console.error("Could not load profile:", error);
-        if (fallbackUser) {
-            await renderLocationPage(fallbackUser);
-        } else {
+        if (!fallbackUser) {
             document.querySelectorAll('#profileContact').forEach(el => { el.textContent = "Could not reach server"; });
         }
     } finally {
