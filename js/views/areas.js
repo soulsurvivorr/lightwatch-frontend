@@ -171,18 +171,39 @@
         }
     }
 
+    // Mirrors profile.js's hideProfileLoader() timing for Home: mark the
+    // skeleton as fading (areas.css transitions its opacity to 0 while
+    // .app-loading — and therefore display:block — is still in effect),
+    // then once that's had a moment to actually paint, drop .app-loading
+    // (snapping the now-invisible skeleton to display:none) and let
+    // #areasRealContent play its entrance animation. Without this, the
+    // skeleton used to just vanish and reappear instantly instead of
+    // fading, and — before areas.css's display:none/block gate existed —
+    // both elements were visible in normal flow at once, which is what
+    // pushed the real content down beneath the skeleton.
+    function hideAreasSkeleton() {
+        if (!document.body.classList.contains('app-loading')) return;
+        const skeleton = document.getElementById('areasSkeleton');
+        if (skeleton) skeleton.classList.add('lw-skel-fading');
+        setTimeout(() => {
+            document.body.classList.remove('app-loading');
+            const realContent = document.getElementById('areasRealContent');
+            if (realContent) realContent.classList.add('lw-content-reveal');
+        }, 180);
+    }
+
     async function loadAreas(isFirstLoad = false) {
         if (isFirstLoad) {
             const cached = LWCache.read(AREAS_CACHE_KEY, CACHE_MAX_AGE_MEDIUM_MS);
             if (cached) {
                 renderAreas([cached, ...DEMO_AREAS]);
-                document.body.classList.remove('app-loading');
+                hideAreasSkeleton();
             }
         }
         const liveBantama = await fetchLiveTowns();
         renderAreas([liveBantama, ...DEMO_AREAS]);
         LWCache.write(AREAS_CACHE_KEY, liveBantama);
-        document.body.classList.remove('app-loading');
+        hideAreasSkeleton();
     }
 
     function bindControls() {

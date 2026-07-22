@@ -1224,6 +1224,61 @@
   transition: opacity 0.08s ease;
 }
 
+/* ------------------------------------------------------------
+   #pageSkeleton / #realPageContent — same pattern as account.css's
+   #accountSkeleton/#accountRealContent (that page had this and Home
+   didn't, which is the actual bug: with no display gate between the
+   two, they were both just plain block-level siblings with
+   class="page", so on mobile they simply stacked in normal flow —
+   skeleton first, real content shoved down beneath it, both visible
+   at once — instead of one replacing the other in place.
+
+   display:none/block is mutually exclusive by design: only one of
+   the pair is ever actually laid out, so neither can push the other
+   down. profile.js's hideProfileLoader() adds .lw-skel-fading first
+   (triggering the opacity fade below while .page-data-loading, and
+   therefore display:block, is still in effect), then ~180ms later
+   drops .page-data-loading (snapping the now-invisible skeleton to
+   display:none) and adds .lw-content-reveal to #realPageContent for
+   its entrance animation. See profile.js's showProfileLoader() for
+   why the skeleton is skipped entirely after this device's first
+   successful boot. */
+#pageSkeleton {
+  display: none;
+  opacity: 1;
+  transition: opacity 0.2s ease;
+}
+
+.page-data-loading #pageSkeleton {
+  display: block;
+}
+
+#pageSkeleton.lw-skel-fading {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #pageSkeleton {
+    transition: none;
+  }
+}
+
+.page-data-loading #realPageContent {
+  display: none;
+}
+
+/* @keyframes lwContentReveal is defined once in account.css and
+   loaded on every page, so it's shared here rather than redefined. */
+#realPageContent.lw-content-reveal {
+  animation: lwContentReveal 0.4s cubic-bezier(.19, 1, .22, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #realPageContent.lw-content-reveal {
+    animation: none;
+  }
+}
+
 /* .lw-boot-loader and .lw-loader-* rules moved to components/loader.css */
 
 .user-sidebar-panel {

@@ -5,6 +5,60 @@
    once rather than a handful of large cards.
    ============================================================ */
 
+/* ------------------------------------------------------------
+   #areasSkeleton / #areasRealContent — same pattern as
+   account.css's #accountSkeleton/#accountRealContent and home.css's
+   #pageSkeleton/#realPageContent. Without this, both were plain
+   block-level siblings sharing class="page" with nothing making
+   them mutually exclusive, so they stacked in normal flow instead
+   of one replacing the other — skeleton first, real content shoved
+   down beneath it.
+
+   display:none/block is mutually exclusive by design: only one of
+   the pair is ever actually laid out, so neither can push the other
+   down. areas.js's hideAreasSkeleton() adds .lw-skel-fading first
+   (triggering the opacity fade below while .app-loading, and
+   therefore display:block, is still in effect), then ~180ms later
+   drops .app-loading (snapping the now-invisible skeleton to
+   display:none) and adds .lw-content-reveal to #areasRealContent for
+   its entrance animation — mirroring profile.js's
+   showProfileLoader()/hideProfileLoader() timing for Home. */
+#areasSkeleton {
+  display: none;
+  opacity: 1;
+  transition: opacity 0.2s ease;
+}
+
+.app-loading #areasSkeleton {
+  display: block;
+}
+
+#areasSkeleton.lw-skel-fading {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #areasSkeleton {
+    transition: none;
+  }
+}
+
+.app-loading #areasRealContent {
+  display: none;
+}
+
+/* @keyframes lwContentReveal is defined once in account.css and
+   loaded on every page, so it's shared here rather than redefined. */
+#areasRealContent.lw-content-reveal {
+  animation: lwContentReveal 0.4s cubic-bezier(.19, 1, .22, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #areasRealContent.lw-content-reveal {
+    animation: none;
+  }
+}
+
 .areas-layout {
   display: grid;
   gap: 20px;
