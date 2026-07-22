@@ -24,6 +24,12 @@ const HOME_REMINDER_SEEN_KEY = 'lw_home_reminder_seen';
 // ---- Theme (components/theme.js) ----
 const THEME_PREF_KEY = 'lw_theme_pref';
 
+// ---- First-boot skeleton gate (app.js / views/profile.js) ----
+// Native install, so localStorage survives app close/reopen — this
+// flag is what lets the full-page skeleton show once (true cold
+// start, nothing cached yet) and never again after that.
+const FIRST_BOOT_DONE_KEY = 'lw_first_boot_done';
+
 // ---- Polling cadence — kept deliberately slow app-wide to keep the
 //      Render backend's request logs quiet (see areas.js/reports.js
 //      history). Views that poll should use one of these rather than

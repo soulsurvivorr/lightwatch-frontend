@@ -668,25 +668,33 @@ function renderSignedOutEverywhere() {
 let profileLoaderSafetyTimer = null;
 
 function showProfileLoader(maxDuration = 8000) {
-    // NOTE: this used to skip showing the loader entirely once a
-    // "lw_skeleton_seen_<key>" flag was set from a prior visit — the
-    // intent was to avoid re-flashing the skeleton for fast repeat
-    // visits. In practice it meant the skeleton NEVER showed again
-    // after the very first load: the raw/empty page painted instantly
-    // and real data popped in 1-2s later once the fetch resolved,
-    // which reads as broken/janky rather than fast. The loader is
-    // cheap to show and gets cleared the moment cached data (or a
-    // fresh fetch) is ready, so there's no real cost to always showing
-    // it — just remove the skip.
+    // The old "lw_skeleton_seen_<key>" flag tried to skip the skeleton on
+    // repeat visits, but it was scoped to individual data (per-location,
+    // per-view) rather than "has this device ever booted the app before" —
+    // in practice that meant it barely ever matched, so the skeleton
+    // showed on basically every open: raw/empty content painting first,
+    // then real data popping in 1-2s later, which reads as broken/janky.
+    //
+    // The actual fix: gate the skeleton on FIRST_BOOT_DONE_KEY, a
+    // localStorage flag that survives app close/reopen on this native
+    // install. True cold start (flag absent) → show the full skeleton,
+    // there's nothing else to paint yet. Every later open (flag present)
+    // → skip it entirely; the real content is already sitting there with
+    // cached/fallback data from loadCurrentUserProfile(), so blocking it
+    // behind a skeleton would just be extra motion for no reason.
+    //
+    // This function runs exactly once per page-load — the first time the
+    // app shell (home/account) is entered, whether that's immediately at
+    // boot (session already existed) or right after a fresh login later
+    // in the same load (see app.js's enteringAppShellFirstTime).
+    if (!localStorage.getItem(FIRST_BOOT_DONE_KEY)) {
+        document.body?.classList.add('page-data-loading');
+    }
+
     const connectionType = navigator?.connection?.effectiveType || '';
     const isSlowConnection = /(^|-)2g$|^3g$/.test(connectionType) || connectionType === 'slow-2g';
     const safetyDuration = Math.max(maxDuration, isSlowConnection ? 20000 : 12000);
 
-    if (document.body?.dataset.skeletonManaged === '1') {
-        document.body?.classList.add('page-data-loading');
-    } else {
-        document.body?.classList.add('app-loading');
-    }
     clearTimeout(profileLoaderSafetyTimer);
     profileLoaderSafetyTimer = setTimeout(() => {
         hideProfileLoader();
@@ -696,8 +704,10 @@ function showProfileLoader(maxDuration = 8000) {
 function hideProfileLoader() {
   clearTimeout(profileLoaderSafetyTimer);
 
-  const skeleton = document.getElementById('pageSkeleton');
-  if (skeleton) skeleton.classList.add('lw-skel-fading');
+  // Generic — matches #pageSkeleton on Home and #accountSkeleton on
+  // Account (whichever is actually on screen), so both views share this
+  // one loader without needing view-specific fade logic here.
+  document.querySelectorAll('[id$="Skeleton"]').forEach(el => el.classList.add('lw-skel-fading'));
 
   // Force one final dark paint before reveal
   if (document.documentElement.classList.contains('lw-cold-boot')) {
@@ -708,6 +718,10 @@ function hideProfileLoader() {
     document.body.classList.remove('page-data-loading', 'app-loading');
     const realContent = document.getElementById('realPageContent');
     if (realContent) realContent.classList.add('lw-content-reveal');
+
+    // First successful reveal on this device — the full skeleton never
+    // needs to show again after this (see app.js's boot()).
+    try { localStorage.setItem(FIRST_BOOT_DONE_KEY, '1'); } catch {}
 
     window.dispatchEvent(new CustomEvent('lw-page-revealed'));
   }, 180);

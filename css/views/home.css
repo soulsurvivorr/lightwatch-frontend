@@ -297,7 +297,7 @@
       .hero-banner__greeting { font-size: 1.1rem; }
       .hero-banner__stats { gap: 0px; }
       .hero-stat__value { font-size: 1rem; }
-      .hero-stat__label { font-size: 0.5rem; }
+      .hero-stat__label { font-size: 0.6rem; }
     }
 
 /* ============================================================
@@ -2978,7 +2978,11 @@ body.lw-location-panel-open {
   }
 
   .hero-stat__label {
-    font-size: 0.4rem;
+    /* Superseded by the #view-home compound-selector tiers further
+       down this file (search FIX SECTION) which always win on
+       specificity — kept in sync here defensively rather than left
+       at the old unreadable 0.4rem. */
+    font-size: 0.6rem;
   }
 
   .status-hero {
@@ -3106,7 +3110,8 @@ body.lw-location-panel-open {
   }
 
   .hero-stat__label {
-    font-size: 0.4rem;
+    /* See note above — kept in sync with the FIX SECTION tiers. */
+    font-size: 0.6rem;
   }
 
   .hero-banner__location {
@@ -4042,10 +4047,42 @@ body.lw-location-panel-open {
   }
 }
 
+@media (max-width: 480px) {
+  .hero-banner,
+  #view-home .hero-banner {
+    padding: 12px 14px 10px;
+    row-gap: 5px;
+    gap: 5px;
+  }
+
+  .hero-banner__greeting,
+  #view-home .hero-banner__greeting {
+    font-size: 1.05rem;
+  }
+
+  .hero-banner__sub,
+  #view-home .hero-banner__sub {
+    font-size: 0.78rem;
+  }
+
+  .hero-stat__value,
+  #view-home .hero-stat__value {
+    font-size: 1.05rem;
+  }
+
+  .hero-stat__label,
+  #view-home .hero-stat__label {
+    font-size: 0.66rem;
+  }
+}
+
 /* ---- 1b) Samsung S8/S9-width phones (~360px) ----
-   The existing 430px "extra-compact phone" tier still left the hero
-   banner and bottom-nav labels a bit large on true 360px devices —
-   this tightens both further at that narrower width. */
+   The existing 480px tier above still left the hero banner and
+   bottom-nav labels a bit large on true 360px devices — this
+   tightens both further at that narrower width. Declared AFTER the
+   480px block on purpose: both blocks match at this width, so
+   source order is what makes this narrower/more-specific tuning
+   win instead of getting silently overridden by the broader one. */
 @media (max-width: 380px) {
   .hero-banner,
   #view-home .hero-banner {
@@ -4072,7 +4109,13 @@ body.lw-location-panel-open {
     font-size: 0.88rem;
   }
 
-  .hero-stat__label {
+  .hero-stat__label,
+  #view-home .hero-stat__label {
+    /* Was 0.4rem/0.5rem in a couple of older, now-superseded blocks
+       elsewhere in this file (search "hero-stat__label") — unreadably
+       small. 0.6rem (~9.6px) is the floor for legible all-caps label
+       text at this weight; going smaller than that just makes users
+       squint instead of saving meaningful space. */
     font-size: 0.6rem;
   }
 
@@ -4081,7 +4124,7 @@ body.lw-location-panel-open {
   }
 
   /* ---- rest of the app: page chrome, cards, status hero, chat ----
-     the existing 430px tier softened these a bit; true 360px S8/S9
+     the existing 480px tier softened these a bit; true 360px S8/S9
      screens need another notch down. */
   .page__title {
     font-size: 1.08rem;
@@ -4131,30 +4174,6 @@ body.lw-location-panel-open {
 
   .nav__link {
     font-size: 0.85rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .hero-banner,
-  #view-home .hero-banner {
-    padding: 12px 14px 10px;
-    row-gap: 5px;
-    gap: 5px;
-  }
-
-  .hero-banner__greeting,
-  #view-home .hero-banner__greeting {
-    font-size: 1.05rem;
-  }
-
-  .hero-banner__sub,
-  #view-home .hero-banner__sub {
-    font-size: 0.78rem;
-  }
-
-  .hero-stat__value,
-  #view-home .hero-stat__value {
-    font-size: 1.05rem;
   }
 }
 

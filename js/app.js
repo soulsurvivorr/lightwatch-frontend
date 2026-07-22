@@ -215,16 +215,21 @@
 
         const shouldWaitForOnboarding = initial === 'login' && typeof window.LWOnboarding?.init === 'function';
 
-        // Ensure app starts in a loading state if we have skeletons
-        document.body.classList.add('app-loading');
+        // NOTE: no loading class gets added here. activate() above already
+        // ran synchronously — if it entered the app shell for the first
+        // time this page-load, that call chain (LWProfile.init() ->
+        // loadCurrentUserProfile() -> showProfileLoader(), all synchronous
+        // up to their first await) has already decided whether the
+        // full-page skeleton belongs on screen, based on whether this
+        // device has ever completed a boot before (FIRST_BOOT_DONE_KEY).
+        // See profile.js for that logic — keeping it in one place avoids
+        // the two ever disagreeing about which class name to use.
 
         if (shouldWaitForOnboarding) {
             window.LWOnboarding.init();
         } else {
             requestAnimationFrame(() => {
                 document.documentElement.classList.remove("lw-boot");
-                // The individual view modules are responsible for removing .app-loading
-                // after their first data fetch (home.js, areas.js, etc.)
             });
         }
     } // end of boot function

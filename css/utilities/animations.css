@@ -142,7 +142,19 @@
   outline: none;
 }
 
-.bottom-nav-link:hover,
+/* Touch devices simulate :hover after a tap and then leave it "stuck"
+   on — there's no mouse to move away and clear it — so a tab could sit
+   highlighted, or flip its highlight to whichever tab was tapped last,
+   long after the tap ended. Scoping :hover to devices that actually
+   have a precise pointer (a real mouse/trackpad) keeps that highlight
+   for desktop only; :focus-visible stays unscoped since keyboard
+   navigation should still show a highlight everywhere. */
+@media (hover: hover) and (pointer: fine) {
+  .bottom-nav-link:hover {
+    background: rgba(61, 217, 194, 0.14);
+  }
+}
+
 .bottom-nav-link:focus-visible {
   background: rgba(61, 217, 194, 0.14);
 }
