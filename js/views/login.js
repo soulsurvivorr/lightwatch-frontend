@@ -176,6 +176,28 @@
         sendCodeBtn?.addEventListener('click', e => { e.preventDefault(); handleSubmit(); });
         userInput?.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); handleSubmit(); } });
 
+        // FIX: keep the focused field visible once the keyboard opens.
+        // .login-form-side is now the scroll container (see login.css),
+        // but the browser's own "scroll focused element into view"
+        // timing is unreliable here: on Capacitor/Android it can fire
+        // before the WebView has finished resizing for the keyboard, and
+        // in Chrome (where interactive-widget=overlays-content keeps the
+        // layout viewport from resizing at all) it may not fire in a way
+        // that accounts for the keyboard occluding the visual viewport.
+        // Driving it explicitly, after a short delay for the keyboard
+        // animation, makes the behavior consistent in both places.
+        userInput?.addEventListener('focus', () => {
+            const scrollField = () => {
+                userInput.scrollIntoView({ block: 'center', behavior: 'smooth' });
+            };
+            if (window.visualViewport) {
+                window.visualViewport.addEventListener('resize', scrollField, { once: true });
+            }
+            // Fallback in case the resize event never fires (e.g. the
+            // keyboard was already open, so the viewport doesn't change).
+            setTimeout(scrollField, 350);
+        });
+
         document.querySelectorAll('#view-login [data-route-custom="signup"]').forEach(link => {
             link.addEventListener('click', e => {
                 e.preventDefault();

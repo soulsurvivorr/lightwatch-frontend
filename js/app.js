@@ -291,56 +291,6 @@
 
     window.addEventListener('resize', enableHeaderScroll);
 
-    // ---- Keyboard-safe app viewport height ----
-    // 100dvh/100svh/100vh recompute to the *shrunk* window height the
-    // instant the on-screen keyboard opens inside a Capacitor WebView
-    // or an installed/standalone PWA (unlike a normal mobile browser
-    // tab, where the keyboard overlays on top without resizing the
-    // layout viewport at all). views/login.css keys its fixed-height
-    // shell off var(--app-vh, 100dvh) specifically so it can be pinned
-    // to a stable value here — one that's captured once and left alone
-    // while the keyboard is open, instead of shrinking underneath it
-    // and dragging content (like .login-footer, pinned to the bottom
-    // of that shell) up toward the input that was just focused.
-    (function setupKeyboardSafeAppVH() {
-        let lastWidth = window.innerWidth;
-        let baseHeight = window.innerHeight;
-
-        function setAppVH(height) {
-            document.documentElement.style.setProperty('--app-vh', `${height}px`);
-        }
-
-        setAppVH(baseHeight);
-
-        function onResize() {
-            const width = window.innerWidth;
-            const height = window.innerHeight;
-
-            // Same width, height dropped a lot -> almost certainly the
-            // keyboard opening, not a real layout/orientation change.
-            // Ignore it so the shell stays at its pre-keyboard height.
-            const heightDropRatio = (baseHeight - height) / baseHeight;
-            const looksLikeKeyboard = width === lastWidth && heightDropRatio > 0.2;
-
-            if (looksLikeKeyboard) return;
-
-            lastWidth = width;
-            baseHeight = height;
-            setAppVH(height);
-        }
-
-        window.addEventListener('resize', onResize);
-        window.addEventListener('orientationchange', () => {
-            // Give the platform a moment to settle into its new
-            // dimensions before re-capturing the "real" base height.
-            setTimeout(() => {
-                lastWidth = window.innerWidth;
-                baseHeight = window.innerHeight;
-                setAppVH(baseHeight);
-            }, 150);
-        });
-    })();
-
     // Move the activation and class removal inside the boot function
     // by placing them at the end of the boot function itself.
 
