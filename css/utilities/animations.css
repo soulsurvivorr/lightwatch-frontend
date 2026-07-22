@@ -208,6 +208,7 @@
   align-items: center;
   justify-content: center;
   background: transparent;
+  position: relative; /* positioning context so the light/active icon images can share the exact same spot */
   transition: background 0.22s ease, transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -216,12 +217,34 @@
   width: 16px;
   height: 16px;
   object-fit: contain;
-  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.22s ease;
+}
+
+/* Stack the light/active icon images on top of each other at dead
+   center of .bottom-nav-icon, rather than side by side in normal
+   inline-flex flow, so swapping between them is a same-spot
+   crossfade instead of a layout shift. */
+.bottom-nav-icon .bottom-nav-icon-img--light,
+.bottom-nav-icon .bottom-nav-icon-img--active {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
 
 .bottom-nav-icon .bottom-nav-icon-img--light {
   display: block !important;
   opacity: 1;
+}
+
+/* Was previously unset, which left the "active" icon at the browser
+   default (visible, opacity 1) for every tab all the time — it just
+   sat inline next to the light icon since nothing positioned them
+   together. Hidden by default now; only the .bottom-nav-link--active
+   rule below brings it to opacity 1, and only for the actual active
+   tab. */
+.bottom-nav-icon .bottom-nav-icon-img--active {
+  opacity: 0;
 }
 
 .bottom-nav-icon .bottom-nav-icon-img--dark {

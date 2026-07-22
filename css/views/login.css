@@ -70,12 +70,14 @@
     position: fixed;
     inset: 0;
     height: 100vh;
-    overflow: hidden !important;
+    overflow-y: auto;
+    overflow-x: hidden;
   }
 
   html:has(#view-login:not([hidden])) {
     height: 100vh;
-    overflow: hidden !important;
+    overflow-y: auto;
+    overflow-x: hidden;
   }
 
   /* Edge-to-edge split — no gap between panels, no floating
@@ -84,6 +86,15 @@
   .login-form-side {
     border-radius: 0;
     box-shadow: none;
+  }
+
+  /* Lets the form pane scroll on its own if its content ever runs
+     taller than the split-pane cell (short window height, browser
+     zoom, etc.) instead of silently clipping — .login-visual stays
+     put since it has nothing that needs to scroll. */
+  .login-form-side {
+    overflow-y: auto;
+    min-height: 0;
   }
 }
 

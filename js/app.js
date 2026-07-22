@@ -118,6 +118,25 @@
                 outgoingSection.hidden = true;
             }
             callHook(currentView, 'hide');
+        } else {
+            // First activation this page-load (cold boot / hard refresh).
+            // The raw HTML leaves some sections without a `hidden`
+            // attribute by default (e.g. #view-login, #view-home) so
+            // whichever one JS decides to show first appears without a
+            // flash. That means every *other* section needs to be hidden
+            // explicitly here, or a stray "visible" section lingers in
+            // the DOM — invisible on screen (its parent shell may be
+            // hidden), but still matched by CSS like
+            // html:has(#view-login:not([hidden])), which doesn't care
+            // about ancestor visibility. Left unhandled, that either
+            // locks page scroll forever (the login case) or lets a
+            // leftover view's content/skeleton render underneath the
+            // view a deep link/refresh actually landed on.
+            Object.keys(VIEWS).forEach((viewName) => {
+                if (viewName === name) return;
+                const section = viewSectionEl(viewName);
+                if (section) section.hidden = true;
+            });
         }
 
         // ---- switch shells if needed ----

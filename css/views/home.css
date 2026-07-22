@@ -3897,7 +3897,7 @@ body.lw-location-panel-open {
    the rules above and caused the cards to collapse/overlap on
    desktop widths. Reverted to the simple stacked composition. */
 
-#view-home #realPageContent {
+body:not(.page-data-loading) #view-home #realPageContent {
   display: block;
 }
 
