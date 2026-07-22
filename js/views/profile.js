@@ -921,6 +921,15 @@ function initProfileChrome() {
     sidebarClose?.addEventListener('click', closeSidebar);
     window.addEventListener('lw:route-changed', closeSidebar);
 
+    // This chrome (topbar avatar/name, sidebar) is also only initialized
+    // once per page-load. If someone signs out and a different person
+    // signs in without the page reloading, re-render it for whoever is
+    // actually signed in now instead of leaving the previous person's
+    // name/avatar on screen.
+    window.addEventListener('lw-session-changed', () => {
+        loadCurrentUserProfile();
+    });
+
     loadCurrentUserProfile();
 }
 

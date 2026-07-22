@@ -136,7 +136,7 @@
   background: transparent;
   border: none;
   cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease;
+  transition: background 0.22s ease, color 0.22s ease;
   -webkit-tap-highlight-color: transparent;
   -webkit-touch-callout: none;
   outline: none;
@@ -165,6 +165,14 @@
   box-shadow: none;
 }
 
+/* Quick, subtle press feedback — scales the whole tab down a touch on
+   tap so the bar feels responsive to touch, not just to the route
+   change that follows. Kept small (0.94) and fast (0.1s) so it reads
+   as tactile rather than bouncy. */
+.bottom-nav-link:active .bottom-nav-icon {
+  transform: scale(0.88);
+}
+
 .bottom-nav-link--active {
   color: var(--bottom-nav-label-active);
   background: var(--bottom-nav-active-bg);
@@ -184,7 +192,7 @@
   border-radius: 0 0 3px 3px;
   background: var(--bottom-nav-label-active);
   transform: translateX(-50%) scaleX(0);
-  transition: transform 0.2s ease;
+  transition: transform 0.26s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .bottom-nav-link--active::before {
@@ -200,7 +208,7 @@
   align-items: center;
   justify-content: center;
   background: transparent;
-  transition: background 0.18s ease;
+  transition: background 0.22s ease, transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .bottom-nav-icon img {
@@ -208,6 +216,7 @@
   width: 16px;
   height: 16px;
   object-fit: contain;
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .bottom-nav-icon .bottom-nav-icon-img--light {
@@ -255,6 +264,7 @@
 
 .bottom-nav-link--active .bottom-nav-icon {
   background: var(--bottom-nav-icon-active-bg);
+  transform: scale(1.08);
 }
 
 .bottom-nav-label {

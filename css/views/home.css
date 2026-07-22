@@ -1224,7 +1224,7 @@
   transition: opacity 0.08s ease;
 }
 
-.page-data-loading /* .lw-boot-loader and .lw-loader-* rules moved to components/loader.css */
+/* .lw-boot-loader and .lw-loader-* rules moved to components/loader.css */
 
 .user-sidebar-panel {
   position: fixed;
@@ -4195,6 +4195,17 @@ body.lw-location-panel-open {
   body:has(#appShell:not([hidden])) {
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch;
+  }
+
+  /* While the full-screen skeleton is up (.page-data-loading on body),
+     keep scroll locked even on mobile — otherwise this rule's
+     !important beats the general .page-data-loading{overflow:hidden}
+     rule above, and a user who scrolls before data lands can drag the
+     real (already-swapped-in) content into view from underneath the
+     still-visible skeleton instead of just waiting for the fade. */
+  html.page-data-loading,
+  body.page-data-loading {
+    overflow-y: hidden !important;
   }
 }
 

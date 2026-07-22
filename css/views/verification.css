@@ -244,15 +244,22 @@ main h2 {
     border: 1px solid var(--border-soft);
 }
 
-/* ---- OTP boxes: boxed, modern style with pop + error states ---- */
+/* ---- OTP boxes: boxed, modern style with pop + error states ----
+   Fixed pixel sizing on a flex row instead of a max-content grid with
+   1fr columns — that combination let each box's track size itself off
+   the <input>'s default intrinsic width (~170px+, from the UA default
+   size=20), which is why these rendered oversized, especially on
+   phones. Explicit width/height here + the media queries below give
+   predictable, compact boxes at every screen size. Margin also
+   tightened (was 1.5rem top/bottom) so there's less dead space between
+   the hero image, the boxes, and the error/resend text under them. */
 .otp-boxes {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr); /* Project uses 4 boxes in index.html */
-    gap: 12px;
+    display: flex;
     justify-content: center;
     align-items: center;
-    margin: 1.5rem auto;
-    width: max-content;
+    gap: 10px;
+    margin: 0.85rem auto;
+    width: 100%;
     max-width: 100%;
 }
 
@@ -267,13 +274,13 @@ main h2 {
 }
 
 .otp-box {
-    width: 100%;
-    aspect-ratio: 1 / 1.15;
+    width: 48px;
+    height: 56px;
     min-width: 0;
     padding: 0;
     text-align: center;
     font-family: var(--font-display);
-    font-size: clamp(1.1rem, 3.5vw, 1.5rem);
+    font-size: 1.2rem;
     font-weight: 700;
     border: 1.5px solid var(--border-soft);
     border-radius: 10px;
@@ -534,11 +541,15 @@ button#continueBtn.is-loading .btn-label {
     }
 
     .otp-boxes {
-        gap: 6px;
+        gap: 8px;
+        margin: 0.6rem auto;
     }
 
     .otp-box {
+        width: 42px;
+        height: 50px;
         border-radius: 8px;
+        font-size: 1.05rem;
     }
 
     .resend-row p {
@@ -548,10 +559,13 @@ button#continueBtn.is-loading .btn-label {
 
 @media (max-width: 320px) {
     .otp-boxes {
-        gap: 5px;
+        gap: 6px;
+        margin: 0.5rem auto;
     }
 
     .otp-box {
+        width: 38px;
+        height: 46px;
         font-size: 1rem;
     }
 

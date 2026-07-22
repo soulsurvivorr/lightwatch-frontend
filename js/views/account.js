@@ -25,6 +25,33 @@ requireAuth(); // redirects to login if no session — defined in auth.js
 const el = (id) => document.getElementById(id);
 
 // ------------------------------------------------------------
+// SESSION-AWARE STORAGE READS
+// saveSession() (services/auth.js) puts currentUserId/currentUserData in
+// localStorage when "Remember me" was checked, but in sessionStorage
+// otherwise. This file used to read localStorage only, so anyone signed
+// in without "Remember me" saw every field below stay on its default
+// "—" placeholder — the fetch never ran because userId came back empty.
+// getSession() already knows which storage is in play; fall back to
+// checking both directly in case getSession() isn't loaded yet.
+// ------------------------------------------------------------
+function getCurrentUserId() {
+    const session = typeof getSession === 'function' ? getSession() : null;
+    return session?.user?.id
+        || localStorage.getItem('currentUserId')
+        || sessionStorage.getItem('currentUserId')
+        || null;
+}
+
+function getCurrentUserData() {
+    try {
+        const raw = localStorage.getItem('currentUserData') || sessionStorage.getItem('currentUserData');
+        return JSON.parse(raw || '{}');
+    } catch {
+        return {};
+    }
+}
+
+// ------------------------------------------------------------
 // DISPLAY PREFERENCES
 // A small shared store other pages can read from later — call
 // window.LWDisplayPrefs.get() for the current values, or listen
@@ -182,8 +209,8 @@ async function openChatPreviewPopup() {
     overlay.setAttribute('aria-hidden', 'false');
     body.innerHTML = `<div style="color:var(--text-faint);font-size:0.85rem;padding:14px 0;text-align:center;">Loading recent messages…</div>`;
 
-    const userId = localStorage.getItem('currentUserId');
-    const userObj = JSON.parse(localStorage.getItem('currentUserData') || '{}');
+    const userId = getCurrentUserId();
+    const userObj = getCurrentUserData();
     const loc = userObj.city ? `${userObj.city}, ${userObj.region || ''}`.replace(/,\s*$/, '') : (userObj.region || userObj.location);
     const myHandle = userObj.chatHandle || localStorage.getItem('chatHandle') || null;
 
@@ -325,6 +352,14 @@ function initCityEditForm(user) {
     const toggleBtn = el('cityEditToggleBtn');
     if (input) input.value = user?.city || '';
 
+    // initCityEditForm() can now run again after an account switch (see
+    // the lw-session-changed listener near mount() below) — guard against
+    // attaching a second set of listeners on top of the first.
+    const cityEditForm = el('cityEditForm');
+    if (toggleBtn?.dataset.bound === '1') return;
+    if (toggleBtn) toggleBtn.dataset.bound = '1';
+    if (cityEditForm) cityEditForm.dataset.bound = '1';
+
     toggleBtn?.addEventListener('click', () => {
         if (!input || input.disabled === false) return;
         input.disabled = false;
@@ -336,11 +371,11 @@ function initCityEditForm(user) {
         toggleBtn.disabled = true;
     });
 
-    el('cityEditForm')?.addEventListener('submit', async () => {
+    cityEditForm?.addEventListener('submit', async () => {
         const messageEl = el('cityEditMessage');
         const saveBtn = el('cityEditSaveBtn');
         const city = String(input?.value || '').trim();
-        const userId = localStorage.getItem('currentUserId');
+        const userId = getCurrentUserId();
         if (!userId || !city) {
             if (messageEl) messageEl.textContent = 'Please enter a city/town first.';
             return;
@@ -368,7 +403,7 @@ function initCityEditForm(user) {
             if (el('profileCity')) el('profileCity').textContent = finalCity;
             if (el('acctProfileRegion')) el('acctProfileRegion').textContent = finalRegion;
 
-            const cachedUser = JSON.parse(localStorage.getItem('currentUserData') || '{}');
+            const cachedUser = getCurrentUserData();
             cachedUser.city = finalCity;
             if (finalRegion) cachedUser.region = finalRegion;
             localStorage.setItem('currentUserData', JSON.stringify(cachedUser));
@@ -463,13 +498,13 @@ function wireSecondaryLocationActions(sec) {
     editBtn?.addEventListener('click', () => setSecondaryFormVisible(true, sec));
 
     removeBtn?.addEventListener('click', async () => {
-        const userId = localStorage.getItem('currentUserId');
+        const userId = getCurrentUserId();
         if (!userId) return;
         removeBtn.disabled = true;
         try {
             const res = await fetch(`${API_URL}/user/${userId}/secondary-location`, { method: 'DELETE' });
             if (!res.ok) throw new Error('failed');
-            const cachedUser = JSON.parse(localStorage.getItem('currentUserData') || '{}');
+            const cachedUser = getCurrentUserData();
             cachedUser.secondaryLocation = null;
             localStorage.setItem('currentUserData', JSON.stringify(cachedUser));
             window.lwToast?.('Location removed.');
@@ -483,7 +518,7 @@ function wireSecondaryLocationActions(sec) {
 
 function initSecondaryLocationForm() {
     el('secondaryLocationForm')?.addEventListener('submit', async () => {
-        const userId = localStorage.getItem('currentUserId');
+        const userId = getCurrentUserId();
         const label = String(el('secondaryLocationLabel')?.value || '').trim();
         const city = String(el('secondaryLocationCity')?.value || '').trim();
         const region = String(el('secondaryLocationRegion')?.value || '').trim();
@@ -512,7 +547,7 @@ function initSecondaryLocationForm() {
                 return;
             }
 
-            const cachedUser = JSON.parse(localStorage.getItem('currentUserData') || '{}');
+            const cachedUser = getCurrentUserData();
             cachedUser.secondaryLocation = data.secondaryLocation;
             localStorage.setItem('currentUserData', JSON.stringify(cachedUser));
 
@@ -539,7 +574,7 @@ function initSecondaryLocationForm() {
 // the whole skeleton used to wait on these secondary fetches too.
 // ------------------------------------------------------------
 async function loadAccountExtras() {
-    const userId = localStorage.getItem('currentUserId');
+    const userId = getCurrentUserId();
     if (!userId) {
         if (document.body) delete document.body.dataset.accountExtrasLoading;
         document.body?.classList.remove('page-data-loading');
@@ -580,13 +615,13 @@ async function loadAccountExtras() {
 
         // Cache the fuller object so the locations UI still has it after
         // an edit without needing another round trip.
-        const cachedUser = JSON.parse(localStorage.getItem('currentUserData') || '{}');
+        const cachedUser = getCurrentUserData();
         localStorage.setItem('currentUserData', JSON.stringify({ ...cachedUser, ...user }));
     } catch (e) { /* silent — page still works from profile.js's cached data */ }
 
     // Recent chat messages load independently and don't hold up anything else.
     try {
-        const userObj = JSON.parse(localStorage.getItem('currentUserData') || '{}');
+        const userObj = getCurrentUserData();
         const loc = userObj.city ? `${userObj.city}, ${userObj.region}` : userObj.region || userObj.location;
         if (loc) {
             const res = await fetch(`${API_URL}/chats?location=${encodeURIComponent(loc)}`);
@@ -692,6 +727,14 @@ function mount() {
     initAccordions();
     initCollapsibleCards();
     loadAccountExtras();
+
+    // mount() only runs once per page-load (see app.js's router), but a
+    // person can sign out and a different person can sign in without the
+    // page ever reloading. Re-run the data load whenever that happens so
+    // this page reflects whoever is actually signed in now.
+    window.addEventListener('lw-session-changed', () => {
+        loadAccountExtras();
+    });
 }
 
 window.LWViews = window.LWViews || {};

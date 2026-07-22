@@ -78,6 +78,13 @@ function saveSession(user, token, rememberMe) {
         localStorage.removeItem('currentUserId');
         localStorage.removeItem('currentUserData');
     }
+
+    // Views that already mounted for a previous session (the SPA never
+    // reloads the document between sign-outs/sign-ins) need to know a
+    // (possibly different) user just signed in, so they can re-fetch
+    // instead of continuing to show stale data from whoever was signed
+    // in before. See account.js/profile.js listeners.
+    window.dispatchEvent(new CustomEvent('lw-session-changed', { detail: { userId: user.id } }));
 }
 
 // ── Wipe everything cleanly ───────────────────────────────────
