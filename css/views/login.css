@@ -19,6 +19,14 @@
       height: 100vh;
       height: 100svh;
       height: 100dvh;
+      /* FIX: keyboard-safe height. Raw 100dvh recomputes to the shrunk
+         window height the instant the keyboard opens inside a
+         Capacitor WebView or standalone PWA, which compresses this
+         box and drags .login-footer (pinned to its bottom) up toward
+         the focused input. --app-vh is set once by app.js and held
+         steady across keyboard open/close, so this always wins over
+         the dvh line above once JS has run. */
+      height: var(--app-vh, 100dvh);
       overflow: hidden !important; /* Block scrolling on both desktop and mobile */
       overscroll-behavior: none;
   }
@@ -682,6 +690,17 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
       animation: none;
     }
   }
+}
+
+@media (max-width: 600px) {
+    /* Phone styles */
+    .login-footer {
+      margin-bottom: -6px;
+    }
+
+    .signup-prompt {
+      font-size: .7rem;
+    }
 }
 
 /* ============================================================
