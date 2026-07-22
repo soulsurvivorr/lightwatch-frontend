@@ -98,6 +98,45 @@
   }
 }
 
+/* ---- FIX: iPad / tablet-portrait range (769px–1024px) ----
+   The two-column split above is unconditional from 769px up, but at
+   tablet-portrait widths (iPad Air ~820, iPad Pro 11" ~834, iPad Pro
+   12.9" ~1024) the 1fr/1fr grid doesn't have enough room for
+   .login-visual's content (h1 max-width:420px, the 3-col stat grid)
+   without it fighting the form column for space — the visual pane's
+   min-content width can force that grid track wider than a true 1fr,
+   which squeezes .login-form-side and visually shifts it off from
+   center instead of centering it in the viewport. Collapse to a
+   single, centered pane here — same idea as the true desktop split,
+   just without the squeeze — so iPad widths land on something well
+   positioned instead of a half-broken split. True desktop split is
+   untouched and only applies again above 1024px. */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .login-shell {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .login-visual {
+    display: none;
+  }
+
+  .login-form-side {
+    width: 100%;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 32px;
+  }
+
+  .login-box {
+    width: 100%;
+    max-width: 420px;
+    margin-top: 0;
+  }
+}
+
 /* ---- Visual side (hidden below 980px — see styles.css) ---- */
 
 .login-visual {
@@ -585,6 +624,14 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
   }
 
   .login-footer {
+    /* FIX: explicit margin-top: auto guarantees the footer is always
+       pushed to the very bottom of .login-form-side's flex column —
+       previously this relied only on .login-box's flex:1 consuming
+       all remaining space, so any future change to that rule (or a
+       box shorter than its allotted space in a taller flex context)
+       could leave the footer floating mid-screen instead of flush
+       at the bottom on every phone size. */
+    margin-top: auto;
     padding-top: 0;
     padding-bottom: calc(5px + env(safe-area-inset-bottom, 0px));
     flex-shrink: 0;
@@ -722,6 +769,20 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
       radial-gradient(circle at 44% 70%, rgba(214, 162, 74, 0.66), rgba(166, 108, 20, 0.3) 48%, transparent 68%);
     filter: blur(1.4px) saturate(0.92);
     animation-duration: 4.8s;
+  }
+}
+
+/* ---- FIX: signup-prompt too small on wider phones ----
+   The 480px breakpoint above tunes .signup-prompt down to 0.6rem
+   (~9.6px), sized for the narrowest phones in that range (Galaxy
+   S8/S9 at 360px). Wider phones sharing that same bucket — Pixel 7
+   (412px), iPhone XR/11 (414px), iPhone 12 Pro (390px), and iPhone
+   14 Pro Max (430px) in particular — have the room for something
+   more legible, so bump it back up for that sub-range instead of
+   sizing every phone to the narrowest one. */
+@media (min-width: 401px) and (max-width: 480px) {
+  .signup-prompt {
+    font-size: 0.74rem;
   }
 }
 
