@@ -322,7 +322,7 @@
 }
 
 .field__label {
-  font-size: 0.84rem;
+  font-size: 0.64rem;
   color: var(--text-muted);
 }
 
@@ -495,7 +495,7 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
 
 .login-footer p {
   margin: 0;
-  font-size: 0.72rem;
+  font-size: 0.62rem;
   color: var(--text-faint);
   pointer-events: auto;
 }
@@ -635,6 +635,7 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
     padding-top: 0;
     padding-bottom: calc(5px + env(safe-area-inset-bottom, 0px));
     flex-shrink: 0;
+    margin: 0;
   }
 
   @keyframes bubble-float-a {
@@ -724,7 +725,7 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
   }
 
   .field__label {
-    font-size: 0.66rem;
+    font-size: 0.56rem;
   }
 
   .field__input {
@@ -831,12 +832,9 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
     margin-top: 12px;
   }
 
-  .login-footer {
+  .login-footer, .login-footer p {
     padding-top: 0px;
-  }
-
-  .login-footer {
-    padding-bottom: 0px;
+    margin: 0;
   }
 }
 
