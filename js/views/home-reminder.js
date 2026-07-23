@@ -14,16 +14,30 @@
 // cleared on sign-in/sign-out (see auth.js) — once a device has seen
 // it, it's seen it for good.
 
-// Use var instead of const to prevent duplicate declaration errors
-// Check if it's already defined before declaring
-if (typeof HOME_REMINDER_SEEN_KEY === 'undefined') {
-    var HOME_REMINDER_SEEN_KEY = 'lw_home_reminder_seen';
-}
+// ------------------------------------------------------------
+// FIX: This file used to declare `var HOME_REMINDER_SEEN_KEY` at the
+// top level, guarded by `if (typeof HOME_REMINDER_SEEN_KEY ===
+// 'undefined')`. That guard doesn't do what it looks like it does —
+// `var` declarations are hoisted and registered in the global scope
+// at PARSE time, regardless of whether the `if` around them ever
+// runs. Since this same key is already declared with `let`/`const`
+// elsewhere (constants.js, same pattern as ONBOARDING_SEEN_KEY),
+// redeclaring it here with `var` is a SyntaxError the instant this
+// script is parsed — "Identifier 'HOME_REMINDER_SEEN_KEY' has
+// already been declared" — which meant NONE of this file's code ever
+// ran, including the window.initHomeReminder export at the bottom.
+//
+// Fix: don't declare a global at all here. Wrap the whole file in an
+// IIFE (like every other view module already does) and use a local
+// const that just reads whatever's already on window, falling back
+// to the literal only if nothing else has defined it yet.
+// ------------------------------------------------------------
+(function () {
 
-// Also export to window if needed
 if (typeof window.HOME_REMINDER_SEEN_KEY === 'undefined') {
-    window.HOME_REMINDER_SEEN_KEY = HOME_REMINDER_SEEN_KEY;
+    window.HOME_REMINDER_SEEN_KEY = 'lw_home_reminder_seen';
 }
+const HOME_REMINDER_SEEN_KEY = window.HOME_REMINDER_SEEN_KEY;
 
 let homeReminderDismissed = false;
 let homeReminderObserver = null;
@@ -136,3 +150,5 @@ function initHomeReminder() {
 if (typeof window.initHomeReminder === 'undefined') {
     window.initHomeReminder = initHomeReminder;
 }
+
+})();

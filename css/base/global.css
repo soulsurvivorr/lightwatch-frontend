@@ -26,8 +26,18 @@ html.lw-bfcache-hide body {
   /* Hard guarantee: vertical scrolling must always work at desktop
      widths. This overrides anything else in the cascade (short of an
      inline style set by JS) so it can't be silently defeated by a
-     stray rule elsewhere. */
-  html, body {
+     stray rule elsewhere.
+
+     FIX: this used to set overflow-y/x on BOTH html and body. Setting
+     a non-visible overflow on both at once stops body's overflow from
+     propagating to become the viewport's scroll behavior (that only
+     happens when html's overflow is visible) — body becomes its own
+     separate, nested scrolling box instead. That box still renders a
+     draggable scrollbar, but it's no longer document.scrollingElement,
+     so wheel/touch scroll stops reliably reaching it even though
+     dragging the scrollbar still works. html is the single scroll
+     owner here; body just gets height rules, not overflow. */
+  html {
     overflow-y: auto !important;
     overflow-x: hidden !important;
     height: auto !important;
@@ -35,6 +45,8 @@ html.lw-bfcache-hide body {
   }
 
   body {
+    height: auto !important;
+    min-height: 100% !important;
     padding-bottom: 24px;
   }
 }
@@ -45,9 +57,12 @@ html.lw-bfcache-hide body {
    with overflow-y: auto, so once real content is taller than one
    screen it has nowhere to go — the page (Home, Areas, etc.) simply
    can't scroll. This adds the missing piece without touching the
-   height rule those mobile layouts depend on. */
+   height rule those mobile layouts depend on.
+
+   FIX: only html gets the explicit overflow now — see the note above
+   for why setting it on body too breaks wheel/touch scrolling. */
 @media (max-width: 720px) {
-  html, body {
+  html {
     overflow-y: auto !important;
     overflow-x: hidden !important;
     -webkit-overflow-scrolling: touch;

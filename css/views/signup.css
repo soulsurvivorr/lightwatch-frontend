@@ -18,8 +18,7 @@
 
 
 /* Scoped with :has() — only affects pages with the signup view visible */
-html:has(#view-signup:not([hidden])),
-body:has(#view-signup:not([hidden])) {
+html:has(#view-signup:not([hidden])) {
     height: auto;
     min-height: 100%;
     overflow-x: hidden;
@@ -27,6 +26,17 @@ body:has(#view-signup:not([hidden])) {
     overscroll-behavior: none;
 }
 
+/* FIX: body intentionally does NOT set its own overflow-x/y here.
+   When both html and body have an explicit (non-visible) overflow at
+   the same time, body's overflow stops propagating up to become the
+   viewport's actual scroll behavior (that propagation only happens
+   per-spec when html's overflow is visible) — body becomes its own
+   separate, nested scrolling box instead. That inner box still grows
+   a scrollbar you can drag, but it's no longer document.scrollingElement,
+   which is why wheel/touch scrolling stopped reliably reaching it while
+   dragging the scrollbar still worked. html is the single scroll owner
+   on this view; body just sizes itself and lets overflow push html
+   taller. */
 body:has(#view-signup:not([hidden])) {
     margin: 0;
     min-height: 100vh;
@@ -38,9 +48,6 @@ body:has(#view-signup:not([hidden])) {
     padding: 24px 16px 32px;
     background: var(--bg-deep);
     color: var(--text-bright);
-    overflow-x: hidden;
-    overflow-y: auto;
-    overscroll-behavior: none;
     position: relative;
     transition: opacity .26s ease;
 }
@@ -561,8 +568,6 @@ body.lw-leaving {
         height: auto;
         min-height: 100vh;
         min-height: 100dvh;
-        overflow-y: auto;
-        overflow-x: hidden;
     }
 
     /* Only target #authShell when signup is visible on tablet/desktop */
@@ -626,8 +631,6 @@ body.lw-leaving {
         justify-content: stretch;
         padding: 0;
         touch-action: manipulation;
-        overflow-y: auto;
-        overflow-x: hidden;
     }
 
     body:has(#view-signup:not([hidden])) #authShell {
@@ -936,10 +939,11 @@ body.lw-leaving {
     min-height: auto !important;
 }
 
-/* Override any inherited overflow from login */
+/* Override any inherited overflow from login.
+   NOTE: overflow-y/x deliberately omitted here — see the explanation
+   at the top of this file. Setting it on body AND html at the same
+   time is what broke wheel/touch scrolling in the first place. */
 body:has(#view-signup:not([hidden])) {
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
     height: auto !important;
     min-height: 100vh !important;
     min-height: 100dvh !important;

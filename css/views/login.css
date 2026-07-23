@@ -14,13 +14,27 @@
 
 
 
-  html:has(#view-login:not([hidden])),
-  body:has(#view-login:not([hidden])) {
+  html:has(#view-login:not([hidden])) {
       height: 100vh;
       height: 100svh;
       height: 100dvh;
       overflow-y: auto !important; /* Allow scrolling for keyboard */
       overflow-x: hidden !important;
+      overscroll-behavior: none;
+  }
+
+  /* FIX: body deliberately does not also set overflow-y/x here. Setting
+     it on both html and body at once stops body's overflow from
+     propagating to become the viewport's actual scroll behavior (that
+     only happens when html's overflow is visible) — body ends up as its
+     own separate nested scroll box instead. It still shows a draggable
+     scrollbar, but stops being document.scrollingElement, so wheel/touch
+     scrolling no longer reliably reaches it. html is the single scroll
+     owner on this view. */
+  body:has(#view-login:not([hidden])) {
+      height: 100vh;
+      height: 100svh;
+      height: 100dvh;
       overscroll-behavior: none;
   }
 
