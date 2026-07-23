@@ -523,6 +523,7 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
   padding-top: 24px;
   text-align: center;
   pointer-events: none;
+  background: transparent;
 }
 
 .login-footer p {
@@ -546,9 +547,22 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
 @media (max-width: 768px) {
   html:has(#view-login:not([hidden])),
   body:has(#view-login:not([hidden])) {
-    height: 100svh;
-    min-height: 100svh;
-    max-height: 100svh;
+    /* FIX: was a hardcoded 100svh. svh is the *smallest* possible
+       viewport height a mobile browser will show (address bar fully
+       expanded) — it doesn't track the browser chrome actually
+       collapsing, e.g. when the address bar auto-hides after tapping
+       the input. When that happens the real visible window grows but
+       this stayed locked at the old, smaller svh value, leaving a gap
+       of unstyled space below the shell and nothing left for
+       .login-footer's margin-top:auto to push into — it ends up
+       sitting right after the content instead of at the true bottom.
+       var(--app-vh) is already kept in sync with the real viewport
+       elsewhere in this file (see .login-shell below); using it here
+       too instead of a raw unit keeps the shell's height accurate
+       through toolbar/keyboard changes instead of just at first paint. */
+    height: var(--app-vh, 100svh);
+    min-height: var(--app-vh, 100svh);
+    max-height: var(--app-vh, 100svh);
     background-color: var(--bg-panel);
     overflow-x: hidden !important;
     overflow-y: hidden; /* Removed !important so signup can override */
@@ -561,9 +575,10 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
     flex-direction: column;
     width: 100%;
     max-width: none;
-    height: 100svh; /* fixed, not min-height/auto — gives .login-footer's
-                        margin-top:auto real space to push into so it always
-                        lands on the true bottom of the screen */
+    height: var(--app-vh, 100svh); /* fixed, not min-height/auto — gives
+                        .login-footer's margin-top:auto real space to
+                        push into so it always lands on the true bottom
+                        of the screen. See --app-vh note above. */
     margin: 0;
     padding: 0;
     gap: 0;
@@ -588,11 +603,11 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    justify-content: flex-start;
+    justify-content: center; /* Changed from flex-start to center - this is the key fix */
     height: 100%;
     min-height: 0;
     overflow: hidden;
-    padding-top: 6.5em;
+    padding-top: 20px; /* Reduced from 6.5em */
     padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
     padding-left: 24px;
     padding-right: 24px;
@@ -649,6 +664,8 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
     margin-bottom: 1rem;
     transform: translateY(var(--login-keyboard-shift, 0px));
     transition: transform 0.18s ease-out;
+    margin-top: auto; /* Helps push content down on very tall screens */
+    margin-bottom: auto; /* Helps push content up on very short screens */
   }
 
   .login-footer {
@@ -662,7 +679,7 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
     padding-top: 14px;
     padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
     flex-shrink: 0;
-    background: var(--bg-panel);
+    background: transparent;
     transition: opacity 0.15s ease;
   }
 
@@ -749,8 +766,7 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
 
 @media (max-width: 480px) {
   .login-form-side {
-    padding: 6em 18px 32px;
-    /*padding-top: calc(20px + 2em + env(safe-area-inset-top, 0px));*/
+    padding: 2.5em 18px 32px; /* Reduced from 6em - now scales better */
     padding-bottom: calc(32px + env(safe-area-inset-bottom, 0px));
   }
 
@@ -823,6 +839,11 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
     filter: blur(1.4px) saturate(0.92);
     animation-duration: 4.8s;
   }
+
+  .login-box {
+    margin-top: 0;
+    margin-bottom: 0;
+  }
 }
 
 /* ---- FIX: signup-prompt too small on wider phones ----
@@ -855,7 +876,7 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
        scroll. Scaling it down here (and further at the tighter
        breakpoint below) is what actually keeps the whole form on
        screen without scrolling, rather than just clipping it. */
-    padding-top: calc(3em + env(safe-area-inset-top, 0px));
+    padding-top: calc(1.5em + env(safe-area-inset-top, 0px));
     padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   }
 
@@ -902,7 +923,7 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
 
 @media (max-width: 768px) and (max-height: 560px) {
   .login-form-side {
-    padding-top: calc(1.4em + env(safe-area-inset-top, 0px));
+    padding-top: calc(0.8em + env(safe-area-inset-top, 0px));
     padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
   }
 
@@ -948,5 +969,28 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
   .login-form-side::before,
   .login-form-side::after {
     display: none; /* decorative bubbles — cut them before cutting form space */
+  }
+}
+
+/* ============================================================
+   Tall phones (iPhone 14 Pro Max, Galaxy S23 Ultra, etc.)
+   These have extra vertical space, so we want the form to be
+   centered rather than pushed to the top.
+   ============================================================ */
+
+@media (max-width: 768px) and (min-height: 800px) {
+  .login-form-side {
+    justify-content: center;
+    padding-top: 20px;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .login-box {
+    margin-top: auto;
+    margin-bottom: auto;
+  }
+
+  .login-box__brand {
+    margin-bottom: 2rem;
   }
 }
