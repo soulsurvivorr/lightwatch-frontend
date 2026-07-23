@@ -1,6 +1,6 @@
 // ============================================================
-//  VIEWS/CHAT.JS — LightWatch community chat (lives inside the
-//  Home view).
+//  VIEWS/CHAT.JS — LightWatch community chat. Its own routed view
+//  (#view-chat, path /chat) — no longer embedded in the Home view.
 //
 //  Wrapped in an IIFE only to avoid top-level name collisions now
 //  that every view's script coexists in one document (this file
@@ -13,34 +13,19 @@
 //  loops stop while some other view (Areas, Reports, Account) is on
 //  screen instead of Home.
 //
-//  DEEP LINK FROM A PUSH NOTIFICATION: initialChatParams (the
-//  chatId/chatScope/chatLocation read from the URL) is only read
-//  once, at script load / cold boot. A push notification tapped
-//  while the app is ALREADY RUNNING doesn't reload this script, so
-//  the 'lw:route-changed' listener further down (search
-//  "Re-hydrate deep-link params") re-reads window.location.search
-//  and re-runs the jump-to-message logic every time the router
-//  navigates, not just on cold boot.
-//
-//  REMAINING GAP (needs service-worker.js, which isn't one of the
-//  files here): that listener only fires once something has already
-//  called window.LWRouter.navigate() with the right search string.
-//  services/push.js's navigateFromPushUrl() covers the native
-//  (Capacitor/FCM) tap-while-backgrounded case directly. For a
-//  plain web push tapped while a browser/PWA tab is already open,
-//  service-worker.js's own notificationclick handler needs to
-//  either focus that client and postMessage the target URL to it
-//  (push.js would need a matching navigator.serviceWorker
-//  'message' listener calling navigateFromPushUrl() — not present
-//  yet) or fall back to clients.openWindow() with the *translated*
-//  in-app path (e.g. '/home?chatId=...', not '/pages/home.html?...')
-//  if no client is open at all.
+//  Deep links (chatId/chatScope/chatLocation) are read from the URL
+//  twice: once at script load for a cold launch straight into
+//  /chat?chatId=..., and again on every 'lw:route-changed' event
+//  (see applyIncomingChatDeepLink near the bottom) for a push
+//  notification tapped while the app is already running — that case
+//  goes through navigateFromPushUrl() (services/push.js) updating
+//  the router's URL instead of a fresh page load, which this file
+//  would otherwise never notice.
 // ============================================================
 
 (function () {
 const chatThread = document.getElementById('chatThread');
 const chatScrollBottomBtn = document.getElementById('chatScrollBottomBtn');
-const chatScrollTopBtn = document.getElementById('chatScrollTopBtn');
 const chatForm   = document.getElementById('chatForm');
 const chatInput  = document.getElementById('chatInput');
 const chatSendBtn = document.getElementById('chatSendBtn');
@@ -59,9 +44,14 @@ const CHAT_SCOPE_GLOBAL = 'global';
 const initialChatParams = new URLSearchParams(window.location.search);
 const targetChatIdFromNotification = initialChatParams.get('chatId') || '';
 const targetChatScope = initialChatParams.get('chatScope') === CHAT_SCOPE_GLOBAL ? CHAT_SCOPE_GLOBAL : CHAT_SCOPE_LOCAL;
-const targetChatLocation = (initialChatParams.get('chatLocation') || '').trim();
+let targetChatLocation = (initialChatParams.get('chatLocation') || '').trim();
 
 let pendingFocusChatId = targetChatIdFromNotification;
+// Dedupes applyIncomingChatDeepLink() below so the 'lw:route-changed'
+// fired by the app's own cold-boot activate() doesn't immediately
+// re-process the same chatId this file already picked up from
+// initialChatParams above.
+let lastHandledChatIdFromUrl = targetChatIdFromNotification;
 
 window.__lwChatReady = false;
 
@@ -235,9 +225,14 @@ function isChatVisibleToUser() {
     // see manifest.json / apple-mobile-web-app-capable) where some Android
     // WebViews never report window focus at all. That silently made this
     // function return false permanently, so read receipts (seenBy) never
-    // got sent for anyone, on any device — which is why the "seen" eye
-    // never showed up. document.hidden + the IntersectionObserver check
-    // below are enough on their own to know the thread is actually on screen.
+    // got sent for anyone, on any device. document.hidden + the
+    // IntersectionObserver check below are enough on their own to know
+    // the thread is actually on screen.
+    // A second, separate bug also kept the "seen" eye from ever showing:
+    // getVisibleChatCard() was targeting a stale selector that resolved
+    // to the Home page's loading-skeleton placeholder instead of the
+    // real #view-chat card, so the observer below was watching an
+    // element that could never intersect — see getVisibleChatCard().
     const card = getVisibleChatCard();
     if (!card) return false;
     // Chat is always inline on the page now (no separate mobile popup
@@ -421,16 +416,7 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, hasReply, isLatestOwn)
         seenEl.title = 'Seen';
         seenEl.setAttribute('aria-hidden', 'true');
         seenEl.textContent = '👀';
-        // FIX: this used to be `Boolean(chat.seenBy && chat.seenBy.length > 0)`,
-        // which counts ANY entry in seenBy — including the sender's own id —
-        // as "seen". syncSeenIndicators (which re-evaluates this on every poll)
-        // correctly requires a seenBy id that isn't the sender themself; the
-        // first paint here disagreed, so a brand-new own message could flash
-        // the eye as "seen" for a moment before the next poll corrected it.
-        // Use the same normalizeSeenByIds() + other-user check both places.
-        const seenByIds = normalizeSeenByIds(chat);
-        const myIdForSeen = getCurrentUserId();
-        const hasBeenSeen = seenByIds.some(seenById => seenById && seenById !== myIdForSeen);
+        const hasBeenSeen = Boolean(chat.seenBy && chat.seenBy.length > 0);
         seenEl.classList.toggle('is-visible', Boolean(isLatestOwn) && hasBeenSeen && !hasReply);
         el.appendChild(seenEl);
     }
@@ -575,69 +561,20 @@ function buildChatsUrl() {
 updateChatPlaceholder();
 updateScopeButtons();
 
-function usingInternalScroll() {
-    if (!chatThread) return false;
-    const style = window.getComputedStyle(chatThread);
-    return /(auto|scroll)/.test(style.overflowY);
-}
-
-function updateScrollButtons() {
+chatThread?.addEventListener('scroll', () => {
     if (!chatThread) return;
-    let isNearBottom = false;
-    let isNearTop = false;
-
-    if (usingInternalScroll()) {
-        isNearBottom = (chatThread.scrollHeight - chatThread.scrollTop - chatThread.clientHeight) < 80;
-        isNearTop = chatThread.scrollTop < 80;
-    } else {
-        const rect = chatThread.getBoundingClientRect();
-        const bottomGap = window.innerHeight - rect.bottom; // positive when bottom is above viewport bottom
-        isNearBottom = bottomGap >= -80;
-        isNearTop = rect.top >= 80;
-    }
-
+    isNearBottom = (chatThread.scrollHeight - chatThread.scrollTop - chatThread.clientHeight) < 80;
     chatScrollBottomBtn?.classList.toggle('is-visible', !isNearBottom);
-    chatScrollTopBtn?.classList.toggle('is-visible', !isNearTop);
-}
-
-chatThread?.addEventListener('scroll', updateScrollButtons);
-window.addEventListener('scroll', updateScrollButtons, { passive: true });
-window.addEventListener('resize', updateScrollButtons, { passive: true });
+});
 
 function scrollChatToBottom(smooth) {
     if (!chatThread) return;
-    if (usingInternalScroll()) {
-        chatThread.scrollTo({ top: chatThread.scrollHeight, behavior: smooth ? 'smooth' : 'auto' });
-    } else {
-        // Scroll the page so the bottom of the thread is visible.
-        const rect = chatThread.getBoundingClientRect();
-        const offset = rect.bottom - window.innerHeight + 12; // small padding
-        if (offset > 0) {
-            const top = window.scrollY + offset;
-            window.scrollTo({ top, behavior: smooth ? 'smooth' : 'auto' });
-        }
-    }
+    chatThread.scrollTo({ top: chatThread.scrollHeight, behavior: smooth ? 'smooth' : 'auto' });
     isNearBottom = true;
     chatScrollBottomBtn?.classList.remove('is-visible');
-    chatScrollTopBtn?.classList.remove('is-visible');
-    updateScrollButtons();
-}
-
-function scrollChatToTop(smooth) {
-    if (!chatThread) return;
-    if (usingInternalScroll()) {
-        chatThread.scrollTo({ top: 0, behavior: smooth ? 'smooth' : 'auto' });
-    } else {
-        const rect = chatThread.getBoundingClientRect();
-        const topOffset = rect.top - 12;
-        window.scrollTo({ top: window.scrollY + topOffset, behavior: smooth ? 'smooth' : 'auto' });
-    }
-    chatScrollTopBtn?.classList.remove('is-visible');
-    updateScrollButtons();
 }
 
 chatScrollBottomBtn?.addEventListener('click', () => scrollChatToBottom(true));
-chatScrollTopBtn?.addEventListener('click', () => scrollChatToTop(true));
 
 function addToThread(chat, isOwn, scrollDown, animate, hasReply, isLatestOwn) {
     // "Rise" for a message you just sent, "arrive" for one that just
@@ -972,41 +909,6 @@ window.addEventListener('locationReady', () => {
 });
 setupChatVisibilityObserver();
 
-// Re-hydrate deep-link params when the router updates while the
-// app is already running (e.g. a push notification tap). Previously
-// these were only read at cold load (see file header), so tapping a
-// notification while the app is active didn't jump to the target
-// message. Re-run the same URL param parsing and focus logic here.
-window.addEventListener('lw:route-changed', (e) => {
-    // let the existing lw:route-changed handler below control polling
-    // lifecycle; this listener just picks up any deep-link params.
-    try {
-        const params = new URLSearchParams(window.location.search);
-        const pid = params.get('chatId') || '';
-        if (pid) {
-            pendingFocusChatId = pid;
-            // Re-setup the visibility observer so IntersectionObserver
-            // watches the correct chat card after the route change.
-            try { setupChatVisibilityObserver(); } catch (_) {}
-            // If a scope/location was provided, update them too so
-            // loading/polling picks the right thread.
-            const pScope = params.get('chatScope');
-            const pLoc = params.get('chatLocation');
-            if (pScope === CHAT_SCOPE_GLOBAL || pScope === CHAT_SCOPE_LOCAL) {
-                chatScope = pScope;
-                localStorage.setItem(CHAT_SCOPE_KEY, chatScope);
-                updateScopeButtons();
-                updateChatPlaceholder();
-            }
-            if (pLoc) {
-                window.currentChatLocation = String(pLoc).trim();
-            }
-            // Try to focus if the thread is already loaded.
-            focusTargetMessageIfPresent();
-        }
-    } catch (_) {}
-});
-
 function setChatScope(nextScope) {
     const picked = nextScope === CHAT_SCOPE_GLOBAL ? CHAT_SCOPE_GLOBAL : CHAT_SCOPE_LOCAL;
     chatScope = picked;
@@ -1035,7 +937,7 @@ chatScopeGlobalBtn?.addEventListener('click', () => setChatScope(CHAT_SCOPE_GLOB
 // or a button elsewhere in the app; it now just scrolls the card into
 // view instead of opening an overlay.
 function getVisibleChatCard() {
-    return document.querySelector('#realPageContent .chat-card') || document.querySelector('.chat-card');
+    return document.querySelector('#view-chat .chat-card');
 }
 
 function setMobileChatOpen(open) {
@@ -1054,22 +956,36 @@ function setMobileChatOpen(open) {
 
 function syncChatInputViewportState() {
     if (!chatInput) return;
-    const viewport = window.visualViewport;
-    const viewportHeight = viewport?.height || window.innerHeight;
-    const keyboardVisible = viewportHeight < window.innerHeight - 140;
-    const shouldHideBottomNav = document.activeElement === chatInput && keyboardVisible;
-    document.body.classList.toggle('lw-chat-input-focused', shouldHideBottomNav);
+    // Tied directly to focus, not a viewportHeight/keyboard guess: the
+    // guess was the bug (see focus listener below) — on focus, the
+    // keyboard hasn't animated in and shrunk the viewport yet, so a
+    // keyboard-visible check here read as "false" and immediately
+    // undid the class the focus handler had just set.
+    document.body.classList.toggle('lw-chat-input-focused', document.activeElement === chatInput);
 }
 
-// Keep the inline chat card anchored in normal page flow. On mobile,
-// calling scrollIntoView() here makes the whole page jump upward and
-// pulls the card away from where the user is already reading. Instead,
-// just enter a temporary "keyboard open" mode that hides the fixed
-// bottom nav while the composer is focused, then let the browser's
-// native viewport resize handle the space the keyboard needs.
+// Float the chat-card to the top of the screen on mobile when the
+// composer is focused, so the tail of the thread + the composer stay
+// visible above the on-screen keyboard instead of the keyboard just
+// covering whatever was on screen. (Previously this deliberately did
+// NOT scroll — see git history/old comment here — but that left the
+// composer with no guaranteed way to stay above the keyboard, which
+// is the opposite of what's wanted. Desktop is left alone: no
+// keyboard covering content there, so nothing to float for.)
+const MOBILE_CHAT_BREAKPOINT = 720;
 chatInput?.addEventListener('focus', () => {
     document.body.classList.add('lw-chat-input-focused');
     syncChatInputViewportState();
+
+    if (window.innerWidth <= MOBILE_CHAT_BREAKPOINT) {
+        // Deferred a frame so it runs after the browser has started
+        // animating the keyboard in (and after the bottom nav above
+        // has already been hidden, freeing up the space this scroll
+        // settles into) rather than racing it.
+        requestAnimationFrame(() => {
+            getVisibleChatCard()?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+        });
+    }
 });
 
 chatInput?.addEventListener('blur', () => {
@@ -1154,6 +1070,34 @@ chatForm?.addEventListener('submit', async (e) => {
 });
 window.setMobileChatOpen = setMobileChatOpen;
 
+// Picks up a chatId/chatScope/chatLocation that just landed in the URL
+// via a warm navigation (navigateFromPushUrl() in services/push.js
+// calling window.LWRouter.navigate('chat', {search}) while this script
+// was already running) — the initialChatParams read at the top of this
+// file only ever sees whatever the URL was at cold-boot script load.
+function applyIncomingChatDeepLink() {
+    const params = new URLSearchParams(window.location.search);
+    const incomingChatId = params.get('chatId') || '';
+    if (!incomingChatId || incomingChatId === lastHandledChatIdFromUrl) return;
+    lastHandledChatIdFromUrl = incomingChatId;
+
+    pendingFocusChatId = incomingChatId;
+    targetChatLocation = (params.get('chatLocation') || '').trim();
+    const incomingScope = params.get('chatScope') === CHAT_SCOPE_GLOBAL ? CHAT_SCOPE_GLOBAL : CHAT_SCOPE_LOCAL;
+
+    if (incomingScope !== chatScope) {
+        // setChatScope() -> loadChatHistory() -> focusTargetMessageIfPresent()
+        // once the right audience's history is back.
+        setChatScope(incomingScope);
+    } else {
+        // Already on the right audience: the message may already be
+        // sitting in the thread (jump now), or still on its way in —
+        // poll right away instead of waiting out the regular interval.
+        focusTargetMessageIfPresent();
+        pollChatsOnce();
+    }
+}
+
 // Same pause/resume the tab-visibility handler above already uses,
 // triggered by view switches instead of (or in addition to) tab
 // visibility — see file header.
@@ -1164,6 +1108,10 @@ window.addEventListener('lw:route-changed', (e) => {
     } else if (chatScope === CHAT_SCOPE_GLOBAL || chatLocation) {
         startPolling();
         startTypingPoll();
+    }
+
+    if (e.detail.view === 'chat') {
+        applyIncomingChatDeepLink();
     }
 });
 })();

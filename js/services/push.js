@@ -36,6 +36,7 @@ function navigateFromPushUrl(url) {
             '/index.html': 'login',
             '/': 'login',
             '/home': 'home',
+            '/chat': 'chat',
             '/areas': 'areas',
             '/reports': 'reports',
             '/account': 'account'
@@ -620,19 +621,6 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.addEventListener('message', (event) => {
         if (event?.data?.type === 'LW_PUSH_RECEIVED') {
             triggerForegroundSignal(event.data.tone);
-        }
-        // Mirrors the native pushNotificationActionPerformed handler above,
-        // for the plain web-push case: a notification was tapped while a
-        // browser/PWA tab was already open, so service-worker.js's
-        // notificationclick handler focused this client instead of calling
-        // clients.openWindow(). It still needs to tell this page which
-        // message to jump to — this is the other half of that handoff.
-        // REQUIRES a matching change in service-worker.js (not one of the
-        // files I have) to actually postMessage({ type: 'LW_NOTIFICATION_CLICK',
-        // url }) to its clients when notificationclick fires and a client
-        // already exists.
-        if (event?.data?.type === 'LW_NOTIFICATION_CLICK' && event.data.url) {
-            navigateFromPushUrl(event.data.url);
         }
     });
 }

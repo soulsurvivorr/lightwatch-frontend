@@ -3,24 +3,10 @@
    ============================================================ */
 
 .chat-card {
-  position: static;
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  overflow: visible;
-}
-
-#view-chat .page {
-  display: block;
-  width: 100%;
-  max-width: 100%;
-}
-
-#view-chat .page__header {
-  width: 100%;
-  max-width: 100%;
-  margin-bottom: 28px;
-  align-items: flex-start;
 }
 
 /* Full-bleed "app panel" layout for the Report page — desktop only.
@@ -33,22 +19,107 @@
    nav / off the bottom of the screen. Desktop has no bottom nav and
    no competing .page rule, so the full-height flex column is safe
    there and is what keeps the thread/composer pinned in one panel. */
-/* Desktop and Laptop viewports */
 @media (min-width: 721px) {
-  /* Desktop: keep chat inline but bound its height so it doesn't
-     become an enormous column. Use internal scrolling inside the
-     thread so the composer remains visible. */
+  #view-chat .page {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  }
+
+  /* Keep "Community reports" left-aligned on desktop rather than
+     centered — matches the rest of the app's left-aligned page
+     headers (Reports/Areas/Account). */
+  #view-chat .page__header {
+    text-align: left;
+    justify-content: flex-start;
+    align-items: flex-start;
+  }
+
   #view-chat .chat-card {
+    flex: 1 1 auto;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     gap: 10px;
+    /* FIX: .card's own default max-width was leaving this card
+       stranded as a narrow box in the middle of the page (see the
+       "current" desktop screenshot this was fixed against) instead
+       of filling the page like the target screenshot shows. Width
+       and box-sizing here beat that default since #view-chat .chat-card
+       (ID + class) outranks a plain .card selector. */
     width: 100%;
-    max-width: none;
-    /* Shorten the chat card on desktop without changing other page layout. */
-    max-height: 70vh;
-    overflow: hidden;
-    padding-bottom: 12px;
-    margin-bottom: 2em;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  #view-chat .chat-card__head,
+  #view-chat .chat-form {
+    flex-shrink: 0;
+  }
+
+  #view-chat .chat-thread-wrap {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  #view-chat .chat-thread {
+    flex: 1 1 auto;
+    min-height: 0;
+    /* More room to grow than the shared .chat-thread max-height
+       rules further down this file (460px / min(50vh,380px)) — this
+       ID-scoped rule outranks those on specificity regardless of
+       source order. */
+    max-height: none;
+    overflow-y: auto;
+    padding-bottom: 8px;
+  }
+}
+
+/* Mobile: same "fill the available height, thread scrolls internally"
+   panel as the desktop block above, so the card reaches down to just
+   above the bottom nav instead of stopping partway up the screen at
+   a fixed vh-based height. Deliberately a SEPARATE block rather than
+   just widening the desktop media query above: that one sets its own
+   padding-bottom on #view-chat .page (a small safe-area value, no
+   bottom nav to clear on desktop), which would have clobbered the
+   132px home.css's plain .page rule already reserves for the fixed
+   bottom nav on mobile — see that block's comment for the full story
+   of why this had to stay two separate rules. Not touching
+   padding-bottom here at all means that 132px reservation keeps
+   applying untouched, and — since box-sizing is border-box sitewide —
+   it stays inside the min-height:100dvh box, so flex naturally stops
+   the card right above the nav with no pixel offset to guess at. */
+@media (max-width: 720px) {
+  #view-chat .page {
+    display: flex;
+    flex-direction: column;
+    min-height: 100dvh;
+  }
+
+  #view-chat .chat-card {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    /* FIX: .card's own default max-width was rendering this as a
+       tiny, narrow box on mobile instead of filling the page's
+       width. Override wins on specificity (#view-chat .chat-card
+       beats a plain .card rule). */
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    /* Trim off the card's overall height (it was reaching a touch
+       too far down toward the bottom nav) — margin here comes out
+       of the flex item's own box rather than the page's fixed
+       min-height:100dvh, so it shortens the card without disturbing
+       the 132px bottom-nav reservation from home.css. 0.8em + a
+       further 0.4em requested afterward = 1.2em total. */
+    margin-bottom: 1.2em;
   }
 
   #view-chat .chat-card__head,
@@ -61,118 +132,40 @@
     min-height: 0;
     display: flex;
     flex-direction: column;
-    padding: 2em;
-    box-sizing: border-box;
-  }
-
-  #view-chat .chat-thread {
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow-y: auto;
-    padding-bottom: 2em;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-  }
-
-  #view-chat .chat-thread::-webkit-scrollbar {
-    display: none;
-  }
-}
-
-/* Mobile: let the card size to its content within the normal .page
-   block flow (home.css already reserves room for the bottom nav
-   there). The thread keeps its own max-height via the base
-   .chat-thread rule + the max-width breakpoints further down this
-   file, so it scrolls internally instead of stretching the page. */
-/* General Mobile Phone and Small Tablet viewports */
-@media (max-width: 720px) {
-  #view-chat .chat-card {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    /* Make the card a column flex container and size it relative to
-       the viewport so the thread can scroll internally while the
-       composer remains visible. Shorten the card on phones so the
-       composer is seen immediately without scrolling. */
-    max-height: calc(100svh - 2.8em);
-    box-sizing: border-box;
-  }
-
-  /* Let the thread-wrap and thread flex to fill the card so the
-     thread reaches near the bottom nav and scrolls internally. */
-  #view-chat .chat-thread-wrap {
-    flex: 1 1 auto;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
   }
 
   #view-chat .chat-thread {
     flex: 1 1 auto;
     min-height: 0;
     max-height: none;
-    overflow-y: auto;
-    padding-bottom: 2em;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-  }
-
-  #view-chat .chat-thread::-webkit-scrollbar {
-    display: none;
-  }
-
-  .chat-scroll-top-btn {
-    position: absolute;
-    right: 14px;
-    top: 12px;
-    width: 34px;
-    height: 34px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    border: 1px solid var(--border-soft);
-    background: var(--teal);
-    color: #04211d;
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.22);
-    cursor: pointer;
-    opacity: 0;
-    transform: translateY(-6px) scale(0.9);
-    pointer-events: none;
-    transition: opacity 0.18s ease, transform 0.18s ease;
-    z-index: 3;
-  }
-
-  .chat-scroll-top-btn.is-visible {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-    pointer-events: auto;
-  }
-
-  .chat-scroll-top-btn:hover {
-    background: var(--brand);
   }
 }
 
-/* Ensure the composer/form stays pinned to the bottom of the chat
-   card on small screens. Make it non-flexing and keep it visible
-   above the thread. */
-/* General Mobile Phone and Small Tablet viewports */
+/* Mobile: the outer page used to scroll as a whole (inheriting the
+   site-wide `html/body:has(#appShell:not([hidden])) { overflow-y:
+   auto }` rule from home.css). On the Report view specifically, only
+   the chat card itself should scroll — the page underneath it stays
+   put. Same specificity as that home.css rule (one :has() each) but
+   this file loads after home.css, so it wins for source order.
+   Scrollbar is hidden across engines since it's an internal
+   scroll surface, not a page-level one users need a visible track
+   for. */
 @media (max-width: 720px) {
-  #view-chat .chat-form {
-    flex: 0 0 auto;
-    margin-top: 0;
-    padding: 12px;
-    background: transparent;
-    z-index: 2;
-    box-sizing: border-box;
+  html:has(#view-chat:not([hidden])),
+  body:has(#view-chat:not([hidden])) {
+    overflow: hidden !important;
   }
 
-  /* Small safeguard: reserve some bottom padding inside the thread
-     so the last message isn't hidden behind the composer on some
-     devices with different font/line sizes. */
-  #view-chat .chat-thread {
-    padding-bottom: 80px;
+  #view-chat .chat-card {
+    overflow-y: auto;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  #view-chat .chat-card::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
   }
 }
 
@@ -182,7 +175,6 @@
    full explanation), and frees the extra height the composer needs
    instead of squeezing the layout at the same time the keyboard is
    still animating in. */
-/* General Mobile Phone and Small Tablet viewports */
 @media (max-width: 720px) {
   body.lw-chat-input-focused #bottom_nav_wrapper {
     display: none;
@@ -263,11 +255,8 @@
   flex-direction: column;
   gap: 3px;
   min-height: clamp(200px, 34vh, 320px);
-  /* Do not force an internal scrollbar here; let the page/browser
-     scrollbar be used instead. Specific contexts (mobile) can opt
-     into internal scrolling via #view-chat selectors above. */
-  max-height: none;
-  overflow-y: visible;
+  max-height: clamp(240px, 44vh, 360px);
+  overflow-y: auto;
   padding-right: 2px;
 }
 
@@ -354,7 +343,6 @@
   transition: opacity 0.2s ease, transform 0.2s ease;
   pointer-events: none;
   white-space: nowrap;
-  z-index: 3;
 }
 .chat-message__seen.is-visible {
   display: inline-flex;
@@ -596,13 +584,21 @@
    a live preview rather than a separate UI element.
    Blue (--brand2) on purpose: distinct from own messages
    (teal) and other people's messages (neutral/tinted).
+
+   --brand2 is given a fallback (#3b82f6) below: it's the only
+   color variable referenced anywhere in this file that isn't
+   also used successfully elsewhere in the app's CSS, and
+   variables.css wasn't available to confirm it's actually
+   defined. If it turns out --brand2 IS defined and just isn't
+   the blue you want here, drop the ", #3b82f6" fallbacks and
+   swap in whichever variable you'd rather use.
    ------------------------------------------------------- */
 .chat-message--typing {
   display: flex;
   align-items: center;
   gap: 6px;
-  border-color: color-mix(in srgb, var(--brand2) 45%, var(--border-soft));
-  background: color-mix(in srgb, var(--brand2) 10%, var(--bg-panel-raised));
+  border-color: color-mix(in srgb, var(--brand2, #3b82f6) 45%, var(--border-soft));
+  background: color-mix(in srgb, var(--brand2, #3b82f6) 10%, var(--bg-panel-raised));
   animation: chat-message-in 0.22s ease both;
 }
 
@@ -624,7 +620,7 @@
 }
 
 .typing-indicator__text strong {
-  color: var(--brand2);
+  color: var(--brand2, #3b82f6);
   font-family: var(--font-display);
   font-weight: 700;
 }
@@ -641,9 +637,9 @@
   font-size: 0.66rem;
   font-weight: 700;
   font-family: var(--font-display);
-  color: var(--brand2);
-  background: color-mix(in srgb, var(--brand2) 18%, var(--bg-panel));
-  border: 1px solid color-mix(in srgb, var(--brand2) 35%, var(--border-soft));
+  color: var(--brand2, #3b82f6);
+  background: color-mix(in srgb, var(--brand2, #3b82f6) 18%, var(--bg-panel));
+  border: 1px solid color-mix(in srgb, var(--brand2, #3b82f6) 35%, var(--border-soft));
   border-radius: 999px;
   padding: 2px 8px;
   max-width: 96px;
@@ -672,7 +668,7 @@
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: var(--brand2);
+  background: var(--brand2, #3b82f6);
   opacity: 0.35;
   animation: typing-dot-bounce 1.1s ease-in-out infinite;
 }
@@ -765,25 +761,8 @@
 /* Once it hits its max height, let it scroll internally instead of
    growing further — same behavior as WhatsApp's input. */
 .chat-form__input.is-maxed {
-    overflow-y: auto;
-    /* Hide overlay scrollbar visuals on platforms that show them
-       inside the thread; prefer the page scrollbar. */
-    scrollbar-width: thin;
-    scrollbar-color: rgba(0,0,0,0.12) transparent;
+  overflow-y: auto;
 }
-
-  /* WebKit scrollbar hiding when not hovered (keeps UX consistent). */
-  #view-chat .chat-thread::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
-  #view-chat .chat-thread::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  #view-chat .chat-thread::-webkit-scrollbar-thumb {
-    background: rgba(0,0,0,0.12);
-    border-radius: 8px;
-  }
 
 .chat-form__input:focus {
   outline: none;
@@ -850,7 +829,6 @@
 /* On laptop and larger, the chat card has plenty of room in the
    grid column — let the thread breathe so several messages are
    visible without needing to scroll the moment the page loads. */
-/* Desktop and Laptop viewports */
 @media (min-width: 721px) {
   .chat-thread {
     max-height: 460px;
@@ -867,12 +845,9 @@
    wins over the fixed-size rules earlier in this file and the
    min-width:721px rule directly above.
    ============================================================ */
-/* Tablet portrait and Desktop viewports (769px+) */
 @media (min-width: 769px) {
   .chat-thread {
-    /* +2em over the previous min(50vh, 380px) so more messages are
-       visible at once on desktop without scrolling. */
-    max-height: min(calc(50vh + 2em), 460px);
+    max-height: min(50vh, 380px);
   }
 
   .chat-message {
@@ -889,19 +864,12 @@
   }
 }
 
-/* Narrow phones (e.g. iPhone 12/13/14, Galaxy S21) */
 @media (max-width: 480px) {
   .chat-card {
     gap: 8px;
   }
 
-  .chat-thread-wrap {
-    min-height: clamp(240px, 42vh, 300px);
-  }
-
   .chat-thread {
-    min-height: clamp(220px, 38vh, 280px);
-    max-height: min(38vh, 260px);
     gap: 4px;
   }
 
@@ -925,17 +893,7 @@
   }
 }
 
-/* Narrowest phone screens (e.g. Galaxy S8/S9, iPhone SE) */
 @media (max-width: 380px) {
-  .chat-thread-wrap {
-    min-height: clamp(220px, 40vh, 270px);
-  }
-
-  .chat-thread {
-    min-height: clamp(200px, 34vh, 240px);
-    max-height: min(34vh, 220px);
-  }
-
   .chat-message {
     max-width: 82%;
     padding: 3px 6px;
@@ -948,13 +906,31 @@
   }
 }
 
-/* When the composer is focused on mobile, nudge the chat card up so
-   the composer and the most recent messages are visible above the
-   on-screen keyboard. chat.js toggles body.lw-chat-input-focused. */
-/* General Mobile Phone and Small Tablet viewports */
+/* Mobile: shave 2px off the Report page's text sizes across the
+   board. calc() against each element's own current mobile size
+   (rather than a single flat value) so relative sizing between
+   author/body/timestamp/input text is preserved — just uniformly
+   smaller. #view-chat-scoped so it beats the unscoped rules above on
+   specificity no matter where it sits in the file. */
 @media (max-width: 720px) {
-  body.lw-chat-input-focused #view-chat .chat-card {
-    transform: translateY(-8vh);
-    transition: transform 0.18s ease;
+  #view-chat .chat-message__text {
+    font-size: calc(0.7rem - 2px);
+  }
+
+  #view-chat .chat-message__author {
+    font-size: calc(0.62rem - 2px);
+  }
+
+  #view-chat .chat-message__time {
+    font-size: calc(0.56rem - 2px);
+  }
+
+  #view-chat .chat-form__input {
+    font-size: calc(0.8rem - 2px);
+  }
+
+  #view-chat .chat-scope-label,
+  #view-chat .chat-scope-option {
+    font-size: calc(0.76rem - 2px);
   }
 }
