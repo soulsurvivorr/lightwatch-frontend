@@ -17,39 +17,41 @@
 */
 
 
-/* Scoped with :has() — bare html/body selectors leaked onto login/home
-   because every view CSS loads globally in index.html. */
+/* Scoped with :has() — only affects pages with the signup view visible */
 html:has(#view-signup:not([hidden])),
 body:has(#view-signup:not([hidden])) {
-    height: auto !important;
-    min-height: 100% !important;
-    min-height: 100vh !important;
-    min-height: 100svh !important;
-    min-height: 100dvh !important;
-    overflow-x: hidden !important;
-    overflow-y: auto !important;
+    height: auto;
+    min-height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
     overscroll-behavior: none;
 }
 
 body:has(#view-signup:not([hidden])) {
-    margin: 0 !important;
-    display: flex !important;
-    justify-content: center !important;
-    align-items: flex-start !important;
-    padding: 24px 16px 32px !important;
+    margin: 0;
+    min-height: 100vh;
+    min-height: 100svh;
+    min-height: 100dvh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 24px 16px 32px;
     background: var(--bg-deep);
     color: var(--text-bright);
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: none;
     position: relative;
     transition: opacity .26s ease;
 }
 
-/* Force #authShell to be scrollable too */
+/* Only target #authShell when signup is visible */
 body:has(#view-signup:not([hidden])) #authShell {
-    display: flex !important;
-    flex: 1 !important;
-    width: 100% !important;
-    min-height: 100% !important;
-    overflow: visible !important;
+    display: flex;
+    flex: 1;
+    width: 100%;
+    min-height: 100%;
+    overflow: visible;
 }
 
 body.lw-leaving {
@@ -541,38 +543,35 @@ body.lw-leaving {
     color: var(--text-faint);
 }
 
-/* Tablet/desktop: the base `section` rule above caps height at
-   100vh with overflow:hidden, which silently clips content that
-   doesn't fit (region/city fields, notify toggle). Let the card
-   grow to its natural content height instead — the page itself
-   scrolls (single native scrollbar) rather than the card getting
-   its own inset one. Also trim a couple of the larger type sizes
-   so it needs to grow less often. */
+/* ============================================================
+   Tablet/desktop: only apply when signup is visible
+   ============================================================ */
 @media (min-width: 701px) {
     html:has(#view-signup:not([hidden])) {
-        height: auto !important;
-        min-height: 100% !important;
-        overflow-x: hidden !important;
-        overflow-y: auto !important;
+        height: auto;
+        min-height: 100%;
+        overflow-x: hidden;
+        overflow-y: auto;
     }
 
     body:has(#view-signup:not([hidden])) {
-        align-items: flex-start !important;
-        justify-content: center !important;
-        padding: 28px 20px 40px !important;
-        height: auto !important;
-        min-height: 100vh !important;
-        min-height: 100dvh !important;
-        overflow-y: auto !important;
-        overflow-x: hidden !important;
+        align-items: flex-start;
+        justify-content: center;
+        padding: 28px 20px 40px;
+        height: auto;
+        min-height: 100vh;
+        min-height: 100dvh;
+        overflow-y: auto;
+        overflow-x: hidden;
     }
 
+    /* Only target #authShell when signup is visible on tablet/desktop */
     body:has(#view-signup:not([hidden])) #authShell {
-        display: flex !important;
-        flex: 1 !important;
-        width: 100% !important;
-        min-height: 100% !important;
-        overflow: visible !important;
+        display: flex;
+        flex: 1;
+        width: 100%;
+        min-height: 100%;
+        overflow: visible;
     }
 
     #view-signup > section {
@@ -609,37 +608,15 @@ body.lw-leaving {
     }
 }
 
-/* ===== Responsiveness =====
-   Below 768px this becomes a single fixed card with mobile-safe
-   scrolling and tighter spacing. */
-body:has(#view-signup:not([hidden])) #authShell {
-    width: 100%;
-    min-height: 100%;
-    display: flex;
-    flex: 1;
-}
-
+/* ============================================================
+   Mobile: only apply when signup is visible
+   ============================================================ */
 @media (max-width: 768px) {
-    html:has(#view-signup:not([hidden])),
-    body:has(#view-signup:not([hidden])) {
-        height: auto !important;
-        min-height: 100svh !important;
-        overflow-x: hidden !important;
-        overflow-y: auto !important;
-    }
-
-    body:has(#view-signup:not([hidden])) #authShell {
-        min-height: 100svh;
-        align-items: stretch;
-        overflow: visible !important;
-    }
-
-    #view-signup:not([hidden]) {
-        width: 100%;
-        min-height: 100svh;
+    html:has(#view-signup:not([hidden])) {
         height: auto;
-        display: flex;
-        flex-direction: column;
+        min-height: 100svh;
+        overflow-x: hidden;
+        overflow-y: auto;
     }
 
     body:has(#view-signup:not([hidden])) {
@@ -649,8 +626,22 @@ body:has(#view-signup:not([hidden])) #authShell {
         justify-content: stretch;
         padding: 0;
         touch-action: manipulation;
-        overflow-y: auto !important;
-        overflow-x: hidden !important;
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+    body:has(#view-signup:not([hidden])) #authShell {
+        min-height: 100svh;
+        align-items: stretch;
+        overflow: visible;
+    }
+
+    #view-signup:not([hidden]) {
+        width: 100%;
+        min-height: 100svh;
+        height: auto;
+        display: flex;
+        flex-direction: column;
     }
 
     #main-content_wrapper {
@@ -734,8 +725,6 @@ body:has(#view-signup:not([hidden])) #authShell {
         font-size: .7rem;
     }
 
-    /* Slightly smaller than the desktop checkmark — on a phone-sized
-       toggle the full-size mark reads as visually heavy. */
     .notify-check {
         width: 9px;
         height: 9px;
