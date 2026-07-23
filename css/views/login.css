@@ -534,9 +534,9 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
 @media (max-width: 600px) {
   html:has(#view-login:not([hidden])),
   body:has(#view-login:not([hidden])) {
-    height: 100svh;
-    min-height: 100svh;
-    max-height: 100svh;
+    height: var(--app-vh, 100svh);
+    min-height: var(--app-vh, 100svh);
+    max-height: var(--app-vh, 100svh);
     background-color: var(--bg-panel);
     overflow-x: hidden !important;
     overflow-y: hidden; /* Removed !important so signup can override */
@@ -549,7 +549,7 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
     flex-direction: column;
     width: 100%;
     max-width: none;
-    height: 100svh; /* fixed, not min-height/auto — gives .login-footer's
+    height: var(--app-vh, 100svh); /* fixed, not min-height/auto — gives .login-footer's
                         margin-top:auto real space to push into so it always
                         lands on the true bottom of the screen */
     margin: 0;
@@ -579,9 +579,7 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
     justify-content: flex-start;
     height: 100%;
     min-height: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
-    overscroll-behavior: contain;
+    overflow: hidden;
     padding-top: 6em;
     padding-bottom: 0; /* footer below carries its own safe-area padding so it can reach the true bottom edge */
     padding-left: 24px;
