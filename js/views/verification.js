@@ -230,10 +230,20 @@
                 setTimeout(updateKeyboardShift, 120);
             });
             box.addEventListener('blur', () => {
-                if (focusedOtp === box) {
+                if (focusedOtp !== box) return;
+                // Auto-advance (input handler) and paste both call
+                // .focus() on the next box synchronously, but that
+                // focus event fires just after this blur — clearing
+                // the shift here immediately would snap the card back
+                // to center for a beat before it re-shifts, bouncing
+                // on every keystroke. Deferring one tick lets the new
+                // focus land first so we only clear when focus truly
+                // left the OTP group.
+                setTimeout(() => {
+                    if (otpBoxes.includes(document.activeElement)) return;
                     focusedOtp = null;
                     clearKeyboardShift();
-                }
+                }, 0);
             });
             box.addEventListener('input', () => {
                 const digits = box.value.replace(/[^0-9]/g, '');
