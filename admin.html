@@ -175,16 +175,17 @@
   .login-footer strong { color: var(--brand); }
 
   /* ============ APP SHELL ============ */
-  #dashboard { display:none; min-height: calc(100 * min(var(--vh, 1vh), 1vh)); }
-  .app-shell { display:flex; min-height: calc(100 * min(var(--vh, 1vh), 1vh)); }
+  #dashboard { display:none; min-height: 100vh; }
+  .app-shell { display:flex; height: 100vh; overflow: hidden; }
 
   .sidebar {
     width:var(--sidebar-w); flex-shrink:0; border-right:1px solid var(--border);
     background: linear-gradient(180deg, rgba(16,20,29,0.95), rgba(11,14,21,0.9));
     backdrop-filter: blur(12px);
     display:flex; flex-direction:column; padding:22px 14px;
-    position:sticky; top:0; height: calc(100 * min(var(--vh, 1vh), 1vh));
+    height: 100vh;
     overflow-y: auto;
+    position: relative;
   }
   .sidebar__brand { display:flex; align-items:center; gap:11px; padding:4px 8px 20px; }
   .sidebar__brand-icon {
@@ -214,8 +215,9 @@
   .nav-btn:hover { background:rgba(255,255,255,0.04); color:var(--txt); }
   .nav-btn:hover .nav-btn__icon { transform: scale(1.15); }
   .nav-btn.active {
-    background: linear-gradient(90deg, rgba(242,179,61,0.14), rgba(242,179,61,0.02));
+    background: linear-gradient(90deg, rgba(242,179,61,0.18), rgba(242,179,61,0.04));
     color:var(--brand);
+    border: 1px solid rgba(242,179,61,0.2);
   }
   .nav-btn.active .nav-btn__badge { background: var(--brand-dim); color: var(--brand); }
   .nav-btn.active::before {
@@ -237,7 +239,7 @@
   }
   .logout-btn:hover { border-color:var(--red); color:var(--red); background: rgba(255,92,102,0.06); transform: translateY(-1px); }
 
-  .main-col { flex:1; min-width:0; display:flex; flex-direction:column; }
+  .main-col { flex:1; min-width:0; display:flex; flex-direction:column; height: 100vh; overflow-y: auto; }
   .topbar-mobile {
     display:none; align-items:center; justify-content:space-between; gap:12px; padding:12px 16px;
     border-bottom:1px solid var(--border); background:rgba(10,15,28,0.85); backdrop-filter:blur(14px);
@@ -261,6 +263,7 @@
     border:1px solid var(--border); border-radius:var(--r-lg); padding:20px 22px;
     position:relative; overflow:hidden;
     transition: transform 0.25s var(--ease-spring), border-color 0.2s, box-shadow 0.25s var(--ease-smooth);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     animation: cardSlideIn 0.5s var(--ease-spring) both;
   }
   .s-card:nth-child(1) { animation-delay: 0.05s; }
@@ -271,7 +274,7 @@
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
   }
-  .s-card:hover { transform:translateY(-3px); border-color:var(--border2); box-shadow: 0 16px 40px rgba(2,6,16,0.4); }
+  .s-card:hover { transform:translateY(-3px); border-color:var(--brand); box-shadow: 0 12px 30px rgba(2,6,16,0.3); }
   .s-card__top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
   .s-card__icon { width: 36px; height: 36px; border-radius: var(--r-md); display: flex; align-items: center; justify-content: center; font-size: 1.05rem; flex-shrink: 0; }
   .s-card__icon--gold { background: var(--brand-dim); }
@@ -325,7 +328,7 @@
   table { width:100%; border-collapse:collapse; background:var(--panel); border:1px solid var(--border); border-radius:var(--r-lg); overflow:hidden; }
   thead { background:var(--panel2); }
   th,td { text-align:left; padding:12px 16px; font-size:0.82rem; border-bottom:1px solid var(--border); }
-  th { color:var(--faint); font-size:0.66rem; text-transform:uppercase; letter-spacing:0.07em; font-weight:700; }
+  th { color:var(--txt); font-size:0.66rem; text-transform:uppercase; letter-spacing:0.1em; font-weight:800; border-bottom: 2px solid var(--border2); }
   tbody tr { transition: background 0.15s var(--ease-smooth); }
   tbody tr:last-child td { border-bottom:none; }
   tbody tr:hover { background:rgba(242,179,61,0.03); }
@@ -617,7 +620,7 @@
    <div class="login-card">
     <div class="login-brand">
      <div class="login-brand__logo-wrap">
-      💡
+      <img src="./images/admin.png" alt="Admin" style="width:28px;height:24px;object-fit:contain;">
      </div>
      <div class="login-brand__name"><strong data-template-id="login-brand-name" class="canva-text">LightWatch GH</strong> <span data-template-id="login-brand-sub" class="canva-text">Admin Console</span>
      </div>
@@ -639,7 +642,7 @@
     <aside class="sidebar">
      <div class="sidebar__brand">
       <div class="sidebar__brand-icon">
-       💡
+       <img src="./images/admin.png" alt="Admin" style="width:22px;height:22px;object-fit:contain;">
       </div>
       <div><strong data-template-id="sidebar-brand-name" class="canva-text">LightWatch GH</strong> <span data-template-id="sidebar-brand-sub" class="canva-text">Admin</span>
       </div>
@@ -688,7 +691,7 @@
      <header class="topbar-mobile">
       <div class="brand">
        <div class="brand-icon">
-        💡
+        <img src="./images/admin.png" alt="Admin" style="width:18px;height:18px;object-fit:contain;">
        </div><strong id="mobilePageTitle">Live Activity</strong>
       </div><button class="logout-btn" id="logoutBtnMobile" type="button" style="padding:7px 12px; font-size:0.76rem;">Log out</button>
      </header>
@@ -1741,9 +1744,17 @@
   }
 
   // ===== BROADCAST =====
+  const broadcastTitleInput = document.getElementById("broadcastTitleInput");
+  const broadcastBodyInput = document.getElementById("broadcastBodyInput");
+
+  broadcastBodyInput?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      document.getElementById("broadcastSendBtn")?.click();
+    }
+  });
+
   document.getElementById("broadcastSendBtn")?.addEventListener("click", async () => {
-    const titleInput = document.getElementById("broadcastTitleInput");
-    const bodyInput = document.getElementById("broadcastBodyInput");
     const statusEl = document.getElementById("broadcastStatus");
     const btn = document.getElementById("broadcastSendBtn");
     const body = bodyInput.value.trim();
