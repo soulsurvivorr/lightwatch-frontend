@@ -21,11 +21,10 @@
    because every view CSS loads globally in index.html. */
 html:has(#view-signup:not([hidden])),
 body:has(#view-signup:not([hidden])) {
-    height: 100vh;
-    height: 100svh;
-    height: 100dvh;
+    height: auto;
+    min-height: 100%;
     overflow-x: hidden;
-    overflow-y: auto; /* allow scrolling when keyboard resizes the viewport */
+    overflow-y: auto;
     overscroll-behavior: none;
 }
 
@@ -41,7 +40,7 @@ body:has(#view-signup:not([hidden])) {
     background: var(--bg-deep);
     color: var(--text-bright);
     overflow-x: hidden;
-    overflow-y: hidden;
+    overflow-y: auto;
     overscroll-behavior: none;
     position: relative;
     transition: opacity .26s ease;
@@ -163,7 +162,7 @@ body.lw-leaving {
 
 #main-content_wrapper {
     display: flex;
-    flex-wrap: nowrap; /* Prevent wrapping on desktop if possible, or handle overflow */
+    flex-wrap: nowrap;
     justify-content: center;
     align-items: stretch;
     gap: 1.5rem;
@@ -276,7 +275,7 @@ body.lw-leaving {
 
 /* ===== Right: form panel ===== */
 #input-field-section {
-    flex: 0 0 380px; /* Fixed width on desktop to prevent overflow */
+    flex: 0 0 380px;
     width: 380px;
     background: color-mix(in srgb, var(--bg-panel) 96%, transparent);
     border: 1px solid var(--border-soft);
@@ -548,7 +547,7 @@ body.lw-leaving {
         height: auto;
         min-height: 100%;
         overflow-x: hidden;
-        overflow-y: auto; /* html is the one real scroll container — the mouse wheel scrolls this */
+        overflow-y: auto;
     }
 
     body:has(#view-signup:not([hidden])) {
@@ -558,11 +557,11 @@ body.lw-leaving {
         height: auto;
         min-height: 100vh;
         min-height: 100dvh;
-        overflow: visible; /* body just grows to fit its content — html above owns the actual scrolling */
+        overflow-y: auto;
     }
 
     #view-signup > section {
-        overflow: visible; /* no inner scrollbar — card grows to its natural content height */
+        overflow: visible;
         min-height: auto;
         max-height: none;
         width: max-content;
@@ -608,7 +607,7 @@ body:has(#view-signup:not([hidden])) #authShell {
 @media (max-width: 768px) {
     html:has(#view-signup:not([hidden])),
     body:has(#view-signup:not([hidden])) {
-        height: 100svh;
+        height: auto;
         min-height: 100svh;
         overflow-x: hidden;
         overflow-y: auto;
@@ -634,6 +633,7 @@ body:has(#view-signup:not([hidden])) #authShell {
         justify-content: stretch;
         padding: 0;
         touch-action: manipulation;
+        overflow-y: auto;
     }
 
     #main-content_wrapper {
