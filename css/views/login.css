@@ -518,7 +518,7 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
     max-height: 100svh;
     background-color: var(--bg-panel);
     overflow-x: hidden !important;
-    overflow-y: hidden !important; /* login page never scrolls on phone */
+    overflow-y: hidden; /* Removed !important so signup can override */
     overscroll-behavior: none;
   }
 
