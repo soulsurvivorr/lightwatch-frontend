@@ -17,7 +17,7 @@
     const RESEND_COOLDOWN_SECONDS = 60;
     const MASK_STAR_COUNT = 4;
 
-    let verifyCard, continueBtn, errorMsg, otpBoxesWrap, otpBoxes, resendLink, editLink;
+    let verifyCard, verifyBody, continueBtn, errorMsg, otpBoxesWrap, otpBoxes, resendLink, editLink;
     let cooldownInterval = null;
     let verifyInFlight = false;
     let mounted = false;
@@ -192,6 +192,7 @@
 
     function mount() {
         verifyCard = document.getElementById('verifyCard');
+        verifyBody = verifyCard?.querySelector('.verify-body');
         continueBtn = document.getElementById('continueBtn');
         errorMsg = document.getElementById('error-msg');
         otpBoxesWrap = document.getElementById('otpBoxes');
@@ -202,24 +203,30 @@
         const KEYBOARD_TOP_GAP = 16; // px gap kept below the sticky header once shifted up
 
         const updateKeyboardShift = () => {
-            if (!verifyCard || !focusedOtp) return;
+            if (!verifyBody || !focusedOtp) return;
             const headerEl = document.querySelector('#view-verification header');
             const headerBottom = headerEl ? headerEl.getBoundingClientRect().bottom : 0;
             const targetTop = headerBottom + KEYBOARD_TOP_GAP;
 
-            // Measure the card's natural (unshifted) position first —
+            // Measure the body's natural (unshifted) position first —
             // getBoundingClientRect() reflects any transform already
             // applied, so briefly zeroing it out gives us the true
-            // resting position to shift from.
-            verifyCard.style.setProperty('--verify-keyboard-shift', '0px');
-            const naturalTop = verifyCard.getBoundingClientRect().top;
+            // resting position to shift from. Only .verify-body moves;
+            // the card frame itself stays put.
+            verifyBody.style.setProperty('--verify-keyboard-shift', '0px');
+            const naturalTop = verifyBody.getBoundingClientRect().top;
 
             const shift = Math.min(0, targetTop - naturalTop);
-            verifyCard.style.setProperty('--verify-keyboard-shift', `${shift}px`);
+            // The card clips overflow by default (rounded corners); while
+            // the body is actually shifted above its resting spot, let it
+            // escape that clip so it doesn't get cut off mid-float.
+            verifyCard?.classList.toggle('kb-active', shift < 0);
+            verifyBody.style.setProperty('--verify-keyboard-shift', `${shift}px`);
         };
 
         const clearKeyboardShift = () => {
-            verifyCard?.style.removeProperty('--verify-keyboard-shift');
+            verifyBody?.style.removeProperty('--verify-keyboard-shift');
+            verifyCard?.classList.remove('kb-active');
         };
 
         keyboardViewportCleanup = () => {

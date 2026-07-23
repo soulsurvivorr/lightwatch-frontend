@@ -199,8 +199,14 @@ main div.verify-card {
     width: min(100%, 440px);
     min-width: 0;
     margin: 0 auto;
-    transform: translateY(var(--verify-keyboard-shift, 0px));
-    transition: transform .18s ease-out;
+}
+
+/* While an OTP box is focused and .verify-body is actually shifted
+   above its resting position (see verification.js), let it escape
+   the card's normal overflow:hidden clip so it doesn't get cut off
+   mid-float. The card frame itself never moves — only its content. */
+main div.verify-card.kb-active {
+    overflow: visible;
 }
 
 main h2, main p {
@@ -240,6 +246,10 @@ main div.verify-card {
     gap: .55rem;
     margin-top: .32rem;
     animation: lw-fade-up .45s ease .08s both;
+    position: relative;
+    z-index: 2;
+    transform: translateY(var(--verify-keyboard-shift, 0px));
+    transition: transform .18s ease-out;
 }
 
 main h2 {
