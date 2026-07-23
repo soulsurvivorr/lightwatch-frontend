@@ -6,6 +6,9 @@
    than inside a single page's CSS file.
    ============================================================ */
 
+   #onboardingOverlay { display: none !important; }
+
+
 .onboarding-overlay {
   font-family: var(--font-body);
   font-synthesis: none;
