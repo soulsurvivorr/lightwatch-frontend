@@ -171,6 +171,7 @@
     }
 
     function mount() {
+        document.documentElement.classList.add('lw-view-login');
         const sendCodeBtn = document.getElementById('sendCodebtn');
         const userInput = document.getElementById('user-input');
 
@@ -242,6 +243,7 @@
     }
 
     function show() {
+        document.documentElement.classList.add('lw-view-login');
         brandLoopActive = true;
         const targets = [
             document.getElementById('brandLoopText'),
@@ -254,6 +256,7 @@
     }
 
     function hide() {
+        document.documentElement.classList.remove('lw-view-login');
         brandLoopActive = false;
         keyboardViewportCleanup?.();
         keyboardViewportCleanup = null;

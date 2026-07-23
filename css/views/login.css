@@ -14,7 +14,8 @@
 
 
 
-  html:has(#view-login:not([hidden])) {
+  html:has(#view-login:not([hidden])),
+  html.lw-view-login {
       height: 100vh;
       height: 100svh;
       height: 100dvh;
@@ -44,7 +45,8 @@
      scrollbar, but stops being document.scrollingElement, so wheel/touch
      scrolling no longer reliably reaches it. html is the single scroll
      owner on this view. */
-  body:has(#view-login:not([hidden])) {
+  body:has(#view-login:not([hidden])),
+  body.lw-view-login {
       height: 100vh;
       height: 100svh;
       height: 100dvh;
@@ -94,14 +96,16 @@
     display: flex;
   }
 
-  body:has(#view-login:not([hidden])) {
+  body:has(#view-login:not([hidden])),
+  body.lw-view-login {
     position: fixed;
     inset: 0;
     height: 100vh;
     overflow: hidden !important; /* No scrolling on desktop */
   }
 
-  html:has(#view-login:not([hidden])) {
+  html:has(#view-login:not([hidden])),
+  html.lw-view-login {
     height: 100vh;
     overflow: hidden !important;
   }
@@ -543,29 +547,22 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
   text-decoration: underline;
 }
 
-/* Phone layout: render only the form pane. */
+/* ============================================================
+   PHONE LAYOUT: render only the form pane.
+   The form is vertically centered, footer at bottom.
+   ============================================================ */
+
 @media (max-width: 768px) {
   html:has(#view-login:not([hidden])),
-  body:has(#view-login:not([hidden])) {
-    /* FIX: was a hardcoded 100svh. svh is the *smallest* possible
-       viewport height a mobile browser will show (address bar fully
-       expanded) — it doesn't track the browser chrome actually
-       collapsing, e.g. when the address bar auto-hides after tapping
-       the input. When that happens the real visible window grows but
-       this stayed locked at the old, smaller svh value, leaving a gap
-       of unstyled space below the shell and nothing left for
-       .login-footer's margin-top:auto to push into — it ends up
-       sitting right after the content instead of at the true bottom.
-       var(--app-vh) is already kept in sync with the real viewport
-       elsewhere in this file (see .login-shell below); using it here
-       too instead of a raw unit keeps the shell's height accurate
-       through toolbar/keyboard changes instead of just at first paint. */
+  html.lw-view-login,
+  body:has(#view-login:not([hidden])),
+  body.lw-view-login {
     height: var(--app-vh, 100svh);
     min-height: var(--app-vh, 100svh);
     max-height: var(--app-vh, 100svh);
     background-color: var(--bg-panel);
     overflow-x: hidden !important;
-    overflow-y: hidden; /* Removed !important so signup can override */
+    overflow-y: hidden;
     overscroll-behavior: none;
   }
 
@@ -575,10 +572,7 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
     flex-direction: column;
     width: 100%;
     max-width: none;
-    height: var(--app-vh, 100svh); /* fixed, not min-height/auto — gives
-                        .login-footer's margin-top:auto real space to
-                        push into so it always lands on the true bottom
-                        of the screen. See --app-vh note above. */
+    height: var(--app-vh, 100svh);
     margin: 0;
     padding: 0;
     gap: 0;
@@ -602,15 +596,13 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
     width: 100%;
     display: flex;
     flex-direction: column;
-    align-items: stretch;
-    justify-content: center; /* Changed from flex-start to center - this is the key fix */
+    align-items: center;
+    justify-content: center;
     height: 100%;
     min-height: 0;
     overflow: hidden;
-    padding-top: 20px; /* Reduced from 6.5em */
-    padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
-    padding-left: 24px;
-    padding-right: 24px;
+    padding: 20px 24px;
+    padding-bottom: calc(46px + env(safe-area-inset-bottom, 0px));
   }
 
   .login-form-side::before,
@@ -660,35 +652,27 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
     display: flex;
     flex-direction: column;
     justify-content: center;
-    min-height: 0;
-    margin-bottom: 1rem;
-    transform: translateY(var(--login-keyboard-shift, 0px));
-    transition: transform 0.18s ease-out;
-    margin-top: auto; /* Helps push content down on very tall screens */
-    margin-bottom: auto; /* Helps push content up on very short screens */
+    width: 100%;
+    max-width: 380px;
+    margin: 0 auto;
   }
 
   .login-footer {
-    position: sticky;
-    bottom: 0;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: calc(6px + env(safe-area-inset-bottom, 0px));
     z-index: 2;
-    margin-top: auto; /* pushes the footer to the true bottom of the fixed-height shell */
-    margin-left: 0;
-    margin-right: 0;
-    margin-bottom: 0;
-    padding-top: 14px;
-    padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
-    flex-shrink: 0;
+    width: 100%;
     background: transparent;
     transition: opacity 0.15s ease;
+    text-align: center;
   }
 
-  /* Fix #4: while a field is focused (keyboard open), get the footer out
-     of the way instead of letting it crowd the shifted-up form. No JS
-     hook needed — :focus-within covers it automatically. */
-  .login-form-side:focus-within .login-footer {
-    opacity: 0;
-    pointer-events: none;
+  .login-footer p {
+    font-size: 0.55rem;
+    margin: 0;
+    padding: 0;
   }
 
   #view-login .field__input:focus {
@@ -742,54 +726,36 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
   }
 }
 
-@media (max-width: 600px) {
-    /* Phone styles */
-    .login-footer {
-      margin-bottom: -6px;
-    }
-
-    .signup-prompt {
-      font-size: .72rem;
-    }
-}
-
 /* ============================================================
-   Narrow-to-mid phones (Galaxy S8 ~360px, iPhone 12 ~390px,
-   Galaxy S9+ ~412-430px, most phones under tablet width)
-   Tighter type + tighter spacing so more of the form is
-   visible without scrolling. Was capped at 400px, which left a
-   gap between this and the default mobile sizing above — phones
-   landing in that gap (e.g. S9+) got noticeably larger type than
-   their neighbors just below and above them. 480px covers the
-   whole common phone-width range in one consistent scale.
+   Narrow phones (Galaxy S8, S9, iPhone SE, etc.)
    ============================================================ */
 
 @media (max-width: 480px) {
   .login-form-side {
-    padding: 2.5em 18px 32px; /* Reduced from 6em - now scales better */
-    padding-bottom: calc(32px + env(safe-area-inset-bottom, 0px));
+    padding: 16px 18px;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
   }
 
   .login-box__brand {
-    margin-bottom: 2em;
+    margin-bottom: 1rem;
   }
 
   .brand-loop-text {
-    font-size: 0.78rem;
+    font-size: 0.7rem;
   }
 
   .login-box h2 {
     font-size: 1.1rem;
+    margin-bottom: 4px;
   }
 
   .login-box__subtitle {
     font-size: 0.64rem;
-    margin-bottom: 20px;
+    margin-bottom: 12px;
   }
 
   .field {
-    gap: 4px;
-    margin-bottom: 0px;
+    gap: 3px;
   }
 
   .field__label {
@@ -802,18 +768,27 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
   }
 
   .remember-me-label {
-    font-size: 0.68rem;
+    font-size: 0.65rem;
   }
 
   .divider {
-    margin: 12px 0;
+    margin: 10px 0 8px;
+    font-size: 0.7rem;
   }
 
   .signup-prompt {
     font-size: 0.66rem;
-    margin-top: 22px;
+    margin-top: 14px;
   }
-  
+
+  .login-footer {
+    bottom: calc(6px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .login-footer p {
+    font-size: 0.5rem;
+  }
+
   .login-form-side::before {
     width: 150px;
     height: 150px;
@@ -826,7 +801,7 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
     filter: blur(1.4px) saturate(0.92);
     animation-duration: 4.2s;
   }
-  
+
   .login-form-side::after {
     width: 162px;
     height: 162px;
@@ -839,122 +814,104 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
     filter: blur(1.4px) saturate(0.92);
     animation-duration: 4.8s;
   }
-
-  .login-box {
-    margin-top: 0;
-    margin-bottom: 0;
-  }
 }
 
-/* ---- FIX: signup-prompt too small on wider phones ----
-   The 480px breakpoint above tunes .signup-prompt down to 0.6rem
-   (~9.6px), sized for the narrowest phones in that range (Galaxy
-   S8/S9 at 360px). Wider phones sharing that same bucket — Pixel 7
-   (412px), iPhone XR/11 (414px), iPhone 12 Pro (390px), and iPhone
-   14 Pro Max (430px) in particular — have the room for something
-   more legible, so bump it back up for that sub-range instead of
-   sizing every phone to the narrowest one. */
-@media (min-width: 401px) and (max-width: 480px) {
+/* ============================================================
+   Samsung S9+ and similar devices (~412px width, ~846px height)
+   Reduce font sizes and spacing specifically for this device
+   ============================================================ */
+
+@media (min-width: 400px) and (max-width: 440px) and (min-height: 800px) and (max-height: 860px) {
+  .login-form-side {
+    padding: 14px 18px;
+    padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .login-box__brand {
+    margin-bottom: 0.9rem;
+  }
+
+  .brand-loop-text {
+    font-size: 0.65rem;
+  }
+
+  .login-box h2 {
+    font-size: 1rem;
+    margin-bottom: 3px;
+  }
+
+  .login-box__subtitle {
+    font-size: 0.58rem;
+    margin-bottom: 10px;
+  }
+
+  .field {
+    gap: 2px;
+  }
+
+  .field__label {
+    font-size: 0.52rem;
+  }
+
+  .field__input {
+    padding: 8px 12px;
+    font-size: max(16px, 0.82rem);
+  }
+
+  .field-row {
+    margin: 10px 0 4px 0;
+  }
+
+  .remember-me-label {
+    font-size: 0.6rem;
+  }
+
+  .divider {
+    margin: 8px 0 6px;
+    font-size: 0.65rem;
+  }
+
   .signup-prompt {
-    font-size: 0.7rem;
+    font-size: 0.6rem;
+    margin-top: 10px;
+  }
+
+  .login-footer {
+    bottom: calc(4px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .login-footer p {
+    font-size: 0.46rem;
   }
 }
 
 /* ============================================================
    Short viewports (landscape phones, small-height devices)
-   Same idea as the narrow-width breakpoint above, but keyed off
-   height instead of width: tighten vertical rhythm so the form
-   has a real chance of fitting in one screen without scrolling.
-   Only touches spacing, never layout/colors.
    ============================================================ */
 
 @media (max-width: 768px) and (max-height: 700px) {
   .login-form-side {
-    /* Was a fixed 6em (~96px) at every phone height — fine on a tall
-       screen, but on a short one that alone could eat enough of the
-       fixed-height box that the form no longer fit and needed to
-       scroll. Scaling it down here (and further at the tighter
-       breakpoint below) is what actually keeps the whole form on
-       screen without scrolling, rather than just clipping it. */
-    padding-top: calc(1.5em + env(safe-area-inset-top, 0px));
-    padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    padding: 12px 24px;
+    padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
+    justify-content: center;
   }
 
   .login-box__brand {
-    margin-bottom: 0.8rem;
+    margin-bottom: 0.6rem;
   }
 
   .login-box h2 {
-    font-size: 1.3rem;
-    margin-bottom: 4px;
-  }
-
-  .login-box__subtitle {
-    margin-bottom: 10px;
-  }
-
-  .field-row {
-    margin: 10px 0 6px 0;
-  }
-
-  .divider {
-    margin: 8px 0;
-  }
-
-  .signup-prompt {
-    margin-top: 12px;
-  }
-
-  .login-footer, .login-footer p {
-    padding-top: 0px;
-    margin: 0;
-  }
-}
-
-/* ============================================================
-   Very short viewports — landscape phones, older/small-screen
-   devices (e.g. iPhone SE 1st-gen at ~568px height, most phones
-   in landscape). Even the 700px breakpoint above still has more
-   vertical rhythm than fits here, so trim once more: minimal top
-   padding, smaller headings, no decorative bubbles competing for
-   space. Goal is the same as every breakpoint in this file — the
-   form always fits in one screen, never needs to scroll.
-   ============================================================ */
-
-@media (max-width: 768px) and (max-height: 560px) {
-  .login-form-side {
-    padding-top: calc(0.8em + env(safe-area-inset-top, 0px));
-    padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
-  }
-
-  .login-box__brand {
-    margin-bottom: 0.5rem;
-  }
-
-  .brand-loop-line {
-    display: none; /* typing-loop tagline — pure decoration, first to go */
-  }
-
-  .login-box h2 {
-    font-size: 1.1rem;
+    font-size: 1.15rem;
     margin-bottom: 2px;
   }
 
   .login-box__subtitle {
-    font-size: 0.7rem;
-    margin-bottom: 8px;
-  }
-
-  .field {
-    gap: 3px;
-  }
-
-  .field__input {
-    padding: 8px 12px;
+    font-size: 0.65rem;
+    margin-bottom: 6px;
   }
 
   .field-row {
-    margin: 6px 0 4px 0;
+    margin: 6px 0 3px 0;
   }
 
   .divider {
@@ -963,34 +920,98 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
 
   .signup-prompt {
     margin-top: 8px;
-    font-size: 0.68rem;
+  }
+
+  .login-footer {
+    bottom: calc(4px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .login-footer p {
+    font-size: 0.48rem;
+  }
+}
+
+/* ============================================================
+   Very short viewports — landscape phones (iPhone SE 1st-gen)
+   ============================================================ */
+
+@media (max-width: 768px) and (max-height: 560px) {
+  .login-form-side {
+    padding: 8px 18px;
+    padding-bottom: calc(4px + env(safe-area-inset-bottom, 0px));
+    justify-content: flex-start;
+  }
+
+  .login-box__brand {
+    margin-bottom: 0.3rem;
+  }
+
+  .brand-loop-line {
+    display: none;
+  }
+
+  .login-box h2 {
+    font-size: 0.95rem;
+    margin-bottom: 1px;
+  }
+
+  .login-box__subtitle {
+    font-size: 0.6rem;
+    margin-bottom: 4px;
+  }
+
+  .field {
+    gap: 1px;
+  }
+
+  .field__input {
+    padding: 5px 10px;
+  }
+
+  .field-row {
+    margin: 3px 0 2px 0;
+  }
+
+  .divider {
+    margin: 3px 0;
+  }
+
+  .signup-prompt {
+    margin-top: 4px;
+    font-size: 0.55rem;
+  }
+
+  .login-footer {
+    bottom: calc(2px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .login-footer p {
+    font-size: 0.4rem;
   }
 
   .login-form-side::before,
   .login-form-side::after {
-    display: none; /* decorative bubbles — cut them before cutting form space */
+    display: none;
   }
 }
 
 /* ============================================================
    Tall phones (iPhone 14 Pro Max, Galaxy S23 Ultra, etc.)
-   These have extra vertical space, so we want the form to be
-   centered rather than pushed to the top.
+   Keep form centered with footer at bottom
    ============================================================ */
 
 @media (max-width: 768px) and (min-height: 800px) {
   .login-form-side {
+    padding: 30px 24px;
+    padding-bottom: calc(50px + env(safe-area-inset-bottom, 0px));
     justify-content: center;
-    padding-top: 20px;
-    padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
-  }
-
-  .login-box {
-    margin-top: auto;
-    margin-bottom: auto;
   }
 
   .login-box__brand {
-    margin-bottom: 2rem;
+    margin-bottom: 1.8rem;
+  }
+
+  .login-footer {
+    bottom: calc(8px + env(safe-area-inset-bottom, 0px));
   }
 }
