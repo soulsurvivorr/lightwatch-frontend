@@ -523,20 +523,13 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
   text-decoration: underline;
 }
 
-/* Phone layout: render only the form pane.
-   FIX: was max-width:768px, which is well into tablet/shrunk-browser
-   territory — widths like 700-768 aren't real phones, so forcing this
-   fixed-height "app shell" treatment on them (top-heavy padding,
-   pinned decorative bubbles, non-centered form) looked broken. 600px
-   is the real cutoff for phone-class widths; 601-768 now falls
-   through to the plain centered layout above (same idea as the
-   769-1024 tablet block) until it actually reaches phone width. */
-@media (max-width: 600px) {
+/* Phone layout: render only the form pane. */
+@media (max-width: 768px) {
   html:has(#view-login:not([hidden])),
   body:has(#view-login:not([hidden])) {
-    height: var(--app-vh, 100svh);
-    min-height: var(--app-vh, 100svh);
-    max-height: var(--app-vh, 100svh);
+    height: 100svh;
+    min-height: 100svh;
+    max-height: 100svh;
     background-color: var(--bg-panel);
     overflow-x: hidden !important;
     overflow-y: hidden; /* Removed !important so signup can override */
@@ -549,7 +542,7 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
     flex-direction: column;
     width: 100%;
     max-width: none;
-    height: var(--app-vh, 100svh); /* fixed, not min-height/auto — gives .login-footer's
+    height: 100svh; /* fixed, not min-height/auto — gives .login-footer's
                         margin-top:auto real space to push into so it always
                         lands on the true bottom of the screen */
     margin: 0;
@@ -580,8 +573,8 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
     height: 100%;
     min-height: 0;
     overflow: hidden;
-    padding-top: 6em;
-    padding-bottom: 0; /* footer below carries its own safe-area padding so it can reach the true bottom edge */
+    padding-top: 6.5em;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
     padding-left: 24px;
     padding-right: 24px;
   }
@@ -640,7 +633,8 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
   }
 
   .login-footer {
-    position: static;
+    position: sticky;
+    bottom: 0;
     z-index: 2;
     margin-top: auto; /* pushes the footer to the true bottom of the fixed-height shell */
     margin-left: 0;
@@ -649,6 +643,7 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
     padding-top: 14px;
     padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
     flex-shrink: 0;
+    background: var(--bg-panel);
     transition: opacity 0.15s ease;
   }
 
@@ -711,76 +706,49 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
   }
 }
 
-/* ============================================================
-   Fluid phone typography (360px - 600px)
-   FIX: font-sizes used to jump between two fixed steps (one value
-   for 481-768, a smaller one for <=480), which read as "wrong" at
-   the edges of each step and didn't track the actual screen size.
-   Native apps scale continuously with the device, so these use
-   clamp() to interpolate smoothly across the whole phone-width
-   range instead — small phones (~360px) get the compact end,
-   larger phones (~600px) get the roomier end, everything between
-   scales proportionally. Values only apply inside phone mode
-   (<=600px); desktop/tablet keep their own fixed sizes untouched.
-   ============================================================ */
 @media (max-width: 600px) {
-  .login-box h2 {
-    font-size: clamp(1.1rem, 0.5rem + 2.7vw, 1.5rem);
-  }
+    /* Phone styles */
+    .login-footer {
+      margin-bottom: -6px;
+    }
 
-  .login-box__subtitle {
-    font-size: clamp(0.64rem, 0.4rem + 1.07vw, 0.8rem);
-  }
-
-  .field__label {
-    font-size: clamp(0.56rem, 0.44rem + 0.53vw, 0.64rem);
-  }
-
-  .field__input {
-    font-size: clamp(0.86rem, 0.74rem + 0.53vw, 0.94rem);
-    padding: clamp(10px, 7px + 0.83vw, 12px) clamp(12px, 9px + 0.83vw, 14px);
-  }
-
-  .brand-loop-text {
-    font-size: clamp(0.78rem, 0.72rem + 0.27vw, 0.82rem);
-  }
-
-  .remember-me-label {
-    font-size: clamp(0.68rem, 0.65rem + 0.13vw, 0.7rem);
-  }
-
-  .signup-prompt {
-    font-size: clamp(0.66rem, 0.51rem + 0.67vw, 0.76rem);
-  }
-
-  .login-footer {
-    margin-bottom: -6px;
-  }
+    .signup-prompt {
+      font-size: .72rem;
+    }
 }
 
 /* ============================================================
    Narrow-to-mid phones (Galaxy S8 ~360px, iPhone 12 ~390px,
    Galaxy S9+ ~412-430px, most phones under tablet width)
-   Tighter spacing so more of the form is visible without
-   scrolling. Font sizes are handled by the fluid clamp() rules
-   above now, so this block is layout/spacing only. Was capped at
-   400px, which left a gap between this and the default mobile
-   sizing above — phones landing in that gap (e.g. S9+) got
-   noticeably larger spacing than their neighbors just below and
-   above them. 480px covers the whole common phone-width range in
-   one consistent scale.
+   Tighter type + tighter spacing so more of the form is
+   visible without scrolling. Was capped at 400px, which left a
+   gap between this and the default mobile sizing above — phones
+   landing in that gap (e.g. S9+) got noticeably larger type than
+   their neighbors just below and above them. 480px covers the
+   whole common phone-width range in one consistent scale.
    ============================================================ */
 
 @media (max-width: 480px) {
   .login-form-side {
-    padding: 6em 18px 0;
+    padding: 6em 18px 32px;
+    /*padding-top: calc(20px + 2em + env(safe-area-inset-top, 0px));*/
+    padding-bottom: calc(32px + env(safe-area-inset-bottom, 0px));
   }
 
   .login-box__brand {
     margin-bottom: 2em;
   }
 
+  .brand-loop-text {
+    font-size: 0.78rem;
+  }
+
+  .login-box h2 {
+    font-size: 1.1rem;
+  }
+
   .login-box__subtitle {
+    font-size: 0.64rem;
     margin-bottom: 20px;
   }
 
@@ -789,11 +757,25 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
     margin-bottom: 0px;
   }
 
+  .field__label {
+    font-size: 0.56rem;
+  }
+
+  .field__input {
+    padding: 10px 12px;
+    font-size: 0.86rem;
+  }
+
+  .remember-me-label {
+    font-size: 0.68rem;
+  }
+
   .divider {
     margin: 12px 0;
   }
 
   .signup-prompt {
+    font-size: 0.66rem;
     margin-top: 22px;
   }
   
@@ -824,6 +806,20 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
   }
 }
 
+/* ---- FIX: signup-prompt too small on wider phones ----
+   The 480px breakpoint above tunes .signup-prompt down to 0.6rem
+   (~9.6px), sized for the narrowest phones in that range (Galaxy
+   S8/S9 at 360px). Wider phones sharing that same bucket — Pixel 7
+   (412px), iPhone XR/11 (414px), iPhone 12 Pro (390px), and iPhone
+   14 Pro Max (430px) in particular — have the room for something
+   more legible, so bump it back up for that sub-range instead of
+   sizing every phone to the narrowest one. */
+@media (min-width: 401px) and (max-width: 480px) {
+  .signup-prompt {
+    font-size: 0.7rem;
+  }
+}
+
 /* ============================================================
    Short viewports (landscape phones, small-height devices)
    Same idea as the narrow-width breakpoint above, but keyed off
@@ -832,18 +828,16 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
    Only touches spacing, never layout/colors.
    ============================================================ */
 
-@media (max-width: 600px) and (max-height: 700px) {
+@media (max-width: 768px) and (max-height: 700px) {
   .login-form-side {
     /* Was a fixed 6em (~96px) at every phone height — fine on a tall
        screen, but on a short one that alone could eat enough of the
        fixed-height box that the form no longer fit and needed to
        scroll. Scaling it down here (and further at the tighter
        breakpoint below) is what actually keeps the whole form on
-       screen without scrolling, rather than just clipping it.
-       No bottom padding here — .login-footer carries its own
-       safe-area padding so it can sit flush with the true bottom. */
+       screen without scrolling, rather than just clipping it. */
     padding-top: calc(3em + env(safe-area-inset-top, 0px));
-    padding-bottom: 0;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   }
 
   .login-box__brand {
@@ -887,10 +881,10 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
    form always fits in one screen, never needs to scroll.
    ============================================================ */
 
-@media (max-width: 600px) and (max-height: 560px) {
+@media (max-width: 768px) and (max-height: 560px) {
   .login-form-side {
     padding-top: calc(1.4em + env(safe-area-inset-top, 0px));
-    padding-bottom: 0;
+    padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
   }
 
   .login-box__brand {

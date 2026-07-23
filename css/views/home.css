@@ -2417,6 +2417,11 @@ body.lw-location-panel-open {
     padding-bottom: calc(132px + env(safe-area-inset-bottom));
   }
 
+  /* Respect the bottom nav's declared height variable when present. */
+  /* removed: view-chat bottom-nav height override to avoid pushing
+     the bottom nav down — keep the global bottom nav positioning
+     controlled at the layout level. */
+
   .page {
     padding: 20px 16px 54px;
     min-height: auto;
@@ -2425,8 +2430,8 @@ body.lw-location-panel-open {
   }
 
   .page__header {
-    align-items: flex-start;
-    margin-bottom: 18px;
+    align-items: flex-end;
+    margin-bottom: 28px;
   }
 
   .page__greeting {
@@ -2536,25 +2541,42 @@ body.lw-location-panel-open {
   }
 
   .chat-form {
-    position: sticky;
-    bottom: 0;
+    /* Keep the composer in normal flow at the bottom of the
+       chat card so it doesn't float over content when the user
+       scrolls. Previously sticky caused it to stick to viewport
+       bottom which produced the floating behaviour you reported. */
+    position: static;
     z-index: 2;
     background: var(--bg-panel);
     border-top: 1px solid var(--border-soft);
     padding-top: 8px;
     padding-bottom: calc(8px + env(safe-area-inset-bottom));
+     /* Expose measured heights for layout calculations. These are
+       conservative defaults and may be overridden by JS on devices
+       with different font scaling. */
+     --chat-form-height: 64px;
   }
 
   .chat-card .chat-thread-wrap {
     flex: 1 1 auto;
     min-height: 0;
+    box-sizing: border-box;
   }
 
+  /* FIX: this used to be max-height: calc(100svh - 2.8em) — almost a
+     full viewport tall. Since this card sits inline on the Home page
+     below the greeting/hero/status cards (not alone in its own
+     full-height panel like #view-chat is), that let the thread grow
+     nearly as tall as the whole screen, pushing the composer below
+     the fold and under the fixed bottom nav — the user had to scroll
+     past the entire thread just to find the textarea. Capped to a
+     sane on-screen height instead so the composer stays in view. */
   .chat-card .chat-thread {
     flex: 1 1 auto;
     min-height: 0;
     overflow-y: auto;
-    padding-bottom: 6px;
+    padding-bottom: 2em;
+    max-height: min(42vh, 320px);
   }
 
   .chat-card__head {

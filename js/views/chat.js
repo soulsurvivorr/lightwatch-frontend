@@ -13,21 +13,34 @@
 //  loops stop while some other view (Areas, Reports, Account) is on
 //  screen instead of Home.
 //
-//  KNOWN LIMITATION: initialChatParams (the chatId/chatScope/
-//  chatLocation read from the URL to jump straight to a specific
-//  message) is only read once, at script load / cold boot. A push
-//  notification tapped while the app is already running calls
-//  navigateFromPushUrl() (services/push.js), which updates the
-//  router's URL, but this file won't re-read it on that later
-//  navigation — only a fresh cold launch picks up the deep link.
-//  Making that work for an already-running app needs this file to
-//  re-run its "jump to message" logic from the 'lw:route-changed'
-//  event too; flagged here rather than silently left as-is.
+//  DEEP LINK FROM A PUSH NOTIFICATION: initialChatParams (the
+//  chatId/chatScope/chatLocation read from the URL) is only read
+//  once, at script load / cold boot. A push notification tapped
+//  while the app is ALREADY RUNNING doesn't reload this script, so
+//  the 'lw:route-changed' listener further down (search
+//  "Re-hydrate deep-link params") re-reads window.location.search
+//  and re-runs the jump-to-message logic every time the router
+//  navigates, not just on cold boot.
+//
+//  REMAINING GAP (needs service-worker.js, which isn't one of the
+//  files here): that listener only fires once something has already
+//  called window.LWRouter.navigate() with the right search string.
+//  services/push.js's navigateFromPushUrl() covers the native
+//  (Capacitor/FCM) tap-while-backgrounded case directly. For a
+//  plain web push tapped while a browser/PWA tab is already open,
+//  service-worker.js's own notificationclick handler needs to
+//  either focus that client and postMessage the target URL to it
+//  (push.js would need a matching navigator.serviceWorker
+//  'message' listener calling navigateFromPushUrl() — not present
+//  yet) or fall back to clients.openWindow() with the *translated*
+//  in-app path (e.g. '/home?chatId=...', not '/pages/home.html?...')
+//  if no client is open at all.
 // ============================================================
 
 (function () {
 const chatThread = document.getElementById('chatThread');
 const chatScrollBottomBtn = document.getElementById('chatScrollBottomBtn');
+const chatScrollTopBtn = document.getElementById('chatScrollTopBtn');
 const chatForm   = document.getElementById('chatForm');
 const chatInput  = document.getElementById('chatInput');
 const chatSendBtn = document.getElementById('chatSendBtn');
@@ -408,7 +421,16 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, hasReply, isLatestOwn)
         seenEl.title = 'Seen';
         seenEl.setAttribute('aria-hidden', 'true');
         seenEl.textContent = '👀';
-        const hasBeenSeen = Boolean(chat.seenBy && chat.seenBy.length > 0);
+        // FIX: this used to be `Boolean(chat.seenBy && chat.seenBy.length > 0)`,
+        // which counts ANY entry in seenBy — including the sender's own id —
+        // as "seen". syncSeenIndicators (which re-evaluates this on every poll)
+        // correctly requires a seenBy id that isn't the sender themself; the
+        // first paint here disagreed, so a brand-new own message could flash
+        // the eye as "seen" for a moment before the next poll corrected it.
+        // Use the same normalizeSeenByIds() + other-user check both places.
+        const seenByIds = normalizeSeenByIds(chat);
+        const myIdForSeen = getCurrentUserId();
+        const hasBeenSeen = seenByIds.some(seenById => seenById && seenById !== myIdForSeen);
         seenEl.classList.toggle('is-visible', Boolean(isLatestOwn) && hasBeenSeen && !hasReply);
         el.appendChild(seenEl);
     }
@@ -553,20 +575,69 @@ function buildChatsUrl() {
 updateChatPlaceholder();
 updateScopeButtons();
 
-chatThread?.addEventListener('scroll', () => {
+function usingInternalScroll() {
+    if (!chatThread) return false;
+    const style = window.getComputedStyle(chatThread);
+    return /(auto|scroll)/.test(style.overflowY);
+}
+
+function updateScrollButtons() {
     if (!chatThread) return;
-    isNearBottom = (chatThread.scrollHeight - chatThread.scrollTop - chatThread.clientHeight) < 80;
+    let isNearBottom = false;
+    let isNearTop = false;
+
+    if (usingInternalScroll()) {
+        isNearBottom = (chatThread.scrollHeight - chatThread.scrollTop - chatThread.clientHeight) < 80;
+        isNearTop = chatThread.scrollTop < 80;
+    } else {
+        const rect = chatThread.getBoundingClientRect();
+        const bottomGap = window.innerHeight - rect.bottom; // positive when bottom is above viewport bottom
+        isNearBottom = bottomGap >= -80;
+        isNearTop = rect.top >= 80;
+    }
+
     chatScrollBottomBtn?.classList.toggle('is-visible', !isNearBottom);
-});
+    chatScrollTopBtn?.classList.toggle('is-visible', !isNearTop);
+}
+
+chatThread?.addEventListener('scroll', updateScrollButtons);
+window.addEventListener('scroll', updateScrollButtons, { passive: true });
+window.addEventListener('resize', updateScrollButtons, { passive: true });
 
 function scrollChatToBottom(smooth) {
     if (!chatThread) return;
-    chatThread.scrollTo({ top: chatThread.scrollHeight, behavior: smooth ? 'smooth' : 'auto' });
+    if (usingInternalScroll()) {
+        chatThread.scrollTo({ top: chatThread.scrollHeight, behavior: smooth ? 'smooth' : 'auto' });
+    } else {
+        // Scroll the page so the bottom of the thread is visible.
+        const rect = chatThread.getBoundingClientRect();
+        const offset = rect.bottom - window.innerHeight + 12; // small padding
+        if (offset > 0) {
+            const top = window.scrollY + offset;
+            window.scrollTo({ top, behavior: smooth ? 'smooth' : 'auto' });
+        }
+    }
     isNearBottom = true;
     chatScrollBottomBtn?.classList.remove('is-visible');
+    chatScrollTopBtn?.classList.remove('is-visible');
+    updateScrollButtons();
+}
+
+function scrollChatToTop(smooth) {
+    if (!chatThread) return;
+    if (usingInternalScroll()) {
+        chatThread.scrollTo({ top: 0, behavior: smooth ? 'smooth' : 'auto' });
+    } else {
+        const rect = chatThread.getBoundingClientRect();
+        const topOffset = rect.top - 12;
+        window.scrollTo({ top: window.scrollY + topOffset, behavior: smooth ? 'smooth' : 'auto' });
+    }
+    chatScrollTopBtn?.classList.remove('is-visible');
+    updateScrollButtons();
 }
 
 chatScrollBottomBtn?.addEventListener('click', () => scrollChatToBottom(true));
+chatScrollTopBtn?.addEventListener('click', () => scrollChatToTop(true));
 
 function addToThread(chat, isOwn, scrollDown, animate, hasReply, isLatestOwn) {
     // "Rise" for a message you just sent, "arrive" for one that just
@@ -900,6 +971,41 @@ window.addEventListener('locationReady', () => {
     setupChatVisibilityObserver();
 });
 setupChatVisibilityObserver();
+
+// Re-hydrate deep-link params when the router updates while the
+// app is already running (e.g. a push notification tap). Previously
+// these were only read at cold load (see file header), so tapping a
+// notification while the app is active didn't jump to the target
+// message. Re-run the same URL param parsing and focus logic here.
+window.addEventListener('lw:route-changed', (e) => {
+    // let the existing lw:route-changed handler below control polling
+    // lifecycle; this listener just picks up any deep-link params.
+    try {
+        const params = new URLSearchParams(window.location.search);
+        const pid = params.get('chatId') || '';
+        if (pid) {
+            pendingFocusChatId = pid;
+            // Re-setup the visibility observer so IntersectionObserver
+            // watches the correct chat card after the route change.
+            try { setupChatVisibilityObserver(); } catch (_) {}
+            // If a scope/location was provided, update them too so
+            // loading/polling picks the right thread.
+            const pScope = params.get('chatScope');
+            const pLoc = params.get('chatLocation');
+            if (pScope === CHAT_SCOPE_GLOBAL || pScope === CHAT_SCOPE_LOCAL) {
+                chatScope = pScope;
+                localStorage.setItem(CHAT_SCOPE_KEY, chatScope);
+                updateScopeButtons();
+                updateChatPlaceholder();
+            }
+            if (pLoc) {
+                window.currentChatLocation = String(pLoc).trim();
+            }
+            // Try to focus if the thread is already loaded.
+            focusTargetMessageIfPresent();
+        }
+    } catch (_) {}
+});
 
 function setChatScope(nextScope) {
     const picked = nextScope === CHAT_SCOPE_GLOBAL ? CHAT_SCOPE_GLOBAL : CHAT_SCOPE_LOCAL;
