@@ -17,6 +17,7 @@
 (function () {
     let nameInput, emailPhoneInput, regionInput, cityInput,
         notifyUpdatesInput, form, errorEl, submitBtn;
+    let isMounted = false;
 
     function prefillFromPriorAttempt() {
         try {
@@ -111,6 +112,9 @@
     }
 
     function mount() {
+        if (isMounted) return;
+        isMounted = true;
+
         nameInput = document.getElementById('name');
         emailPhoneInput = document.getElementById('email-phone');
         regionInput = document.getElementById('region');
@@ -179,6 +183,52 @@
         }
     }
 
+    // ============================================================
+    //  show() / hide() — called by the router when this view
+    //  becomes visible or hidden. This is where we fix the
+    //  scrolling issue by forcing the body to be scrollable.
+    // ============================================================
+
+    function show() {
+        // Force the body and html to be scrollable when signup is shown
+        // This overrides any inherited overflow:hidden from login view
+        document.documentElement.style.overflow = 'auto';
+        document.documentElement.style.height = 'auto';
+        document.body.style.overflow = 'auto';
+        document.body.style.height = 'auto';
+        document.body.style.minHeight = '100vh';
+        
+        // Also ensure the auth shell doesn't block scrolling
+        const authShell = document.getElementById('authShell');
+        if (authShell) {
+            authShell.style.overflow = 'visible';
+            authShell.style.height = 'auto';
+        }
+
+        // Force a reflow to ensure the scroll works
+        void document.body.offsetHeight;
+    }
+
+    function hide() {
+        // Reset styles when hiding - but only if they were set by us
+        // We check if the signup view is still visible before resetting
+        const signupView = document.getElementById('view-signup');
+        if (signupView && signupView.hidden) {
+            // Only reset if signup is actually hidden
+            document.documentElement.style.overflow = '';
+            document.documentElement.style.height = '';
+            document.body.style.overflow = '';
+            document.body.style.height = '';
+            document.body.style.minHeight = '';
+            
+            const authShell = document.getElementById('authShell');
+            if (authShell) {
+                authShell.style.overflow = '';
+                authShell.style.height = '';
+            }
+        }
+    }
+
     window.LWViews = window.LWViews || {};
-    window.LWViews.signup = { mount };
+    window.LWViews.signup = { mount, show, hide };
 })();
