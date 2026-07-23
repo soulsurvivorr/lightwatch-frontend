@@ -579,7 +579,9 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
     justify-content: flex-start;
     height: 100%;
     min-height: 0;
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
     padding-top: 6em;
     padding-bottom: 0; /* footer below carries its own safe-area padding so it can reach the true bottom edge */
     padding-left: 24px;

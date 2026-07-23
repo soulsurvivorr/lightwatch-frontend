@@ -2,6 +2,17 @@
    Base typography — body defaults, headings, links, lists
    ============================================================ */
 
+/* FIX: real mobile Chrome (in-tab and installed as a PWA) applies its
+   own automatic "font boosting" to text it judges too small for the
+   column width, silently inflating font-size beyond whatever the CSS
+   says. Chrome DevTools' device-emulation mode does NOT reproduce this
+   quirk, which is why sizing looks correct there but runs noticeably
+   bigger on an actual phone/PWA. Disabling text-size-adjust makes
+   every device render at the CSS values it was actually given. */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
 
 body {
   background-color: var(--bg-deep);
