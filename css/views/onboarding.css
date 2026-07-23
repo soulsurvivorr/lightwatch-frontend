@@ -139,7 +139,7 @@ body.lw-onboarding-open {
 }
 
 .onboarding-slide h2 {
-  font-family: inherit;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   font-size: clamp(1.55rem, 3vw, 2.2rem);
   font-weight: 700;
   color: #f3f7fb;

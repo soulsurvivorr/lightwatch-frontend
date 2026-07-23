@@ -33,6 +33,7 @@
    nav / off the bottom of the screen. Desktop has no bottom nav and
    no competing .page rule, so the full-height flex column is safe
    there and is what keeps the thread/composer pinned in one panel. */
+/* Desktop and Laptop viewports */
 @media (min-width: 721px) {
   /* Desktop: keep chat inline but bound its height so it doesn't
      become an enormous column. Use internal scrolling inside the
@@ -83,6 +84,7 @@
    there). The thread keeps its own max-height via the base
    .chat-thread rule + the max-width breakpoints further down this
    file, so it scrolls internally instead of stretching the page. */
+/* General Mobile Phone and Small Tablet viewports */
 @media (max-width: 720px) {
   #view-chat .chat-card {
     display: flex;
@@ -155,6 +157,7 @@
 /* Ensure the composer/form stays pinned to the bottom of the chat
    card on small screens. Make it non-flexing and keep it visible
    above the thread. */
+/* General Mobile Phone and Small Tablet viewports */
 @media (max-width: 720px) {
   #view-chat .chat-form {
     flex: 0 0 auto;
@@ -179,6 +182,7 @@
    full explanation), and frees the extra height the composer needs
    instead of squeezing the layout at the same time the keyboard is
    still animating in. */
+/* General Mobile Phone and Small Tablet viewports */
 @media (max-width: 720px) {
   body.lw-chat-input-focused #bottom_nav_wrapper {
     display: none;
@@ -846,6 +850,7 @@
 /* On laptop and larger, the chat card has plenty of room in the
    grid column — let the thread breathe so several messages are
    visible without needing to scroll the moment the page loads. */
+/* Desktop and Laptop viewports */
 @media (min-width: 721px) {
   .chat-thread {
     max-height: 460px;
@@ -862,6 +867,7 @@
    wins over the fixed-size rules earlier in this file and the
    min-width:721px rule directly above.
    ============================================================ */
+/* Tablet portrait and Desktop viewports (769px+) */
 @media (min-width: 769px) {
   .chat-thread {
     /* +2em over the previous min(50vh, 380px) so more messages are
@@ -883,6 +889,7 @@
   }
 }
 
+/* Narrow phones (e.g. iPhone 12/13/14, Galaxy S21) */
 @media (max-width: 480px) {
   .chat-card {
     gap: 8px;
@@ -918,6 +925,7 @@
   }
 }
 
+/* Narrowest phone screens (e.g. Galaxy S8/S9, iPhone SE) */
 @media (max-width: 380px) {
   .chat-thread-wrap {
     min-height: clamp(220px, 40vh, 270px);
@@ -943,6 +951,7 @@
 /* When the composer is focused on mobile, nudge the chat card up so
    the composer and the most recent messages are visible above the
    on-screen keyboard. chat.js toggles body.lw-chat-input-focused. */
+/* General Mobile Phone and Small Tablet viewports */
 @media (max-width: 720px) {
   body.lw-chat-input-focused #view-chat .chat-card {
     transform: translateY(-8vh);

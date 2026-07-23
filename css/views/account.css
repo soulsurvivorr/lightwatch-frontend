@@ -296,19 +296,22 @@
       margin-top: 0;
     }
 
-    @media (max-width: 768px) {
+    /* Tablet and standard Phone viewports */
+@media (max-width: 768px) {
       .account-stats {
         grid-template-columns: 1fr 1fr;
       }
     }
 
-    @media (max-width: 480px) {
+    /* Narrow phones (e.g. iPhone 12/13/14, Galaxy S21) */
+@media (max-width: 480px) {
       .account-stats {
         grid-template-columns: 1fr;
       }
     }
 
-    @media (max-width: 430px) {
+    /* Extra-compact phones (e.g. iPhone 12 Mini, standard S22) */
+@media (max-width: 430px) {
       .account-stat {
         padding: 10px 12px;
       }
@@ -651,7 +654,8 @@
     /* Below ~380px the icon+label buttons crowd the row and force awkward
        wraps — drop to icon-only with an accessible label instead of
        letting text clip or the row balloon in height. */
-    @media (max-width: 380px) {
+    /* Narrowest phone screens (e.g. Galaxy S8/S9, iPhone SE) */
+@media (max-width: 380px) {
       .location-row { padding: 12px 12px; }
       .location-row__actions button span { display: none; }
       .location-row__actions button {
@@ -778,7 +782,8 @@
        after them in source order to actually win the cascade at
        these widths.
        ============================================================ */
-    @media (max-width: 380px) {
+    /* Narrowest phone screens (e.g. Galaxy S8/S9, iPhone SE) */
+@media (max-width: 380px) {
       .profile-hero {
         padding: 14px 14px 12px;
       }

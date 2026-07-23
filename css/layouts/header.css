@@ -58,6 +58,7 @@
    "show it on wide screens" rule, clicking a nav link on desktop
    does nothing because the nav itself is never displayed. This
    forces it open at desktop widths regardless of checkbox state. */
+/* Desktop and Laptop viewports (769px+) */
 @media (min-width: 769px) {
   .nav-toggle-label {
     display: none !important;

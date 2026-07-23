@@ -22,6 +22,7 @@ html.lw-bfcache-hide body {
   visibility: hidden !important;
 }
 
+/* Desktop and Large Tablet viewports */
 @media (min-width: 721px) {
   /* Hard guarantee: vertical scrolling must always work at desktop
      widths. This overrides anything else in the cascade (short of an
@@ -61,6 +62,7 @@ html.lw-bfcache-hide body {
 
    FIX: only html gets the explicit overflow now — see the note above
    for why setting it on body too breaks wheel/touch scrolling. */
+/* General Mobile and Tablet viewports */
 @media (max-width: 720px) {
   html {
     overflow-y: auto !important;
@@ -158,6 +160,7 @@ html.lw-bfcache-hide body {
   border-color: color-mix(in srgb, var(--brand) 45%, var(--border-soft));
 }
 
+/* Tablet and Desktop viewports (1024px+) */
 @media (max-width: 1023px) {
   .lw-theme-toggle {
     display: none;

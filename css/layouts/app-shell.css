@@ -46,6 +46,7 @@
    Responsive
    ============================================================ */
 
+/* Tablet and standard Phone viewports (e.g. iPhone, Android phones) */
 @media (max-width: 768px) {
   .topbar__inner {
     padding: 14px 18px;
@@ -119,6 +120,7 @@
    desktop-sized type). Sized to be closer to what native apps use
    at this width rather than scaled-down desktop copy.
    ============================================================ */
+/* Narrow phones (e.g. Galaxy S8, iPhone 12 Pro) */
 @media (max-width: 480px) {
   .page__title {
     font-size: 1.3rem;
@@ -150,6 +152,7 @@
   }
 }
 
+/* Very narrow phones (e.g. iPhone SE, standard Galaxy S8/S9) */
 @media (max-width: 400px) {
   .btn {
     font-size: 0.86rem;

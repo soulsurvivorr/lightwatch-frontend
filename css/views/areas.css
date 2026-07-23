@@ -540,6 +540,7 @@
   background: linear-gradient(135deg, #1C1F26 0%, #2A2E38 55%, #123D36 100%);
 }
 
+/* Desktop and Laptop viewports (min-width: 981px) */
 @media (min-width: 981px) {
   #view-areas .hero-banner {
     padding: 16px 18px 14px;
@@ -642,6 +643,7 @@
   }
 }
 
+/* Tablet and standard Phone viewports */
 @media (max-width: 768px) {
   .areas-board {
     padding: 10px 12px 6px;
@@ -659,6 +661,7 @@
   }
 }
 
+/* Narrow Phone viewports (e.g. standard iPhone and Galaxy models) */
 @media (max-width: 520px) {
   .areas-board {
     padding: 8px 10px 4px;
@@ -707,6 +710,7 @@
   }
 }
 
+/* Smallest phone screens (e.g. iPhone SE 1st-gen) */
 @media (max-width: 360px) {
   .areas-board .card__meta {
     font-size: 0.68rem;

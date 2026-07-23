@@ -16,6 +16,7 @@
   4) #bottom_nav_wrapper
 */
 
+/* General Mobile Phone and Small Tablet layout */
 @media (max-width: 720px) {
   html:has(#appShell:not([hidden])),
   body:has(#appShell:not([hidden])) {
@@ -24,6 +25,7 @@
   }
 }
 
+/* Tablet and Desktop viewports */
 @media (min-width: 721px) {
   body:has(#appShell:not([hidden])) {
     overflow-y: auto;
@@ -286,13 +288,15 @@
     /* Mobile chat sizing/positioning now lives entirely in home.css
        (.chat-card--mobile-open) to avoid two files fighting over the
        same properties. */
-    @media (max-width: 480px) {
+    /* Narrow-to-mid phones (e.g. iPhone 12/13/14, Galaxy S21) */
+@media (max-width: 480px) {
       .hero-banner__location {
         padding: 5px 10px;
         font-size: 0.68rem;
       }
     }
-    @media (max-width: 400px) {
+    /* Small/Narrow phones (e.g. iPhone SE, Galaxy S8/S9) */
+@media (max-width: 400px) {
       .hero-banner { padding: 14px 14px 12px; }
       .hero-banner__greeting { font-size: 1.1rem; }
       .hero-banner__stats { gap: 0px; }
@@ -984,6 +988,7 @@
   font-size: 0.82rem;
 }
 
+/* Narrow-to-mid phones (e.g. iPhone 12/13/14, Galaxy S21) */
 @media (max-width: 480px) {
   .report-item {
     padding: 12px 14px;
@@ -1220,6 +1225,7 @@
   min-width: 240px;
 }
 
+/* Tablet and Large Tablet viewports */
 @media (max-width: 980px) {
   .location-page-grid {
     grid-template-columns: 1fr;
@@ -1438,6 +1444,7 @@ body.lw-location-panel-open {
    read as an oversized, out-of-place slab on a ~360px-wide screen --
    the same "too big" problem the other cards on this page already got
    compact tuning for (see the 430px tier above). Mirrors that pattern. */
+/* Small/Narrow phones (e.g. iPhone SE, Galaxy S8/S9) */
 @media (max-width: 400px) {
   .location-expand-overlay {
     padding-left: 10px;
@@ -2007,6 +2014,7 @@ body.lw-location-panel-open {
   transform: translateY(0);
 }
 
+/* Narrow-to-mid phones (e.g. iPhone 12/13/14, Galaxy S21) */
 @media (max-width: 480px) {
   .home-reminder-card {
     width: 100%;
@@ -2404,6 +2412,7 @@ body.lw-location-panel-open {
    bottom nav both reliably trigger together.
    ============================================================ */
 
+/* General Phone viewports */
 @media (max-width: 768px) {
   .topbar {
     display: none;
@@ -2605,6 +2614,8 @@ body.lw-location-panel-open {
      inline-scroll replacement. */
 }
 
+/* Desktop and Laptop viewports */
+/* Desktop and Laptop viewports */
 @media (min-width: 769px) {
   #bottom_nav_wrapper,
   .mobile-chat-toggle {
@@ -2612,6 +2623,7 @@ body.lw-location-panel-open {
   }
 }
 
+/* Small/Narrow phones (e.g. iPhone SE, Galaxy S8/S9) */
 @media (max-width: 400px) {
 
   .status-insight__body {
@@ -2630,6 +2642,7 @@ body.lw-location-panel-open {
   }
 }
 
+/* Narrow-to-mid phones (e.g. iPhone 12/13/14, Galaxy S21) */
 @media (max-width: 480px) {
   .chat-message {
     padding: 5px 8px;
@@ -2824,6 +2837,7 @@ body.lw-location-panel-open {
 
 /* ---- Responsive (home-specific pieces only) ---- */
 
+/* Tablet and Large Tablet viewports */
 @media (max-width: 980px) {
   .stat-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -2848,6 +2862,7 @@ body.lw-location-panel-open {
   }
 }
 
+/* General Mobile Phone and Small Tablet layout */
 @media (max-width: 720px) {
   .stat-grid {
     grid-template-columns: 1fr 1fr;
@@ -2913,6 +2928,7 @@ body.lw-location-panel-open {
   }
 }
 
+/* Narrow-to-mid phones (e.g. iPhone 12/13/14, Galaxy S21) */
 @media (max-width: 480px) {
   .stat-grid {
     grid-template-columns: 1fr;
@@ -2939,6 +2955,7 @@ body.lw-location-panel-open {
   }
 }
 
+/* Small/Narrow phones (e.g. iPhone SE, Galaxy S8/S9) */
 @media (max-width: 400px) {
   .stat-card {
     padding: 12px 14px;
@@ -2966,6 +2983,7 @@ body.lw-location-panel-open {
 }
 
 /* Extra-compact phone tuning (Samsung S8, iPhone 12 width range) */
+/* Extra-compact phones (e.g. iPhone 12 Mini, standard S22 width) */
 @media (max-width: 430px) {
   .page {
     padding: 10px 8px 40px;
@@ -3150,6 +3168,7 @@ body.lw-location-panel-open {
   }
 }
 
+/* Very narrow phones (e.g. iPhone SE 1st gen, older small Androids) */
 @media (max-width: 390px) {
   .hero-banner__location {
     justify-self: end;
@@ -3210,6 +3229,7 @@ body.lw-location-panel-open {
   padding: 10px 0 12px;
 }
 
+/* General Mobile Phone and Small Tablet layout */
 @media (max-width: 720px) {
   .status-hero {
     flex-wrap: nowrap;
@@ -3231,6 +3251,7 @@ body.lw-location-panel-open {
   }
 }
 
+/* Narrow-to-mid phones (e.g. iPhone 12/13/14, Galaxy S21) */
 @media (max-width: 480px) {
   .hero-banner__location {
     justify-self: end;
@@ -3271,6 +3292,7 @@ body.lw-location-panel-open {
    Mobile compact mode (home page)
    Makes small screens denser so more content fits above the fold.
    ------------------------------------------------------------ */
+/* Extra-compact phones (e.g. iPhone 12 Mini, standard S22 width) */
 @media (max-width: 430px) {
   .page {
     font-size: 14px;
@@ -3441,6 +3463,7 @@ body.lw-location-panel-open {
   }
 }
 
+/* Very narrow phones (e.g. iPhone SE 1st gen, older small Androids) */
 @media (max-width: 390px) {
   .page {
     font-size: 13px;
@@ -3516,6 +3539,7 @@ body.lw-location-panel-open {
    phone up to 480px so the popup looks the same, well-spaced way
    on all of them. It is intentionally last in the file so it
    wins over the earlier fragmented rules. ------------------- */
+/* Narrow-to-mid phones (e.g. iPhone 12/13/14, Galaxy S21) */
 @media (max-width: 480px) {
   .chat-card__head {
     gap: 10px;
@@ -3584,6 +3608,7 @@ body.lw-location-panel-open {
    an "✕ close" control has nothing to close and was just sitting
    there unstyled/misplaced. Hide it once we're past the mobile
    popup breakpoint. */
+/* Tablet and Desktop viewports */
 @media (min-width: 721px) {
   .chat-close-btn {
     display: none;
@@ -3887,6 +3912,7 @@ body.lw-location-panel-open {
   letter-spacing: 0.04em;
 }
 
+/* Narrow-to-mid phones (e.g. iPhone 12/13/14, Galaxy S21) */
 @media (max-width: 480px) {
   .hero-mini-card {
     min-width: 0;
@@ -3926,6 +3952,7 @@ body.lw-location-panel-open {
   animation: fadeInUp 0.5s ease both;
 }
 
+/* Desktop/Laptop (min-width: 981px) */
 @media (min-width: 981px) {
   #view-home .hero-banner {
     padding: 20px 22px 18px;
@@ -4108,6 +4135,7 @@ body:not(.page-data-loading) #view-home #realPageContent {
   box-sizing: border-box;
 }
 
+/* Desktop/Laptop (min-width: 981px) */
 @media (min-width: 981px) {
   #view-home .location-card__top {
     display: flex;
@@ -4145,6 +4173,7 @@ body:not(.page-data-loading) #view-home #realPageContent {
   min-width: 0;
 }
 
+/* Desktop/Laptop (min-width: 981px) */
 @media (min-width: 981px) {
   #view-home .location-card {
     gap: 12px;
@@ -4168,12 +4197,14 @@ body:not(.page-data-loading) #view-home #realPageContent {
   gap: 18px;
 }
 
+/* Tablet and Large Tablet viewports */
 @media (max-width: 980px) {
   #view-home .location-page-grid {
     grid-template-columns: 1fr;
   }
 }
 
+/* General Phone viewports */
 @media (max-width: 768px) {
   #view-home .location-sidebar {
     display: none;
@@ -4226,6 +4257,7 @@ body:not(.page-data-loading) #view-home #realPageContent {
   gap: 10px;
 }
 
+/* Desktop/Laptop (min-width: 981px) */
 @media (min-width: 981px) {
   /* Desktop was getting an even taller version (20-22px padding,
      10px row-gap) layered on top of the base rule — scaled back
@@ -4248,6 +4280,7 @@ body:not(.page-data-loading) #view-home #realPageContent {
   }
 }
 
+/* Narrow-to-mid phones (e.g. iPhone 12/13/14, Galaxy S21) */
 @media (max-width: 480px) {
   .hero-banner,
   #view-home .hero-banner {
@@ -4284,6 +4317,8 @@ body:not(.page-data-loading) #view-home #realPageContent {
    480px block on purpose: both blocks match at this width, so
    source order is what makes this narrower/more-specific tuning
    win instead of getting silently overridden by the broader one. */
+/* Narrowest phone screens (e.g. Galaxy S8/S9, iPhone SE) */
+/* Narrowest phone screens (e.g. Galaxy S8/S9, iPhone SE) */
 @media (max-width: 380px) {
   .hero-banner,
   #view-home .hero-banner {
@@ -4410,6 +4445,7 @@ body:not(.page-data-loading) #view-home #realPageContent {
   overflow: visible;
 }
 
+/* General Mobile Phone and Small Tablet layout */
 @media (max-width: 720px) {
   html:has(#appShell:not([hidden])),
   body:has(#appShell:not([hidden])) {
@@ -4432,6 +4468,7 @@ body:not(.page-data-loading) #view-home #realPageContent {
 /* ---- 3) Desktop: scrollable page content ----
    On desktop, allow page content to scroll while maintaining pointer-events.
    The body already has overflow-y:auto !important from global.css. */
+/* Tablet and Desktop viewports */
 @media (min-width: 721px) {
   #view-home,
   #view-reports,
@@ -4454,6 +4491,7 @@ body:not(.page-data-loading) #view-home #realPageContent {
 /* ============================================================
    Reports section - Desktop styling
    ============================================================ */
+/* Desktop/Laptop (min-width: 981px) */
 @media (min-width: 981px) {
   #view-reports .page__header {
     margin-bottom: 28px;
@@ -4505,6 +4543,7 @@ body:not(.page-data-loading) #view-home #realPageContent {
 /* ============================================================
    Areas section - Desktop styling
    ============================================================ */
+/* Desktop/Laptop (min-width: 981px) */
 @media (min-width: 981px) {
   #view-areas .page__header {
     margin-bottom: 28px;
@@ -4571,6 +4610,7 @@ body:not(.page-data-loading) #view-home #realPageContent {
 /* ============================================================
    Account section - Desktop styling
    ============================================================ */
+/* Desktop/Laptop (min-width: 981px) */
 @media (min-width: 981px) {
   #view-account .page__header {
     margin-bottom: 28px;
