@@ -164,5 +164,5 @@
         openOnboarding();
     }
 
-    window.LWOnboarding = { init };
+    window.LWOnboarding = { init, close: closeOnboarding };
 })();

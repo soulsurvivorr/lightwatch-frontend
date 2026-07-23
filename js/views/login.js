@@ -223,6 +223,12 @@
         document.querySelectorAll('#view-login [data-route-custom="signup"]').forEach(link => {
             link.addEventListener('click', e => {
                 e.preventDefault();
+                // Create-account can be clicked before the onboarding walkthrough
+                // is ever dismissed. Without this, lw-onboarding-open stays on
+                // <html>/<body> (it's only cleared by finishing the walkthrough),
+                // and its overflow:hidden lock fights signup's own scroll rules —
+                // that's what was blocking scroll on the signup view.
+                window.LWOnboarding?.close?.();
                 showPageTransitionOverlay('Taking you to sign up…');
                 setTimeout(() => {
                     hidePageTransitionOverlay();

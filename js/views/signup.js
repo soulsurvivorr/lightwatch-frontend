@@ -190,41 +190,75 @@
     // ============================================================
 
     function show() {
-        // Force the body and html to be scrollable when signup is shown
-        // This overrides any inherited overflow:hidden from login view
+        console.log('Signup view shown - fixing scroll');
+        
+        // Force the html element to be scrollable
         document.documentElement.style.overflow = 'auto';
         document.documentElement.style.height = 'auto';
+        document.documentElement.style.minHeight = '100%';
+        document.documentElement.style.position = 'static';
+        
+        // Force the body to be scrollable
         document.body.style.overflow = 'auto';
         document.body.style.height = 'auto';
         document.body.style.minHeight = '100vh';
+        document.body.style.position = 'static';
+        document.body.style.maxHeight = 'none';
         
-        // Also ensure the auth shell doesn't block scrolling
+        // Force authShell to not block scrolling
         const authShell = document.getElementById('authShell');
         if (authShell) {
             authShell.style.overflow = 'visible';
             authShell.style.height = 'auto';
+            authShell.style.minHeight = '100%';
+            authShell.style.position = 'static';
         }
 
-        // Force a reflow to ensure the scroll works
+        // Force the signup view to be visible and scrollable
+        const signupView = document.getElementById('view-signup');
+        if (signupView) {
+            signupView.style.display = 'block';
+            signupView.style.overflow = 'visible';
+            signupView.style.height = 'auto';
+            signupView.style.minHeight = '100dvh';
+        }
+
+        // Force a reflow to ensure the styles apply
         void document.body.offsetHeight;
+        
+        // Also check if there's a class from login that's blocking scroll
+        document.body.classList.remove('login-active');
     }
 
     function hide() {
-        // Reset styles when hiding - but only if they were set by us
-        // We check if the signup view is still visible before resetting
+        // Reset styles when hiding
         const signupView = document.getElementById('view-signup');
         if (signupView && signupView.hidden) {
             // Only reset if signup is actually hidden
             document.documentElement.style.overflow = '';
             document.documentElement.style.height = '';
+            document.documentElement.style.minHeight = '';
+            document.documentElement.style.position = '';
+            
             document.body.style.overflow = '';
             document.body.style.height = '';
             document.body.style.minHeight = '';
+            document.body.style.position = '';
+            document.body.style.maxHeight = '';
             
             const authShell = document.getElementById('authShell');
             if (authShell) {
                 authShell.style.overflow = '';
                 authShell.style.height = '';
+                authShell.style.minHeight = '';
+                authShell.style.position = '';
+            }
+            
+            if (signupView) {
+                signupView.style.display = '';
+                signupView.style.overflow = '';
+                signupView.style.height = '';
+                signupView.style.minHeight = '';
             }
         }
     }
