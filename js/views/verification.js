@@ -199,11 +199,22 @@
         resendLink = document.getElementById('resendCodeLink');
         editLink = document.getElementById('editContactLink');
 
+        const KEYBOARD_TOP_GAP = 16; // px gap kept below the sticky header once shifted up
+
         const updateKeyboardShift = () => {
             if (!verifyCard || !focusedOtp) return;
-            const viewportBottom = (window.visualViewport?.height || window.innerHeight) - 18;
-            const fieldBottom = focusedOtp.getBoundingClientRect().bottom;
-            const shift = Math.min(0, viewportBottom - fieldBottom - 72);
+            const headerEl = document.querySelector('#view-verification header');
+            const headerBottom = headerEl ? headerEl.getBoundingClientRect().bottom : 0;
+            const targetTop = headerBottom + KEYBOARD_TOP_GAP;
+
+            // Measure the card's natural (unshifted) position first —
+            // getBoundingClientRect() reflects any transform already
+            // applied, so briefly zeroing it out gives us the true
+            // resting position to shift from.
+            verifyCard.style.setProperty('--verify-keyboard-shift', '0px');
+            const naturalTop = verifyCard.getBoundingClientRect().top;
+
+            const shift = Math.min(0, targetTop - naturalTop);
             verifyCard.style.setProperty('--verify-keyboard-shift', `${shift}px`);
         };
 

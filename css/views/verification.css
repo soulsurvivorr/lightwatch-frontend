@@ -271,7 +271,7 @@ main h2 {
 .verify-hero {
     height: auto;
     width: 100%;
-    max-width: 280px;
+    max-width: 320px;
     margin: 0 auto;
     border-radius: 12px;
     border: 1px solid var(--border-soft);
@@ -549,7 +549,7 @@ button#continueBtn.is-loading .btn-label {
     }
 
     .verify-hero {
-        max-width: min(100%, 190px);
+        max-width: min(100%, 220px);
     }
 
     .contact-row {
@@ -592,7 +592,7 @@ button#continueBtn.is-loading .btn-label {
     }
 
     .verify-hero {
-        max-width: min(100%, 150px);
+        max-width: min(100%, 180px);
     }
 
     .otp-boxes {
@@ -630,7 +630,7 @@ button#continueBtn.is-loading .btn-label {
     }
 
     .verify-hero {
-        max-width: min(100%, 120px);
+        max-width: min(100%, 140px);
     }
 
     .otp-boxes {
@@ -647,32 +647,32 @@ button#continueBtn.is-loading .btn-label {
 
 /* ---- Short viewports (landscape phones, small-height devices) ----
    Width-only breakpoints don't help when the card is too TALL for a
-   short screen. Scale down the hero image and vertical gaps whenever
-   available height is tight, independent of width. */
+   short screen. These used to shrink the hero much more aggressively
+   than the width breakpoints above (down to 160px/120px), which meant
+   on most real phones — where the visible viewport is under 700px tall
+   once the browser chrome/address bar is factored in — this quietly
+   overrode the bigger hero sizing set above. Mobile is allowed to
+   scroll a little if it needs to (only desktop had its scrollbar
+   removed), so these now trim gaps first and the hero much less. */
 @media (max-height: 700px) {
-    .verify-hero {
-        max-width: min(100%, 160px);
-    }
-
     .verify-body {
-        gap: .28rem;
-        margin-top: .16rem;
+        gap: .3rem;
+        margin-top: .18rem;
     }
 
     main div.verify-card {
-        padding-top: .7rem;
+        padding-top: .8rem;
     }
 }
 
 @media (max-height: 560px) {
     .verify-hero {
-        max-height: 100px;
-        max-width: min(100%, 120px);
+        max-width: min(100%, 140px);
     }
 
     .verify-body {
-        gap: .2rem;
-        margin-top: .1rem;
+        gap: .22rem;
+        margin-top: .12rem;
     }
 }
 
