@@ -917,3 +917,45 @@ body.lw-leaving {
     outline: 2px solid var(--brand, #D6A24A);
     outline-offset: 2px;
 }
+
+/* ============================================================
+   FIX: Force signup view to be scrollable
+   ============================================================ */
+
+/* Force override for signup view */
+#view-signup:not([hidden]) {
+    display: block !important;
+    min-height: 100dvh !important;
+    height: auto !important;
+    overflow: visible !important;
+}
+
+#view-signup:not([hidden]) > section {
+    overflow: visible !important;
+    max-height: none !important;
+    min-height: auto !important;
+}
+
+/* Override any inherited overflow from login */
+body:has(#view-signup:not([hidden])) {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    height: auto !important;
+    min-height: 100vh !important;
+    min-height: 100dvh !important;
+    position: relative !important;
+}
+
+html:has(#view-signup:not([hidden])) {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    height: auto !important;
+    min-height: 100% !important;
+}
+
+/* Make sure authShell doesn't block scrolling */
+body:has(#view-signup:not([hidden])) #authShell {
+    overflow: visible !important;
+    height: auto !important;
+    min-height: 100% !important;
+}
