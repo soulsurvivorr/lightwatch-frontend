@@ -548,7 +548,8 @@ body.lw-leaving {
     body:has(#view-signup:not([hidden])) {
         height: auto;
         min-height: 100%;
-        overflow: hidden;
+        overflow-x: hidden;
+        overflow-y: auto; /* page itself scrolls — single native scrollbar */
     }
 
     body:has(#view-signup:not([hidden])) {
@@ -557,18 +558,17 @@ body.lw-leaving {
         padding: 28px 20px 40px;
         min-height: 100vh;
         min-height: 100dvh;
-        overflow: hidden;
+        overflow-x: hidden;
+        overflow-y: auto;
     }
 
     #view-signup > section {
-        overflow-y: auto;
-        overflow-x: hidden;
+        overflow: visible; /* no inner scrollbar — card grows to its natural content height */
         min-height: auto;
-        max-height: calc(100dvh - 56px);
+        max-height: none;
         width: max-content;
         max-width: 100%;
         margin: 0 auto;
-        scrollbar-gutter: stable;
     }
 
     #main-content_wrapper {
