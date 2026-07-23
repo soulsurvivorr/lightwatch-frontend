@@ -1,4 +1,27 @@
 // ============================================================
+//  FIX: Prevent home-reminder errors from breaking signup
+// ============================================================
+
+// Check if HOME_REMINDER_SEEN_KEY is already defined, if not define it
+if (typeof window.HOME_REMINDER_SEEN_KEY === 'undefined') {
+    window.HOME_REMINDER_SEEN_KEY = 'lw_home_reminder_seen';
+}
+
+// Also check if initHomeReminder exists, if not create a dummy function
+if (typeof window.initHomeReminder === 'undefined') {
+    window.initHomeReminder = function() {
+        // Do nothing on signup page
+        return;
+    };
+}
+
+// ============================================================
+//  VIEWS/SIGNUP.JS
+//  Sends data to backend to START signup. User is NOT saved to
+//  users.json until they pass the verification view.
+// ============================================================
+
+// ==== ========================================================
 //  VIEWS/SIGNUP.JS
 //  Sends data to backend to START signup. User is NOT saved to
 //  users.json until they pass the verification view.

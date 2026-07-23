@@ -13,7 +13,13 @@
 // ONBOARDING_SEEN_KEY in onboarding.js. It deliberately does NOT get
 // cleared on sign-in/sign-out (see auth.js) — once a device has seen
 // it, it's seen it for good.
-const HOME_REMINDER_SEEN_KEY = 'lw_home_reminder_seen';
+
+// Prevent duplicate declaration
+if (typeof window.HOME_REMINDER_SEEN_KEY === 'undefined') {
+    window.HOME_REMINDER_SEEN_KEY = 'lw_home_reminder_seen';
+}
+const HOME_REMINDER_SEEN_KEY = window.HOME_REMINDER_SEEN_KEY;
+
 let homeReminderDismissed = false;
 let homeReminderObserver = null;
 let homeReminderFallbackTimer = null;
@@ -120,3 +126,8 @@ function initHomeReminder() {
 // Called explicitly from views/home.js mount() — this widget only
 // exists within the home view, so it doesn't need its own
 // DOMContentLoaded listener now that all views load up-front.
+
+// Also export to window if needed
+if (typeof window.initHomeReminder === 'undefined') {
+    window.initHomeReminder = initHomeReminder;
+}
