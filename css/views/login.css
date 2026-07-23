@@ -21,6 +21,19 @@
       overflow-y: auto !important; /* Allow scrolling for keyboard */
       overflow-x: hidden !important;
       overscroll-behavior: none;
+
+      /* FIX: fluid root font-size — every rem-based size in this file
+         (headings, labels, buttons, footer copy, etc.) scales off this
+         one value, so shrinking it shrinks the whole page's type
+         together instead of relying only on the fixed-breakpoint
+         overrides further down. Driven by vmin (= the smaller of
+         width/height) rather than vw alone, so a narrow phone AND a
+         short landscape phone both get a smaller base — exactly the
+         two axes a native app sizes off of, not just width. Clamped
+         between 14px (never smaller than comfortably legible) and
+         16px (the browser default — desktop/tablet stay unchanged,
+         since vmin there is always big enough to hit the ceiling). */
+      font-size: clamp(14px, 3.6vmin, 16px);
   }
 
   /* FIX: body deliberately does not also set overflow-y/x here. Setting
@@ -350,7 +363,13 @@
   border-radius: var(--radius-md);
   padding: 12px 14px;
   color: var(--text-bright);
-  font-size: 0.94rem;
+  /* FIX: floor at 16px no matter how small the fluid root font-size
+     gets — iOS Safari auto-zooms the whole page on focus if an input's
+     computed font-size is under 16px, which reads as broken/non-native
+     the instant someone taps in. max() keeps it growing with rem on
+     the rare case the root ever exceeds 17rem-equiv, but never lets it
+     shrink past the zoom threshold. */
+  font-size: max(16px, 0.94rem);
   font-family: var(--font-body);
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
   margin: 0;
@@ -763,7 +782,7 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
 
   .field__input {
     padding: 10px 12px;
-    font-size: 0.86rem;
+    font-size: max(16px, 0.86rem);
   }
 
   .remember-me-label {
