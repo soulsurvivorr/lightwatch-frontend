@@ -194,12 +194,25 @@
                 loginFormSide.style.removeProperty('--login-keyboard-shift');
             };
 
-            userInput.addEventListener('focus', updateKeyboardShift);
+            const handleUserInputFocus = () => {
+                updateKeyboardShift();
+                // Safety net: on some Android WebViews / older Safari, the
+                // visualViewport 'resize' event lags behind the keyboard's
+                // open animation, so the first calculation above (run before
+                // the viewport has actually shrunk) comes out as a no-op
+                // shift. Re-check a couple more times as the keyboard
+                // settles rather than relying solely on 'resize' to catch up.
+                requestAnimationFrame(updateKeyboardShift);
+                setTimeout(updateKeyboardShift, 180);
+                setTimeout(updateKeyboardShift, 400);
+            };
+
+            userInput.addEventListener('focus', handleUserInputFocus);
             userInput.addEventListener('blur', clearKeyboardShift);
             window.visualViewport.addEventListener('resize', updateKeyboardShift);
             window.visualViewport.addEventListener('scroll', updateKeyboardShift);
             keyboardViewportCleanup = () => {
-                userInput.removeEventListener('focus', updateKeyboardShift);
+                userInput.removeEventListener('focus', handleUserInputFocus);
                 userInput.removeEventListener('blur', clearKeyboardShift);
                 window.visualViewport.removeEventListener('resize', updateKeyboardShift);
                 window.visualViewport.removeEventListener('scroll', updateKeyboardShift);

@@ -544,22 +544,21 @@ body.lw-leaving {
    its own inset one. Also trim a couple of the larger type sizes
    so it needs to grow less often. */
 @media (min-width: 701px) {
-    html:has(#view-signup:not([hidden])),
-    body:has(#view-signup:not([hidden])) {
+    html:has(#view-signup:not([hidden])) {
         height: auto;
         min-height: 100%;
         overflow-x: hidden;
-        overflow-y: auto; /* page itself scrolls — single native scrollbar */
+        overflow-y: auto; /* html is the one real scroll container — the mouse wheel scrolls this */
     }
 
     body:has(#view-signup:not([hidden])) {
         align-items: flex-start;
         justify-content: center;
         padding: 28px 20px 40px;
+        height: auto;
         min-height: 100vh;
         min-height: 100dvh;
-        overflow-x: hidden;
-        overflow-y: auto;
+        overflow: visible; /* body just grows to fit its content — html above owns the actual scrolling */
     }
 
     #view-signup > section {
