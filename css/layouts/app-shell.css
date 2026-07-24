@@ -200,13 +200,13 @@
   }
 
   .bottom-icons-container {
-    padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+    padding: 3px 8px env(safe-area-inset-bottom);
   }
 
   .bottom-nav-link {
     min-width: 0;
-    min-height: 44px;
-    padding: 5px 4px 4px;
+    min-height: 38px;
+    padding: 4px 4px 0;
   }
 
 
