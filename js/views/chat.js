@@ -597,7 +597,9 @@ function addToThread(chat, isOwn, scrollDown, animate, hasReply, isLatestOwn) {
 // INITIAL LOAD
 // -------------------------------------------------------
 function loadChatHistory() {
-    const loc = window.currentChatLocation || getCurrentChatLocation();
+    const loc = (targetChatLocation && pendingFocusChatId)
+        ? targetChatLocation
+        : (window.currentChatLocation || getCurrentChatLocation());
     if (!chatThread) {
         markChatReady();
         return;
@@ -969,19 +971,37 @@ const KB_OFFSET_VAR = '--lw-kb-offset';
 const PAGE_VH_VAR = '--lw-vh';
 const PAGE_BOTTOM_PAD_VAR = '--lw-page-bottom-pad';
 const MOBILE_CHAT_BREAKPOINT = 720;
+// How much window.innerHeight has to have shrunk from baseline before
+// we'll believe the on-screen keyboard is actually open. Needs to be
+// comfortably bigger than browser-chrome show/hide jitter (a few tens
+// of px) and comfortably smaller than a real keyboard (150px+), so a
+// good chunk of the gap between those two is fair game.
+const KEYBOARD_OPEN_THRESHOLD = 100;
 let baselineInnerHeight = window.innerHeight;
 
 function updateKeyboardOffset() {
     document.documentElement.style.setProperty(PAGE_VH_VAR, `${window.innerHeight}px`);
 
-    const isChatInputFocused = window.innerWidth <= MOBILE_CHAT_BREAKPOINT && document.activeElement === chatInput;
+    const isMobile = window.innerWidth <= MOBILE_CHAT_BREAKPOINT;
+    const shrink = baselineInnerHeight - window.innerHeight;
 
-    if (!isChatInputFocused) {
-        // Not focused (or not mobile): resync the baseline to
-        // whatever the current keyboard-closed height is (covers
-        // rotation / browser-chrome show-hide), and drop both
-        // overrides back to their normal (keyboard-closed) state.
-        baselineInnerHeight = window.innerHeight;
+    // Whether the keyboard is actually open right now, judged by how
+    // much the viewport has shrunk from baseline — not by focus state.
+    // Pressing Android's back button dismisses the keyboard without
+    // firing blur on the still-focused textarea, so activeElement alone
+    // can't tell open from closed; a measured shrink can, since the
+    // browser reliably resizes window.innerHeight back up once the
+    // keyboard is actually gone, focus or no focus.
+    const isKeyboardOpen = isMobile && shrink > KEYBOARD_OPEN_THRESHOLD;
+
+    if (!isKeyboardOpen) {
+        if (shrink <= 0) {
+            // Genuinely back at (or above) baseline height: safe to
+            // resync the baseline here too (covers rotation /
+            // browser-chrome show-hide, and a keyboard dismissed via
+            // the back button while the textarea stayed focused).
+            baselineInnerHeight = window.innerHeight;
+        }
         document.documentElement.style.setProperty(KB_OFFSET_VAR, '0px');
         document.documentElement.style.removeProperty(PAGE_BOTTOM_PAD_VAR);
         return;
@@ -991,10 +1011,9 @@ function updateKeyboardOffset() {
     // window.innerHeight under resizes-content, which is what makes
     // it ride up with the keyboard; nudging it back down by exactly
     // that shrink cancels the ride-up.
-    const offset = Math.max(0, baselineInnerHeight - window.innerHeight);
-    document.documentElement.style.setProperty(KB_OFFSET_VAR, `${offset}px`);
+    document.documentElement.style.setProperty(KB_OFFSET_VAR, `${shrink}px`);
 
-    // The nav is covered by the keyboard while focused (see the
+    // The nav is covered by the keyboard while it's open (see the
     // transform above), so #view-chat .page doesn't need its full
     // footprint reserved below the composer anymore — just a small
     // flat gap, so the shrunk keyboard-open height goes to the thread
@@ -1102,23 +1121,25 @@ window.setMobileChatOpen = setMobileChatOpen;
 // calling window.LWRouter.navigate('chat', {search}) while this script
 // was already running) — the initialChatParams read at the top of this
 // file only ever sees whatever the URL was at cold-boot script load.
-function applyIncomingChatDeepLink() {
-    const params = new URLSearchParams(window.location.search);
+function applyIncomingChatDeepLink(search) {
+    const params = new URLSearchParams(search || window.location.search);
     const incomingChatId = params.get('chatId') || '';
-    if (!incomingChatId || incomingChatId === lastHandledChatIdFromUrl) return;
-    lastHandledChatIdFromUrl = incomingChatId;
+    if (!incomingChatId) return;
 
     pendingFocusChatId = incomingChatId;
-    targetChatLocation = (params.get('chatLocation') || '').trim();
+    const incomingLocation = (params.get('chatLocation') || '').trim();
+    if (incomingLocation) targetChatLocation = incomingLocation;
+
     const incomingScope = params.get('chatScope') === CHAT_SCOPE_GLOBAL ? CHAT_SCOPE_GLOBAL : CHAT_SCOPE_LOCAL;
 
-    if (incomingScope !== chatScope) {
-        // setChatScope() -> loadChatHistory() -> focusTargetMessageIfPresent()
-        // once the right audience's history is back.
+    if (incomingScope !== chatScope || (incomingLocation && incomingLocation !== chatLocation)) {
+        // Switch audience/location and reload
+        chatScope = incomingScope;
+        if (incomingLocation) chatLocation = incomingLocation;
         setChatScope(incomingScope);
     } else {
-        // Already on the right audience: the message may already be
-        // sitting in the thread (jump now), or still on its way in —
+        // Already on the right audience/location: the message may already
+        // be sitting in the thread (jump now), or still on its way in —
         // poll right away instead of waiting out the regular interval.
         focusTargetMessageIfPresent();
         pollChatsOnce();
@@ -1129,7 +1150,8 @@ function applyIncomingChatDeepLink() {
 // triggered by view switches instead of (or in addition to) tab
 // visibility — see file header.
 window.addEventListener('lw:route-changed', (e) => {
-    if (e.detail.view !== 'home' && e.detail.view !== 'chat') {
+    const isChatView = e.detail.view === 'chat';
+    if (e.detail.view !== 'home' && !isChatView) {
         clearInterval(pollInterval);
         clearInterval(typingPollInterval);
     } else if (chatScope === CHAT_SCOPE_GLOBAL || chatLocation) {
@@ -1137,8 +1159,8 @@ window.addEventListener('lw:route-changed', (e) => {
         startTypingPoll();
     }
 
-    if (e.detail.view === 'chat') {
-        applyIncomingChatDeepLink();
+    if (isChatView) {
+        applyIncomingChatDeepLink(e.detail.search);
     }
 });
 })();

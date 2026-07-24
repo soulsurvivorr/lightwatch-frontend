@@ -105,8 +105,9 @@
         if (currentView === name) {
             // Already here — still make sure history/shell state is
             // consistent (covers a hard reload landing directly on a
-            // deep link), but skip the hide/show/mount dance.
-            syncHistory(name, push);
+            // deep link), and update the URL if parameters changed.
+            syncHistory(name, push, search);
+            window.dispatchEvent(new CustomEvent('lw:route-changed', { detail: { view: name, search } }));
             return;
         }
 
@@ -172,11 +173,13 @@
 
     function syncHistory(name, push, search = '') {
         const cfg = VIEWS[name];
-        const state = { view: name };
+        const state = { view: name, search };
         const url = cfg.path + (search || '');
-        if (push && window.history.state?.view !== name) {
+        const currentUrl = window.location.pathname + window.location.search;
+
+        if (push && currentUrl !== url) {
             window.history.pushState(state, '', url);
-        } else if (window.history.state?.view !== name || window.location.pathname !== cfg.path) {
+        } else if (currentUrl !== url) {
             window.history.replaceState(state, '', url);
         }
     }
@@ -221,6 +224,7 @@
 
         const session = typeof getSession === 'function' ? getSession() : null;
         const deepLinkView = resolveViewFromLocation();
+        const initialSearch = window.location.search;
 
         let initial;
 
@@ -230,7 +234,7 @@
             initial = session ? "home" : "login";
         }
 
-        activate(initial, { push: false });
+        activate(initial, { push: false, search: initialSearch });
 
         const shouldWaitForOnboarding = initial === 'login' && typeof window.LWOnboarding?.init === 'function';
 
