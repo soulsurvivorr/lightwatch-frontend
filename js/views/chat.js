@@ -956,35 +956,50 @@ function setMobileChatOpen(open) {
 
 // index.html's viewport meta stays on interactive-widget=resizes-
 // content globally (login/signup are tuned against it, so it can't
-// change) — meaning #view-chat .page's height:100dvh already shrinks
-// automatically when the keyboard opens, and the flex chain
-// (page -> chat-card -> chat-thread) floats the composer up above the
-// keyboard on its own with zero JS help.
-//
-// The one thing resizes-content does that we DON'T want here: it also
-// shrinks the containing block that #bottom_nav_wrapper's `position:
-// fixed; bottom: 0` is measured against, so the nav rides up the
-// screen right along with the keyboard. This tracks the keyboard's
-// live height (via how much window.innerHeight has shrunk from its
-// keyboard-closed baseline) and feeds it to chat.css as --lw-kb-offset,
-// which nudges the nav back down by that same amount — canceling the
-// ride-up so it stays anchored to the real screen bottom and the
-// keyboard just covers it, same as any other page.
+// change) — meaning window.innerHeight reliably shrinks when the
+// on-screen keyboard opens. CSS's dvh unit is *supposed* to track
+// that same shrink, but doesn't reliably on every mobile browser/
+// WebView; on ones where it doesn't, #view-chat .page's height never
+// changed and nothing in the chat card floated up at all. So instead
+// of trusting dvh, this measures window.innerHeight directly and
+// publishes it as --lw-vh, which chat.css uses for #view-chat .page's
+// height — the same reliable measurement the nav-offset fix below
+// already uses.
 const KB_OFFSET_VAR = '--lw-kb-offset';
+const PAGE_VH_VAR = '--lw-vh';
+const PAGE_BOTTOM_PAD_VAR = '--lw-page-bottom-pad';
 const MOBILE_CHAT_BREAKPOINT = 720;
 let baselineInnerHeight = window.innerHeight;
 
 function updateKeyboardOffset() {
-    if (window.innerWidth > MOBILE_CHAT_BREAKPOINT || document.activeElement !== chatInput) {
+    document.documentElement.style.setProperty(PAGE_VH_VAR, `${window.innerHeight}px`);
+
+    const isChatInputFocused = window.innerWidth <= MOBILE_CHAT_BREAKPOINT && document.activeElement === chatInput;
+
+    if (!isChatInputFocused) {
         // Not focused (or not mobile): resync the baseline to
         // whatever the current keyboard-closed height is (covers
-        // rotation / browser-chrome show-hide) and clear the offset.
+        // rotation / browser-chrome show-hide), and drop both
+        // overrides back to their normal (keyboard-closed) state.
         baselineInnerHeight = window.innerHeight;
         document.documentElement.style.setProperty(KB_OFFSET_VAR, '0px');
+        document.documentElement.style.removeProperty(PAGE_BOTTOM_PAD_VAR);
         return;
     }
+
+    // #bottom_nav_wrapper's containing block shrinks right along with
+    // window.innerHeight under resizes-content, which is what makes
+    // it ride up with the keyboard; nudging it back down by exactly
+    // that shrink cancels the ride-up.
     const offset = Math.max(0, baselineInnerHeight - window.innerHeight);
     document.documentElement.style.setProperty(KB_OFFSET_VAR, `${offset}px`);
+
+    // The nav is covered by the keyboard while focused (see the
+    // transform above), so #view-chat .page doesn't need its full
+    // footprint reserved below the composer anymore — just a small
+    // flat gap, so the shrunk keyboard-open height goes to the thread
+    // and composer instead of an empty reservation nothing needs.
+    document.documentElement.style.setProperty(PAGE_BOTTOM_PAD_VAR, '12px');
 }
 
 chatInput?.addEventListener('focus', () => {
@@ -1000,8 +1015,10 @@ chatInput?.addEventListener('focus', () => {
 
 chatInput?.addEventListener('blur', () => {
     document.documentElement.style.setProperty(KB_OFFSET_VAR, '0px');
+    document.documentElement.style.removeProperty(PAGE_BOTTOM_PAD_VAR);
 });
 
+updateKeyboardOffset();
 window.addEventListener('resize', updateKeyboardOffset);
 if (window.visualViewport) {
     window.visualViewport.addEventListener('resize', updateKeyboardOffset);

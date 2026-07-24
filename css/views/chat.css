@@ -106,16 +106,30 @@
        bottom nav. Locking this to exactly one screen's worth of
        height makes it a real ceiling: children with flex:1 auto now
        have to share a fixed amount of space instead of each just
-       taking what they want. */
-    height: 100dvh;
+       taking what they want.
+       --lw-vh (set by chat.js from window.innerHeight, which DOES
+       reliably shrink with the on-screen keyboard under
+       resizes-content — same measurement the nav-offset fix below
+       uses) drives this instead of the dvh unit directly: dvh is
+       supposed to track the same shrink, but doesn't reliably on
+       every mobile browser/WebView, which is why the chat-card was
+       not floating up at all despite the nav fix working. 100dvh is
+       only a same-device fallback for the instant before chat.js's
+       first measurement lands. */
+    height: var(--lw-vh, 100dvh);
     box-sizing: border-box;
     /* Bakes the fixed bottom nav's footprint into THIS box's own
        padding instead of relying on body's `padding-bottom: 132px`
        (see home.css) — that reservation lives after this view's
        content in the document and is unreachable once the page
        itself can't scroll (see the overflow:hidden block below), so
-       it did nothing to keep the composer clear of the nav. */
-    padding: 20px 16px calc(132px + env(safe-area-inset-bottom));
+       it did nothing to keep the composer clear of the nav.
+       --lw-page-bottom-pad (chat.js) shrinks this down to a small
+       flat gap while the composer is focused: the nav is covered by
+       the keyboard at that point (see the transform fix further
+       down), so reserving its full footprint here would just eat
+       into the shrunk keyboard-open height for no visible reason. */
+    padding: 20px 16px var(--lw-page-bottom-pad, calc(132px + env(safe-area-inset-bottom)));
   }
 
   #view-chat .chat-card {
