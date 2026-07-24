@@ -34,6 +34,11 @@
     text-align: left;
     justify-content: flex-start;
     align-items: flex-start;
+    align-self: flex-start;
+    margin-left: 0;
+    margin-right: auto;
+    width: 100%;
+    max-width: 100%;
   }
 
   #view-chat .chat-card {
@@ -81,28 +86,45 @@
 
 /* Mobile: same "fill the available height, thread scrolls internally"
    panel as the desktop block above, so the card reaches down to just
-   above the bottom nav instead of stopping partway up the screen at
-   a fixed vh-based height. Deliberately a SEPARATE block rather than
-   just widening the desktop media query above: that one sets its own
-   padding-bottom on #view-chat .page (a small safe-area value, no
-   bottom nav to clear on desktop), which would have clobbered the
-   132px home.css's plain .page rule already reserves for the fixed
-   bottom nav on mobile — see that block's comment for the full story
-   of why this had to stay two separate rules. Not touching
-   padding-bottom here at all means that 132px reservation keeps
-   applying untouched, and — since box-sizing is border-box sitewide —
-   it stays inside the min-height:100dvh box, so flex naturally stops
-   the card right above the nav with no pixel offset to guess at. */
+   above the bottom nav instead of stopping partway up the screen — or
+   worse, growing past it. Deliberately a SEPARATE block rather than
+   just widening the desktop media query above: that one sets a small
+   safe-area-only padding-bottom (no bottom nav to clear on desktop),
+   while mobile needs its own padding sized to the fixed nav's actual
+   footprint (132px + safe area), baked directly into #view-chat .page
+   itself — see the height/padding comments just below. */
 @media (max-width: 720px) {
   #view-chat .page {
     display: flex;
     flex-direction: column;
-    min-height: 100dvh;
+    /* Definite height, not min-height: a flex column with only a
+       min-height floor has no ceiling, so its auto height grows to
+       fit whatever its children need — which defeated every
+       overflow:auto further down the chain (nothing can "overflow"
+       a box that just grows to contain it) and let the card grow
+       tall enough to slide its bottom half underneath the fixed
+       bottom nav. Locking this to exactly one screen's worth of
+       height makes it a real ceiling: children with flex:1 auto now
+       have to share a fixed amount of space instead of each just
+       taking what they want. */
+    height: 100dvh;
+    box-sizing: border-box;
+    /* Bakes the fixed bottom nav's footprint into THIS box's own
+       padding instead of relying on body's `padding-bottom: 132px`
+       (see home.css) — that reservation lives after this view's
+       content in the document and is unreachable once the page
+       itself can't scroll (see the overflow:hidden block below), so
+       it did nothing to keep the composer clear of the nav. */
+    padding: 20px 16px calc(132px + env(safe-area-inset-bottom));
   }
 
   #view-chat .chat-card {
     flex: 1 1 auto;
-    min-height: 0;
+    /* Any explicit value (not the default `auto`) lets this item
+       shrink below its content's natural height — required for the
+       thread's internal scrollbar to ever engage — while still
+       guaranteeing the card never collapses to nothing. */
+    min-height: 4em;
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -113,13 +135,6 @@
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
-    /* Trim off the card's overall height (it was reaching a touch
-       too far down toward the bottom nav) — margin here comes out
-       of the flex item's own box rather than the page's fixed
-       min-height:100dvh, so it shortens the card without disturbing
-       the 132px bottom-nav reservation from home.css. 0.8em + a
-       further 0.4em requested afterward = 1.2em total. */
-    margin-bottom: 1.2em;
   }
 
   #view-chat .chat-card__head,
@@ -138,6 +153,10 @@
     flex: 1 1 auto;
     min-height: 0;
     max-height: none;
+    /* This — not the card — is the scrollable surface as messages
+       come in; see the overflow:hidden block below for the rest of
+       that story. */
+    overflow-y: auto;
   }
 }
 
@@ -156,30 +175,27 @@
     overflow: hidden !important;
   }
 
-  #view-chat .chat-card {
-    overflow-y: auto;
+  #view-chat .chat-thread {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
 
-  #view-chat .chat-card::-webkit-scrollbar {
+  #view-chat .chat-thread::-webkit-scrollbar {
     display: none;
     width: 0;
     height: 0;
   }
 }
 
-/* Toggled by chat.js on chatInput focus/blur. Hides the fixed bottom
-   nav for the duration of typing so it can't ride up the screen when
-   the on-screen keyboard resizes the viewport (see chat.js for the
-   full explanation), and frees the extra height the composer needs
-   instead of squeezing the layout at the same time the keyboard is
-   still animating in. */
-@media (max-width: 720px) {
-  body.lw-chat-input-focused #bottom_nav_wrapper {
-    display: none;
-  }
-}
+/* NOTE: the fixed bottom nav used to hide (display:none) here for the
+   duration of composer focus, toggled by chat.js via a body class.
+   That was meant to stop it riding up the screen with the on-screen
+   keyboard, but it wasn't reliably coming back afterward and just
+   read as the nav vanishing. #view-chat .page now reserves the nav's
+   own footprint as real padding (see the 720px block above) and is a
+   fixed 100dvh, so the composer already lands above the nav without
+   needing to hide anything — the nav simply stays where it is and
+   the keyboard is free to sit on top of it. */
 
 #view-chat .chat-close-btn {
   display: none;

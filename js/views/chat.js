@@ -954,48 +954,21 @@ function setMobileChatOpen(open) {
     }
 }
 
-function syncChatInputViewportState() {
-    if (!chatInput) return;
-    // Tied directly to focus, not a viewportHeight/keyboard guess: the
-    // guess was the bug (see focus listener below) — on focus, the
-    // keyboard hasn't animated in and shrunk the viewport yet, so a
-    // keyboard-visible check here read as "false" and immediately
-    // undid the class the focus handler had just set.
-    document.body.classList.toggle('lw-chat-input-focused', document.activeElement === chatInput);
-}
-
-// Float the chat-card to the top of the screen on mobile when the
-// composer is focused, so the tail of the thread + the composer stay
-// visible above the on-screen keyboard instead of the keyboard just
-// covering whatever was on screen. (Previously this deliberately did
-// NOT scroll — see git history/old comment here — but that left the
-// composer with no guaranteed way to stay above the keyboard, which
-// is the opposite of what's wanted. Desktop is left alone: no
-// keyboard covering content there, so nothing to float for.)
+// The card no longer needs to be scrolled into view (and the bottom
+// nav no longer needs to hide) when the composer is focused:
+// #view-chat .page is a fixed 100dvh with the nav's own footprint
+// baked into its padding (see chat.css), so as the on-screen keyboard
+// shrinks the dynamic viewport, the flex layout already keeps the
+// composer sitting right above the keyboard on its own. The nav stays
+// exactly where it is; the keyboard is simply free to sit on top of
+// it. All that's still worth doing here is keeping the thread
+// scrolled to the latest message as the layout settles.
 const MOBILE_CHAT_BREAKPOINT = 720;
 chatInput?.addEventListener('focus', () => {
-    document.body.classList.add('lw-chat-input-focused');
-    syncChatInputViewportState();
-
     if (window.innerWidth <= MOBILE_CHAT_BREAKPOINT) {
-        // Deferred a frame so it runs after the browser has started
-        // animating the keyboard in (and after the bottom nav above
-        // has already been hidden, freeing up the space this scroll
-        // settles into) rather than racing it.
-        requestAnimationFrame(() => {
-            getVisibleChatCard()?.scrollIntoView({ block: 'start', behavior: 'smooth' });
-        });
+        requestAnimationFrame(() => scrollChatToBottom(false));
     }
 });
-
-chatInput?.addEventListener('blur', () => {
-    document.body.classList.remove('lw-chat-input-focused');
-});
-
-if (window.visualViewport) {
-    window.visualViewport.addEventListener('resize', syncChatInputViewportState);
-    window.visualViewport.addEventListener('scroll', syncChatInputViewportState);
-}
 
 // -------------------------------------------------------
 // SEND A MESSAGE
