@@ -191,11 +191,25 @@
    duration of composer focus, toggled by chat.js via a body class.
    That was meant to stop it riding up the screen with the on-screen
    keyboard, but it wasn't reliably coming back afterward and just
-   read as the nav vanishing. #view-chat .page now reserves the nav's
-   own footprint as real padding (see the 720px block above) and is a
-   fixed 100dvh, so the composer already lands above the nav without
-   needing to hide anything — the nav simply stays where it is and
-   the keyboard is free to sit on top of it. */
+   read as the nav vanishing.
+   The fix is the transform rule right below instead of touching
+   index.html's viewport meta: interactive-widget=resizes-content is
+   shared by every page (including login/signup, which are tuned
+   against it), so it has to stay as-is globally. Under that mode a
+   fixed element's containing block shrinks along with the keyboard,
+   which is exactly why `#bottom_nav_wrapper { bottom: 0 }` was
+   riding up with it — nudging it back down by the keyboard's own
+   height (chat.js measures this, scoped to only the chat composer)
+   keeps it anchored to the real screen bottom, covered by the
+   keyboard like any other fixed content down there, without
+   affecting any other page. */
+#bottom_nav_wrapper {
+  /* Set by chat.js (only while the chat composer is focused) to the
+     on-screen keyboard's current height; 0px the rest of the time,
+     making this a no-op everywhere else. */
+  transform: translateY(var(--lw-kb-offset, 0px));
+  transition: transform 0.12s ease;
+}
 
 #view-chat .chat-close-btn {
   display: none;

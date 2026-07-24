@@ -954,21 +954,58 @@ function setMobileChatOpen(open) {
     }
 }
 
-// The card no longer needs to be scrolled into view (and the bottom
-// nav no longer needs to hide) when the composer is focused:
-// #view-chat .page is a fixed 100dvh with the nav's own footprint
-// baked into its padding (see chat.css), so as the on-screen keyboard
-// shrinks the dynamic viewport, the flex layout already keeps the
-// composer sitting right above the keyboard on its own. The nav stays
-// exactly where it is; the keyboard is simply free to sit on top of
-// it. All that's still worth doing here is keeping the thread
-// scrolled to the latest message as the layout settles.
+// index.html's viewport meta stays on interactive-widget=resizes-
+// content globally (login/signup are tuned against it, so it can't
+// change) — meaning #view-chat .page's height:100dvh already shrinks
+// automatically when the keyboard opens, and the flex chain
+// (page -> chat-card -> chat-thread) floats the composer up above the
+// keyboard on its own with zero JS help.
+//
+// The one thing resizes-content does that we DON'T want here: it also
+// shrinks the containing block that #bottom_nav_wrapper's `position:
+// fixed; bottom: 0` is measured against, so the nav rides up the
+// screen right along with the keyboard. This tracks the keyboard's
+// live height (via how much window.innerHeight has shrunk from its
+// keyboard-closed baseline) and feeds it to chat.css as --lw-kb-offset,
+// which nudges the nav back down by that same amount — canceling the
+// ride-up so it stays anchored to the real screen bottom and the
+// keyboard just covers it, same as any other page.
+const KB_OFFSET_VAR = '--lw-kb-offset';
 const MOBILE_CHAT_BREAKPOINT = 720;
+let baselineInnerHeight = window.innerHeight;
+
+function updateKeyboardOffset() {
+    if (window.innerWidth > MOBILE_CHAT_BREAKPOINT || document.activeElement !== chatInput) {
+        // Not focused (or not mobile): resync the baseline to
+        // whatever the current keyboard-closed height is (covers
+        // rotation / browser-chrome show-hide) and clear the offset.
+        baselineInnerHeight = window.innerHeight;
+        document.documentElement.style.setProperty(KB_OFFSET_VAR, '0px');
+        return;
+    }
+    const offset = Math.max(0, baselineInnerHeight - window.innerHeight);
+    document.documentElement.style.setProperty(KB_OFFSET_VAR, `${offset}px`);
+}
+
 chatInput?.addEventListener('focus', () => {
     if (window.innerWidth <= MOBILE_CHAT_BREAKPOINT) {
+        // Capture the baseline right before the keyboard starts
+        // animating in, not after — once it's open window.innerHeight
+        // is already the shrunk value and there'd be nothing to diff
+        // against.
+        baselineInnerHeight = window.innerHeight;
         requestAnimationFrame(() => scrollChatToBottom(false));
     }
 });
+
+chatInput?.addEventListener('blur', () => {
+    document.documentElement.style.setProperty(KB_OFFSET_VAR, '0px');
+});
+
+window.addEventListener('resize', updateKeyboardOffset);
+if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', updateKeyboardOffset);
+}
 
 // -------------------------------------------------------
 // SEND A MESSAGE
