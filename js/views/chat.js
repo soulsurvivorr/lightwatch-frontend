@@ -993,6 +993,7 @@ function updateKeyboardOffset() {
     // browser reliably resizes window.innerHeight back up once the
     // keyboard is actually gone, focus or no focus.
     const isKeyboardOpen = isMobile && shrink > KEYBOARD_OPEN_THRESHOLD;
+    const pageEl = document.querySelector('#view-chat .page');
 
     if (!isKeyboardOpen) {
         if (shrink <= 0) {
@@ -1004,6 +1005,12 @@ function updateKeyboardOffset() {
         }
         document.documentElement.style.setProperty(KB_OFFSET_VAR, '0px');
         document.documentElement.style.removeProperty(PAGE_BOTTOM_PAD_VAR);
+        // Same back-button case that motivated the KB_OFFSET_VAR reset
+        // above: the textarea can still be focused with the keyboard
+        // actually gone, so this has to key off the measured shrink
+        // (not blur) or the card is left floated with nothing to
+        // bring it back down.
+        pageEl?.classList.remove('is-composing');
         return;
     }
 
@@ -1019,6 +1026,7 @@ function updateKeyboardOffset() {
     // flat gap, so the shrunk keyboard-open height goes to the thread
     // and composer instead of an empty reservation nothing needs.
     document.documentElement.style.setProperty(PAGE_BOTTOM_PAD_VAR, '12px');
+    pageEl?.classList.add('is-composing');
 }
 
 chatInput?.addEventListener('focus', () => {
@@ -1028,6 +1036,17 @@ chatInput?.addEventListener('focus', () => {
         // is already the shrunk value and there'd be nothing to diff
         // against.
         baselineInnerHeight = window.innerHeight;
+        // Purely visual: floats the chat-card up over the (now
+        // collapsed) page header while composing, so the thread and
+        // form get that space instead of sitting under a static
+        // header with the keyboard still eating the bottom. See the
+        // ".page.is-composing" rules in chat.css. Applied here for an
+        // immediate response on focus, before the keyboard has
+        // actually animated in and shrunk the viewport — 
+        // updateKeyboardOffset() above is what keeps this in sync
+        // with reality afterward (including clearing it again if the
+        // keyboard closes without a blur event).
+        document.querySelector('#view-chat .page')?.classList.add('is-composing');
         requestAnimationFrame(() => scrollChatToBottom(false));
     }
 });
@@ -1035,6 +1054,7 @@ chatInput?.addEventListener('focus', () => {
 chatInput?.addEventListener('blur', () => {
     document.documentElement.style.setProperty(KB_OFFSET_VAR, '0px');
     document.documentElement.style.removeProperty(PAGE_BOTTOM_PAD_VAR);
+    document.querySelector('#view-chat .page')?.classList.remove('is-composing');
 });
 
 updateKeyboardOffset();
@@ -1146,11 +1166,95 @@ function applyIncomingChatDeepLink(search) {
     }
 }
 
+// -------------------------------------------------------
+// REPORT PAGE TABS — Official News (default) / Community Report
+// -------------------------------------------------------
+// The Report page (#view-chat) now hosts two panels instead of the
+// chat-card alone. Switching just toggles which panel is visible and
+// which report-mode-* class sits on #view-chat itself — chat.css keys
+// its fixed-height "app panel" chat layout off that class, so
+// Official News never inherits the chat's internal-scroll treatment;
+// it behaves like a normal page instead.
+const reportViewEl = document.getElementById('view-chat');
+const reportTabButtons = Array.from(document.querySelectorAll('#view-chat .report-tab'));
+const reportPanelNews = document.getElementById('reportPanelNews');
+const reportPanelCommunity = document.getElementById('reportPanelCommunity');
+
+function activateReportTab(tab) {
+    const nextTab = tab === 'community' ? 'community' : 'news';
+
+    reportTabButtons.forEach((btn) => {
+        const isActive = btn.dataset.tab === nextTab;
+        btn.classList.toggle('is-active', isActive);
+        btn.setAttribute('aria-selected', String(isActive));
+    });
+
+    if (reportPanelNews) reportPanelNews.hidden = nextTab !== 'news';
+    if (reportPanelCommunity) reportPanelCommunity.hidden = nextTab !== 'community';
+
+    reportViewEl?.classList.toggle('report-mode-community', nextTab === 'community');
+    reportViewEl?.classList.toggle('report-mode-news', nextTab === 'news');
+
+    if (nextTab === 'community') {
+        // The thread was unmeasurable (display:none via the panel's
+        // `hidden` attribute) until just now — give layout a frame to
+        // settle before snapping to the latest message, and refresh
+        // in case it went stale while News was showing.
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => scrollChatToBottom(false));
+        });
+        pollChatsOnce();
+    }
+}
+
+reportTabButtons.forEach((btn) => {
+    btn.addEventListener('click', () => activateReportTab(btn.dataset.tab));
+});
+
+// -------------------------------------------------------
+// OFFICIAL NEWS — collapsible "read more" per article
+// -------------------------------------------------------
+// One delegated listener on the feed instead of one per item, so this
+// keeps working unchanged if the articles are ever swapped out for
+// server-rendered ones. Toggles aria-expanded (drives the chevron
+// rotation in chat.css) and .is-expanded on the parent .news-item
+// (drives the grid-based collapse/expand of .news-item__details-wrap).
+const officialNewsFeed = document.getElementById('officialNewsFeed');
+officialNewsFeed?.addEventListener('click', (e) => {
+    const toggleBtn = e.target.closest('[data-action="toggle-news"]');
+    if (!toggleBtn) return;
+
+    const newsItem = toggleBtn.closest('.news-item');
+    const isExpanded = toggleBtn.getAttribute('aria-expanded') === 'true';
+
+    toggleBtn.setAttribute('aria-expanded', String(!isExpanded));
+    newsItem?.classList.toggle('is-expanded', !isExpanded);
+});
+
+// Small public hook — lets a "Report an issue" affordance elsewhere in
+// the app (e.g. a future button on Home) jump straight to the
+// Community Report tab instead of only ever landing on News.
+window.LWReportTabs = { activate: activateReportTab };
+
 // Same pause/resume the tab-visibility handler above already uses,
 // triggered by view switches instead of (or in addition to) tab
 // visibility — see file header.
+//
+// Also resets the Report page back to its default Official News tab
+// on every FRESH arrival at /chat — a nav/bottom-nav tap, or a cold
+// boot landing directly on /chat — per lastRouteView below tracking
+// whatever view we were on last so this doesn't also fire on an
+// in-place param update (e.g. a push notification's deep link landing
+// while the Report page is already open — which should NOT yank
+// someone already on Community Report back to News, unless that deep
+// link points at a specific message, in which case Community Report
+// is where that message actually lives).
+let lastRouteView = null;
 window.addEventListener('lw:route-changed', (e) => {
     const isChatView = e.detail.view === 'chat';
+    const isFreshEntry = isChatView && lastRouteView !== 'chat';
+    lastRouteView = e.detail.view;
+
     if (e.detail.view !== 'home' && !isChatView) {
         clearInterval(pollInterval);
         clearInterval(typingPollInterval);
@@ -1160,6 +1264,12 @@ window.addEventListener('lw:route-changed', (e) => {
     }
 
     if (isChatView) {
+        const hasDeepLinkedMessage = !!new URLSearchParams(e.detail.search || window.location.search).get('chatId');
+        if (isFreshEntry) {
+            activateReportTab(hasDeepLinkedMessage ? 'community' : 'news');
+        } else if (hasDeepLinkedMessage) {
+            activateReportTab('community');
+        }
         applyIncomingChatDeepLink(e.detail.search);
     }
 });

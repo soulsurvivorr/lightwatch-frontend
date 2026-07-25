@@ -286,6 +286,7 @@ main h2 {
     margin: 0 auto;
     border-radius: 12px;
     border: 1px solid var(--border-soft);
+    object-fit: cover; /* lets height be set independently of width on mobile below without stretching/squashing the image */
 }
 
 /* ---- OTP boxes: boxed, modern style with pop + error states ----
@@ -299,12 +300,12 @@ main h2 {
    the hero image, the boxes, and the error/resend text under them. */
 .otp-boxes {
     display: flex;
-    justify-content: center;
+    justify-content: space-between;
     align-items: center;
     gap: 8px;
     margin: 0.32rem auto 0.06rem;
     width: 100%;
-    max-width: 100%;
+    max-width: 320px; /* matches .verify-hero's max-width so the row starts/ends flush with the image */
 }
 
 .otp-boxes.is-shaking {
@@ -318,8 +319,8 @@ main h2 {
 }
 
 .otp-box {
-    width: 42px;
-    height: 50px;
+    width: 52px;
+    height: 58px;
     min-width: 0;
     margin: 0;
     padding: 0;
@@ -561,7 +562,12 @@ button#continueBtn.is-loading .btn-label {
     }
 
     .verify-hero {
-        max-width: min(100%, 220px);
+        width: min(100%, 300px);
+        height: 240px;
+    }
+
+    .otp-boxes {
+        max-width: min(100%, 300px);
     }
 
     .contact-row {
@@ -605,17 +611,18 @@ button#continueBtn.is-loading .btn-label {
     }
 
     .verify-hero {
-        max-width: min(100%, 180px);
+        width: min(100%, 240px);
+        height: 190px;
     }
 
     .otp-boxes {
-        gap: 6px;
+        max-width: min(100%, 240px);
         margin: 0.22rem auto 0.03rem;
     }
 
     .otp-box {
-        width: 34px;
-        height: 40px;
+        width: 44px;
+        height: 48px;
         border-radius: 8px;
         font-size: .92rem;
     }
@@ -644,17 +651,18 @@ button#continueBtn.is-loading .btn-label {
     }
 
     .verify-hero {
-        max-width: min(100%, 140px);
+        width: min(100%, 190px);
+        height: 150px;
     }
 
     .otp-boxes {
-        gap: 5px;
+        max-width: min(100%, 190px);
         margin: 0.2rem auto 0;
     }
 
     .otp-box {
-        width: 30px;
-        height: 36px;
+        width: 38px;
+        height: 44px;
         font-size: .86rem;
     }
 }
@@ -683,7 +691,17 @@ button#continueBtn.is-loading .btn-label {
 /* Very short/landscape viewports */
 @media (max-height: 560px) {
     .verify-hero {
-        max-width: min(100%, 140px);
+        width: min(100%, 190px);
+        height: 120px;
+    }
+
+    .otp-boxes {
+        max-width: min(100%, 190px);
+    }
+
+    .otp-box {
+        width: 38px;
+        height: 44px;
     }
 
     .verify-body {
@@ -727,13 +745,13 @@ button#continueBtn.is-loading .btn-label {
     }
 
     .otp-boxes {
-        gap: 7px;
+        max-width: min(100%, 240px);
         margin: 0.28rem auto 0.05rem;
     }
 
     .otp-box {
-        width: 38px;
-        height: 46px;
+        width: 42px;
+        height: 50px;
         font-size: 1rem;
     }
 

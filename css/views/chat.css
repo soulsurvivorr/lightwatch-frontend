@@ -9,6 +9,296 @@
   gap: 8px;
 }
 
+/* ============================================================
+   Report page tabs — Official News (default) / Community Report.
+   Switching is handled by chat.js (activateReportTab): it toggles
+   .is-active + aria-selected on the buttons, `hidden` on the two
+   .report-panel elements, and a report-mode-news / report-mode-
+   community class on #view-chat itself — that last class is what the
+   fixed-height "app panel" chat rules earlier/later in this file key
+   off, so Official News is never forced into the chat's internal-
+   scroll layout.
+   ============================================================ */
+.report-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 4px;
+  margin-bottom: 16px;
+  background: var(--bg-panel-raised);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  flex-shrink: 0;
+}
+
+.report-tab {
+  flex: 1 1 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 9px 10px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.report-tab__icon {
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.report-tab.is-active {
+  background: var(--bg-panel);
+  color: var(--text-bright);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+.report-tab:hover:not(.is-active) {
+  color: var(--text-bright);
+}
+
+.report-tab:focus-visible {
+  outline: 2px solid var(--brand2);
+  outline-offset: 2px;
+}
+
+/* Very small phones: icon + label can crowd two tabs into 320-360px.
+   Shrink type/padding rather than wrapping — a two-line tab button
+   looks broken next to its sibling. */
+@media (max-width: 380px) {
+  .report-tab {
+    font-size: 0.72rem;
+    padding: 8px 6px;
+    gap: 4px;
+  }
+}
+
+.report-panel {
+  min-width: 0;
+}
+
+/* ---- Official News feed ---- */
+.news-feed {
+  display: flex;
+  flex-direction: column;
+}
+
+.news-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 16px 4px;
+  border-top: 1px solid var(--border-soft);
+}
+
+.news-item:first-child {
+  border-top: none;
+  padding-top: 4px;
+}
+
+.news-item__source {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.news-item__source-icon {
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.news-item__tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--amber-dim);
+  color: var(--amber);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.news-item__headline {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--text-bright);
+}
+
+.news-item__schedule {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.news-item__schedule-day {
+  font-weight: 700;
+  color: var(--text-bright);
+}
+
+.news-item__link {
+  margin-top: 2px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--brand2);
+}
+
+.news-item__link:hover,
+.news-item__link:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Warning-flavored sibling of .news-item__tag--maintenance, for
+   unplanned/emergency items rather than scheduled ones. */
+.news-item__tag--warning {
+  background: rgba(230, 90, 60, 0.14);
+  color: #e65a3c;
+}
+
+/* Headline + collapse toggle sit on one row so the chevron stays
+   pinned to the top-right of the item regardless of headline length. */
+.news-item__row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+}
+
+.news-item__row .news-item__headline {
+  flex: 1 1 auto;
+}
+
+.news-item__toggle {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin-top: -2px;
+  border: none;
+  border-radius: 50%;
+  background: var(--bg-panel-raised);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.news-item__toggle:hover {
+  color: var(--text-bright);
+}
+
+.news-item__toggle:focus-visible {
+  outline: 2px solid var(--brand2);
+  outline-offset: 2px;
+}
+
+.news-item__chevron {
+  transition: transform 0.2s ease;
+}
+
+.news-item__toggle[aria-expanded="true"] .news-item__chevron {
+  transform: rotate(180deg);
+}
+
+/* Collapsible detail panel — the "big panel" of extra context revealed
+   by the chevron. Uses the grid 0fr/1fr technique so the expand/
+   collapse animates smoothly without JS ever having to measure
+   scrollHeight. The inner .news-item__details is the actual grid row;
+   its own overflow:hidden is what lets grid-template-rows animate a
+   0fr row down to nothing instead of just clipping abruptly. */
+.news-item__details-wrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.25s ease;
+}
+
+.news-item.is-expanded .news-item__details-wrap {
+  grid-template-rows: 1fr;
+}
+
+.news-item__details {
+  overflow: hidden;
+  min-height: 0;
+}
+
+.news-item__details p {
+  margin: 0 0 10px;
+  font-size: 0.86rem;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+.news-item__details p:last-of-type {
+  margin-bottom: 12px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Full-bleed panel treatment for the Official News feed itself, so
+   it visually matches the app's other list-style panels (Reports,
+   Areas) rather than looking like a floating card. */
+#officialNewsFeed {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  padding: 4px 16px;
+}
+
+/* Small/narrow phones: trim padding and type a notch so headline +
+   schedule never feel cramped at 320-360px widths. */
+@media (max-width: 480px) {
+  #officialNewsFeed {
+    padding: 2px 14px;
+  }
+
+  .news-item {
+    padding: 14px 2px;
+    gap: 5px;
+  }
+
+  .news-item__headline {
+    font-size: 0.88rem;
+  }
+
+  .news-item__schedule,
+  .news-item__link {
+    font-size: 0.78rem;
+  }
+}
+
 /* Full-bleed "app panel" layout for the Report page — desktop only.
    This used to apply unconditionally, but #view-chat .page (an ID
    selector) always wins over the plain .page rule in home.css that
@@ -20,16 +310,39 @@
    no competing .page rule, so the full-height flex column is safe
    there and is what keeps the thread/composer pinned in one panel. */
 @media (min-width: 721px) {
-  #view-chat .page {
+  /* FIX (tabs): this whole "fill the viewport, internal scroll"
+     treatment is only appropriate for the Community Report tab (the
+     live chat). The Official News tab is a normal, page-scrolls feed
+     like every other view, so it deliberately does NOT get this
+     block. report-mode-community is toggled on #view-chat itself
+     (not .page) by chat.js's activateReportTab(), which is what all
+     the selectors below now key off instead of the bare #view-chat
+     they used to. */
+  #view-chat.report-mode-community .page {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
     padding-bottom: calc(16px + env(safe-area-inset-bottom));
   }
 
+  /* FIX (community layout match): .page__header and .report-tabs are
+     flex items here with no flex-shrink override, so they defaulted to
+     flex-shrink:1 like every other item in the column. That's harmless
+     on desktop since .page only has a min-height floor (it can grow
+     past the viewport instead of squeezing its children) — kept here
+     anyway so both breakpoints share the same explicit contract rather
+     than one relying on a floor that happens not to bite. */
+  #view-chat.report-mode-community .page__header,
+  #view-chat.report-mode-community .report-tabs {
+    flex-shrink: 0;
+  }
+
   /* Keep "Community reports" left-aligned on desktop rather than
      centered — matches the rest of the app's left-aligned page
-     headers (Reports/Areas/Account). */
+     headers (Reports/Areas/Account). Applies to both tabs — purely
+     cosmetic text alignment, not part of the fixed-height panel
+     machinery, so it doesn't need the report-mode-community
+     qualifier the rest of this block needs. */
   #view-chat .page__header {
     text-align: left;
     justify-content: flex-start;
@@ -41,7 +354,19 @@
     max-width: 100%;
   }
 
-  #view-chat .chat-card {
+  /* .chat-card now sits one level deeper than it used to — inside
+     .report-panel[data-panel="community"] rather than as a direct
+     child of .page, since the News panel lives alongside it. The
+     panel has to pass the flex sizing through to the card, or the
+     card has nothing to stretch against. */
+  #view-chat.report-mode-community .report-panel[data-panel="community"] {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  #view-chat.report-mode-community .chat-card {
     flex: 1 1 auto;
     min-height: 0;
     display: flex;
@@ -51,19 +376,19 @@
        stranded as a narrow box in the middle of the page (see the
        "current" desktop screenshot this was fixed against) instead
        of filling the page like the target screenshot shows. Width
-       and box-sizing here beat that default since #view-chat .chat-card
-       (ID + class) outranks a plain .card selector. */
+       and box-sizing here beat that default since this selector
+       outranks a plain .card selector. */
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
   }
 
-  #view-chat .chat-card__head,
-  #view-chat .chat-form {
+  #view-chat.report-mode-community .chat-card__head,
+  #view-chat.report-mode-community .chat-form {
     flex-shrink: 0;
   }
 
-  #view-chat .chat-thread-wrap {
+  #view-chat.report-mode-community .chat-thread-wrap {
     flex: 1 1 auto;
     min-height: 0;
     height: 100%;
@@ -71,7 +396,7 @@
     flex-direction: column;
   }
 
-  #view-chat .chat-thread {
+  #view-chat.report-mode-community .chat-thread {
     flex: 1 1 auto;
     min-height: 0;
     /* More room to grow than the shared .chat-thread max-height
@@ -94,7 +419,13 @@
    footprint (132px + safe area), baked directly into #view-chat .page
    itself — see the height/padding comments just below. */
 @media (max-width: 720px) {
-  #view-chat .page {
+  /* FIX (tabs): scoped to report-mode-community — see the matching
+     comment on the desktop block above. When the News tab is active
+     #view-chat.report-mode-news is set instead, none of this block's
+     selectors match, and .page just falls back to the ordinary mobile
+     page rules (home.css) that every other view already scrolls
+     normally with. */
+  #view-chat.report-mode-community .page {
     display: flex;
     flex-direction: column;
     /* Definite height, not min-height: a flex column with only a
@@ -124,15 +455,49 @@
        content in the document and is unreachable once the page
        itself can't scroll (see the overflow:hidden block below), so
        it did nothing to keep the composer clear of the nav.
-       --lw-page-bottom-pad (chat.js) shrinks this down to a small
-       flat gap while the composer is focused: the nav is covered by
-       the keyboard at that point (see the transform fix further
+       Trimmed by 1.5em off the resting 132px baseline (still well
+       clear of the nav itself) to hand the chat-card that much more
+       height — safe to take from here since it's unused buffer, unlike
+       the earlier attempt that pulled the card's own top edge up and
+       ended up overlapping page__header instead.
+       --lw-page-bottom-pad (chat.js) shrinks this down further to a
+       small flat gap while the composer is focused: the nav is covered
+       by the keyboard at that point (see the transform fix further
        down), so reserving its full footprint here would just eat
        into the shrunk keyboard-open height for no visible reason. */
-    padding: 20px 16px var(--lw-page-bottom-pad, calc(132px + env(safe-area-inset-bottom)));
+    padding: 20px 16px var(--lw-page-bottom-pad, calc(132px - 1.5em + env(safe-area-inset-bottom)));
   }
 
-  #view-chat .chat-card {
+  /* FIX (community layout match): unlike the desktop block, .page here
+     has a *fixed* height (not just a min-height floor), so when its
+     children's combined natural height ran over that budget, flexbox's
+     default flex-shrink:1 silently compressed page__header and
+     .report-tabs to make room — and because #view-chat .page__header
+     further down this file already has `overflow: hidden` baked in
+     (for the is-composing collapse animation), that compression clipped
+     content instead of just squeezing whitespace, which is what was
+     cutting the subtitle off and making the whole header/tabs area look
+     different from the Official News tab. Pinning both to flex-shrink:0
+     forces .report-panel[data-panel="community"] (already flex:1 1 auto)
+     to absorb all of the available space instead, so the header and
+     tabs render at their normal, un-clipped size in both tabs. */
+  #view-chat.report-mode-community .page__header,
+  #view-chat.report-mode-community .report-tabs {
+    flex-shrink: 0;
+  }
+
+  /* Same reasoning as the desktop block: .chat-card is now nested
+     inside .report-panel[data-panel="community"], so that panel needs
+     to be a flex item + flex container itself to pass the available
+     height down to the card. */
+  #view-chat.report-mode-community .report-panel[data-panel="community"] {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  #view-chat.report-mode-community .chat-card {
     flex: 1 1 auto;
     /* Any explicit value (not the default `auto`) lets this item
        shrink below its content's natural height — required for the
@@ -144,26 +509,25 @@
     gap: 10px;
     /* FIX: .card's own default max-width was rendering this as a
        tiny, narrow box on mobile instead of filling the page's
-       width. Override wins on specificity (#view-chat .chat-card
-       beats a plain .card rule). */
+       width. Override wins on specificity. */
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
   }
 
-  #view-chat .chat-card__head,
-  #view-chat .chat-form {
+  #view-chat.report-mode-community .chat-card__head,
+  #view-chat.report-mode-community .chat-form {
     flex-shrink: 0;
   }
 
-  #view-chat .chat-thread-wrap {
+  #view-chat.report-mode-community .chat-thread-wrap {
     flex: 1 1 auto;
     min-height: 0;
     display: flex;
     flex-direction: column;
   }
 
-  #view-chat .chat-thread {
+  #view-chat.report-mode-community .chat-thread {
     flex: 1 1 auto;
     min-height: 0;
     max-height: none;
@@ -176,16 +540,19 @@
 
 /* Mobile: the outer page used to scroll as a whole (inheriting the
    site-wide `html/body:has(#appShell:not([hidden])) { overflow-y:
-   auto }` rule from home.css). On the Report view specifically, only
-   the chat card itself should scroll — the page underneath it stays
-   put. Same specificity as that home.css rule (one :has() each) but
-   this file loads after home.css, so it wins for source order.
-   Scrollbar is hidden across engines since it's an internal
-   scroll surface, not a page-level one users need a visible track
-   for. */
+   auto }` rule from home.css). On the Report view, only while the
+   Community Report tab is active should the chat card itself scroll
+   with the page underneath staying put — Official News is meant to
+   scroll normally like any other view, so it's deliberately excluded
+   from this lock (report-mode-community only, not bare #view-chat).
+   Same specificity as that home.css rule (one :has() each, plus a
+   class) but this file loads after home.css, so it wins for source
+   order regardless. Scrollbar is hidden across engines since it's an
+   internal scroll surface, not a page-level one users need a visible
+   track for. */
 @media (max-width: 720px) {
-  html:has(#view-chat:not([hidden])),
-  body:has(#view-chat:not([hidden])) {
+  html:has(#view-chat.report-mode-community:not([hidden])),
+  body:has(#view-chat.report-mode-community:not([hidden])) {
     overflow: hidden !important;
   }
 
@@ -976,5 +1343,62 @@
   #view-chat .chat-scope-label,
   #view-chat .chat-scope-option {
     font-size: calc(0.76rem - 2px);
+  }
+}
+
+/* Composer focus: float the chat-card up over the page header instead
+   of leaving it squeezed between a static header and the keyboard.
+   .page.is-composing is toggled by chat.js on the chatInput's
+   focus/blur (alongside the existing --lw-vh / --lw-kb-offset
+   keyboard-offset logic above, which this doesn't replace — that
+   still handles the page/nav sizing; this just handles how the card
+   looks and how much of the freed space it claims).
+   #view-chat .page is a flex column and .chat-card already has
+   flex: 1 1 auto (see the mobile panel block near the top of this
+   file), so collapsing the header below hands the card that extra
+   height on its own — the lift/shadow here is purely the "floating"
+   look on top of that. */
+@media (max-width: 720px) {
+  #view-chat .page {
+    transition: padding-top 0.22s ease;
+  }
+
+  #view-chat .page.is-composing {
+    /* Shaves the page's own top padding down while composing too, on
+       top of collapsing the header below — a bit more of the freed
+       space landing above the card so it visibly floats toward the
+       top of the screen rather than just growing in place. */
+    padding-top: 6px;
+  }
+
+  #view-chat .page__header {
+    transition: max-height 0.22s ease, opacity 0.18s ease,
+      margin 0.22s ease, padding 0.22s ease;
+    max-height: 160px;
+    overflow: hidden;
+  }
+
+  #view-chat .page.is-composing .page__header {
+    max-height: 0;
+    opacity: 0;
+    margin: 0;
+    padding: 0;
+    pointer-events: none;
+  }
+
+  #view-chat .chat-card {
+    transition: transform 0.22s ease, box-shadow 0.22s ease,
+      border-radius 0.22s ease;
+  }
+
+  #view-chat .page.is-composing .chat-card {
+    /* Noticeably more lift than a subtle nudge — this is the "float
+       to the top a little" the card should visibly do on focus, on
+       top of the extra height it already gets from the header
+       collapsing out of the layout above. */
+    transform: translateY(-18px);
+    border-radius: 22px;
+    box-shadow: 0 -8px 10px rgba(0, 0, 0, 0.04),
+      0 18px 45px rgba(15, 28, 65, 0.16);
   }
 }

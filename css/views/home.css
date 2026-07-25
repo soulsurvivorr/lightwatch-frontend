@@ -589,9 +589,265 @@
 }
 
 .location-card__info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.location-card__info-content {
   display: grid;
   gap: 14px;
   min-width: 0;
+}
+
+.location-card__info-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  tap-highlight-color: transparent;
+  outline: none;
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+
+.location-card__info-toggle-input:focus-visible ~ .location-card__info-summary {
+  outline: 2px solid var(--brand2);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.location-card__info-summary-label {
+  font-family: var(--font-display);
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--text-bright);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.location-card__info-summary-chevron {
+  color: var(--text-faint);
+  font-size: 1.1rem;
+  line-height: 1;
+  transition: transform 0.2s ease;
+}
+
+/* Tablet and Desktop viewports — Grid Insights is not collapsible
+   here: the tap-to-open summary is hidden and the content is just a
+   plain grid div, always shown. */
+@media (min-width: 721px) {
+  .location-card__info-toggle-input {
+    display: none;
+  }
+
+  .location-card__info-summary {
+    display: none;
+  }
+
+  .location-card__info-content {
+    display: grid !important;
+  }
+}
+
+/* ============================================================
+   Official Updates / Planned Maintenance notice
+   Sits inside .location-card__top, above .location-card__meta-panel.
+   ============================================================ */
+.official-updates-panel {
+  width: 100%;
+  background: var(--bg-panel-raised);
+  border: 1px solid var(--border-soft);
+  border-left: 3px solid var(--amber);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.official-updates-panel__header {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-faint);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.official-updates-panel__body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.official-updates-panel__tag {
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  gap: 6px;
+  background: var(--amber-dim);
+  color: var(--amber);
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 4px 10px 4px 8px;
+  border-radius: 999px;
+  margin-bottom: 4px;
+}
+
+.official-updates-panel__location {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.94rem;
+  color: var(--text-bright);
+  line-height: 1.3;
+}
+
+.official-updates-panel__time {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-faint);
+}
+
+.official-updates-panel__source {
+  font-size: 0.75rem;
+  color: var(--text-faint);
+  opacity: 0.8;
+}
+
+.official-updates-panel__link {
+  align-self: flex-start;
+  margin-top: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--brand2);
+  font-weight: 600;
+  font-size: 0.82rem;
+  text-decoration: none;
+}
+
+.official-updates-panel__link:hover {
+  color: var(--brand2-dim);
+  text-decoration: underline;
+}
+
+/* Scale the notice down for narrower phones — mirrors the width
+   tiers used elsewhere in this file (480 / 400 / 360px). */
+@media (max-width: 480px) {
+  .official-updates-panel {
+    padding: 12px 14px;
+    gap: 8px;
+  }
+
+  .official-updates-panel__header {
+    font-size: 0.66rem;
+  }
+
+  .official-updates-panel__tag {
+    font-size: 0.7rem;
+    padding: 3px 9px 3px 7px;
+  }
+
+  .official-updates-panel__location {
+    font-size: 0.84rem;
+  }
+
+  .official-updates-panel__time {
+    font-size: 0.78rem;
+  }
+
+  .official-updates-panel__source {
+    font-size: 0.7rem;
+  }
+
+  .official-updates-panel__link {
+    font-size: 0.78rem;
+  }
+}
+
+@media (max-width: 400px) {
+  .official-updates-panel {
+    padding: 10px 12px;
+  }
+
+  .official-updates-panel__header {
+    font-size: 0.62rem;
+    letter-spacing: 0.06em;
+  }
+
+  .official-updates-panel__tag {
+    font-size: 0.68rem;
+  }
+
+  .official-updates-panel__location {
+    font-size: 0.8rem;
+  }
+
+  .official-updates-panel__time {
+    font-size: 0.74rem;
+  }
+
+  .official-updates-panel__source {
+    font-size: 0.68rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .official-updates-panel {
+    padding: 9px 10px;
+    gap: 6px;
+  }
+
+  .official-updates-panel__header {
+    font-size: 0.58rem;
+  }
+
+  .official-updates-panel__tag {
+    font-size: 0.64rem;
+    padding: 3px 8px 3px 6px;
+  }
+
+  .official-updates-panel__location {
+    font-size: 0.76rem;
+  }
+
+  .official-updates-panel__time {
+    font-size: 0.7rem;
+  }
+
+  .official-updates-panel__source {
+    font-size: 0.64rem;
+  }
+
+  .official-updates-panel__link {
+    font-size: 0.74rem;
+  }
+}
+
+/* Short-viewport tier (independent of width) — same 800px threshold
+   used by .location-expand-panel above, so it also catches wide-but-
+   short phones. */
+@media (max-height: 800px) {
+  .official-updates-panel {
+    padding: 10px 12px;
+    gap: 6px;
+  }
+
+  .official-updates-panel__header {
+    font-size: 0.64rem;
+  }
+
+  .official-updates-panel__location {
+    font-size: 0.82rem;
+  }
 }
 
 .location-card__meta-panel {
@@ -2483,6 +2739,20 @@ body.lw-location-panel-open {
   .location-card__info {
     gap: 10px;
     width: 100%;
+  }
+
+  /* Collapsed by default on mobile — tapping "Grid Insights" opens it. */
+  .location-card__info-content {
+    display: none;
+  }
+
+  .location-card__info-toggle-input:checked ~ .location-card__info-content {
+    display: grid;
+    padding-top: 4px;
+  }
+
+  .location-card__info-toggle-input:checked ~ .location-card__info-summary .location-card__info-summary-chevron {
+    transform: rotate(90deg);
   }
 
   .meta-summary {

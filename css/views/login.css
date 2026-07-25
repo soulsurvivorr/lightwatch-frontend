@@ -169,6 +169,57 @@
   }
 }
 
+/* ---- FIX: very large desktop / large-monitor range ----
+   The min-width:769px split-view block above has no upper bound, so
+   this range already inherits the same two-column, no-scroll layout —
+   but it's spelled out explicitly here so this exact viewport is
+   guaranteed to match desktop/laptop rather than relying on the
+   absence of a cap further up the file. Same rules as the 769px
+   block, just pinned to this breakpoint. */
+@media (min-width: 2048px) and (min-height: 1111px) {
+  .login-shell {
+    width: 100%;
+    max-width: none;
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: stretch;
+    gap: 0;
+    overflow: hidden;
+  }
+
+  .login-visual {
+    display: flex;
+  }
+
+  body:has(#view-login:not([hidden])),
+  body.lw-view-login {
+    position: fixed;
+    inset: 0;
+    height: 100vh;
+    overflow: hidden !important; /* No scrolling on very large desktop */
+  }
+
+  html:has(#view-login:not([hidden])),
+  html.lw-view-login {
+    height: 100vh;
+    overflow: hidden !important;
+  }
+
+  .login-visual,
+  .login-form-side {
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .login-form-side {
+    overflow-y: auto;
+    min-height: 0;
+  }
+}
+
 /* ---- Visual side (hidden below 980px — see styles.css) ---- */
 
 .login-visual {

@@ -555,20 +555,24 @@ body.lw-leaving {
    ============================================================ */
 /* Tablet and Desktop viewports */
 @media (min-width: 701px) {
+    /* FIX: page no longer scrolls on desktop/laptop — html/body are
+       pinned to the viewport height instead of growing with content.
+       .signup-shell (the #view-signup > section below) gets its own
+       overflow-y:auto fallback so content taller than the viewport is
+       still reachable without the outer page itself scrolling. */
     html:has(#view-signup:not([hidden])) {
-        height: auto;
-        min-height: 100%;
-        overflow-x: hidden;
-        overflow-y: auto;
+        height: 100vh;
+        height: 100dvh;
+        overflow: hidden;
     }
 
     body:has(#view-signup:not([hidden])) {
-        align-items: flex-start;
+        align-items: center;
         justify-content: center;
         padding: 28px 20px 40px;
-        height: auto;
-        min-height: 100vh;
-        min-height: 100dvh;
+        height: 100vh;
+        height: 100dvh;
+        overflow: hidden;
     }
 
     /* Only target #authShell when signup is visible on tablet/desktop */
@@ -577,13 +581,24 @@ body.lw-leaving {
         flex: 1;
         width: 100%;
         min-height: 100%;
-        overflow: visible;
+        overflow: hidden;
+    }
+
+    /* FIX: #view-signup becomes the centering context so .signup-shell
+       is centered both horizontally and vertically in the viewport,
+       not just horizontally via margin:auto as before. */
+    #view-signup:not([hidden]) {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
     }
 
     #view-signup > section {
-        overflow: visible;
+        overflow-y: auto;
         min-height: auto;
-        max-height: none;
+        max-height: 100%;
         width: max-content;
         max-width: 100%;
         margin: 0 auto;
@@ -612,6 +627,49 @@ body.lw-leaving {
 @media (min-width: 1024px) {
     #view-signup > section {
         padding: 1.4rem 1.6rem 1.6rem;
+    }
+}
+
+/* ---- FIX: very large desktop / large-monitor range ----
+   The min-width:701px block above has no upper bound, so this range
+   already inherits the same centered, no-scroll layout — spelled out
+   explicitly here so this exact viewport is guaranteed to match
+   desktop/laptop, same as done in login.css. */
+@media (min-width: 2048px) and (min-height: 1111px) {
+    html:has(#view-signup:not([hidden])) {
+        height: 100vh;
+        overflow: hidden;
+    }
+
+    body:has(#view-signup:not([hidden])) {
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        overflow: hidden;
+    }
+
+    body:has(#view-signup:not([hidden])) #authShell {
+        display: flex;
+        flex: 1;
+        width: 100%;
+        min-height: 100%;
+        overflow: hidden;
+    }
+
+    #view-signup:not([hidden]) {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+    }
+
+    #view-signup > section {
+        overflow-y: auto;
+        max-height: 100%;
+        width: max-content;
+        max-width: 100%;
+        margin: 0 auto;
     }
 }
 
