@@ -1195,6 +1195,16 @@ function activateReportTab(tab) {
     reportViewEl?.classList.toggle('report-mode-community', nextTab === 'community');
     reportViewEl?.classList.toggle('report-mode-news', nextTab === 'news');
 
+    // Belt-and-suspenders scroll lock: chat.css already locks html/body
+    // via :has(#view-chat.report-mode-community:not([hidden])), but
+    // :has() isn't universal across every mobile WebView this app runs
+    // in. Toggling a plain class here (same pattern home.js already
+    // uses for the location panel) means the underlying page can't
+    // scroll/jump when the Community Report tab opens even where :has()
+    // support is missing — only the chat-thread itself scrolls.
+    document.documentElement.classList.toggle('lw-report-community-open', nextTab === 'community');
+    document.body.classList.toggle('lw-report-community-open', nextTab === 'community');
+
     if (nextTab === 'community') {
         // The thread was unmeasurable (display:none via the panel's
         // `hidden` attribute) until just now — give layout a frame to
@@ -1261,6 +1271,16 @@ window.addEventListener('lw:route-changed', (e) => {
     } else if (chatScope === CHAT_SCOPE_GLOBAL || chatLocation) {
         startPolling();
         startTypingPoll();
+    }
+
+    // The :has() CSS lock releases itself automatically once #view-chat
+    // is hidden, but the JS fallback class (see activateReportTab)
+    // won't unless we clear it here too — otherwise leaving the Report
+    // page while Community Report was the active tab would leave every
+    // other view permanently scroll-locked.
+    if (!isChatView) {
+        document.documentElement.classList.remove('lw-report-community-open');
+        document.body.classList.remove('lw-report-community-open');
     }
 
     if (isChatView) {

@@ -142,6 +142,21 @@
   color: var(--text-bright);
 }
 
+/* Always-visible one-line teaser, shown whether the item is expanded
+   or not — gives the collapsed state some actual context instead of
+   just a bare headline + chevron. Sits between the headline row and
+   the schedule/details, so it reads naturally in both states. */
+.news-item__preview {
+  margin: 0;
+  font-size: 0.83rem;
+  line-height: 1.4;
+  color: var(--text-muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 .news-item__schedule {
   display: flex;
   flex-wrap: wrap;
@@ -297,6 +312,31 @@
   .news-item__link {
     font-size: 0.78rem;
   }
+
+  .news-item__preview {
+    font-size: 0.8rem;
+  }
+}
+
+/* Match the Community Report card's look to Official News's full-bleed
+   panel treatment above. .chat-card otherwise inherits the generic
+   .card component (cards.css): 22px padding on every side plus a
+   0 0 4px box-shadow, which reads as a "floating card" set apart from
+   the page — visually inconsistent with the flush, blended look of
+   #officialNewsFeed right next to it on the same tab strip. Background/
+   border already match .card's values 1:1 (both use --bg-panel /
+   --border-soft), so only the three properties that actually differ
+   need overriding here. */
+#view-chat.report-mode-community .chat-card {
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  box-shadow: none;
+}
+
+@media (max-width: 480px) {
+  #view-chat.report-mode-community .chat-card {
+    padding: 12px 14px;
+  }
 }
 
 /* Full-bleed "app panel" layout for the Report page — desktop only.
@@ -325,33 +365,39 @@
     padding-bottom: calc(16px + env(safe-area-inset-bottom));
   }
 
-  /* FIX (community layout match): .page__header and .report-tabs are
-     flex items here with no flex-shrink override, so they defaulted to
-     flex-shrink:1 like every other item in the column. That's harmless
-     on desktop since .page only has a min-height floor (it can grow
-     past the viewport instead of squeezing its children) — kept here
-     anyway so both breakpoints share the same explicit contract rather
-     than one relying on a floor that happens not to bite. */
-  #view-chat.report-mode-community .page__header,
-  #view-chat.report-mode-community .report-tabs {
+  /* FIX (community layout match v2): .page__header and .report-tabs
+     must look identical on both tabs — they sit outside both
+     .report-panel elements and are never hidden/re-rendered when the
+     tab switches, so nothing about them should visually change.
+     The previous version of this rule was scoped to
+     .report-mode-community, which was exactly the bug: .page only
+     becomes a flex column in community mode (see the block above), so
+     these two elements were flex items with only flex-shrink:0 set in
+     community mode and ordinary stretch-to-parent block boxes in news
+     mode — two different sizing algorithms, which is what made them
+     render narrower/shrink-to-content next to Official News. Dropping
+     the .report-mode-community qualifier and pinning width explicitly
+     means both elements get the exact same box regardless of whether
+     .page is currently flex (community) or block (news). !important
+     matches the pattern already used on .chat-card/.report-panel
+     below, since an unseen base rule is fighting the width here too. */
+  #view-chat .page__header,
+  #view-chat .report-tabs {
     flex-shrink: 0;
+    align-self: stretch;
+    width: 100% !important;
+    max-width: 100% !important;
   }
 
   /* Keep "Community reports" left-aligned on desktop rather than
      centered — matches the rest of the app's left-aligned page
-     headers (Reports/Areas/Account). Applies to both tabs — purely
-     cosmetic text alignment, not part of the fixed-height panel
-     machinery, so it doesn't need the report-mode-community
-     qualifier the rest of this block needs. */
+     headers (Reports/Areas/Account). Applies to both tabs. */
   #view-chat .page__header {
     text-align: left;
     justify-content: flex-start;
     align-items: flex-start;
-    align-self: flex-start;
     margin-left: 0;
     margin-right: auto;
-    width: 100%;
-    max-width: 100%;
   }
 
   /* .chat-card now sits one level deeper than it used to — inside
@@ -364,6 +410,9 @@
     min-height: 0;
     display: flex;
     flex-direction: column;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
   }
 
   #view-chat.report-mode-community .chat-card {
@@ -372,14 +421,16 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
-    /* FIX: .card's own default max-width was leaving this card
-       stranded as a narrow box in the middle of the page (see the
-       "current" desktop screenshot this was fixed against) instead
-       of filling the page like the target screenshot shows. Width
-       and box-sizing here beat that default since this selector
-       outranks a plain .card selector. */
-    width: 100%;
-    max-width: 100%;
+    /* FIX: .card's own default max-width (and centering margin) from
+       cards.css was still leaving this card stranded as a narrower,
+       inset box next to Official News's edge-to-edge feed — the plain
+       override here wasn't beating it, which means that base rule is
+       either more specific than it looks or carries !important, so
+       these are pinned with !important too rather than relying on
+       source order/specificity alone. */
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
     box-sizing: border-box;
   }
 
@@ -468,22 +519,23 @@
     padding: 20px 16px var(--lw-page-bottom-pad, calc(132px - 1.5em + env(safe-area-inset-bottom)));
   }
 
-  /* FIX (community layout match): unlike the desktop block, .page here
-     has a *fixed* height (not just a min-height floor), so when its
-     children's combined natural height ran over that budget, flexbox's
-     default flex-shrink:1 silently compressed page__header and
-     .report-tabs to make room — and because #view-chat .page__header
-     further down this file already has `overflow: hidden` baked in
-     (for the is-composing collapse animation), that compression clipped
-     content instead of just squeezing whitespace, which is what was
-     cutting the subtitle off and making the whole header/tabs area look
-     different from the Official News tab. Pinning both to flex-shrink:0
-     forces .report-panel[data-panel="community"] (already flex:1 1 auto)
-     to absorb all of the available space instead, so the header and
-     tabs render at their normal, un-clipped size in both tabs. */
-  #view-chat.report-mode-community .page__header,
-  #view-chat.report-mode-community .report-tabs {
+  /* FIX (community layout match v2): same underlying bug as the
+     desktop block above — .page here only becomes a fixed-height flex
+     column in community mode, so page__header/.report-tabs were flex
+     items (shrink/clip-prone, and here also width-shrink-to-content)
+     in community mode but ordinary full-width block boxes in news
+     mode. flex-shrink:0 alone (the old fix) stopped the vertical
+     clipping but left the width mismatch the user is seeing — dropping
+     the .report-mode-community qualifier and forcing width explicitly
+     makes both elements render as the exact same box no matter which
+     tab is active. !important matches .chat-card/.report-panel below,
+     since an unseen base rule is fighting the width here too. */
+  #view-chat .page__header,
+  #view-chat .report-tabs {
     flex-shrink: 0;
+    align-self: stretch;
+    width: 100% !important;
+    max-width: 100% !important;
   }
 
   /* Same reasoning as the desktop block: .chat-card is now nested
@@ -495,6 +547,9 @@
     min-height: 0;
     display: flex;
     flex-direction: column;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
   }
 
   #view-chat.report-mode-community .chat-card {
@@ -507,11 +562,14 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
-    /* FIX: .card's own default max-width was rendering this as a
-       tiny, narrow box on mobile instead of filling the page's
-       width. Override wins on specificity. */
-    width: 100%;
-    max-width: 100%;
+    /* FIX: .card's own default max-width/margin (cards.css) was still
+       rendering this as a narrower, inset box on mobile instead of
+       filling the page's width like Official News does — see the
+       matching desktop comment above for why !important is needed
+       here rather than relying on selector specificity. */
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
     box-sizing: border-box;
   }
 
@@ -552,7 +610,9 @@
    track for. */
 @media (max-width: 720px) {
   html:has(#view-chat.report-mode-community:not([hidden])),
-  body:has(#view-chat.report-mode-community:not([hidden])) {
+  body:has(#view-chat.report-mode-community:not([hidden])),
+  html.lw-report-community-open,
+  body.lw-report-community-open {
     overflow: hidden !important;
   }
 
