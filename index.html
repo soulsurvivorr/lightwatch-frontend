@@ -1055,160 +1055,13 @@
 
         <!-- ==== Official News panel (default) ==== -->
         <div class="report-panel" id="reportPanelNews" data-panel="news" role="tabpanel" aria-labelledby="reportTabNewsBtn">
-          <!-- Each .news-item now carries a collapsible .news-item__details
-               panel toggled by .news-item__toggle (chevron button). Markup
-               kept static here since this is placeholder content; wiring
-               live articles later just means populating the same structure
-               from JS instead of hand-writing it. Toggle behavior lives in
-               chat.js (delegated click handler on #officialNewsFeed) so no
-               per-item JS is needed here. -->
-          <div class="news-feed" id="officialNewsFeed">
-            <article class="news-item news-item--alert" id="newsItem1">
-              <div class="news-item__source">
-                <span class="news-item__source-icon" aria-hidden="true">⚡</span>
-                <span class="news-item__source-name">ECG News</span>
-              </div>
-              <span class="news-item__tag news-item__tag--maintenance">
-                <span aria-hidden="true">🟠</span> Planned Maintenance
-              </span>
-              <div class="news-item__row">
-                <h3 class="news-item__headline">Bantama, Suame &amp; Atonsu</h3>
-                <button type="button" class="news-item__toggle" aria-expanded="false" aria-controls="newsDetails1" data-action="toggle-news">
-                  <span class="visually-hidden">Show more</span>
-                  <svg class="news-item__chevron" viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7.5l5 5 5-5"/></svg>
-                </button>
-              </div>
-              <p class="news-item__preview">Aging transformers and feeder lines are being replaced across the three areas.</p>
-              <div class="news-item__schedule">
-                <span class="news-item__schedule-day">Tomorrow</span>
-                <span class="news-item__schedule-time">8:00 AM – 4:00 PM</span>
-              </div>
-              <div class="news-item__details-wrap">
-                <div class="news-item__details" id="newsDetails1">
-                  <p>ECG will carry out planned network maintenance across Bantama, Suame and Atonsu to replace aging transformers and upgrade feeder lines that have been the source of repeated unplanned outages this quarter. Crews are scheduled to be on site from 8:00 AM, with power expected to be fully restored by 4:00 PM the same day.</p>
-                  <p>Residents and businesses along the affected feeders are advised to unplug sensitive appliances ahead of time and to keep backup lighting on hand. ECG says similar maintenance is planned for neighbouring areas in the coming weeks as part of a wider reliability upgrade.</p>
-                  <a class="news-item__link" href="#" data-action="read-article">Read full article <span aria-hidden="true">→</span></a>
-                </div>
-              </div>
-            </article>
-
-            <article class="news-item" id="newsItem2">
-              <div class="news-item__source">
-                <span class="news-item__source-icon" aria-hidden="true">📰</span>
-                <span class="news-item__source-name">Ghana News</span>
-              </div>
-              <div class="news-item__row">
-                <h3 class="news-item__headline">Power restoration reaches Ashanti Region</h3>
-                <button type="button" class="news-item__toggle" aria-expanded="false" aria-controls="newsDetails2" data-action="toggle-news">
-                  <span class="visually-hidden">Show more</span>
-                  <svg class="news-item__chevron" viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7.5l5 5 5-5"/></svg>
-                </button>
-              </div>
-              <p class="news-item__preview">ECG credits maintenance work and extra national grid supply for the improvement.</p>
-              <div class="news-item__details-wrap">
-                <div class="news-item__details" id="newsDetails2">
-                  <p>Following weeks of load-shedding tied to reduced generation capacity, ECG says power restoration has now reached most of the Ashanti Region, with Kumasi's central and suburban feeders back on a stable rotation schedule.</p>
-                  <p>A statement from the utility credits recent maintenance work and additional supply from the national grid for the improvement, though it cautions that isolated faults may still cause short, localized interruptions while crews finish clearing a backlog of repair reports.</p>
-                  <a class="news-item__link" href="#" data-action="read-article">Read full article <span aria-hidden="true">→</span></a>
-                </div>
-              </div>
-            </article>
-
-            <article class="news-item" id="newsItem3">
-              <div class="news-item__source">
-                <span class="news-item__source-icon" aria-hidden="true">📰</span>
-                <span class="news-item__source-name">Citi News</span>
-              </div>
-              <div class="news-item__row">
-                <h3 class="news-item__headline">ECG responds to outage complaints</h3>
-                <button type="button" class="news-item__toggle" aria-expanded="false" aria-controls="newsDetails3" data-action="toggle-news">
-                  <span class="visually-hidden">Show more</span>
-                  <svg class="news-item__chevron" viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7.5l5 5 5-5"/></svg>
-                </button>
-              </div>
-              <p class="news-item__preview">Equipment faults and cable damage are behind most of this month's disruptions.</p>
-              <div class="news-item__details-wrap">
-                <div class="news-item__details" id="newsDetails3">
-                  <p>ECG has issued a public response after a wave of complaints over unannounced outages across several Kumasi neighbourhoods this month, saying a mix of equipment faults and third-party damage to underground cables were behind most of the disruptions.</p>
-                  <p>The company says it is piloting an SMS alert system for planned outages and is reviewing its public communication process after acknowledging that many customers were not notified in advance.</p>
-                  <a class="news-item__link" href="#" data-action="read-article">Read full article <span aria-hidden="true">→</span></a>
-                </div>
-              </div>
-            </article>
-
-            <article class="news-item" id="newsItem4">
-              <div class="news-item__source">
-                <span class="news-item__source-icon" aria-hidden="true">⚡</span>
-                <span class="news-item__source-name">ECG News</span>
-              </div>
-              <span class="news-item__tag news-item__tag--warning">
-                <span aria-hidden="true">🔧</span> Emergency Repair
-              </span>
-              <div class="news-item__row">
-                <h3 class="news-item__headline">Ahodwo &amp; Nhyiaeso feeder fault</h3>
-                <button type="button" class="news-item__toggle" aria-expanded="false" aria-controls="newsDetails4" data-action="toggle-news">
-                  <span class="visually-hidden">Show more</span>
-                  <svg class="news-item__chevron" viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7.5l5 5 5-5"/></svg>
-                </button>
-              </div>
-              <p class="news-item__preview">An underground cable fault has cut supply; the section has been isolated.</p>
-              <div class="news-item__schedule">
-                <span class="news-item__schedule-day">Ongoing</span>
-                <span class="news-item__schedule-time">Since 6:20 AM</span>
-              </div>
-              <div class="news-item__details-wrap">
-                <div class="news-item__details" id="newsDetails4">
-                  <p>An underground cable fault has cut supply to parts of Ahodwo and Nhyiaeso since early this morning. ECG has dispatched an emergency crew and says the affected section has been isolated to prevent the fault from spreading to nearby feeders.</p>
-                  <p>No firm restoration time has been given yet, as crews are still tracing the exact fault location. Updates will be posted here as soon as they're available.</p>
-                  <a class="news-item__link" href="#" data-action="read-article">Read full article <span aria-hidden="true">→</span></a>
-                </div>
-              </div>
-            </article>
-
-            <article class="news-item" id="newsItem5">
-              <div class="news-item__source">
-                <span class="news-item__source-icon" aria-hidden="true">📰</span>
-                <span class="news-item__source-name">Joy News</span>
-              </div>
-              <div class="news-item__row">
-                <h3 class="news-item__headline">Transformer fault in Adum fixed overnight</h3>
-                <button type="button" class="news-item__toggle" aria-expanded="false" aria-controls="newsDetails5" data-action="toggle-news">
-                  <span class="visually-hidden">Show more</span>
-                  <svg class="news-item__chevron" viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7.5l5 5 5-5"/></svg>
-                </button>
-              </div>
-              <p class="news-item__preview">A blown transformer left Adum dark for nearly eight hours before being replaced.</p>
-              <div class="news-item__details-wrap">
-                <div class="news-item__details" id="newsDetails5">
-                  <p>A blown transformer that left much of Adum in the dark for close to eight hours has now been replaced, with ECG confirming full restoration shortly after midnight.</p>
-                  <p>Traders in the area had raised concerns about spoiled refrigerated goods during the outage; ECG says it is reviewing compensation requests on a case-by-case basis through its customer service centres.</p>
-                  <a class="news-item__link" href="#" data-action="read-article">Read full article <span aria-hidden="true">→</span></a>
-                </div>
-              </div>
-            </article>
-
-            <article class="news-item" id="newsItem6">
-              <div class="news-item__source">
-                <span class="news-item__source-icon" aria-hidden="true">⚡</span>
-                <span class="news-item__source-name">ECG News</span>
-              </div>
-              <div class="news-item__row">
-                <h3 class="news-item__headline">Prepaid meter top-up service update</h3>
-                <button type="button" class="news-item__toggle" aria-expanded="false" aria-controls="newsDetails6" data-action="toggle-news">
-                  <span class="visually-hidden">Show more</span>
-                  <svg class="news-item__chevron" viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7.5l5 5 5-5"/></svg>
-                </button>
-              </div>
-              <p class="news-item__preview">Some mobile money top-ups were delayed over the weekend; ECG says it's resolved.</p>
-              <div class="news-item__details-wrap">
-                <div class="news-item__details" id="newsDetails6">
-                  <p>ECG says its prepaid top-up platform experienced intermittent delays over the weekend, with some customers reporting units not reflecting immediately after purchase through mobile money channels.</p>
-                  <p>The company says the issue has since been resolved and any delayed units have now been credited automatically. Customers still missing a top-up are asked to keep their transaction reference for faster resolution.</p>
-                  <a class="news-item__link" href="#" data-action="read-article">Read full article <span aria-hidden="true">→</span></a>
-                </div>
-              </div>
-            </article>
-          </div>
+          <!-- Populated live by js/views/news.js from GET /news — ECG's
+               own announcements first, then other trusted outlets,
+               newest first. Toggle (chevron) and expand/collapse
+               behavior is bound once by news.js on this container via
+               a delegated click listener, so newly-rendered articles
+               need no per-item JS. -->
+          <div class="news-feed" id="officialNewsFeed"></div>
         </div>
 
         <!-- ==== Community Report panel (the existing chat-card, unchanged) ==== -->
@@ -1970,6 +1823,7 @@
   <script src="./js/views/verification.js"></script>
   <script src="./js/views/home-reminder.js"></script>
   <script src="./js/views/chat.js"></script>
+  <script src="./js/views/news.js"></script>
   <script src="./js/views/home.js"></script>
   <script src="./js/views/lightstatus.js"></script>
   <script src="./js/views/profile.js"></script>

@@ -191,6 +191,51 @@
   color: #e65a3c;
 }
 
+/* Restoration-flavored sibling, for "power's back on" stories. */
+.news-item__tag--success {
+  background: rgba(61, 217, 194, 0.16);
+  color: #3dd9c2;
+}
+
+/* Fetched-article thumbnail. Optional — items without an image just
+   skip this element entirely (news.js removes a broken <img> too, via
+   onerror, so a dead image link never leaves an empty gap). */
+.news-item__image {
+  width: 100%;
+  max-height: 160px;
+  object-fit: cover;
+  border-radius: var(--radius-sm, 10px);
+  margin: 2px 0;
+}
+
+/* Relative "2h ago" timestamp, sits at the end of the source row. */
+.news-item__time {
+  margin-left: auto;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--text-faint);
+}
+
+/* Loading placeholder rows while the first GET /news call is in
+   flight — same skeleton treatment reports.js already uses. */
+.news-item--skeleton {
+  border-top: 1px solid var(--border-soft);
+}
+
+.news-item--skeleton > div {
+  width: 100%;
+  border-radius: var(--radius-sm, 10px);
+  background: linear-gradient(90deg, var(--bg-panel-raised) 25%, var(--border-soft) 50%, var(--bg-panel-raised) 75%);
+  background-size: 200% 100%;
+  animation: newsSkeletonShimmer 1.4s ease infinite;
+}
+
+@keyframes newsSkeletonShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
 /* Headline + collapse toggle sit on one row so the chevron stays
    pinned to the top-right of the item regardless of headline length. */
 .news-item__row {
