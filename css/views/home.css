@@ -2696,7 +2696,7 @@ body.lw-location-panel-open {
 
   .page__header {
     align-items: flex-end;
-    margin-bottom: 28px;
+    margin-bottom: 6px;
   }
 
   .page__greeting {
@@ -4735,6 +4735,14 @@ body:not(.page-data-loading) #view-home #realPageContent {
   }
 }
 
+  .page__eyebrow {
+    margin: 0;
+  }
+
+  .page__subtitle {
+    margin: 0;
+  }
+
 /* ---- 3) Desktop: scrollable page content ----
    On desktop, allow page content to scroll while maintaining pointer-events.
    The body already has overflow-y:auto !important from global.css. */
@@ -4764,7 +4772,7 @@ body:not(.page-data-loading) #view-home #realPageContent {
 /* Desktop/Laptop (min-width: 981px) */
 @media (min-width: 981px) {
   #view-reports .page__header {
-    margin-bottom: 28px;
+    margin-bottom: 6px;
   }
 
   #view-reports .page__title {
@@ -4816,7 +4824,7 @@ body:not(.page-data-loading) #view-home #realPageContent {
 /* Desktop/Laptop (min-width: 981px) */
 @media (min-width: 981px) {
   #view-areas .page__header {
-    margin-bottom: 28px;
+    margin-bottom: 6px;
   }
 
   #view-areas .page__title {
@@ -4883,7 +4891,7 @@ body:not(.page-data-loading) #view-home #realPageContent {
 /* Desktop/Laptop (min-width: 981px) */
 @media (min-width: 981px) {
   #view-account .page__header {
-    margin-bottom: 28px;
+    margin-bottom: 6px;
   }
 
   #view-account .page__title {
