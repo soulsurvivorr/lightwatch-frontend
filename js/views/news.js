@@ -23,8 +23,33 @@
     const NEWS_CACHE_MAX_AGE_MS = 3 * 60 * 1000;   // 3 min — articles refresh server-side every 15-30 min anyway
     const NEWS_POLL_INTERVAL_MS = 5 * 60 * 1000;   // re-check while the tab is open
 
+    // Categories that mean "the lights are off/on right now" — these
+    // always float to the top of the feed regardless of source or date,
+    // since they're the most actionable thing a user can see here.
+    const PRIORITY_CATEGORIES = new Set(['outage', 'restoration']);
+
     let newsPollTimer = null;
     let newsLoadedOnce = false;
+
+    // ---- Sorting ---------------------------------------------------
+    // Server already sorts isOfficial-first, newest-first. On top of
+    // that, always float outage/restoration ("light off"/"light on")
+    // articles to the very top, official-first and newest-first within
+    // that group, then everything else after in the order the server
+    // gave it to us.
+    function sortNewsForDisplay(articles) {
+        return [...articles].sort((a, b) => {
+            const aPriority = PRIORITY_CATEGORIES.has(a.category) ? 0 : 1;
+            const bPriority = PRIORITY_CATEGORIES.has(b.category) ? 0 : 1;
+            if (aPriority !== bPriority) return aPriority - bPriority;
+
+            const aOfficial = a.isOfficial ? 0 : 1;
+            const bOfficial = b.isOfficial ? 0 : 1;
+            if (aOfficial !== bOfficial) return aOfficial - bOfficial;
+
+            return new Date(b.publishedAt) - new Date(a.publishedAt);
+        });
+    }
 
     // ---- Rendering ----------------------------------------------
     function categoryTag(category) {
@@ -52,8 +77,12 @@
             ? window.LWHelpers.formatRelativeTimeFromDate(article.publishedAt)
             : new Date(article.publishedAt).toLocaleDateString();
 
+        // data-url carries the source article's real URL so the whole
+        // card can act as a link (see bindCardInteractions below) — not
+        // just the small "Read full article" line inside the expanded
+        // details.
         return `
-        <article class="news-item${isAlert ? ' news-item--alert' : ''}" data-article-id="${article.id}">
+        <article class="news-item${isAlert ? ' news-item--alert' : ''}" data-article-id="${article.id}" data-url="${escapeHtml(article.url)}" tabindex="0" role="link">
           <div class="news-item__source">
             <span class="news-item__source-icon" aria-hidden="true">${sourceIcon}</span>
             <span class="news-item__source-name">${escapeHtml(article.source)}${article.isOfficial ? ' · Official' : ''}</span>
@@ -88,7 +117,7 @@
             return;
         }
 
-        feed.innerHTML = articles.map(renderNewsItem).join('');
+        feed.innerHTML = sortNewsForDisplay(articles).map(renderNewsItem).join('');
     }
 
     function showNewsLoading() {
@@ -135,20 +164,59 @@
         newsPollTimer = null;
     }
 
-    // ---- Toggle (expand/collapse) --------------------------------
-    function bindToggle() {
+    // ---- Toggle (expand/collapse) + card-click-through ------------
+    // Previously this was only ever called once, from the
+    // DOMContentLoaded handler at the bottom of this file. If
+    // #officialNewsFeed doesn't exist in the DOM yet at that point —
+    // which it won't, on a fresh page load, until the router actually
+    // swaps in the 'chat' view for the first time — this silently did
+    // nothing and never got a second chance, so the toggle arrow (and
+    // card-click-through) permanently never worked after a fresh load.
+    // It's now also called from syncPollingToVisibility() on every
+    // 'lw:route-changed' event; the dataset guard below makes repeat
+    // calls a harmless no-op once binding actually succeeds.
+    function bindCardInteractions() {
         const feed = document.getElementById('officialNewsFeed');
-        if (!feed || feed.dataset.toggleBound === '1') return;
-        feed.dataset.toggleBound = '1';
+        if (!feed || feed.dataset.interactionsBound === '1') return;
+        feed.dataset.interactionsBound = '1';
 
         feed.addEventListener('click', (e) => {
-            const btn = e.target.closest('[data-action="toggle-news"]');
-            if (!btn || !feed.contains(btn)) return;
-            const item = btn.closest('.news-item');
-            if (!item) return;
-            const expanded = btn.getAttribute('aria-expanded') === 'true';
-            btn.setAttribute('aria-expanded', String(!expanded));
-            item.classList.toggle('is-expanded', !expanded);
+            // Toggle button (or its icon) — expand/collapse only, and
+            // don't let this bubble into the card-open handler below.
+            const toggleBtn = e.target.closest('[data-action="toggle-news"]');
+            if (toggleBtn && feed.contains(toggleBtn)) {
+                const item = toggleBtn.closest('.news-item');
+                if (!item) return;
+                const expanded = toggleBtn.getAttribute('aria-expanded') === 'true';
+                toggleBtn.setAttribute('aria-expanded', String(!expanded));
+                item.classList.toggle('is-expanded', !expanded);
+                return;
+            }
+
+            // The "Read full article" link already has its own href +
+            // target="_blank" — let the browser handle it natively,
+            // don't also trigger the card-level open below (which would
+            // otherwise fire twice / fight over which tab opens).
+            if (e.target.closest('[data-action="read-article"]')) return;
+
+            // Anywhere else on the card — open the source article.
+            const card = e.target.closest('.news-item[data-url]');
+            if (card && feed.contains(card) && card.dataset.url) {
+                window.open(card.dataset.url, '_blank', 'noopener,noreferrer');
+            }
+        });
+
+        // Keyboard access for the same card-open behavior (the card has
+        // role="link" + tabindex="0" above).
+        feed.addEventListener('keydown', (e) => {
+            if (e.key !== 'Enter' && e.key !== ' ') return;
+            const card = e.target.closest('.news-item[data-url]');
+            if (!card || !feed.contains(card)) return;
+            // Don't hijack Enter/Space when focus is actually on the
+            // toggle button or the link — let their own handlers run.
+            if (e.target.closest('[data-action="toggle-news"], [data-action="read-article"]')) return;
+            e.preventDefault();
+            window.open(card.dataset.url, '_blank', 'noopener,noreferrer');
         });
     }
 
@@ -169,25 +237,35 @@
         return panel.offsetParent !== null;
     }
 
-    function syncPollingToVisibility() {
-        if (isNewsPanelVisible()) startNewsPolling();
-        else stopNewsPolling();
-    }
+    let visibilityObserverBound = false;
 
     function observeVisibility() {
+        if (visibilityObserverBound) return;
         const panel = document.getElementById('reportPanelNews');
         const section = document.getElementById('view-chat');
         if (!panel || !section) return;
+        visibilityObserverBound = true;
 
         const observer = new MutationObserver(syncPollingToVisibility);
         observer.observe(panel, { attributes: true, attributeFilter: ['hidden', 'class', 'style'] });
         observer.observe(section, { attributes: true, attributeFilter: ['hidden', 'class', 'style'] });
     }
 
+    function syncPollingToVisibility() {
+        // Re-attempt binding on every route change too — see the comment
+        // on bindCardInteractions() above for why this can't just live
+        // in the one-time DOMContentLoaded handler below.
+        bindCardInteractions();
+        observeVisibility();
+
+        if (isNewsPanelVisible()) startNewsPolling();
+        else stopNewsPolling();
+    }
+
     window.addEventListener('lw:route-changed', syncPollingToVisibility);
 
     document.addEventListener('DOMContentLoaded', () => {
-        bindToggle();
+        bindCardInteractions();
         observeVisibility();
         syncPollingToVisibility();
     });
