@@ -631,10 +631,31 @@
 }
 
 .location-card__info-summary-chevron {
-  color: var(--text-faint);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  background: rgba(154, 161, 172, 0.16);
+  color: #9AA1AC;
   font-size: 1.1rem;
+  font-weight: 700;
   line-height: 1;
-  transition: transform 0.2s ease;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, color 0.2s ease;
+  /* Optical nudge: the "›" glyph's ink sits slightly above the box's
+     true vertical center in most fonts, so flex centering alone reads
+     as a hair high. Baked into the base transform (rather than the
+     :checked rule below) so it isn't lost when that rule rotates it. */
+  transform: translateY(0.5px) rotate(0deg);
+}
+
+.location-card__info-summary:hover .location-card__info-summary-chevron,
+.location-card__info-summary:focus-visible .location-card__info-summary-chevron {
+  background: rgba(154, 161, 172, 0.28);
+  color: #7A828E;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.1);
 }
 
 /* Tablet and Desktop viewports — Grid Insights is not collapsible
@@ -2407,6 +2428,33 @@ body.lw-location-panel-open {
   border-color: rgba(23, 25, 60, 0.15);
 }
 
+/* Community-report message posted in the user's own location */
+.report-item--chat {
+  border-color: rgba(61, 217, 194, 0.3);
+}
+
+/* A reply to a message the user posted */
+.report-item--reply {
+  border-color: rgba(120, 130, 255, 0.45);
+}
+
+/* A news article matched to the user's location or a nationwide outage */
+.report-item--news {
+  border-color: rgba(242, 179, 61, 0.3);
+}
+
+.report-item[role="link"] {
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.report-item[role="link"]:hover,
+.report-item[role="link"]:focus-visible {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(28, 31, 38, 0.1);
+  outline: none;
+}
+
 /* Search + add-location toolbar */
 .locations-toolbar {
   display: flex;
@@ -2752,7 +2800,7 @@ body.lw-location-panel-open {
   }
 
   .location-card__info-toggle-input:checked ~ .location-card__info-summary .location-card__info-summary-chevron {
-    transform: rotate(90deg);
+    transform: translateY(0.5px) rotate(90deg);
   }
 
   .meta-summary {

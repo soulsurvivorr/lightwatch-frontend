@@ -151,8 +151,8 @@
   }
 }
 
-/* Very narrow phones (e.g. iPhone SE, standard Galaxy S8/S9) */
-@media (max-width: 400px) {
+/* Very narrow phones (e.g. iPhone SE, small Galaxy devices) */
+@media (max-width: 360px) {
   .btn {
     font-size: 0.86rem;
     padding: 10px 16px;
@@ -199,7 +199,7 @@
   }
 
   .bottom-icons-container {
-    padding: 3px 8px env(safe-area-inset-bottom);
+    padding: 7px 8px calc(7px + env(safe-area-inset-bottom));
   }
 
   .bottom-nav-link {

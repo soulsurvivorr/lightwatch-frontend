@@ -70,9 +70,22 @@
   left: 0;
   right: 0;
   z-index: 45;
-  display: none;
+  /* No unconditional display:none here anymore — it was fighting the
+     "display: block" overrides in app-shell.css / home.css's
+     max-width:768px blocks purely on cross-file load order, which is
+     fragile (a bundler reordering the <link> tags, or these three
+     rules ending up in a different file next time, silently flips
+     which one wins). The desktop-hide case is handled explicitly and
+     unambiguously below via !important, keyed off min-width — this
+     wrapper is visible by default and only hidden on wide screens. */
   padding: 0;
   pointer-events: none;
+}
+
+@media (min-width: 769px) {
+  #bottom_nav_wrapper {
+    display: none !important;
+  }
 }
 
 .bottom-icons-container {
