@@ -104,9 +104,9 @@
   <link rel="stylesheet" href="./css/views/home.css">
   <link rel="stylesheet" href="./css/views/chat.css">
   <link rel="stylesheet" href="./css/views/lightstatus.css">
-  <link rel="stylesheet" href="./css/views/areas.css">
+  <link rel="stylesheet" href="./css/views/location.css">
   <link rel="stylesheet" href="./css/views/account.css">
-  <link rel="stylesheet" href="./css/views/reports.css">
+  <link rel="stylesheet" href="./css/views/notifications.css">
   <link rel="stylesheet" href="./css/views/profile.css">
   <link rel="stylesheet" href="./css/views/home-reminder.css">
   <link rel="stylesheet" href="./css/views/dashboard.css">
@@ -170,7 +170,7 @@
         </ul>
       </div>
 
-      <div class="onboarding-slide onboarding-slide--areas" data-slide="2">
+      <div class="onboarding-slide onboarding-slide--location" data-slide="2">
         <span class="onboarding-slide__icon">
           <img src="./icons/location.png?v=1.0.20" alt="" aria-hidden="true" width="24" height="24" />
         </span>
@@ -509,9 +509,9 @@
       </label>
       <nav class="nav" id="primaryNav">
         <a href="#" class="nav__link" data-nav="home" data-route="home">Home</a>
-        <a href="#" class="nav__link" data-nav="areas" data-route="areas">Areas</a>
+        <a href="#" class="nav__link" data-nav="location" data-route="location">Locations</a>
         <a href="#" class="nav__link" data-nav="chat" data-route="chat">Report</a>
-        <a href="#" class="nav__link" data-nav="reports" data-route="reports">Notifications</a>
+        <a href="#" class="nav__link" data-nav="notifications" data-route="notifications">Notifications</a>
         <a href="#" class="nav__link" data-nav="account" data-route="account">Account</a>
       </nav>
       <button type="button" id="profileMenuButton" class="topbar__user" aria-expanded="false" aria-controls="userSidebarPanel">
@@ -852,7 +852,7 @@
                 <div class="report-list report-list--compact" id="recentReportsList"></div>
               </div>
 
-              <!-- Nearby areas: live status pulled from /lightstatus for
+              <!-- Nearby location: live status pulled from /lightstatus for
                    each neighboring location, using a hardcoded adjacency
                    map since we don't have geocoding yet (see NEARBY_MAP in
                    lightstatus.js). Statuses shown are real; "nearby" itself
@@ -861,7 +861,7 @@
               <div class="pulse-section">
                 <span class="pulse-section__title">Nearby</span>
                 <div class="nearby-list" id="nearbyList">
-                  <span class="nearby-list__empty">Loading nearby areas…</span>
+                  <span class="nearby-list__empty">Loading nearby location…</span>
                 </div>
               </div>
 
@@ -896,7 +896,7 @@
 
         <!-- "Add a location" moved off Home — it's a setup/management action,
              not something people need in their 15-second daily check-in.
-             Belongs on the Areas page now. (Not touching the loading
+             Belongs on the Locations page now. (Not touching the loading
              skeleton above on purpose, per instructions.) -->
 
         <!-- Achievements: real numbers from /user/:id (reportCount) and
@@ -1108,16 +1108,16 @@
       </main>
     </section>
 
-    <!-- ==== Areas page section ==== -->
-    <section id="view-areas" data-view="areas" hidden>
-  <div class="page" id="areasSkeleton" aria-hidden="true">
+    <!-- ==== Locations page section ==== -->
+    <section id="view-location" data-view="location" hidden>
+  <div class="page" id="locationSkeleton" aria-hidden="true">
     <div class="hero-banner">
       <span class="skel skel-line" style="width:120px;height:10px;"></span>
       <span class="skel skel-line" style="width:180px;height:24px;margin-top:10px;"></span>
       <span class="skel skel-line" style="width:80%;height:12px;margin-top:10px;"></span>
     </div>
-    <div class="areas-layout">
-      <div class="areas-main">
+    <div class="location-layout">
+      <div class="location-main">
         <span class="skel skel-block" style="height:48px;margin-bottom:16px;"></span>
         <div class="card" style="padding:16px;">
           <span class="skel skel-line" style="width:140px;height:14px;margin-bottom:12px;"></span>
@@ -1128,7 +1128,7 @@
           </div>
         </div>
       </div>
-      <aside class="areas-sidebar">
+      <aside class="location-sidebar">
         <div class="card" style="height:200px;">
           <span class="skel skel-line" style="width:100px;height:14px;"></span>
           <span class="skel skel-block" style="height:120px;margin-top:14px;"></span>
@@ -1137,7 +1137,7 @@
     </div>
   </div>
 
-<main class="page" id="areasRealContent">
+<main class="page" id="locationRealContent">
       <div class="hero-banner">
         <div class="hero-banner__location">
           <span class="pulse pulse--on" style="width:8px;height:8px;"></span>
@@ -1148,66 +1148,66 @@
         <div class="hero-banner__sub">See how other neighborhoods around Kumasi are doing right now.</div>
       </div>
 
-      <div class="areas-layout">
-        <div class="areas-main">
-          <div class="areas-summary-strip">
-            <span class="areas-summary-strip__icon">
-              <img src="./icons/location.png" alt="Areas" width="18" height="18">
+      <div class="location-layout">
+        <div class="location-main">
+          <div class="location-summary-strip">
+            <span class="location-summary-strip__icon">
+              <img src="./icons/location.png" alt="Locations" width="18" height="18">
             </span>
-            <span class="areas-summary-strip__text">
-              <span id="areasSummaryText">Loading area status…</span>
-              <span class="areas-summary-strip__sub">Updates automatically as the community reports in</span>
+            <span class="location-summary-strip__text">
+              <span id="locationSummaryText">Loading area status…</span>
+              <span class="location-summary-strip__sub">Updates automatically as the community reports in</span>
             </span>
           </div>
 
-          <div class="areas-controls">
-            <div class="areas-filter-tabs" id="areasFilterTabs">
-              <button type="button" class="areas-filter-tab is-active" data-filter="all">All</button>
-              <button type="button" class="areas-filter-tab" data-filter="on">On</button>
-              <button type="button" class="areas-filter-tab" data-filter="off">Off</button>
-              <button type="button" class="areas-filter-tab" data-filter="unknown">Checking</button>
+          <div class="location-controls">
+            <div class="location-filter-tabs" id="locationFilterTabs">
+              <button type="button" class="location-filter-tab is-active" data-filter="all">All</button>
+              <button type="button" class="location-filter-tab" data-filter="on">On</button>
+              <button type="button" class="location-filter-tab" data-filter="off">Off</button>
+              <button type="button" class="location-filter-tab" data-filter="unknown">Checking</button>
             </div>
-            <div class="areas-search">
-              <input type="text" id="areasSearchInput" placeholder="Search a city..." autocomplete="off">
+            <div class="location-search">
+              <input type="text" id="locationSearchInput" placeholder="Search a city..." autocomplete="off">
             </div>
           </div>
 
-          <section class="areas-board card" aria-label="Areas liveboard">
+          <section class="location-board card" aria-label="Locations liveboard">
             <div class="card__head">
               <span class="card__title">Cities status</span>
               <span class="card__meta">Tap a filter or search to narrow the list</span>
             </div>
             <div class="area-grid" id="areaGrid" role="list" aria-label="City status list"></div>
-            <div class="areas-empty-state" id="areasEmptyState">
+            <div class="location-empty-state" id="locationEmptyState">
               <strong>No cities match that search</strong>
               <span>Try a different name or clear the filter</span>
             </div>
           </section>
         </div>
 
-        <aside class="areas-sidebar" aria-label="Areas overview">
-          <div class="card areas-sidebar__card">
+        <aside class="location-sidebar" aria-label="Locations overview">
+          <div class="card location-sidebar__card">
             <div class="card__head">
               <span class="card__title">Overview</span>
               <span class="card__meta">Quick scan</span>
             </div>
-            <div class="areas-sidebar__body">
-              <div class="areas-sidebar__item">
-                <span class="areas-sidebar__dot areas-sidebar__dot--on"></span>
+            <div class="location-sidebar__body">
+              <div class="location-sidebar__item">
+                <span class="location-sidebar__dot location-sidebar__dot--on"></span>
                 <div>
                   <strong>Live neighborhoods</strong>
                   <span>See which communities are currently active.</span>
                 </div>
               </div>
-              <div class="areas-sidebar__item">
-                <span class="areas-sidebar__dot areas-sidebar__dot--off"></span>
+              <div class="location-sidebar__item">
+                <span class="location-sidebar__dot location-sidebar__dot--off"></span>
                 <div>
                   <strong>Needs attention</strong>
-                  <span>Spot areas that may be reporting outages.</span>
+                  <span>Spot location that may be reporting outages.</span>
                 </div>
               </div>
-              <div class="areas-sidebar__item">
-                <span class="areas-sidebar__dot areas-sidebar__dot--checking"></span>
+              <div class="location-sidebar__item">
+                <span class="location-sidebar__dot location-sidebar__dot--checking"></span>
                 <div>
                   <strong>Still checking</strong>
                   <span>Watch for pending or unverified updates.</span>
@@ -1220,24 +1220,24 @@
   </main>
     </section>
 
-    <!-- ==== Reports page section ==== -->
-    <section id="view-reports" data-view="reports" hidden>
+    <!-- ==== Notifications page section ==== -->
+    <section id="view-notifications" data-view="notifications" hidden>
 <main class="page">
 
     <div class="page__header">
       <div>
-        <div class="page__eyebrow">Reports</div>
-        <h1 class="page__title">All reports</h1>
-        <p class="page__subtitle">Every status report submitted across LightWatch locations in Kumasi.</p>
+        <div class="page__eyebrow">Notifications</div>
+        <h1 class="page__title">All notifications</h1>
+        <p class="page__subtitle">Recent alerts and community updates for your LightWatch locations.</p>
       </div>
     </div>
 
-    <div class="card report-card">
+    <div class="card notification-card">
       <div class="card__head">
         <span class="card__title">Recent activity</span>
         <span class="card__meta">Sorted by newest first</span>
       </div>
-      <div class="report-list"></div>
+      <div class="notification-list"></div>
     </div>
   </main>
     </section>
@@ -1385,7 +1385,7 @@
             <span class="card__icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 18s6-5.686 6-10a6 6 0 1 0-12 0c0 4.314 6 10 6 10Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="10" cy="8" r="2.2" stroke="currentColor" stroke-width="1.6"/></svg></span>
             <span class="card__head-text">
               <span class="card__title">My locations</span>
-              <span class="card__meta">Areas you're monitoring</span>
+              <span class="card__meta">Locations you're monitoring</span>
             </span>
             <button type="button" class="card__collapse-btn" id="myLocationsCollapseBtn" aria-expanded="false" aria-controls="myLocationsCollapseBody" aria-label="Expand my locations">
               <svg class="card__collapse-chevron" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="m4 6 4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -1765,9 +1765,9 @@
         </span>
         <span class="bottom-nav-label">Home</span>
       </a>
-      <a href="#" class="bottom-nav-link" data-nav="areas" data-route="areas" aria-label="Areas">
+      <a href="#" class="bottom-nav-link" data-nav="location" data-route="location" aria-label="Locations">
         <span class="bottom-nav-icon bottom-nav-icon--user">
-          <img src="./icons/location.png" alt="Areas" class="bottom-nav-icon-img bottom-nav-icon-img--light">
+          <img src="./icons/location.png" alt="Locations" class="bottom-nav-icon-img bottom-nav-icon-img--light">
           <img src="./icons/location-active.png" alt="" aria-hidden="true" class="bottom-nav-icon-img bottom-nav-icon-img--active">
         </span>
         <span class="bottom-nav-label">Locations</span>
@@ -1779,12 +1779,12 @@
         </span>
         <span class="bottom-nav-label">Report</span>
       </a>
-      <a href="#" class="bottom-nav-link" data-nav="reports" data-route="reports" aria-label="Notifications">
-        <span class="bottom-nav-icon bottom-nav-icon--user">
+      <a href="#" class="bottom-nav-link" data-nav="notifications" data-route="notifications" aria-label="Notifications">
+        <span class="bottom-nav-icon bottom-nav-icon--notifications">
           <img src="./icons/notification.png" alt="Notifications" class="bottom-nav-icon-img bottom-nav-icon-img--light">
           <img src="./icons/notification-active.png" alt="" aria-hidden="true" class="bottom-nav-icon-img bottom-nav-icon-img--active">
-          <span class="bottom-nav-badge" data-nav-badge="reports" hidden aria-hidden="true"></span>
-          <span class="bottom-nav-dot" data-nav-dot="reports" hidden aria-hidden="true"></span>
+          <span class="bottom-nav-badge" data-nav-badge="notifications" hidden aria-hidden="true"></span>
+          <span class="bottom-nav-dot" data-nav-dot="notifications" hidden aria-hidden="true"></span>
         </span>
         <span class="bottom-nav-label">Notifications</span>
       </a>
@@ -1830,8 +1830,8 @@
   <script src="./js/views/home.js"></script>
   <script src="./js/views/lightstatus.js"></script>
   <script src="./js/views/profile.js"></script>
-  <script src="./js/views/areas.js"></script>
-  <script src="./js/views/reports.js"></script>
+  <script src="./js/views/location.js"></script>
+  <script src="./js/views/notifications.js"></script>
   <script src="./js/views/account.js"></script>
   <!-- views/dashboard.js intentionally not included — see that file's
        header comment: it was never wired into any current page. -->

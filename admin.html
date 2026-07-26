@@ -814,9 +814,9 @@
        </div>
        <div class="analytics-grid">
         <div class="a-card">
-         <div class="a-card__head"><span class="a-card__title" data-template-id="analytics-top-areas-title">Most Searched Areas</span> <span class="a-card__hint">Top 10</span>
+         <div class="a-card__head"><span class="a-card__title" data-template-id="analytics-top-locations-title">Most Searched Locations</span> <span class="a-card__hint">Top 10</span>
          </div>
-         <div class="bar-list" id="topAreasList">
+         <div class="bar-list" id="topLocationsList">
           <div class="a-empty">
            No search activity recorded yet.
           </div>
@@ -2077,7 +2077,7 @@
     const days = document.getElementById("analyticsRange")?.value || 14;
     try {
       const data = await apiFetch(`/admin/analytics/overview?days=${days}`);
-      renderBarList("topAreasList", (data.topSearchedAreas || []).map(a => ({ label: a.location, value: a.count })), { emptyText: "No search activity recorded yet." });
+      renderBarList("topLocationsList", (data.topSearchedAreas || []).map(a => ({ label: a.location, value: a.count })), { emptyText: "No search activity recorded yet." });
       renderBarList("dropOffList", (data.dropOff || []).map(d => ({ label: d.screen, value: d.pct, suffix: "%" })), { emptyText: "No exit events recorded yet.", fillClass: "red" });
       renderBarList("screenTimeList", (data.screenTime || []).map(s => ({ label: s.screen, value: s.avgSeconds, suffix: "s" })), { emptyText: "No screen-time data recorded yet.", fillClass: "amber" });
       renderDayChart("reportsPerDayChart", (data.reportsPerDay || []).map(r => ({ date: r.date, reports: r.count })), [{ key: "reports", cls: "reports" }]);

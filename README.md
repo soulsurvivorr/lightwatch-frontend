@@ -18,12 +18,12 @@ transition is `window.LWRouter.navigate('viewName')`.
    `./images/...` / `./icons/...` to match `index.html` now living at
    the project root instead of under `/pages/`.
 2. **Server/hosting fallback for deep links.** Real `pushState` paths
-   (`/home`, `/areas`, `/reports`, `/account`, `/login`, `/signup`,
-   `/verification`) need whatever serves this app to respond to those
-   paths with `index.html` too — the standard requirement for any
-   pushState SPA (e.g. a static host's "rewrite all routes to
-   index.html" option). Opening `index.html` directly still works for
-   the default view; a fresh deep link to e.g. `/areas` won't resolve
+  (`/home`, `/location`, `/reports`, `/account`, `/login`, `/signup`,
+  `/verification`) need whatever serves this app to respond to those
+  paths with `index.html` too — the standard requirement for any
+  pushState SPA (e.g. a static host's "rewrite all routes to
+  index.html" option). Opening `index.html` directly still works for
+  the default view; a fresh deep link to e.g. `/location` won't resolve
    without that fallback. Capacitor's own local-file serving already
    behaves this way, so this mainly matters if you also serve it over
    plain HTTP somewhere.
@@ -34,10 +34,10 @@ transition is `window.LWRouter.navigate('viewName')`.
 ## What changed structurally
 
 - **One document.** Every page (`index.html`/login, `signup.html`,
-  `verification.html`, `home.html`, `areas.html`, `reports.html`,
+  `verification.html`, `home.html`, `location.html`, `reports.html`,
   `account.html`) is now a `<section id="view-...">` inside either
   `#authShell` (login/signup/verification — no topbar/sidebar/bottom
-  nav) or `#appShell` (home/areas/reports/account — shares one
+  nav) or `#appShell` (home/location/reports/account — shares one
   topbar/sidebar/bottom-nav instance instead of duplicating that
   markup four times).
 - **`js/app.js`** is the router: it decides which shell + view to
@@ -54,7 +54,7 @@ transition is `window.LWRouter.navigate('viewName')`.
 - **`services/`, `utils/`** are mostly new, thin, shared helpers
   (`LWCache`, `LWHelpers`, `LWApi`, `LWStorage`, validators,
   constants) consolidating patterns that used to be copy-pasted
-  slightly differently across files. `areas.js`/`reports.js` were
+  slightly differently across files. `location.js`/`reports.js` were
   rewired onto them as the reference example; most other files kept
   their original inline versions of the same pattern rather than risk
   a blind rewrite of behavior-critical code.
@@ -117,7 +117,7 @@ transition is `window.LWRouter.navigate('viewName')`.
   regardless of which file it's physically in, so nothing is broken —
   it's a organization/maintainability item, not a functional one.
 - **Please click through the whole app once** before shipping this —
-  especially sign-in → sign-up → verification → home → areas →
+  especially sign-in → sign-up → verification → home → location →
   reports → account → sign-out, and the chat widget, given how much
   of this pass was mechanical restructuring across ~19,000 lines. I
   ran a Python HTML-parse check and `node --check` on every JS file

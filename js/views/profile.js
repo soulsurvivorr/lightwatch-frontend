@@ -16,8 +16,8 @@
 //   - The "this user no longer exists" fallback now calls
 //     window.LWRouter.navigate('login', { replace: true }) instead
 //     of window.location.replace('../index.html').
-//  Everything else is unchanged.
-// ============================================================
+//  Everything else is unchanged.//  This file is shared chrome and no longer relies on the old
+//  views/areas.js route-specific logic.// ============================================================
 
 // profile.js
 // Makes the profile sections (sidebar card + topbar avatar +

@@ -21,14 +21,14 @@
 //  mount/show/hide are all optional — a view with nothing to do on
 //  one of those hooks can simply omit it.
 //
-//  DEPLOYMENT NOTE: this uses real pushState paths (/home, /areas,
+//  DEPLOYMENT NOTE: this uses real pushState paths (/home, /location,
 //  etc.), which means whatever serves this app needs to respond to
 //  those paths with index.html too (the same fallback every
 //  pushState SPA needs — e.g. a static host's "rewrite all routes
 //  to index.html" option, or Capacitor's own local-file serving,
 //  which already behaves this way). Opening index.html directly via
 //  file:// still works for the default view; deep-linking to e.g.
-//  /areas over file:// won't resolve without that fallback.
+//  /location over file:// won't resolve without that fallback.
 // ============================================================
 
 (function () {
@@ -37,9 +37,9 @@
         signup:       { protected: false, publicOnly: true,  shell: 'auth', path: '/signup',       title: 'LightWatch - Sign Up' },
         verification: { protected: false, publicOnly: false, shell: 'auth', path: '/verification',  title: 'LightWatch GH' },
         home:         { protected: true,  publicOnly: false, shell: 'app',  path: '/home',          title: 'LightWatch — Home' },
-        areas:        { protected: true,  publicOnly: false, shell: 'app',  path: '/areas',         title: 'LightWatch — Areas' },
+        location:     { protected: true,  publicOnly: false, shell: 'app',  path: '/location',      title: 'LightWatch — Locations' },
         chat:         { protected: true,  publicOnly: false, shell: 'app',  path: '/chat',          title: 'Report — LightWatch' },
-        reports:      { protected: true,  publicOnly: false, shell: 'app',  path: '/reports',       title: 'Notifications — LightWatch' },
+        notifications: { protected: true,  publicOnly: false, shell: 'app',  path: '/notifications', title: 'Notifications — LightWatch' },
         account:      { protected: true,  publicOnly: false, shell: 'app',  path: '/account',       title: 'Account — LightWatch' }
     };
 

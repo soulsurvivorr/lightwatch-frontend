@@ -1,12 +1,12 @@
 /* ============================================================
-   Areas page
+   Locations page
    Dense, scannable list of towns with status, confidence, and
    time-since-last-report — built to show many rows on screen at
    once rather than a handful of large cards.
    ============================================================ */
 
 /* ------------------------------------------------------------
-   #areasSkeleton / #areasRealContent — same pattern as
+   #locationSkeleton / #locationRealContent — same pattern as
    account.css's #accountSkeleton/#accountRealContent and home.css's
    #pageSkeleton/#realPageContent. Without this, both were plain
    block-level siblings sharing class="page" with nothing making
@@ -16,50 +16,50 @@
 
    display:none/block is mutually exclusive by design: only one of
    the pair is ever actually laid out, so neither can push the other
-   down. areas.js's hideAreasSkeleton() adds .lw-skel-fading first
+   down. location.js's hideLocationSkeleton() adds .lw-skel-fading first
    (triggering the opacity fade below while .app-loading, and
    therefore display:block, is still in effect), then ~180ms later
    drops .app-loading (snapping the now-invisible skeleton to
-   display:none) and adds .lw-content-reveal to #areasRealContent for
+   display:none) and adds .lw-content-reveal to #locationRealContent for
    its entrance animation — mirroring profile.js's
    showProfileLoader()/hideProfileLoader() timing for Home. */
-#areasSkeleton {
+#locationSkeleton {
   display: none;
   opacity: 1;
   transition: opacity 0.2s ease;
 }
 
-.page-data-loading #areasSkeleton {
+.page-data-loading #locationSkeleton {
   display: block;
 }
 
-#areasSkeleton.lw-skel-fading {
+#locationSkeleton.lw-skel-fading {
   opacity: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  #areasSkeleton {
+  #locationSkeleton {
     transition: none;
   }
 }
 
-.page-data-loading #areasRealContent {
+.page-data-loading #locationRealContent {
   display: none;
 }
 
 /* @keyframes lwContentReveal is defined once in account.css and
    loaded on every page, so it's shared here rather than redefined. */
-#areasRealContent.lw-content-reveal {
+#locationRealContent.lw-content-reveal {
   animation: lwContentReveal 0.4s cubic-bezier(.19, 1, .22, 1) both;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  #areasRealContent.lw-content-reveal {
+  #locationRealContent.lw-content-reveal {
     animation: none;
   }
 }
 
-.areas-layout {
+.location-layout {
   display: grid;
   gap: 12px;
   width: 100%;
@@ -73,31 +73,31 @@
   grid-template-columns: 1fr;
 }
 
-.areas-main {
+.location-main {
   display: flex;
   flex-direction: column;
   gap: 10px;
   min-width: 0;
 }
 
-.areas-sidebar {
+.location-sidebar {
   display: flex;
   flex-direction: column;
   min-width: 0;
   width: 100%;
 }
 
-.areas-sidebar__card {
+.location-sidebar__card {
   height: fit-content;
 }
 
-.areas-sidebar__body {
+.location-sidebar__body {
   display: grid;
   gap: 12px;
   margin-top: 8px;
 }
 
-.areas-sidebar__item {
+.location-sidebar__item {
   display: flex;
   align-items: flex-start;
   gap: 10px;
@@ -105,25 +105,25 @@
   border-bottom: 1px solid var(--border-soft);
 }
 
-.areas-sidebar__item:last-child {
+.location-sidebar__item:last-child {
   border-bottom: none;
   padding-bottom: 0;
 }
 
-.areas-sidebar__item strong {
+.location-sidebar__item strong {
   display: block;
   font-size: 0.84rem;
   color: var(--text-bright);
   margin-bottom: 3px;
 }
 
-.areas-sidebar__item span {
+.location-sidebar__item span {
   font-size: 0.74rem;
   color: var(--text-faint);
   line-height: 1.4;
 }
 
-.areas-sidebar__dot {
+.location-sidebar__dot {
   width: 10px;
   height: 10px;
   border-radius: 50%;
@@ -131,19 +131,19 @@
   flex-shrink: 0;
 }
 
-.areas-sidebar__dot--on {
+.location-sidebar__dot--on {
   background: var(--teal);
 }
 
-.areas-sidebar__dot--off {
+.location-sidebar__dot--off {
   background: var(--red);
 }
 
-.areas-sidebar__dot--checking {
+.location-sidebar__dot--checking {
   background: var(--brand);
 }
 
-.areas-summary-strip {
+.location-summary-strip {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -154,7 +154,7 @@
   margin-bottom: 0;
 }
 
-.areas-summary-strip__icon {
+.location-summary-strip__icon {
   width: 28px;
   height: 28px;
   flex-shrink: 0;
@@ -165,33 +165,33 @@
   background: var(--teal-dim);
 }
 
-.areas-summary-strip__icon img {
+.location-summary-strip__icon img {
   width: 15px;
   height: 15px;
 }
 
-.areas-summary-strip__text {
+.location-summary-strip__text {
   display: flex;
   flex-direction: column;
   gap: 1px;
   min-width: 0;
 }
 
-#areasSummaryText {
+#locationSummaryText {
   font-family: var(--font-display);
   font-size: clamp(0.82rem, 2.4vw, 0.92rem);
   color: var(--text-bright);
   font-weight: 600;
 }
 
-.areas-summary-strip__sub {
+.location-summary-strip__sub {
   font-size: clamp(0.68rem, 2vw, 0.74rem);
   color: var(--text-faint);
 }
 
 /* ---- Controls: filter chips + search ---- */
 
-.areas-controls {
+.location-controls {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -199,13 +199,13 @@
   flex-wrap: wrap;
 }
 
-.areas-filter-tabs {
+.location-filter-tabs {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
 }
 
-.areas-filter-tab {
+.location-filter-tab {
   border: 1px solid var(--border-soft);
   background: var(--bg-panel);
   color: var(--text-faint);
@@ -217,23 +217,23 @@
   transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
-.areas-filter-tab:hover {
+.location-filter-tab:hover {
   border-color: var(--border-strong);
   color: var(--text-bright);
 }
 
-.areas-filter-tab.is-active {
+.location-filter-tab.is-active {
   background: var(--brand);
   border-color: var(--brand);
   color: white;
 }
 
-.areas-search {
+.location-search {
   flex: 1 1 160px;
   min-width: 140px;
 }
 
-.areas-search input {
+.location-search input {
   width: 100%;
   background: var(--bg-deep);
   border: 1px solid var(--border-soft);
@@ -244,13 +244,13 @@
   font-family: var(--font-body);
 }
 
-.areas-search input:focus {
+.location-search input:focus {
   outline: none;
   border-color: var(--brand);
   box-shadow: 0 0 0 3px rgba(240, 172, 61, 0.15);
 }
 
-.areas-board {
+.location-board {
   margin-bottom: 0;
   padding: 9px 10px 7px;
   width: 100%;
@@ -258,7 +258,7 @@
   box-sizing: border-box;
 }
 
-.areas-board .card__head {
+.location-board .card__head {
   margin-bottom: 8px;
 }
 
@@ -500,7 +500,7 @@
   line-height: 1.3;
 }
 
-.areas-empty-state {
+.location-empty-state {
   display: none;
   flex-direction: column;
   align-items: center;
@@ -511,17 +511,17 @@
   text-align: center;
 }
 
-.areas-empty-state strong {
+.location-empty-state strong {
   color: var(--text-muted);
   font-size: 0.86rem;
 }
 
-.areas-empty-state span {
+.location-empty-state span {
   font-size: 0.76rem;
 }
 
 /* ---- Small screens: keep compact layout and preserve toggle target ---- */
-#view-areas .hero-banner {
+#view-location .hero-banner {
   position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -540,7 +540,7 @@
   background: linear-gradient(135deg, #1C1F26 0%, #2A2E38 55%, #123D36 100%);
 }
 
-#view-areas .hero-banner__eyebrow {
+#view-location .hero-banner__eyebrow {
   grid-area: eyebrow;
   margin: 0;
   align-self: center;
@@ -550,7 +550,7 @@
   letter-spacing: 0.08em;
 }
 
-#view-areas .hero-banner__greeting {
+#view-location .hero-banner__greeting {
   grid-area: greeting;
   font-family: var(--font-display);
   font-size: 1.1rem;
@@ -560,7 +560,7 @@
   margin-bottom: 3px;
 }
 
-#view-areas .hero-banner__sub {
+#view-location .hero-banner__sub {
   grid-area: sub;
   font-size: 0.74rem;
   color: rgba(255, 255, 255, 0.65);
@@ -568,7 +568,7 @@
   margin-bottom: 0;
 }
 
-#view-areas .hero-banner__location {
+#view-location .hero-banner__location {
   grid-area: location;
   display: flex;
   align-items: center;
@@ -585,7 +585,7 @@
   min-width: 0;
 }
 
-#view-areas .hero-banner__location span:last-child {
+#view-location .hero-banner__location span:last-child {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -594,69 +594,69 @@
 
 /* Desktop and Laptop viewports (min-width: 981px) */
 @media (min-width: 981px) {
-  #view-areas .hero-banner {
+  #view-location .hero-banner {
     padding: 16px 18px 14px;
     margin: 0 0 12px;
   }
 
-  #view-areas .hero-banner__eyebrow {
+  #view-location .hero-banner__eyebrow {
     font-size: 0.7rem;
     letter-spacing: 0.1em;
   }
 
-  #view-areas .hero-banner__greeting {
+  #view-location .hero-banner__greeting {
     font-size: 1.35rem;
     margin-bottom: 5px;
   }
 
-  #view-areas .hero-banner__sub {
+  #view-location .hero-banner__sub {
     font-size: 0.82rem;
     margin-bottom: 16px;
   }
 
-  #view-areas .hero-banner__location {
+  #view-location .hero-banner__location {
     gap: 7px;
     padding: 6px 14px;
     font-size: 0.8rem;
   }
 
-  #view-areas .hero-banner__location span:last-child {
+  #view-location .hero-banner__location span:last-child {
     max-width: 18ch;
   }
 
-  .areas-layout {
+  .location-layout {
     grid-template-columns: minmax(0, 3fr) minmax(300px, 1fr);
     gap: 14px;
   }
 
-  .areas-main {
+  .location-main {
     gap: 10px;
   }
 
-  .areas-summary-strip {
+  .location-summary-strip {
     padding: 16px 18px;
     border-radius: 18px;
   }
 
-  .areas-controls {
+  .location-controls {
     align-items: center;
     gap: 14px;
   }
 
-  .areas-search {
+  .location-search {
     max-width: 420px;
   }
 
-  .areas-board {
+  .location-board {
     padding: 18px 20px 14px;
     border-radius: 18px;
   }
 
-  .areas-sidebar {
+  .location-sidebar {
     align-self: start;
   }
 
-  .areas-sidebar__card {
+  .location-sidebar__card {
     padding: 18px 20px;
     border-radius: 18px;
     background: var(--bg-panel);
@@ -670,7 +670,7 @@
 
 /* Tablet and standard Phone viewports */
 @media (max-width: 768px) {
-  .areas-board {
+  .location-board {
     padding: 10px 12px 6px;
   }
 
@@ -680,7 +680,7 @@
     padding: 12px 8px;
   }
 
-  .areas-filter-tab {
+  .location-filter-tab {
     font-size: 0.75rem;
     padding: 5px 10px;
   }
@@ -688,7 +688,7 @@
 
 /* Narrow Phone viewports (e.g. standard iPhone and Galaxy models) */
 @media (max-width: 520px) {
-  .areas-board {
+  .location-board {
     padding: 8px 10px 4px;
   }
 
@@ -729,7 +729,7 @@
     font-size: 0.7rem;
   }
 
-  .areas-filter-tab {
+  .location-filter-tab {
     font-size: 0.7rem;
     padding: 4px 9px;
   }
@@ -737,7 +737,7 @@
 
 /* Smallest phone screens (e.g. iPhone SE 1st-gen) */
 @media (max-width: 360px) {
-  .areas-board .card__meta {
+  .location-board .card__meta {
     font-size: 0.68rem;
   }
 

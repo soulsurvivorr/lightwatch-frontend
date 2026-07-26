@@ -11,7 +11,7 @@
 //     important line in this file for getting unstuck right now.
 //   - PRECACHE_ASSETS rewritten to match the new css/js folder
 //     layout. The old list (/css/styles.css, /css/home.css,
-//     /css/areas.css, /Js/app-startup.js) 404s under the new
+//     /css/location.css, /Js/app-startup.js) 404s under the new
 //     structure, and cache.addAll() fails ENTIRELY if even one URL
 //     in the list 404s — so the old list wasn't precaching
 //     anything at all, silently (caught by the .catch() below).
@@ -115,7 +115,7 @@ self.addEventListener('fetch', event => {
     if (API_PATH_RE.test(url.pathname)) return;
 
     // 4. HTML navigations — network first, cache as a fallback.
-    // This now also covers the SPA's pushState routes (/home, /areas,
+    // This now also covers the SPA's pushState routes (/home, /location,
     // /reports, /account, /login, /signup, /verification) — a browser
     // treats a hard reload or deep link to any of those as a real
     // navigation request, and Netlify needs its own rewrite rule

@@ -329,7 +329,7 @@
 
 /* Full-bleed panel treatment for the Official News feed itself, so
    it visually matches the app's other list-style panels (Reports,
-   Areas) rather than looking like a floating card. */
+   Locations) rather than looking like a floating card. */
 #officialNewsFeed {
   background: var(--bg-panel);
   border: 1px solid var(--border-soft);
@@ -436,7 +436,7 @@
 
   /* Keep "Community reports" left-aligned on desktop rather than
      centered — matches the rest of the app's left-aligned page
-     headers (Reports/Areas/Account). Applies to both tabs. */
+     headers (Reports/Locations/Account). Applies to both tabs. */
   #view-chat .page__header {
     text-align: left;
     justify-content: flex-start;

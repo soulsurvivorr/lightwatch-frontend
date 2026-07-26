@@ -1,10 +1,10 @@
 // ============================================================
-//  VIEWS/AREAS.JS
+//  VIEWS/LOCATION.JS
 //  Dense, scannable list of Kumasi neighborhoods and their current
 //  light status, with a confidence signal, search, and status
 //  filtering.
 //
-//  Changed vs. the original areas.js:
+//  Changed vs. the original location.js-style implementation:
 //   - Wrapped into mount()/show()/hide() for the router. Polling
 //     (POLL_INTERVAL_STANDARD_MS, from utils/constants.js) now
 //     starts in show() and stops in hide() — no point fetching
@@ -16,7 +16,7 @@
 // ============================================================
 
 (function () {
-    const DEMO_AREAS = [
+    const DEMO_LOCATIONS = [
         { name: 'Asokwa', status: 'on', minutesAgo: 12, confirmations: 5 },
         { name: 'Adum', status: 'off', minutesAgo: 244, confirmations: 2 },
         { name: 'Suame', status: 'on', minutesAgo: 18, confirmations: 6 },
@@ -28,9 +28,9 @@
         { name: 'Kwadaso', status: 'off', minutesAgo: 11, confirmations: 3 }
     ];
 
-    const AREAS_CACHE_KEY = 'lw_cache_areas_bantama';
+    const LOCATION_CACHE_KEY = 'lw_cache_location_bantama';
 
-    let areasPollTimer = null;
+    let locationPollTimer = null;
     let currentFilter = 'all';
     let currentSearch = '';
     let controlsBound = false;
@@ -102,11 +102,11 @@
     `;
     }
 
-    function renderSummary(areas) {
-        const onCount = areas.filter(a => a.status === 'on').length;
-        const offCount = areas.filter(a => a.status === 'off').length;
-        const unknownCount = areas.filter(a => a.status === 'unknown' || !a.status).length;
-        const summaryEl = document.getElementById('areasSummaryText');
+    function renderSummary(locations) {
+        const onCount = locations.filter(a => a.status === 'on').length;
+        const offCount = locations.filter(a => a.status === 'off').length;
+        const unknownCount = locations.filter(a => a.status === 'unknown' || !a.status).length;
+        const summaryEl = document.getElementById('locationSummaryText');
         if (summaryEl) {
             summaryEl.textContent = `${onCount} on · ${offCount} off · ${unknownCount} checking`;
         }
@@ -125,17 +125,17 @@
             if (show) visibleCount++;
         });
 
-        const emptyState = document.getElementById('areasEmptyState');
+        const emptyState = document.getElementById('locationEmptyState');
         if (emptyState) {
             emptyState.style.display = visibleCount === 0 ? 'flex' : 'none';
         }
     }
 
-    function renderAreas(areas) {
+    function renderLocations(locations) {
         const grid = document.getElementById('areaGrid');
         if (!grid) return;
 
-        const prioritized = areas
+        const prioritized = locations
             .map((area, index) => ({ area, index }))
             .sort((a, b) => {
                 const aOn = a.area.status === 'on' ? 1 : 0;
@@ -172,54 +172,54 @@
     }
 
     // Mirrors profile.js's hideProfileLoader() timing for Home: mark the
-    // skeleton as fading (areas.css transitions its opacity to 0 while
+    // skeleton as fading (location.css transitions its opacity to 0 while
     // .app-loading — and therefore display:block — is still in effect),
     // then once that's had a moment to actually paint, drop .app-loading
     // (snapping the now-invisible skeleton to display:none) and let
-    // #areasRealContent play its entrance animation. Without this, the
+    // #locationRealContent play its entrance animation. Without this, the
     // skeleton used to just vanish and reappear instantly instead of
-    // fading, and — before areas.css's display:none/block gate existed —
+    // fading, and — before location.css's display:none/block gate existed —
     // both elements were visible in normal flow at once, which is what
     // pushed the real content down beneath the skeleton.
-    function hideAreasSkeleton() {
+    function hideLocationSkeleton() {
         if (!document.body.classList.contains('app-loading')) return;
-        const skeleton = document.getElementById('areasSkeleton');
+        const skeleton = document.getElementById('locationSkeleton');
         if (skeleton) skeleton.classList.add('lw-skel-fading');
         setTimeout(() => {
             document.body.classList.remove('app-loading');
-            const realContent = document.getElementById('areasRealContent');
+            const realContent = document.getElementById('locationRealContent');
             if (realContent) realContent.classList.add('lw-content-reveal');
         }, 180);
     }
 
-    async function loadAreas(isFirstLoad = false) {
+    async function loadLocations(isFirstLoad = false) {
         if (isFirstLoad) {
-            const cached = LWCache.read(AREAS_CACHE_KEY, CACHE_MAX_AGE_MEDIUM_MS);
+            const cached = LWCache.read(LOCATION_CACHE_KEY, CACHE_MAX_AGE_MEDIUM_MS);
             if (cached) {
-                renderAreas([cached, ...DEMO_AREAS]);
-                hideAreasSkeleton();
+                renderLocations([cached, ...DEMO_LOCATIONS]);
+                hideLocationSkeleton();
             }
         }
         const liveBantama = await fetchLiveTowns();
-        renderAreas([liveBantama, ...DEMO_AREAS]);
-        LWCache.write(AREAS_CACHE_KEY, liveBantama);
-        hideAreasSkeleton();
+        renderLocations([liveBantama, ...DEMO_LOCATIONS]);
+        LWCache.write(LOCATION_CACHE_KEY, liveBantama);
+        hideLocationSkeleton();
     }
 
     function bindControls() {
         if (controlsBound) return;
         controlsBound = true;
 
-        document.querySelectorAll('#view-areas .areas-filter-tab').forEach(tab => {
+        document.querySelectorAll('#view-location .location-filter-tab').forEach(tab => {
             tab.addEventListener('click', () => {
-                document.querySelectorAll('#view-areas .areas-filter-tab').forEach(t => t.classList.remove('is-active'));
+                document.querySelectorAll('#view-location .location-filter-tab').forEach(t => t.classList.remove('is-active'));
                 tab.classList.add('is-active');
                 currentFilter = tab.dataset.filter;
                 applyFilters();
             });
         });
 
-        const searchInput = document.getElementById('areasSearchInput');
+        const searchInput = document.getElementById('locationSearchInput');
         if (searchInput) {
             searchInput.addEventListener('input', () => {
                 currentSearch = searchInput.value.trim().toLowerCase();
@@ -251,19 +251,19 @@
 
     function mount() {
         bindControls();
-        loadAreas(true);
+        loadLocations(true);
     }
 
     function show() {
-        clearInterval(areasPollTimer);
-        areasPollTimer = setInterval(() => loadAreas(false), POLL_INTERVAL_STANDARD_MS);
+        clearInterval(locationPollTimer);
+        locationPollTimer = setInterval(() => loadLocations(false), POLL_INTERVAL_STANDARD_MS);
     }
 
     function hide() {
-        clearInterval(areasPollTimer);
-        areasPollTimer = null;
+        clearInterval(locationPollTimer);
+        locationPollTimer = null;
     }
 
     window.LWViews = window.LWViews || {};
-    window.LWViews.areas = { mount, show, hide };
+    window.LWViews.location = { mount, show, hide };
 })();

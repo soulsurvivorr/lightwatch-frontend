@@ -1350,41 +1350,7 @@
      against the whole page for real. */
 }
 
-.report-list {
-  display: grid;
-  gap: 12px;
-}
-
-.report-item {
-  transition: transform 0.18s ease, opacity 0.22s ease;
-}
-
-.report-item:hover {
-  transform: translateY(-2px);
-}
-
-.report-list.loading .report-item {
-  opacity: 0.5;
-}
-
-.report-skeleton {
-  position: relative;
-  overflow: hidden;
-  background: linear-gradient(90deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.05) 100%);
-  background-size: 200% 100%;
-  animation: skeletonShimmer 1.2s linear infinite;
-}
-
-.report-skeleton::before {
-  content: "";
-  display: block;
-  padding-top: 14px;
-}
-
-@keyframes skeletonShimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
+/* Report feed and preview list styles are centralized in views/reports.css. */
 
 .location-card__footer {
   border-top: 1px solid var(--border-soft);
@@ -2393,84 +2359,6 @@ body.lw-location-panel-open {
   box-shadow: 0 14px 36px rgba(28, 31, 38, 0.08);
 }
 
-.report-list {
-  display: grid;
-  gap: 12px;
-}
-
-.report-item {
-  background: var(--bg-panel);
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-md);
-  padding: 14px 16px;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 14px;
-}
-
-.report-item strong {
-  display: block;
-  font-size: 0.88rem;
-  margin-bottom: 5px;
-}
-
-.report-item__text {
-  color: var(--text-muted);
-  font-size: 0.78rem;
-  line-height: 1.4;
-}
-
-.report-item__time {
-  color: var(--text-faint);
-  font-size: 0.7rem;
-  white-space: nowrap;
-}
-
-.report-item--success {
-  border-color: rgba(61, 217, 194, 0.45);
-}
-
-.report-item--warning {
-  border-color: rgba(242, 179, 61, 0.45);
-}
-
-.report-item--info {
-  border-color: rgba(23, 25, 60, 0.15);
-}
-
-/* Community-report message posted in the user's own location */
-.report-item--chat {
-  border-color: rgba(61, 217, 194, 0.3);
-}
-
-/* A reply to a message the user posted */
-.report-item--reply {
-  border-color: rgba(120, 130, 255, 0.45);
-}
-
-/* A news article matched to the user's location or a nationwide outage */
-.report-item--news {
-  border-color: rgba(242, 179, 61, 0.3);
-}
-
-/* An admin broadcast message (POST /admin/broadcast) */
-.report-item--admin {
-  border-color: rgba(242, 179, 61, 0.55);
-  background: rgba(242, 179, 61, 0.06);
-}
-
-.report-item[role="link"] {
-  cursor: pointer;
-  transition: transform 0.12s ease, box-shadow 0.12s ease;
-}
-
-.report-item[role="link"]:hover,
-.report-item[role="link"]:focus-visible {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 20px rgba(28, 31, 38, 0.1);
-  outline: none;
-}
 
 /* Search + add-location toolbar */
 .locations-toolbar {
@@ -4739,25 +4627,6 @@ body:not(.page-data-loading) #view-home #realPageContent {
     font-size: 0.72rem;
   }
 
-  .report-item {
-    padding: 10px 12px;
-    gap: 10px;
-  }
-
-  .report-item strong {
-    font-size: 0.78rem;
-    margin-bottom: 3px;
-  }
-
-  .report-item__text {
-    font-size: 0.68rem;
-    line-height: 1.28;
-  }
-
-  .report-item__time {
-    font-size: 0.6rem;
-  }
-
   .btn {
     font-size: 0.82rem;
   }
@@ -4815,7 +4684,7 @@ body:not(.page-data-loading) #view-home #realPageContent {
 @media (min-width: 721px) {
   #view-home,
   #view-reports,
-  #view-areas,
+  #view-location,
   #view-account,
   #realPageContent,
   .page {
@@ -4831,124 +4700,6 @@ body:not(.page-data-loading) #view-home #realPageContent {
   }
 }
 
-/* ============================================================
-   Reports section - Desktop styling
-   ============================================================ */
-/* Desktop/Laptop (min-width: 981px) */
-@media (min-width: 981px) {
-  #view-reports .page__header {
-    margin-bottom: 6px;
-  }
-
-  #view-reports .page__title {
-    font-size: 1.65rem;
-  }
-
-  #view-reports .page__subtitle {
-    font-size: 0.94rem;
-    margin-top: 6px;
-  }
-
-  #view-reports .report-card {
-    padding: 24px;
-  }
-
-  #view-reports .card__title {
-    font-size: 1.02rem;
-  }
-
-  #view-reports .card__meta {
-    font-size: 0.78rem;
-  }
-
-  #view-reports .report-list {
-    gap: 12px;
-  }
-
-  #view-reports .report-item {
-    padding: 16px 18px;
-  }
-
-  #view-reports .report-item strong {
-    font-size: 0.92rem;
-    margin-bottom: 6px;
-  }
-
-  #view-reports .report-item__text {
-    font-size: 0.82rem;
-  }
-
-  #view-reports .report-item__time {
-    font-size: 0.72rem;
-  }
-}
-
-/* ============================================================
-   Areas section - Desktop styling
-   ============================================================ */
-/* Desktop/Laptop (min-width: 981px) */
-@media (min-width: 981px) {
-  #view-areas .page__header {
-    margin-bottom: 6px;
-  }
-
-  #view-areas .page__title {
-    font-size: 1.65rem;
-  }
-
-  #view-areas .page__subtitle {
-    font-size: 0.94rem;
-    margin-top: 6px;
-  }
-
-  #view-areas .areas-board {
-    padding: 12px 14px 10px;
-    margin-bottom: 22px;
-  }
-
-  #view-areas .card__title {
-    font-size: 1.08rem;
-  }
-
-  #view-areas .card__meta {
-    font-size: 0.82rem;
-  }
-
-  #view-areas .area-row__main {
-    column-gap: 10px;
-    padding: 15px 10px;
-  }
-
-  #view-areas .area-row__name {
-    font-size: 0.88rem;
-  }
-
-  #view-areas .area-row__status-text {
-    font-size: 0.86rem;
-  }
-
-  #view-areas .areas-summary-strip {
-    padding: 12px 14px;
-    margin-bottom: 14px;
-  }
-
-  #view-areas #areasSummaryText {
-    font-size: 0.96rem;
-  }
-
-  #view-areas .areas-summary-strip__sub {
-    font-size: 0.78rem;
-  }
-
-  #view-areas .areas-filter-tab {
-    font-size: 0.78rem;
-    padding: 6px 12px;
-  }
-
-  #view-areas .areas-search input {
-    font-size: 0.82rem;
-  }
-}
 
 /* ============================================================
    Account section - Desktop styling

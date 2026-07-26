@@ -1,7 +1,7 @@
 // ============================================================
 //  CACHE.JS
 //  Consolidates the "paint last-known value instantly, then refresh
-//  from the network" pattern used across views/areas.js,
+//  from the network" pattern used across views/location.js,
 //  views/profile.js (light-status card), and views/account.js
 //  (account extras) / views/home.js (secondary-location panel).
 //

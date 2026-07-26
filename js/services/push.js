@@ -28,7 +28,7 @@ function navigateFromPushUrl(url) {
         const parsed = new URL(url, window.location.origin);
         const legacyPathToView = {
             '/pages/home.html': 'home',
-            '/pages/areas.html': 'areas',
+            '/pages/location.html': 'location',
             '/pages/reports.html': 'reports',
             '/pages/account.html': 'account',
             '/pages/verification.html': 'verification',
@@ -37,7 +37,8 @@ function navigateFromPushUrl(url) {
             '/': 'login',
             '/home': 'home',
             '/chat': 'chat',
-            '/areas': 'areas',
+            '/location': 'location',
+            '/areas': 'location',
             '/reports': 'reports',
             '/account': 'account'
         };

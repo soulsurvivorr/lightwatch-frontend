@@ -1,7 +1,7 @@
 // ============================================================
-//  VIEWS/REPORTS.JS
-//  Loads the latest light status report events for the "All reports"
-//  page (#view-reports .report-list).
+//  VIEWS/NOTIFICATIONS.JS
+//  Loads the latest notification events for the "All notifications"
+//  page (#view-notifications .notification-list).
 //
 //  Changed vs. the original reports.js:
 //   - wrapped into mount()/show()/hide(); polling starts/stops with
@@ -26,11 +26,11 @@
 // ============================================================
 
 (function () {
-    const REPORTS_CACHE_KEY = 'lw_cache_reports_list';
-    const REPORTS_NEWS_CACHE_KEY = 'lw_cache_reports_matched_news';
-    const SEEN_NEWS_IDS_KEY = 'lw_seen_report_news_ids';
+    const NOTIFICATIONS_CACHE_KEY = 'lw_cache_notifications_list';
+    const NOTIFICATIONS_NEWS_CACHE_KEY = 'lw_cache_notifications_matched_news';
+    const SEEN_NOTIFICATION_NEWS_IDS_KEY = 'lw_seen_notification_news_ids';
     const MAX_SEEN_NEWS_IDS = 300; // cap so this never grows unbounded in localStorage
-    let reportsPollTimer = null;
+    let notificationsPollTimer = null;
 
     // ---- Whose feed is this? ---------------------------------------
     // Deliberately duplicated (rather than reaching into chat.js's
@@ -67,7 +67,7 @@
     // guess. This just labels a nationwide story that didn't also match
     // the user's specific location, so it reads as more than just
     // another local headline.
-    function matchedNewsToReportItem(article) {
+    function matchedNewsToNotificationItem(article) {
         const isPurelyNationwide = article.isNationwide && !(article.locations || []).length;
         return {
             id: `news-${article.id}`,
@@ -80,70 +80,70 @@
     }
 
     // ---- Rendering ----------------------------------------------------
-    function reportItemMeta(report) {
-        switch (report.type) {
-            case 'success': return { cls: 'report-item--success', icon: '' };
-            case 'warning': return { cls: 'report-item--warning', icon: '' };
-            case 'chat':    return { cls: 'report-item--chat', icon: '💬 ' };
-            case 'reply':   return { cls: 'report-item--reply', icon: '↩️ ' };
-            case 'news':    return { cls: 'report-item--news', icon: '📰 ' };
-            case 'admin':   return { cls: 'report-item--admin', icon: '' }; // icon is already baked into report.title server-side
-            default:        return { cls: 'report-item--info', icon: '' };
+    function notificationItemMeta(notification) {
+        switch (notification.type) {
+            case 'success': return { cls: 'notification-item--success', icon: '' };
+            case 'warning': return { cls: 'notification-item--warning', icon: '' };
+            case 'chat':    return { cls: 'notification-item--chat', icon: '💬 ' };
+            case 'reply':   return { cls: 'notification-item--reply', icon: '↩️ ' };
+            case 'news':    return { cls: 'notification-item--news', icon: '📰 ' };
+            case 'admin':   return { cls: 'notification-item--admin', icon: '' }; // icon is already baked into notification.title server-side
+            default:        return { cls: 'notification-item--info', icon: '' };
         }
     }
 
-    function renderReports(reports) {
-        const reportList = document.querySelector('#view-reports .report-list');
-        if (!reportList) return;
-        reportList.classList.remove('loading');
+    function renderNotifications(notifications) {
+        const notificationList = document.querySelector('#view-notifications .notification-list');
+        if (!notificationList) return;
+        notificationList.classList.remove('loading');
 
-        if (!reports || reports.length === 0) {
-            reportList.innerHTML = '<article class="report-item report-item--info"><div><strong>No recent reports yet</strong><p class="report-item__text">Once users start sharing light updates, they will appear here.</p></div><span class="report-item__time">—</span></article>';
+        if (!notifications || notifications.length === 0) {
+            notificationList.innerHTML = '<article class="notification-item notification-item--info"><div><strong>No recent notifications yet</strong><p class="notification-item__text">Once users start sharing updates, they will appear here.</p></div><span class="notification-item__time">—</span></article>';
             return;
         }
 
-        reportList.innerHTML = reports.map(report => {
-            const { cls, icon } = reportItemMeta(report);
-            const isClickable = report.type === 'chat' || report.type === 'reply' || report.type === 'news' || report.type === 'admin';
-            const dataAttrs = report.type === 'news'
-                ? `data-action="open-news" data-url="${escapeHtml(report.url)}"`
-                : (report.type === 'chat' || report.type === 'reply' || report.type === 'admin')
-                    ? `data-action="open-chat" data-chat-id="${escapeHtml(report.chatId)}" data-chat-scope="${escapeHtml(report.chatScope || 'local')}" data-chat-location="${escapeHtml(report.chatLocation || '')}"`
+        notificationList.innerHTML = notifications.map(notification => {
+            const { cls, icon } = notificationItemMeta(notification);
+            const isClickable = notification.type === 'chat' || notification.type === 'reply' || notification.type === 'news' || notification.type === 'admin';
+            const dataAttrs = notification.type === 'news'
+                ? `data-action="open-news" data-url="${escapeHtml(notification.url)}"`
+                : (notification.type === 'chat' || notification.type === 'reply' || notification.type === 'admin')
+                    ? `data-action="open-chat" data-chat-id="${escapeHtml(notification.chatId)}" data-chat-scope="${escapeHtml(notification.chatScope || 'local')}" data-chat-location="${escapeHtml(notification.chatLocation || '')}"`
                     : '';
             return `
-            <article class="report-item ${cls}"${isClickable ? ` tabindex="0" role="link" ${dataAttrs}` : ''}>
+            <article class="notification-item ${cls}"${isClickable ? ` tabindex="0" role="link" ${dataAttrs}` : ''}>
               <div>
-                <strong>${icon}${escapeHtml(report.title)}</strong>
-                <p class="report-item__text">${escapeHtml(report.text)}</p>
+                <strong>${icon}${escapeHtml(notification.title)}</strong>
+                <p class="notification-item__text">${escapeHtml(notification.text)}</p>
               </div>
-              <span class="report-item__time">${LWHelpers.formatRelativeTimeFromDate(report.reportedAt)}</span>
+              <span class="notification-item__time">${LWHelpers.formatRelativeTimeFromDate(notification.reportedAt)}</span>
             </article>
         `;
         }).join('');
     }
 
-    function showReportLoading() {
-        const reportList = document.querySelector('#view-reports .report-list');
-        if (!reportList) return;
-        reportList.classList.add('loading');
-        reportList.innerHTML = Array.from({ length: 4 }).map(() => `
-        <article class="report-item report-skeleton">
+    function showNotificationLoading() {
+        const notificationList = document.querySelector('#view-notifications .notification-list');
+        if (!notificationList) return;
+        notificationList.classList.add('loading');
+        notificationList.innerHTML = Array.from({ length: 4 }).map(() => `
+        <article class="notification-item notification-skeleton">
           <div style="height: 60px;"></div>
         </article>
     `).join('');
     }
 
     // ---- Click-through: news opens the source article; chat/reply
-    // items jump into the Community Report tab at that message, same
+    // items jump into the Community chat tab at that message, same
     // deep-link contract views/chat.js already reads off a route change
     // (chatId/chatScope/chatLocation) for tapped push notifications. ----
     let interactionsBound = false;
     function bindCardInteractions() {
-        const reportList = document.querySelector('#view-reports .report-list');
-        if (!reportList || interactionsBound) return;
+        const notificationList = document.querySelector('#view-notifications .notification-list');
+        if (!notificationList || interactionsBound) return;
         interactionsBound = true;
 
-        const openReport = (card) => {
+        const openNotification = (card) => {
             if (card.dataset.action === 'open-news' && card.dataset.url) {
                 window.open(card.dataset.url, '_blank', 'noopener,noreferrer');
             } else if (card.dataset.action === 'open-chat' && card.dataset.chatId) {
@@ -156,21 +156,21 @@
             }
         };
 
-        reportList.addEventListener('click', (e) => {
-            const card = e.target.closest('.report-item[data-action]');
-            if (card && reportList.contains(card)) openReport(card);
+        notificationList.addEventListener('click', (e) => {
+            const card = e.target.closest('.notification-item[data-action]');
+            if (card && notificationList.contains(card)) openNotification(card);
         });
-        reportList.addEventListener('keydown', (e) => {
+        notificationList.addEventListener('keydown', (e) => {
             if (e.key !== 'Enter' && e.key !== ' ') return;
-            const card = e.target.closest('.report-item[data-action]');
-            if (!card || !reportList.contains(card)) return;
+            const card = e.target.closest('.notification-item[data-action]');
+            if (!card || !notificationList.contains(card)) return;
             e.preventDefault();
-            openReport(card);
+            openNotification(card);
         });
     }
 
     // ---- Fetch + merge --------------------------------------------
-    function fetchCommunityReports() {
+    function fetchCommunityNotifications() {
         const userId = getCurrentUserId();
         const location = getCurrentLocation();
         const params = new URLSearchParams({ limit: '30' });
@@ -184,7 +184,7 @@
             .then(r => r.json())
             .then(data => Array.isArray(data) ? data : [])
             .catch(err => {
-                console.error('Could not load reports:', err);
+                console.error('Could not load notifications:', err);
                 return null; // signals failure distinctly from "empty"
             });
     }
@@ -198,12 +198,12 @@
             .then(r => r.json())
             .then(data => {
                 const articles = Array.isArray(data) ? data : [];
-                LWCache.write(REPORTS_NEWS_CACHE_KEY, articles);
+                LWCache.write(NOTIFICATIONS_NEWS_CACHE_KEY, articles);
                 notifyNewMatchedNews(articles);
-                return articles.map(matchedNewsToReportItem);
+                return articles.map(matchedNewsToNotificationItem);
             })
             .catch(err => {
-                console.error('Could not load news for reports feed:', err);
+                console.error('Could not load news for notifications feed:', err);
                 return [];
             });
     }
@@ -219,7 +219,7 @@
     function notifyNewMatchedNews(matched) {
         if (!matched.length || typeof window.lwToast !== 'function') return;
 
-        let seenIds = LWStorage?.getJSON(SEEN_NEWS_IDS_KEY) || [];
+        let seenIds = LWStorage?.getJSON(SEEN_NOTIFICATION_NEWS_IDS_KEY) || [];
         const seenSet = new Set(seenIds);
         const freshlyMatched = matched.filter(a => !seenSet.has(a.id));
 
@@ -231,48 +231,48 @@
 
         if (freshlyMatched.length) {
             seenIds = [...seenIds, ...freshlyMatched.map(a => a.id)].slice(-MAX_SEEN_NEWS_IDS);
-            LWStorage?.setJSON(SEEN_NEWS_IDS_KEY, seenIds);
+            LWStorage?.setJSON(SEEN_NOTIFICATION_NEWS_IDS_KEY, seenIds);
         }
     }
 
-    function loadReports(isFirstLoad = false) {
-        const cached = isFirstLoad ? LWCache.read(REPORTS_CACHE_KEY, CACHE_MAX_AGE_SHORT_MS) : null;
+    function loadNotifications(isFirstLoad = false) {
+        const cached = isFirstLoad ? LWCache.read(NOTIFICATIONS_CACHE_KEY, CACHE_MAX_AGE_SHORT_MS) : null;
         if (cached) {
-            renderReports(cached);
+            renderNotifications(cached);
         } else if (isFirstLoad) {
-            showReportLoading();
+            showNotificationLoading();
         }
 
-        Promise.all([fetchCommunityReports(), fetchMatchedNews()]).then(([reports, newsItems]) => {
-            if (reports === null) {
-                // Reports fetch failed — still show whatever news matched,
+        Promise.all([fetchCommunityNotifications(), fetchMatchedNews()]).then(([notifications, newsItems]) => {
+            if (notifications === null) {
+                // Notifications fetch failed — still show whatever news matched,
                 // rather than blanking the whole page over one bad call.
-                if (!cached) renderReports(newsItems);
+                if (!cached) renderNotifications(newsItems);
                 return;
             }
-            const merged = [...reports, ...newsItems]
+            const merged = [...notifications, ...newsItems]
                 .sort((a, b) => new Date(b.reportedAt) - new Date(a.reportedAt));
-            renderReports(merged);
-            LWCache.write(REPORTS_CACHE_KEY, merged);
+            renderNotifications(merged);
+            LWCache.write(NOTIFICATIONS_CACHE_KEY, merged);
         });
     }
 
     function mount() {
         bindCardInteractions();
-        loadReports(true);
+        loadNotifications(true);
     }
 
     function show() {
         bindCardInteractions();
-        clearInterval(reportsPollTimer);
-        reportsPollTimer = setInterval(() => loadReports(false), POLL_INTERVAL_FAST_MS);
+        clearInterval(notificationsPollTimer);
+        notificationsPollTimer = setInterval(() => loadNotifications(false), POLL_INTERVAL_FAST_MS);
     }
 
     function hide() {
-        clearInterval(reportsPollTimer);
-        reportsPollTimer = null;
+        clearInterval(notificationsPollTimer);
+        notificationsPollTimer = null;
     }
 
     window.LWViews = window.LWViews || {};
-    window.LWViews.reports = { mount, show, hide };
+    window.LWViews.notifications = { mount, show, hide };
 })();

@@ -7,7 +7,7 @@
 // ============================================================
 
 const LWHelpers = {
-  // areas.js style — input is a plain number of minutes already
+  // location.js style — input is a plain number of minutes already
   // computed by the caller.
   formatRelativeTimeFromMinutes(minutes) {
     if (minutes === null || minutes === undefined) return 'No reports yet';

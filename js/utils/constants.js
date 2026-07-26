@@ -34,9 +34,9 @@ const FIRST_BOOT_DONE_KEY = 'lw_first_boot_done';
 //      Render backend's request logs quiet (see areas.js/reports.js
 //      history). Views that poll should use one of these rather than
 //      inventing their own number.
-const POLL_INTERVAL_STANDARD_MS = 45000; // areas, light status
+const POLL_INTERVAL_STANDARD_MS = 45000; // location, light status
 const POLL_INTERVAL_FAST_MS = 30000;     // reports
 
 // ---- Generic cache max-age (services/cache.js consumers) ----
 const CACHE_MAX_AGE_SHORT_MS = 15 * 60 * 1000;  // reports
-const CACHE_MAX_AGE_MEDIUM_MS = 30 * 60 * 1000; // areas, light status
+const CACHE_MAX_AGE_MEDIUM_MS = 30 * 60 * 1000; // location, light status

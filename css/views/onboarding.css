@@ -133,7 +133,7 @@ body.lw-onboarding-open {
   object-fit: contain;
 }
 
-.onboarding-slide--areas .onboarding-slide__icon {
+.onboarding-slide--location .onboarding-slide__icon {
   background: var(--teal-dim);
   color: var(--teal);
 }

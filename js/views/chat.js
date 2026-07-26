@@ -739,7 +739,7 @@ function buildTypingHeartbeatBody() {
         userId: myId,
         handle: myHandle,
         scope: chatScope,
-        location: chatScope === CHAT_SCOPE_GLOBAL ? 'All areas' : loc
+        location: chatScope === CHAT_SCOPE_GLOBAL ? 'All locations' : loc
     };
 }
 
@@ -792,7 +792,7 @@ function buildTypingPollUrl() {
     if (chatScope === CHAT_SCOPE_LOCAL && !loc) return null;
     const params = new URLSearchParams({
         scope: chatScope,
-        location: chatScope === CHAT_SCOPE_GLOBAL ? 'All areas' : loc,
+location: chatScope === CHAT_SCOPE_GLOBAL ? 'All locations' : loc,
         userId: myId
     });
     return `${API_URL}/chats/typing?${params.toString()}`;
@@ -1105,7 +1105,7 @@ chatForm?.addEventListener('submit', async (e) => {
                 handle: myHandle,
                 text,
                 scope: chatScope,
-                location: chatScope === CHAT_SCOPE_GLOBAL ? 'All areas' : loc,
+                location: chatScope === CHAT_SCOPE_GLOBAL ? 'All locations' : loc,
                 replyTo: replyTarget || undefined
             })
         });

@@ -3,7 +3,7 @@
 //  The little pill toast (#lw-toast) shown via window.lwToast(msg).
 //
 //  This used to be a copy-pasted inline <script> at the bottom of
-//  home.html and areas.html (identical in both). Consolidated here
+//  home.html and location.html (identical in both). Consolidated here
 //  and initialized once, globally, since the SPA only ever has one
 //  #lw-toast element in the document now regardless of which view
 //  is showing. views/account.js and services/push.js both call

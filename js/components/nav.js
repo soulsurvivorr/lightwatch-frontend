@@ -34,10 +34,10 @@
 //          across polls.
 //       3. A dot on "reports" AND "account" ("Me") — shown while
 //          push notifications haven't been enabled yet.
-//     Dropped the earlier standalone "areas" outage dot — it was a
-//     stand-in (there's no real "nearby areas" backend concept yet)
+//     Dropped the earlier standalone "location" outage dot — it was a
+//     stand-in (there's no real "nearby location" backend concept yet)
 //     and duplicated what the reports badge/toast now covers for the
-//     user's own location. A real "areas near me" indicator can come
+//     user's own location. A real "location near me" indicator can come
 //     back once there's an endpoint for it.
 //     Reads/writes only the data-nav-badge / data-nav-dot elements
 //     already sitting in the bottom-nav markup — doesn't touch
@@ -53,7 +53,7 @@ function applyNavVisibility() {
     navLinks.forEach(link => {
         const section = link.dataset.nav;
         if (isMobile) {
-            const allowedOnMobile = section === "home" || section === "areas" || section === "reports" || section === "chat";
+            const allowedOnMobile = section === "home" || section === "location" || section === "reports" || section === "chat";
             link.style.display = allowedOnMobile ? "" : "none";
         } else {
             link.style.display = "";
@@ -73,7 +73,7 @@ function applyActiveNav(section) {
 function bindRouteLinks() {
     // '#primaryNav .nav__link' is the desktop topbar nav — it was never
     // being queried here, only the mobile '.bottom-nav-link' elements
-    // were, so clicking Home/Areas/Report/Notifications/Account in the
+    // were, so clicking Home/Locations/Report/Reports/Account in the
     // desktop topbar had no listener attached and did nothing.
     document.querySelectorAll('.bottom-nav-link[data-nav], #primaryNav .nav__link[data-nav]').forEach(link => {
         if (link.dataset.navBound === '1') return;
@@ -94,7 +94,7 @@ function bindRouteLinks() {
     });
 }
 
-// ── Bottom-nav badge + toast (Notifications tab) ────────────────
+// ── Bottom-nav badge + toast (Reports tab) ────────────────
 const NAV_REPORTS_SEEN_KEY = 'lw_nav_reports_last_seen';
 const NAV_TOASTED_IDS_KEY = 'lw_nav_reports_toasted_ids';
 const MAX_TOASTED_IDS = 300; // cap so this never grows unbounded in localStorage

@@ -71,7 +71,7 @@ function nameForReportId(id) {
 
 
 // -----------------------------------------------------
-// NEARBY_MAP — which areas show up under "Nearby" for a given
+// NEARBY_MAP — which locations show up under "Nearby" for a given
 // location. We don't have geocoding/lat-lng yet, so this is a
 // hand-built adjacency map based on how these neighborhoods
 // actually sit relative to each other in Kumasi. Worth a
@@ -175,7 +175,7 @@ async function fetchNearby(locationKey) {
     const neighbors = NEARBY_MAP[locationKey] || [];
 
     if (neighbors.length === 0) {
-        nearbyListEl.innerHTML = '<span class="nearby-list__empty">No nearby areas mapped for this location yet.</span>';
+        nearbyListEl.innerHTML = '<span class="nearby-list__empty">No nearby locations mapped for this location yet.</span>';
         return;
     }
 

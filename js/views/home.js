@@ -184,7 +184,7 @@ async function loadSecondaryLocationStatus(sec) {
 
     // Paint the last-known status/stats for this second location
     // instantly if we have them (same stale-while-revalidate pattern as
-    // the primary location's hero card and the Areas list), instead of
+    // the primary location's hero card and the Locations list), instead of
     // forcing "Checking status…" every single time the panel reopens
     // for a location the user has already looked at this session.
     const cached = LWCache.read(cacheKey, SECONDARY_LOCATION_CACHE_MAX_AGE_MS);
@@ -448,7 +448,7 @@ function renderSuggestions(places) {
         item.addEventListener('click', () => {
             addressInput.value = place;
             autocompleteList.hidden = true;
-            // Feeds the admin "most searched areas" analytics — see analytics.js
+            // Feeds the admin "most searched locations" analytics — see analytics.js
             window.LWAnalytics?.trackSearch(place, place.split(',')[0].trim());
         });
         autocompleteList.appendChild(item);

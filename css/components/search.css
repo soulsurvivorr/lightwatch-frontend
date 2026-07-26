@@ -1,4 +1,4 @@
 /* Generic search-input styling is defined per-view where it's used
-   (see views/areas.css's .areas-search) — there was no shared
+   (see views/location.css's .location-search) — there was no shared
    cross-view search component in the original app. Kept for
    structural parity with the requested folder layout. */
