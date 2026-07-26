@@ -87,6 +87,7 @@
             case 'chat':    return { cls: 'report-item--chat', icon: '💬 ' };
             case 'reply':   return { cls: 'report-item--reply', icon: '↩️ ' };
             case 'news':    return { cls: 'report-item--news', icon: '📰 ' };
+            case 'admin':   return { cls: 'report-item--admin', icon: '' }; // icon is already baked into report.title server-side
             default:        return { cls: 'report-item--info', icon: '' };
         }
     }
@@ -103,10 +104,10 @@
 
         reportList.innerHTML = reports.map(report => {
             const { cls, icon } = reportItemMeta(report);
-            const isClickable = report.type === 'chat' || report.type === 'reply' || report.type === 'news';
+            const isClickable = report.type === 'chat' || report.type === 'reply' || report.type === 'news' || report.type === 'admin';
             const dataAttrs = report.type === 'news'
                 ? `data-action="open-news" data-url="${escapeHtml(report.url)}"`
-                : (report.type === 'chat' || report.type === 'reply')
+                : (report.type === 'chat' || report.type === 'reply' || report.type === 'admin')
                     ? `data-action="open-chat" data-chat-id="${escapeHtml(report.chatId)}" data-chat-scope="${escapeHtml(report.chatScope || 'local')}" data-chat-location="${escapeHtml(report.chatLocation || '')}"`
                     : '';
             return `

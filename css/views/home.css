@@ -2454,6 +2454,12 @@ body.lw-location-panel-open {
   border-color: rgba(242, 179, 61, 0.3);
 }
 
+/* An admin broadcast message (POST /admin/broadcast) */
+.report-item--admin {
+  border-color: rgba(242, 179, 61, 0.55);
+  background: rgba(242, 179, 61, 0.06);
+}
+
 .report-item[role="link"] {
   cursor: pointer;
   transition: transform 0.12s ease, box-shadow 0.12s ease;

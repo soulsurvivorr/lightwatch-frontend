@@ -367,10 +367,11 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, hasReply, isLatestOwn)
         el.classList.add('chat-message--tinted');
         el.style.setProperty('--msg-accent', handleAccentColor(chat.handle));
     }
+    if (chat.isAdmin) el.classList.add('chat-message--admin');
 
     const author = document.createElement('span');
     author.className   = "chat-message__author";
-    author.textContent = chat.handle;
+    author.textContent = chat.isAdmin ? `📢 ${chat.handle}` : chat.handle;
 
     const body = document.createElement('p');
     body.className   = "chat-message__text";

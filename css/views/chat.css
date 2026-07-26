@@ -803,6 +803,19 @@
   color: color-mix(in srgb, var(--msg-accent) 70%, var(--text-bright));
 }
 
+/* An admin broadcast (chat.isAdmin) — set apart from regular per-handle
+   tinted messages with a consistent brand-gold treatment regardless of
+   handle color, so it reads as "official" wherever it appears. */
+.chat-message--admin {
+  border-color: rgba(242, 179, 61, 0.55);
+  background: rgba(242, 179, 61, 0.08);
+}
+
+.chat-message--admin .chat-message__author {
+  color: #b9791b;
+  font-weight: 700;
+}
+
 .chat-message__footer {
   display: flex;
   align-items: center;
