@@ -403,7 +403,7 @@
      (not .page) by chat.js's activateReportTab(), which is what all
      the selectors below now key off instead of the bare #view-chat
      they used to. */
-  #view-chat.report-mode-community .page {
+  #view-chat .page {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
@@ -450,7 +450,7 @@
      child of .page, since the News panel lives alongside it. The
      panel has to pass the flex sizing through to the card, or the
      card has nothing to stretch against. */
-  #view-chat.report-mode-community .report-panel[data-panel="community"] {
+  #view-chat .report-panel:not([hidden]) {
     flex: 1 1 auto;
     min-height: 0;
     display: flex;
@@ -458,6 +458,8 @@
     width: 100%;
     max-width: 100%;
     margin: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   #view-chat.report-mode-community .chat-card {
@@ -521,46 +523,16 @@
      selectors match, and .page just falls back to the ordinary mobile
      page rules (home.css) that every other view already scrolls
      normally with. */
-  #view-chat.report-mode-community .page {
+  #view-chat .page {
     display: flex;
     flex-direction: column;
-    /* Definite height, not min-height: a flex column with only a
-       min-height floor has no ceiling, so its auto height grows to
-       fit whatever its children need — which defeated every
-       overflow:auto further down the chain (nothing can "overflow"
-       a box that just grows to contain it) and let the card grow
-       tall enough to slide its bottom half underneath the fixed
-       bottom nav. Locking this to exactly one screen's worth of
-       height makes it a real ceiling: children with flex:1 auto now
-       have to share a fixed amount of space instead of each just
-       taking what they want.
-       --lw-vh (set by chat.js from window.innerHeight, which DOES
-       reliably shrink with the on-screen keyboard under
-       resizes-content — same measurement the nav-offset fix below
-       uses) drives this instead of the dvh unit directly: dvh is
-       supposed to track the same shrink, but doesn't reliably on
-       every mobile browser/WebView, which is why the chat-card was
-       not floating up at all despite the nav fix working. 100dvh is
-       only a same-device fallback for the instant before chat.js's
-       first measurement lands. */
+    /* Unqualified from .report-mode-community: both tabs now share
+       this exact box (see the matching desktop comment above) so
+       switching tabs never changes .page's own size/position — only
+       which .report-panel child is flex:1 and scrolling internally
+       changes. This is what stops the visible "jump" on tab switch. */
     height: var(--lw-vh, 100dvh);
     box-sizing: border-box;
-    /* Bakes the fixed bottom nav's footprint into THIS box's own
-       padding instead of relying on body's `padding-bottom: 132px`
-       (see home.css) — that reservation lives after this view's
-       content in the document and is unreachable once the page
-       itself can't scroll (see the overflow:hidden block below), so
-       it did nothing to keep the composer clear of the nav.
-       Trimmed by 1.5em off the resting 132px baseline (still well
-       clear of the nav itself) to hand the chat-card that much more
-       height — safe to take from here since it's unused buffer, unlike
-       the earlier attempt that pulled the card's own top edge up and
-       ended up overlapping page__header instead.
-       --lw-page-bottom-pad (chat.js) shrinks this down further to a
-       small flat gap while the composer is focused: the nav is covered
-       by the keyboard at that point (see the transform fix further
-       down), so reserving its full footprint here would just eat
-       into the shrunk keyboard-open height for no visible reason. */
     padding: 20px 16px var(--lw-page-bottom-pad, calc(132px - 1.5em + env(safe-area-inset-bottom)));
   }
 
@@ -587,7 +559,7 @@
      inside .report-panel[data-panel="community"], so that panel needs
      to be a flex item + flex container itself to pass the available
      height down to the card. */
-  #view-chat.report-mode-community .report-panel[data-panel="community"] {
+  #view-chat .report-panel:not([hidden]) {
     flex: 1 1 auto;
     min-height: 0;
     display: flex;
@@ -595,6 +567,8 @@
     width: 100%;
     max-width: 100%;
     margin: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   #view-chat.report-mode-community .chat-card {
@@ -654,8 +628,8 @@
    internal scroll surface, not a page-level one users need a visible
    track for. */
 @media (max-width: 720px) {
-  html:has(#view-chat.report-mode-community:not([hidden])),
-  body:has(#view-chat.report-mode-community:not([hidden])),
+  html:has(#view-chat:not([hidden])),
+  body:has(#view-chat:not([hidden])),
   html.lw-report-community-open,
   body.lw-report-community-open {
     overflow: hidden !important;
