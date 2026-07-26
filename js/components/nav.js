@@ -17,19 +17,28 @@
 //     listens for to refresh which link is marked active (instead
 //     of re-deriving it from location.pathname, which no longer
 //     changes shape per page).
-//   - New: bottom-nav badges/dots.
-//       1. Numeric badge on "reports" (notification.png) — count of
-//          unseen chat messages in your own location + replies to
-//          you, since you last opened that tab.
-//       2. Dot on "reports" AND "account" ("Me") — shown while push
-//          notifications haven't been enabled yet.
-//       3. Dot on "areas" (Locations) — shown while your own
-//          tracked location's live status is "off". There's no real
-//          "nearby areas" concept on the backend yet (areas.js's
-//          list is hardcoded demo data + one live Bantama fetch) —
-//          this uses the user's own tracked location as a stand-in
-//          via the existing GET /lightstatus endpoint. Worth
-//          revisiting with a real "areas near me" endpoint later.
+//   - New: bottom-nav badge + toast on "reports" (notification.png).
+//       Both driven by the same GET /reports poll:
+//       1. Numeric badge = count of unseen items since you last
+//          opened that tab — replies to you, chat messages in your
+//          own location, and light-status changes at your location
+//          (the 'reply'/'chat'/'success'/'warning' types GET /reports
+//          already returns).
+//       2. A toast (window.lwToast) fires once per new item the
+//          first time it's seen, phrased per type — e.g. "anon-
+//          drift-453 replied to your message in Everyone" for a
+//          reply, or the location's own status text for a light
+//          change. Dedup is tracked separately from the "last seen"
+//          timestamp (localStorage id list, same pattern reports.js
+//          already uses for matched news) so a toast never repeats
+//          across polls.
+//       3. A dot on "reports" AND "account" ("Me") — shown while
+//          push notifications haven't been enabled yet.
+//     Dropped the earlier standalone "areas" outage dot — it was a
+//     stand-in (there's no real "nearby areas" backend concept yet)
+//     and duplicated what the reports badge/toast now covers for the
+//     user's own location. A real "areas near me" indicator can come
+//     back once there's an endpoint for it.
 //     Reads/writes only the data-nav-badge / data-nav-dot elements
 //     already sitting in the bottom-nav markup — doesn't touch
 //     applyActiveNav/bindRouteLinks' own logic above.
@@ -85,13 +94,15 @@ function bindRouteLinks() {
     });
 }
 
-// ── Bottom-nav badges/dots ──────────────────────────────────────
+// ── Bottom-nav badge + toast (Notifications tab) ────────────────
 const NAV_REPORTS_SEEN_KEY = 'lw_nav_reports_last_seen';
+const NAV_TOASTED_IDS_KEY = 'lw_nav_reports_toasted_ids';
+const MAX_TOASTED_IDS = 300; // cap so this never grows unbounded in localStorage
 const NAV_BADGE_POLL_MS = (typeof POLL_INTERVAL_FAST_MS !== 'undefined') ? POLL_INTERVAL_FAST_MS : 20000;
-const NAV_AREA_POLL_MS = (typeof POLL_INTERVAL_STANDARD_MS !== 'undefined') ? POLL_INTERVAL_STANDARD_MS : 45000;
+const NAV_BADGE_TYPES = new Set(['chat', 'reply', 'success', 'warning']);
 
 let navReportsPollTimer = null;
-let navAreaPollTimer = null;
+let navBadgeLoadedOnce = false;
 
 // Mirrors the small getCurrentUserId/getCurrentLocation pattern
 // already duplicated per-file in reports.js/news.js.
@@ -139,6 +150,50 @@ function markReportsSeen() {
     setNavBadge('reports', 0);
 }
 
+// ── Toast phrasing per item type ─────────────────────────────────
+// 'reply'/'chat' items carry chatScope/chatLocation from GET
+// /reports but not a separate handle field — the handle is embedded
+// in title (reply: "{handle} replied to your message") or text
+// (chat: "{handle}: {message}"), since that's what server.js emits.
+function scopeLabel(item) {
+    return item.chatScope === 'global' ? 'Everyone' : (item.chatLocation || 'your area');
+}
+
+function toastTextForItem(item) {
+    if (item.type === 'reply') {
+        const handle = (item.title || '').replace(/ replied to your message$/, '').trim() || 'Someone';
+        return `${handle} replied to your message in ${scopeLabel(item)}`;
+    }
+    if (item.type === 'chat') {
+        const handle = (item.text || '').split(':')[0].trim() || 'Someone';
+        return `${handle} posted in ${scopeLabel(item)}`;
+    }
+    // 'success' / 'warning' — light status change; item.text is
+    // already a complete human-readable sentence from server.js
+    // (e.g. "A volunteer reported the light is off in Bantama.").
+    return item.text || item.title;
+}
+
+function getToastedIds() {
+    return (typeof LWStorage !== 'undefined' ? LWStorage.getJSON(NAV_TOASTED_IDS_KEY) : null) || [];
+}
+
+function toastNewItems(items) {
+    if (!items.length || typeof window.lwToast !== 'function') return;
+
+    const toastedIds = getToastedIds();
+    const toastedSet = new Set(toastedIds);
+    const fresh = items.filter(item => !toastedSet.has(item.id));
+    if (!fresh.length) return;
+
+    fresh
+        .sort((a, b) => new Date(a.reportedAt) - new Date(b.reportedAt))
+        .forEach(item => window.lwToast(toastTextForItem(item)));
+
+    const updated = [...toastedIds, ...fresh.map(item => item.id)].slice(-MAX_TOASTED_IDS);
+    if (typeof LWStorage !== 'undefined') LWStorage.setJSON(NAV_TOASTED_IDS_KEY, updated);
+}
+
 async function refreshReportsBadge() {
     const userId = getNavCurrentUserId();
     if (!userId) { setNavBadge('reports', 0); return; }
@@ -151,12 +206,20 @@ async function refreshReportsBadge() {
         const res = await fetch(`${API_URL}/reports?${params.toString()}`);
         const data = await res.json();
         const items = Array.isArray(data) ? data : [];
+        const relevant = items.filter(item => NAV_BADGE_TYPES.has(item.type));
+
         const lastSeen = getReportsLastSeen();
-        const unread = items.filter(item =>
-            (item.type === 'chat' || item.type === 'reply') &&
-            new Date(item.reportedAt).getTime() > lastSeen
-        ).length;
+        const unread = relevant.filter(item => new Date(item.reportedAt).getTime() > lastSeen).length;
         setNavBadge('reports', unread);
+
+        // Only toast for items newer than lastSeen too — on the very
+        // first load after sign-in this also prevents a backlog of
+        // toasts firing all at once for things from before this device
+        // ever polled.
+        if (navBadgeLoadedOnce) {
+            toastNewItems(relevant.filter(item => new Date(item.reportedAt).getTime() > lastSeen));
+        }
+        navBadgeLoadedOnce = true;
     } catch (err) {
         console.error('Could not refresh reports nav badge:', err);
     }
@@ -170,34 +233,17 @@ function refreshPushPromptDot() {
     setNavDot('account', !enabled);
 }
 
-async function refreshAreaOutageDot() {
-    const location = getNavCurrentLocation();
-    if (!location) { setNavDot('areas', false); return; }
-
-    try {
-        const res = await fetch(`${API_URL}/lightstatus?location=${encodeURIComponent(location)}`);
-        if (!res.ok) throw new Error('Bad response');
-        const data = await res.json();
-        setNavDot('areas', data?.status === 'off');
-    } catch (err) {
-        console.error('Could not refresh areas nav dot:', err);
-    }
-}
-
 function startNavBadgePolling() {
     stopNavBadgePolling();
+    navBadgeLoadedOnce = false;
     refreshReportsBadge();
-    refreshAreaOutageDot();
     refreshPushPromptDot();
     navReportsPollTimer = setInterval(refreshReportsBadge, NAV_BADGE_POLL_MS);
-    navAreaPollTimer = setInterval(refreshAreaOutageDot, NAV_AREA_POLL_MS);
 }
 
 function stopNavBadgePolling() {
     clearInterval(navReportsPollTimer);
-    clearInterval(navAreaPollTimer);
     navReportsPollTimer = null;
-    navAreaPollTimer = null;
 }
 
 function syncNavBadgesToSession() {
@@ -209,7 +255,6 @@ function syncNavBadgesToSession() {
         setNavBadge('reports', 0);
         setNavDot('reports', false);
         setNavDot('account', false);
-        setNavDot('areas', false);
     }
 }
 

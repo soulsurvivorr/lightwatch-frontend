@@ -174,7 +174,7 @@
   height: 16px;
   padding: 0 4px;
   border-radius: 999px;
-  background: #E4573D;
+  background: var(--red);
   color: white;
   font-family: var(--font-body);
   font-size: 0.62rem;
@@ -191,7 +191,7 @@
   width: 9px;
   height: 9px;
   border-radius: 50%;
-  background: var(--brand, #D6A24A);
+  background: var(--amber);
   box-shadow: 0 0 0 2px var(--dark-bg);
 }
 
