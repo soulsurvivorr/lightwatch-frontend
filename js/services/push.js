@@ -95,6 +95,8 @@ function updateEnablePushButtonsVisibility() {
             btn.innerHTML = btn.dataset.defaultLabel;
         }
     });
+
+    window.dispatchEvent(new CustomEvent('lw:push-state-changed', { detail: { enabled: isEnabled } }));
 }
 
 function ensureAudioContext() {
@@ -562,6 +564,16 @@ async function enableLightWatchPush() {
 }
 
 window.enableLightWatchPush = enableLightWatchPush;
+
+// ── Simple read-only check other modules can use (e.g. nav badges)
+//    without duplicating the native-vs-web branch themselves. ──
+function isLightWatchPushEnabled() {
+    if (isNativeAndroidApp()) return nativePushGranted;
+    if (typeof Notification === 'undefined') return false;
+    return Notification.permission === 'granted';
+}
+
+window.isLightWatchPushEnabled = isLightWatchPushEnabled;
 
 // ── Send subscription + user location to backend ─────────────
 async function sendSubscriptionToServer(subscription) {

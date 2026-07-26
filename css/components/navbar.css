@@ -154,6 +154,53 @@
 }
 
 /* ============================================================
+   Bottom nav badges/dots (unread count, "you should do this"
+   indicators). New, self-contained selectors — .bottom-nav-badge
+   and .bottom-nav-dot — driven by js/components/nav-badges.js.
+   Deliberately not touching .bottom-nav-icon's own transition/
+   transform rules (see the note further down about the last time
+   two animation systems fought over that element).
+   ============================================================ */
+
+.bottom-nav-icon {
+  position: relative;
+}
+
+.bottom-nav-badge {
+  position: absolute;
+  top: -4px;
+  right: -8px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #E4573D;
+  color: white;
+  font-family: var(--font-body);
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  box-shadow: 0 0 0 2px var(--dark-bg);
+}
+
+.bottom-nav-dot {
+  position: absolute;
+  top: -2px;
+  right: -6px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--brand, #D6A24A);
+  box-shadow: 0 0 0 2px var(--dark-bg);
+}
+
+.bottom-nav-badge[hidden],
+.bottom-nav-dot[hidden] {
+  display: none;
+}
+
+/* ============================================================
    Bottom nav styling (active state, icon swap, tap/press motion)
    now lives entirely in utilities/animations.css, which loads
    after this file. It used to be duplicated here too — a second,

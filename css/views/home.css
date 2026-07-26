@@ -18,10 +18,21 @@
 
 /* General Mobile Phone and Small Tablet layout */
 @media (max-width: 720px) {
+  /* Was raw 100dvh/100svh. chat.js already measures window.innerHeight
+     itself (unconditionally, on every page load - see its top-level
+     updateKeyboardOffset() call and resize/visualViewport listeners)
+     and publishes it as --lw-vh precisely because dvh/svh don't
+     reliably track the real visual viewport on every mobile browser/
+     WebView (chat.css hit this same issue first - see its #view-chat
+     .page height rule). Reusing that already-running measurement here
+     instead of a second, independent raw-unit guess keeps html/body's
+     locked height consistent with the rest of the app, and with
+     whatever fixed-position content (e.g. #bottom_nav_wrapper) sits
+     against it - dvh/svh stay as the fallback for the first frame
+     before chat.js's measurement lands. */
   html:has(#appShell:not([hidden])),
   body:has(#appShell:not([hidden])) {
-      height: 100dvh !important;
-      height: 100svh !important;
+      height: var(--lw-vh, 100dvh) !important;
   }
 }
 

@@ -1195,15 +1195,19 @@ function activateReportTab(tab) {
     reportViewEl?.classList.toggle('report-mode-community', nextTab === 'community');
     reportViewEl?.classList.toggle('report-mode-news', nextTab === 'news');
 
-    // Belt-and-suspenders scroll lock: chat.css already locks html/body
-    // via :has(#view-chat.report-mode-community:not([hidden])), but
-    // :has() isn't universal across every mobile WebView this app runs
-    // in. Toggling a plain class here (same pattern home.js already
-    // uses for the location panel) means the underlying page can't
-    // scroll/jump when the Community Report tab opens even where :has()
-    // support is missing — only the chat-thread itself scrolls.
-    document.documentElement.classList.toggle('lw-report-community-open', nextTab === 'community');
-    document.body.classList.toggle('lw-report-community-open', nextTab === 'community');
+    // Belt-and-suspenders scroll lock: chat.css now locks html/body via
+    // :has(#view-chat:not([hidden])) for BOTH tabs (News scrolls inside
+    // .report-panel now too, same as Community), but :has() isn't
+    // universal across every mobile WebView this app runs in. This
+    // fallback class has to match that same both-tabs behavior — it's
+    // set whenever the Report page is showing at all, not just for
+    // Community, and only cleared on leaving /chat entirely (see the
+    // lw:route-changed listener below). Keeping it tab-conditional here
+    // would re-introduce exactly the "News behaves differently than
+    // Community" mismatch this file's chat.css counterpart just fixed,
+    // just scoped to :has()-unsupported browsers instead.
+    document.documentElement.classList.add('lw-report-community-open');
+    document.body.classList.add('lw-report-community-open');
 
     if (nextTab === 'community') {
         // The thread was unmeasurable (display:none via the panel's

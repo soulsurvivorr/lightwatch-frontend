@@ -403,7 +403,7 @@
      (not .page) by chat.js's activateReportTab(), which is what all
      the selectors below now key off instead of the bare #view-chat
      they used to. */
-  #view-chat .page {
+  #view-chat.report-mode-community .page {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
@@ -450,7 +450,7 @@
      child of .page, since the News panel lives alongside it. The
      panel has to pass the flex sizing through to the card, or the
      card has nothing to stretch against. */
-  #view-chat .report-panel:not([hidden]) {
+  #view-chat.report-mode-community .report-panel:not([hidden]) {
     flex: 1 1 auto;
     min-height: 0;
     display: flex;
@@ -517,23 +517,25 @@
    footprint (132px + safe area), baked directly into #view-chat .page
    itself — see the height/padding comments just below. */
 @media (max-width: 720px) {
-  /* FIX (tabs): scoped to report-mode-community — see the matching
-     comment on the desktop block above. When the News tab is active
-     #view-chat.report-mode-news is set instead, none of this block's
-     selectors match, and .page just falls back to the ordinary mobile
-     page rules (home.css) that every other view already scrolls
+  /* FIX (tabs): scoped to report-mode-community. When the News tab is
+     active #view-chat.report-mode-news is set instead, none of this
+     block's selectors match, and .page just falls back to the ordinary
+     mobile page rules (home.css) that every other view already scrolls
      normally with. */
-  #view-chat .page {
+  #view-chat.report-mode-community .page {
     display: flex;
     flex-direction: column;
-    /* Unqualified from .report-mode-community: both tabs now share
-       this exact box (see the matching desktop comment above) so
-       switching tabs never changes .page's own size/position — only
-       which .report-panel child is flex:1 and scrolling internally
-       changes. This is what stops the visible "jump" on tab switch. */
     height: var(--lw-vh, 100dvh);
     box-sizing: border-box;
-    padding: 20px 16px var(--lw-page-bottom-pad, calc(132px - 1.5em + env(safe-area-inset-bottom)));
+    /* Reserve the bottom nav's actual footprint (matches the
+       132px + safe-area-inset-bottom used app-wide for
+       #bottom_nav_wrapper in home.css) rather than under-reserving it.
+       The previous "132px - 1.5em" fallback here left about 24px
+       unaccounted for, which is exactly the gap that let the composer
+       sit behind the bottom nav on some devices instead of just above
+       it. Reserving the full footprint lets the card grow to fill all
+       remaining height and land right at the top edge of the nav. */
+    padding: 20px 16px var(--lw-page-bottom-pad, calc(132px + env(safe-area-inset-bottom)));
   }
 
   /* FIX (community layout match v2): same underlying bug as the
@@ -558,8 +560,11 @@
   /* Same reasoning as the desktop block: .chat-card is now nested
      inside .report-panel[data-panel="community"], so that panel needs
      to be a flex item + flex container itself to pass the available
-     height down to the card. */
-  #view-chat .report-panel:not([hidden]) {
+     height down to the card. Scoped to report-mode-community only —
+     News's .report-panel must NOT get this internal-scroll treatment,
+     or its feed gets capped short instead of running full length with
+     the page scrolling underneath it. */
+  #view-chat.report-mode-community .report-panel:not([hidden]) {
     flex: 1 1 auto;
     min-height: 0;
     display: flex;
@@ -628,8 +633,8 @@
    internal scroll surface, not a page-level one users need a visible
    track for. */
 @media (max-width: 720px) {
-  html:has(#view-chat:not([hidden])),
-  body:has(#view-chat:not([hidden])),
+  html:has(#view-chat.report-mode-community:not([hidden])),
+  body:has(#view-chat.report-mode-community:not([hidden])),
   html.lw-report-community-open,
   body.lw-report-community-open {
     overflow: hidden !important;
@@ -1274,7 +1279,6 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  margin-bottom: 6px;
   padding: 6px 8px;
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-md);
