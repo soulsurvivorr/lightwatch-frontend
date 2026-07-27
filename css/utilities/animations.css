@@ -78,7 +78,13 @@
      which one wins). The desktop-hide case is handled explicitly and
      unambiguously below via !important, keyed off min-width — this
      wrapper is visible by default and only hidden on wide screens. */
-  padding: 0;
+  /* Floating-pill layout (App Store style): the wrapper's own padding
+     is what insets the pill from the screen edges. Left/right pull it
+     off the side edges; bottom clears the home-indicator safe area
+     plus a visible gap so page content is genuinely visible scrolling
+     underneath and around the pill, not just under a translucent
+     strip that still touches all three edges. */
+  padding: 0 14px calc(env(safe-area-inset-bottom, 0px) + 14px);
   pointer-events: none;
 }
 
@@ -91,23 +97,39 @@
 .bottom-icons-container {
   pointer-events: auto;
   width: 100%;
-  background: var(--bottom-nav-surface);
-  border: none;
-  border-top: 1px solid var(--bottom-nav-border);
-  border-radius: 0;
-  padding: 8px max(10px, env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+  max-width: 420px;
+  margin: 0 auto;
+  /* Actually translucent now instead of the ~solid --bottom-nav-surface
+     color — color-mix cuts it down to a light tint over transparent so
+     the blur below is doing the real work of showing content through
+     the pill (frosted glass), not just a same-color bar sitting on top
+     of it. */
+  background: color-mix(in srgb, var(--bottom-nav-surface) 45%, transparent);
+  /* Full border instead of border-top only — a floating pill needs an
+     edge all the way around, not just a seam against the screen edge. */
+  border: 1px solid var(--bottom-nav-border);
+  /* Pill radius: half the bar's own height reads as a true capsule
+     (the App Store bar), rather than the previous 0 (flush strip). */
+  border-radius: 28px;
+  padding: 8px max(10px, env(safe-area-inset-right)) 8px max(10px, env(safe-area-inset-left));
   display: flex;
   justify-content: space-between;
   align-items: stretch;
   gap: 2px;
-  box-shadow: var(--bottom-nav-shadow);
-  backdrop-filter: blur(16px) saturate(160%);
-  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  box-shadow: var(--bottom-nav-shadow), 0 12px 30px rgba(0, 0, 0, 0.28);
+  /* Heavier blur/saturation than the flush-bar version so content
+     scrolling directly behind the pill (not just underneath a
+     screen-wide strip) still reads clearly through it. */
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
 }
 
 :root[data-theme="dark"] .bottom-icons-container {
-  background: linear-gradient(165deg, rgba(53, 59, 69, 0.96), rgba(30, 35, 44, 0.94));
-  border-top-color: rgba(153, 178, 218, 0.4);
+  /* Same translucent-gradient tint, dropped from ~95% opaque to ~40%
+     so the frosted-glass blur still reads instead of the pill going
+     back to a near-solid slab in dark mode. */
+  background: linear-gradient(165deg, rgba(53, 59, 69, 0.4), rgba(30, 35, 44, 0.38));
+  border-color: rgba(153, 178, 218, 0.4);
   box-shadow:
     0 -16px 36px rgba(0, 0, 0, 0.4),
     inset 0 1px 0 rgba(230, 241, 255, 0.09);
@@ -115,8 +137,8 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) .bottom-icons-container {
-    background: linear-gradient(165deg, rgba(46, 55, 69, 0.96), rgba(28, 35, 46, 0.94));
-    border-top-color: rgba(153, 178, 218, 0.4);
+    background: linear-gradient(165deg, rgba(46, 55, 69, 0.4), rgba(28, 35, 46, 0.38));
+    border-color: rgba(153, 178, 218, 0.4);
     box-shadow:
       0 -16px 36px rgba(0, 0, 0, 0.4),
       inset 0 1px 0 rgba(230, 241, 255, 0.09);
