@@ -135,6 +135,14 @@
   -webkit-backdrop-filter: blur(20px) saturate(180%);
 }
 
+/* Small screens: 4px extra breathing room under the icons/labels,
+   on top of the base 8px bottom padding above. */
+@media (max-width: 480px) {
+  .bottom-icons-container {
+    padding-bottom: 12px;
+  }
+}
+
 :root[data-theme="dark"] .bottom-icons-container {
   /* Same translucent-gradient tint, dropped from ~95% opaque to ~40%
      so the frosted-glass blur still reads instead of the pill going

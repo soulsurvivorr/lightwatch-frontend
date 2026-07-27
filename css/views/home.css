@@ -3372,7 +3372,6 @@ body.lw-location-panel-open {
 
   .bottom-icons-container {
     gap: 4px;
-    padding: 4px 6px env(safe-area-inset-bottom);
   }
 
   .bottom-nav-link {
