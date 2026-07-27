@@ -60,6 +60,19 @@
         return null;
     }
 
+    // article.sourceIcon from the backend is usually a favicon URL (e.g.
+    // Google's s2/favicons service) for third-party sources, but official
+    // ECG-style items don't get one — those just use the ⚡ emoji. This
+    // tells the two apart so a URL never gets dropped in as raw text.
+    function renderSourceIcon(article) {
+        if (article.isOfficial) return '⚡';
+        const icon = article.sourceIcon;
+        if (icon && /^https?:\/\//i.test(icon)) {
+            return `<img class="news-item__source-icon-img" src="${escapeHtml(icon)}" alt="" width="16" height="16" loading="lazy" onerror="this.replaceWith(document.createTextNode('📰'))">`;
+        }
+        return icon || '📰';
+    }
+
     function escapeHtml(str) {
         return String(str || '')
             .replace(/&/g, '&amp;')
@@ -72,10 +85,13 @@
         const tag = categoryTag(article.category);
         const detailsId = `newsDetails-${article.id || index}`;
         const isAlert = article.category === 'outage' || article.category === 'maintenance';
-        const sourceIcon = article.isOfficial ? '⚡' : (article.sourceIcon || '📰');
-        const timeLabel = window.LWHelpers && typeof window.LWHelpers.formatRelativeTimeFromDate === 'function'
-            ? window.LWHelpers.formatRelativeTimeFromDate(article.publishedAt)
-            : new Date(article.publishedAt).toLocaleDateString();
+        const sourceIconHtml = renderSourceIcon(article);
+        const dateLabel = article.publishedAt ? new Date(article.publishedAt).toLocaleDateString() : '';
+        const relativeLabel = article.timeAgo
+            || (window.LWHelpers && typeof window.LWHelpers.formatRelativeTimeFromDate === 'function'
+                ? window.LWHelpers.formatRelativeTimeFromDate(article.publishedAt)
+                : '');
+        const timeLabel = [dateLabel, relativeLabel].filter(Boolean).join(' · ');
 
         // data-url carries the source article's real URL so the whole
         // card can act as a link (see bindCardInteractions below) — not
@@ -84,7 +100,7 @@
         return `
         <article class="news-item${isAlert ? ' news-item--alert' : ''}" data-article-id="${article.id}" data-url="${escapeHtml(article.url)}" tabindex="0" role="link">
           <div class="news-item__source">
-            <span class="news-item__source-icon" aria-hidden="true">${sourceIcon}</span>
+            <span class="news-item__source-icon" aria-hidden="true">${sourceIconHtml}</span>
             <span class="news-item__source-name">${escapeHtml(article.source)}${article.isOfficial ? ' · Official' : ''}</span>
             <span class="news-item__time">${timeLabel}</span>
           </div>
@@ -93,7 +109,7 @@
           <div class="news-item__row">
             <h3 class="news-item__headline">${escapeHtml(article.title)}</h3>
             <button type="button" class="news-item__toggle" aria-expanded="false" aria-controls="${detailsId}" data-action="toggle-news">
-              <span class="visually-hidden">Show more</span>
+              <span class="visually-hidden" data-toggle-label>Show more</span>
               <svg class="news-item__chevron" viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7.5l5 5 5-5"/></svg>
             </button>
           </div>
@@ -190,6 +206,8 @@
                 const expanded = toggleBtn.getAttribute('aria-expanded') === 'true';
                 toggleBtn.setAttribute('aria-expanded', String(!expanded));
                 item.classList.toggle('is-expanded', !expanded);
+                const label = toggleBtn.querySelector('[data-toggle-label]');
+                if (label) label.textContent = expanded ? 'Show more' : 'Show less';
                 return;
             }
 

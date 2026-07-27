@@ -256,5 +256,19 @@
     margin: 0 !important;
     min-height: 100vh;
     box-sizing: border-box;
+    /* FIX: the same unseen base .page rule that forces row layout
+       (see the 981px block's comment) also carries justify-content
+       and align-items values meant for centering a single flex item
+       — likely used for auth/loading screens. Left in place here,
+       those center page__header and .notification-card as a group
+       vertically in the viewport, and center each one horizontally
+       by its own width (so the narrower page__header's left edge
+       lands to the right of notification-card's, instead of the two
+       lining up). flex-start keeps content pinned to the top;
+       stretch makes both children span the full column width so
+       their left edges match. !important for the same
+       specificity/source-order reason as the rest of this block. */
+    justify-content: flex-start !important;
+    align-items: stretch !important;
   }
 }

@@ -122,6 +122,15 @@
   line-height: 1;
 }
 
+.news-item__source-icon-img {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  object-fit: cover;
+  vertical-align: -3px;
+}
+
 .news-item__tag {
   display: inline-flex;
   align-items: center;
