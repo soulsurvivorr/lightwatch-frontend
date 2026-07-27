@@ -505,6 +505,51 @@
     overflow-y: auto;
     padding-bottom: 8px;
   }
+
+  /* FIX (news/community parity): on desktop, page__header/.report-tabs
+     were rendering next to Official News's content instead of above
+     it — a horizontal flex ROW layout instead of a vertical stack.
+     Root cause: .page's base definition is display:flex with no
+     direction set (defaults to row), and Community Report already
+     works around this for itself two rules above
+     (#view-chat.report-mode-community .page { display:flex;
+     flex-direction:column; min-height:100vh; }) — but that rule is
+     scoped to report-mode-community only, so News (report-mode-news)
+     never got the equivalent fix and was left in row layout. This is
+     the same fix, without the min-height:100vh/padding-bottom that
+     community's internal-scroll chat panel needs but a normal
+     page-scrolls feed like News doesn't. flex-direction:column also
+     means the default align-items:stretch makes page__header,
+     .report-tabs, and .report-panel all fill the full width
+     automatically — no separate per-element width override needed. */
+  #view-chat.report-mode-news .page {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Match Community's card padding (14px 16px, set higher up in this
+     file at #view-chat.report-mode-community .chat-card) so the two
+     tabs read as the same panel shape — #officialNewsFeed's own
+     unconditional rule near the top of this file only sets 4px 16px,
+     noticeably thinner top/bottom padding than Community gets. */
+  #view-chat.report-mode-news #officialNewsFeed {
+    padding: 14px 16px;
+  }
+
+  /* More breathing room per article on desktop, and a taller image
+     cap — 160px (the unconditional .news-item__image rule near the
+     top of this file, sized for phone-width cards) crops most
+     landscape article photos down to a thin strip on a desktop-width
+     card. Scoped to News only; Community's chat bubbles don't carry
+     images and shouldn't grow to match. */
+  #view-chat.report-mode-news .news-item {
+    padding: 22px 6px;
+    gap: 10px;
+  }
+
+  #view-chat.report-mode-news .news-item__image {
+    max-height: 320px;
+  }
 }
 
 /* Mobile: same "fill the available height, thread scrolls internally"

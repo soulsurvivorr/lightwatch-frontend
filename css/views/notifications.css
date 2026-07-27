@@ -154,6 +154,27 @@
    Notifications page - Desktop styling
    ============================================================ */
 @media (min-width: 981px) {
+  /* FIX: on desktop #view-notifications .page was rendering
+     page__header and .notification-card side-by-side instead of
+     stacked — header on the left, card floated to the right and
+     bottom-aligned against it. That's a flex ROW layout: .page's
+     base definition is display:flex (no direction set, so it
+     defaults to row), and nothing here ever overrode that to
+     column. Mobile never shows this because home.css's own
+     `.page { display:block; }` rule (max-width:768px) masks it —
+     but that rule stops applying above 768px, and desktop has no
+     replacement. Community Report already works around this for
+     itself with `#view-chat.report-mode-community .page {
+     display:flex; flex-direction:column; }` in chat.css; this is
+     the same fix for Notifications. flex-direction:column also
+     means the default align-items:stretch makes page__header and
+     .notification-card fill the full width automatically — no
+     separate width/margin override needed on the card itself. */
+  #view-notifications .page {
+    display: flex;
+    flex-direction: column;
+  }
+
   #view-notifications .page__header {
     margin-bottom: 6px;
   }
@@ -204,5 +225,36 @@
   #view-notifications .notification-item__time,
   #view-notifications .report-item__time {
     font-size: 0.72rem;
+  }
+}
+
+/* Same fix as the 981px block above, at the earlier breakpoint where
+   desktop layout (and therefore the row/column bug) actually starts —
+   matches the min-width:721px breakpoint chat.css's Community Report
+   fix uses, so the 721-980px tablet range isn't left broken. */
+@media (min-width: 721px) {
+  /* FIX: page__header/.notification-card were both rendering as a
+     narrow, centered column instead of running edge-to-edge — most
+     visible on wide/tall monitors, where the true fix (this one) vs.
+     a coincidental one is obvious. Same root cause class as Community
+     Report's .chat-card fight in chat.css: something upstream (not in
+     this file set) is giving .page its own max-width + centering
+     margin. flex-direction:column above only fixes the ROW-vs-COLUMN
+     direction — it doesn't touch .page's own width, which is what was
+     still capping the whole view. !important here for the same reason
+     chat.css needed it on .chat-card: an unseen base rule outranks a
+     plain override on specificity/source order alone. min-height:100vh
+     is the height half of the same request — without it, a short
+     notification list leaves .page shorter than the viewport on tall
+     monitors, and the page's own background stops short of the
+     bottom, exposing the bare <html> background underneath. */
+  #view-notifications .page {
+    display: flex;
+    flex-direction: column;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    min-height: 100vh;
+    box-sizing: border-box;
   }
 }
