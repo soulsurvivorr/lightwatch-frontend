@@ -105,7 +105,7 @@
             <span class="news-item__time">${timeLabel}</span>
           </div>
           ${tag ? `<span class="news-item__tag ${tag.cls}"><span aria-hidden="true">${tag.icon}</span> ${tag.label}</span>` : ''}
-          ${article.image ? `<img class="news-item__image" src="${escapeHtml(article.image)}" alt="" loading="lazy" onerror="this.remove()">` : ''}
+          ${article.image ? `<img class="news-item__image" src="${escapeHtml(article.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="console.warn('[news.js] image failed to load:', this.src); this.remove()">` : ''}
           <div class="news-item__row">
             <h3 class="news-item__headline">${escapeHtml(article.title)}</h3>
             <button type="button" class="news-item__toggle" aria-expanded="false" aria-controls="${detailsId}" data-action="toggle-news">
