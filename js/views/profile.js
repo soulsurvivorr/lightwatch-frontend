@@ -192,11 +192,20 @@ function renderUserEverywhere(user) {
     const chatHandleEl = document.getElementById("chatHandle");
     if (chatHandleEl) chatHandleEl.textContent = user.chatHandle || localStorage.getItem("chatHandle") || "anon";
 
-    // --- topbar ---
-    const topbarUserName = document.getElementById("topbarUserName");
-    const topbarAvatar = document.getElementById("topbarAvatar");
-    if (topbarUserName) topbarUserName.textContent = user.name || "Guest";
-    setAvatar(topbarAvatar);
+    // --- desktop nav "Account" link (avatar + last name) ---
+    // Replaces the old #profileMenuButton (topbarUserName/topbarAvatar),
+    // which was removed — its dropdown target (#userSidebarPanel) is
+    // commented out in the HTML, so the button had nothing left to do.
+    // Last name only (not the full name profileMenuButton used to show):
+    // same split getInitials() uses, just keeping the last token instead
+    // of first+last initials.
+    const navAccountName = document.getElementById("navAccountName");
+    const navAccountAvatar = document.getElementById("navAccountAvatar");
+    if (navAccountName) {
+        const nameParts = (user.name || "").trim().split(/\s+/).filter(Boolean);
+        navAccountName.textContent = nameParts.length ? nameParts[nameParts.length - 1] : "Account";
+    }
+    setAvatar(navAccountAvatar);
 
     // --- main profile card on the page ---
     // profileName/profileAvatar/profileContact now exist in TWO places

@@ -52,6 +52,32 @@
   gap: 20px !important; /* more spacing between individual nav links too */
 }
 
+/* ---- "Account" nav link — avatar + last name ----
+   Replaces the old separate #profileMenuButton (avatar + full name,
+   opened a now-removed sidebar panel) with the existing "Account" nav
+   <a> itself: profile.js fills in #navAccountAvatar/#navAccountName,
+   this just lays them out and gives the link some visual distance
+   from the rest of .nav so it still reads as "the profile one" the
+   way profileMenuButton's separate position used to. margin-left
+   (rather than margin-left:auto, which profileMenuButton used to push
+   itself to the far right) keeps it in normal nav flow, just ~3em
+   further from Notifications than the other links are from each
+   other. !important for the same reason as the rest of this file. */
+.nav__link--account {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  margin-left: 3em !important;
+}
+
+/* Smaller than the default 32px .avatar so it sits comfortably inline
+   with nav text instead of over-sizing the topbar's own line-height. */
+.avatar--nav {
+  width: 22px;
+  height: 22px;
+  font-size: 0.68rem;
+}
+
 /* ---- Guarantee the primary nav is visible/usable on desktop ----
    If the nav is only ever shown via ".nav-toggle:checked ~ .nav"
    (a mobile-menu pattern) and navbar.css never adds an unconditional

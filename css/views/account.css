@@ -832,3 +832,60 @@
         font-size: 0.76rem;
       }
     }
+
+    /* ============================================================
+       Account view - Desktop styling
+       ============================================================ */
+    /* Tablet and Desktop viewports */
+    @media (min-width: 769px) {
+      /* FIX: same root cause as Notifications (see views/notifications.css)
+         and Community Report (chat.css): an unseen base .page rule
+         (not in this file set) defaults to display:flex with no
+         direction set, so it renders as a ROW — page__header and
+         .account-grid were sitting side by side instead of stacked,
+         with the base rule's centering values pulling the whole group
+         to the middle of the viewport instead of pinning it to the
+         top. flex-direction:column fixes the row/column axis;
+         justify-content/align-items override the same rule's
+         single-item centering so content starts at the top and both
+         children stretch to match widths. !important for the same
+         reason the other two fixes need it: an unseen base rule
+         outranks a plain override on specificity/source order alone. */
+      /* Scoped to #accountRealContent (not the generic .page class) on
+         purpose: #accountSkeleton also carries class="page". Also
+         gated on body:not(.page-data-loading) — same pattern home.css
+         already uses for #realPageContent — so this never fights the
+         `.page-data-loading #accountRealContent { display: none; }`
+         rule that hides the real content while the skeleton is up;
+         without either guard this rule's higher specificity was
+         winning those fights and showing the skeleton and/or the real
+         content at the wrong time. */
+      body:not(.page-data-loading) #view-account #accountRealContent {
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start !important;
+        align-items: stretch !important;
+      }
+
+      /* FIX: .account-grid was flattened to a single column at every
+         width (see the .account-grid / .account-grid > div comments
+         at the top of this file) — that was previously a <=768px-only
+         rule, so desktop lost its two-column split and the six
+         settings cards ended up stacked under the profile card
+         instead of beside it. Restore the split here: widen the grid
+         back to two tracks, and stop flattening the wrapper divs into
+         `contents` so each one is a real grid item again (profile
+         card + sign-out in column 1, the settings-cards div in column
+         2). The settings-cards wrapper already carries its own inline
+         `display:flex; flex-direction:column` — that stays in effect
+         either way since an inline style always wins over this class
+         rule, so it keeps stacking its own cards correctly. */
+      .account-grid {
+        grid-template-columns: minmax(280px, 340px) 1fr;
+        max-width: var(--max-width);
+      }
+
+      .account-grid > div {
+        display: block;
+      }
+    }

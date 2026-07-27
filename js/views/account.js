@@ -680,20 +680,29 @@ async function loadAccountExtras() {
 // initAccordions() above (max-height driven off scrollHeight), just
 // applied to a whole card body instead of a single accordion panel.
 //
-// My Locations, Notifications, and Display always start collapsed on
-// every page load (no memory of prior state) — the user opens whichever
-// section they need for that visit.
+// My Locations, Notifications, and Display start collapsed on every
+// mobile page load (no memory of prior state) — the user opens
+// whichever section they need for that visit. On desktop there's
+// plenty of room (these cards sit in their own right-hand column
+// beside the profile card), so they start open instead.
 // ------------------------------------------------------------
 // Cards that should always start collapsed on every page load, regardless
-// of whether the user opened them last time.
+// of whether the user opened them last time. Mobile only — see the
+// isMobileViewport() check below.
 const COLLAPSE_BY_DEFAULT_IDS = ['myLocationsCollapseBtn', 'notificationsCollapseBtn', 'displayPrefsCollapseBtn'];
+
+// Matches the mobile/desktop split used elsewhere in account.css
+// (its "Tablet and standard Phone viewports" cutoff is 768px).
+function isMobileViewport() {
+    return window.matchMedia('(max-width: 768px)').matches;
+}
 
 function initCollapsibleCards() {
     document.querySelectorAll('.card__collapse-btn').forEach(btn => {
         const body = document.getElementById(btn.getAttribute('aria-controls'));
         if (!body) return;
 
-        if (COLLAPSE_BY_DEFAULT_IDS.includes(btn.id)) {
+        if (COLLAPSE_BY_DEFAULT_IDS.includes(btn.id) && isMobileViewport()) {
             // Collapse instantly on load — no shrink animation on first
             // paint, just start closed the way an already-collapsed card
             // normally would.
@@ -705,7 +714,17 @@ function initCollapsibleCards() {
             requestAnimationFrame(() => { body.style.transition = ''; });
         } else {
             // Start fully open at natural height so nothing clips on load.
+            // (Covers both cards that are always open, and — on desktop —
+            // the three COLLAPSE_BY_DEFAULT_IDS cards, whose markup hardcodes
+            // aria-expanded="false"/"Expand ..." for the mobile-collapsed
+            // case. Sync those attributes here so a desktop page load
+            // doesn't show an open card with "expand" affordances.)
             body.style.maxHeight = 'none';
+            body.dataset.collapsed = 'false';
+            if (btn.getAttribute('aria-expanded') !== 'true') {
+                btn.setAttribute('aria-expanded', 'true');
+                btn.setAttribute('aria-label', btn.getAttribute('aria-label').replace('Expand', 'Collapse'));
+            }
         }
 
         btn.addEventListener('click', () => {

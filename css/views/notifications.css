@@ -233,27 +233,23 @@
    matches the min-width:721px breakpoint chat.css's Community Report
    fix uses, so the 721-980px tablet range isn't left broken. */
 @media (min-width: 721px) {
-  /* FIX: page__header/.notification-card were both rendering as a
-     narrow, centered column instead of running edge-to-edge — most
-     visible on wide/tall monitors, where the true fix (this one) vs.
-     a coincidental one is obvious. Same root cause class as Community
-     Report's .chat-card fight in chat.css: something upstream (not in
-     this file set) is giving .page its own max-width + centering
-     margin. flex-direction:column above only fixes the ROW-vs-COLUMN
-     direction — it doesn't touch .page's own width, which is what was
-     still capping the whole view. !important here for the same reason
-     chat.css needed it on .chat-card: an unseen base rule outranks a
-     plain override on specificity/source order alone. min-height:100vh
-     is the height half of the same request — without it, a short
-     notification list leaves .page shorter than the viewport on tall
-     monitors, and the page's own background stops short of the
-     bottom, exposing the bare <html> background underneath. */
+  /* FIX: an earlier pass here also forced width:100% !important;
+     max-width:100% !important; margin:0 !important, intending to
+     make the header/card run edge-to-edge. That fought the same
+     upstream (not in this file set) .page rule that gives every
+     other view (Home, Location) its shared centered max-width —
+     Notifications ended up wider than the rest of the app instead
+     of matching them. Removed: .page's own width/max-width/margin
+     are left alone so Notifications sizes exactly like every other
+     view. flex-direction:column above only fixes the ROW-vs-COLUMN
+     direction — width was never actually broken and didn't need an
+     override. min-height:100vh is unrelated to width — without it, a
+     short notification list leaves .page shorter than the viewport
+     on tall monitors, and the page's own background stops short of
+     the bottom, exposing the bare <html> background underneath. */
   #view-notifications .page {
     display: flex;
     flex-direction: column;
-    width: 100% !important;
-    max-width: 100% !important;
-    margin: 0 !important;
     min-height: 100vh;
     box-sizing: border-box;
     /* FIX: the same unseen base .page rule that forces row layout
