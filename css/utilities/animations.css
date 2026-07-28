@@ -335,6 +335,58 @@
   opacity: 1 !important;
 }
 
+/* ============================================================
+   Nav badges + dots — unread counts (Report/Notifications) and
+   "enable push" prompt dots (Report/Account), positioned on the
+   corner of the bottom-nav icon. Previously had no rules at all, so
+   they rendered as unstyled inline text sitting on top of the icon
+   instead of a proper pill/dot.
+   ============================================================ */
+.bottom-nav-badge {
+  position: absolute;
+  top: -4px;
+  right: -8px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: white;
+  background: var(--red);
+  box-shadow: 0 0 0 2px var(--bottom-nav-surface, var(--bg-panel));
+  pointer-events: none;
+}
+
+/* "Mono" variant used by both current badges — a quieter, brand-toned
+   pill instead of the alert-red default, since these two (Report,
+   Notifications) are routine activity counts, not warnings. */
+.bottom-nav-badge--mono {
+  background: var(--brand2);
+}
+
+.bottom-nav-dot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--brand);
+  box-shadow: 0 0 0 2px var(--bottom-nav-surface, var(--bg-panel));
+  pointer-events: none;
+}
+
+.bottom-nav-link--active .bottom-nav-badge,
+.bottom-nav-link--active .bottom-nav-dot {
+  box-shadow: 0 0 0 2px var(--bottom-nav-active-bg);
+}
+
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) .bottom-nav-icon .bottom-nav-icon-img--light {
     display: none !important;

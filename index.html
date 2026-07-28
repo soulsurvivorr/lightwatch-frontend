@@ -1141,35 +1141,35 @@
   </div>
 
 <main class="page" id="locationRealContent">
-      <div class="hero-banner">
+      <!-- Location hero banner: same visual language + UI/UX as the
+           Notifications hero banner (dark gradient card, eyebrow ->
+           title -> subtext -> a row of pill filter tabs inside the
+           banner itself) instead of the old layout, which parked the
+           filters in a separate light strip below the banner. The
+           #locationFilterTabs id, its buttons, and every data-filter
+           attribute are unchanged so the existing filtering logic
+           keeps working untouched — only where the tabs live and how
+           they're styled has moved. -->
+      <div class="hero-banner location-banner">
         <div class="hero-banner__location">
           <span class="pulse pulse--on" style="width:8px;height:8px;"></span>
           <span>Kumasi, Ashanti</span>
         </div>
-        <div class="hero-banner__eyebrow">LightWatch · Live status</div>
-        <div class="hero-banner__greeting">Live locations</div>
-        <div class="hero-banner__sub">See how other neighborhoods around Kumasi are doing right now.</div>
+        <p class="hero-banner__eyebrow">LightWatch · Live status</p>
+        <h1 class="hero-banner__greeting">Live locations</h1>
+        <p class="hero-banner__sub" id="locationSummaryText">Loading area status…</p>
+        <p class="location-banner__note">Updates automatically as the community reports in</p>
+        <div class="location-filter-tabs" id="locationFilterTabs" role="tablist" aria-label="Filter locations">
+          <button type="button" class="location-filter-tab is-active" data-filter="all" role="tab" aria-selected="true">All</button>
+          <button type="button" class="location-filter-tab" data-filter="on" role="tab" aria-selected="false">On</button>
+          <button type="button" class="location-filter-tab" data-filter="off" role="tab" aria-selected="false">Off</button>
+          <button type="button" class="location-filter-tab" data-filter="unknown" role="tab" aria-selected="false">Checking</button>
+        </div>
       </div>
 
       <div class="location-layout">
         <div class="location-main">
-          <div class="location-summary-strip">
-            <span class="location-summary-strip__icon">
-              <img src="./icons/location.png" alt="Locations" width="18" height="18">
-            </span>
-            <span class="location-summary-strip__text">
-              <span id="locationSummaryText">Loading area status…</span>
-              <span class="location-summary-strip__sub">Updates automatically as the community reports in</span>
-            </span>
-          </div>
-
           <div class="location-controls">
-            <div class="location-filter-tabs" id="locationFilterTabs">
-              <button type="button" class="location-filter-tab is-active" data-filter="all">All</button>
-              <button type="button" class="location-filter-tab" data-filter="on">On</button>
-              <button type="button" class="location-filter-tab" data-filter="off">Off</button>
-              <button type="button" class="location-filter-tab" data-filter="unknown">Checking</button>
-            </div>
             <div class="location-search">
               <input type="text" id="locationSearchInput" placeholder="Search a city..." autocomplete="off">
             </div>

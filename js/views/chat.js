@@ -1220,6 +1220,12 @@ function activateReportTab(tab) {
         });
         pollChatsOnce();
     }
+
+    // Lets components/nav-badges.js know which Report sub-tab the user
+    // is actually looking at, so it can clear that tab's own unread
+    // count/dot without wiping out the other tab's — see that file for
+    // why arriving on /chat alone isn't enough to mark everything read.
+    window.dispatchEvent(new CustomEvent('lw:report-tab-changed', { detail: { tab: nextTab } }));
 }
 
 reportTabButtons.forEach((btn) => {

@@ -31,6 +31,7 @@
 }
 
 .report-tab {
+  position: relative;
   flex: 1 1 0;
   display: inline-flex;
   align-items: center;
@@ -54,6 +55,27 @@
 .report-tab__icon {
   font-size: 0.95rem;
   line-height: 1;
+}
+
+/* Unread dot for the News/Community sub-tabs — injected by
+   components/nav-badges.js as `.report-tab__dot`, kept visible on
+   whichever tab still has unseen activity even after the Report page
+   itself has been opened (see that file for why the two tabs are
+   tracked separately). Positioned at the tab's top-right corner so it
+   reads the same way a notification dot would on any icon. */
+.report-tab__dot {
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--red);
+  box-shadow: 0 0 0 2px var(--bg-panel-raised);
+}
+
+.report-tab.is-active .report-tab__dot {
+  box-shadow: 0 0 0 2px var(--bg-panel);
 }
 
 .report-tab.is-active {

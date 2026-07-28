@@ -143,52 +143,6 @@
   background: var(--brand);
 }
 
-.location-summary-strip {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-soft);
-  background: var(--bg-panel);
-  margin-bottom: 0;
-}
-
-.location-summary-strip__icon {
-  width: 28px;
-  height: 28px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--teal-dim);
-}
-
-.location-summary-strip__icon img {
-  width: 15px;
-  height: 15px;
-}
-
-.location-summary-strip__text {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  min-width: 0;
-}
-
-#locationSummaryText {
-  font-family: var(--font-display);
-  font-size: clamp(0.82rem, 2.4vw, 0.92rem);
-  color: var(--text-bright);
-  font-weight: 600;
-}
-
-.location-summary-strip__sub {
-  font-size: clamp(0.68rem, 2vw, 0.74rem);
-  color: var(--text-faint);
-}
-
 /* ---- Controls: filter chips + search ---- */
 
 .location-controls {
@@ -520,20 +474,22 @@
   font-size: 0.76rem;
 }
 
-/* ---- Small screens: keep compact layout and preserve toggle target ---- */
+/* ---- Location hero banner ----
+   FIX: rebuilt to match the Notifications hero banner's UI/UX —
+   eyebrow -> title -> subtext -> a row of pill filter tabs, all
+   living inside the same dark gradient card, instead of the old grid
+   layout that only held the eyebrow/title/sub/location-chip and
+   pushed the filters into a separate light strip below. The location
+   chip (pulse dot + city name) stays, now pinned to the top-right of
+   the banner via absolute positioning instead of owning a grid cell,
+   since it's the one piece of content Notifications' banner doesn't
+   have an equivalent for. */
 #view-location .hero-banner {
   position: relative;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas:
-    "eyebrow location"
-    "greeting greeting"
-    "sub sub";
-  align-items: start;
-  column-gap: 10px;
-  row-gap: 6px;
-  padding: 14px 16px 12px;
-  margin: 0 0 12px;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 18px 14px;
+  margin: 0 0 14px;
   overflow: hidden;
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-lg);
@@ -541,9 +497,8 @@
 }
 
 #view-location .hero-banner__eyebrow {
-  grid-area: eyebrow;
   margin: 0;
-  align-self: center;
+  padding-right: 120px;
   font-size: 0.65rem;
   color: var(--teal);
   text-transform: uppercase;
@@ -551,38 +506,67 @@
 }
 
 #view-location .hero-banner__greeting {
-  grid-area: greeting;
   font-family: var(--font-display);
   font-size: 1.1rem;
   font-weight: 700;
   color: white;
   line-height: 1.2;
-  margin-bottom: 3px;
+  margin: 4px 0 3px;
 }
 
 #view-location .hero-banner__sub {
-  grid-area: sub;
   font-size: 0.74rem;
   color: rgba(255, 255, 255, 0.65);
   max-width: 580px;
   margin-bottom: 0;
 }
 
+#view-location .location-banner__note {
+  font-size: 0.68rem;
+  color: rgba(255, 255, 255, 0.45);
+  margin: 3px 0 0;
+}
+
 #view-location .hero-banner__location {
-  grid-area: location;
+  position: absolute;
+  top: 14px;
+  right: 18px;
   display: flex;
   align-items: center;
   gap: 6px;
-  justify-self: end;
-  align-self: center;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 999px;
   padding: 4px 10px;
   font-size: 0.68rem;
   color: rgba(255, 255, 255, 0.85);
-  max-width: 100%;
+  max-width: 46%;
   min-width: 0;
+}
+
+/* Filter tabs, pinned inside the banner (same spot Notifications puts
+   its All/Priority/Mentions row) — translucent-on-dark pills instead
+   of the old solid-white chips, so they read as part of the dark
+   card rather than a light control floating below it. */
+#view-location .location-filter-tabs {
+  margin-top: 12px;
+}
+
+#view-location .location-filter-tab {
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.72);
+}
+
+#view-location .location-filter-tab:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+  color: white;
+}
+
+#view-location .location-filter-tab.is-active {
+  background: var(--teal);
+  border-color: var(--teal);
+  color: var(--teal-dim);
 }
 
 #view-location .hero-banner__location span:last-child {
@@ -664,11 +648,6 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
-  }
-
-  .location-summary-strip {
-    padding: 16px 18px;
-    border-radius: 18px;
   }
 
   .location-controls {

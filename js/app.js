@@ -54,6 +54,26 @@
     const mountedViews = new Set();
     const scrollPositions = {};
 
+    // ---- Page-switch animation (see activate()) ----
+    function prefersReducedMotion() {
+        return typeof window.matchMedia === 'function' &&
+            window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    }
+
+    function playViewEnterAnimation(el) {
+        if (prefersReducedMotion() || typeof el.animate !== 'function') return;
+        try {
+            el.getAnimations().forEach((a) => a.cancel());
+            el.animate(
+                [
+                    { opacity: 0, transform: 'translateY(14px) scale(0.985)' },
+                    { opacity: 1, transform: 'translateY(0) scale(1)' }
+                ],
+                { duration: 240, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', fill: 'both' }
+            );
+        } catch (err) { /* Web Animations unsupported — view just appears instantly */ }
+    }
+
     function viewSectionEl(name) {
         return document.getElementById(`view-${name}`);
     }
@@ -112,10 +132,23 @@
         }
 
         // ---- hide the outgoing view ----
+        // BUGFIX: the app's real scrolling element is <html> (see
+        // global.css — overflow-y:auto lives on html at every
+        // breakpoint), not the individual view <section>s. Those
+        // sections never scroll on their own, so reading/writing their
+        // .scrollTop was always a no-op (it's a number, never null/
+        // undefined, so the old `?? window.scrollY` fallback never
+        // actually ran). Net effect: the saved position was always 0,
+        // and — worse — the real window scroll position was never
+        // reset on navigation, so switching views kept whatever
+        // scrollY the previous view was left at, making every other
+        // view open "pre-scrolled". Read/restore window scroll instead.
+        const scrollEl = document.scrollingElement || document.documentElement;
+        const cameFromAppShell = !!(currentView && VIEWS[currentView] && VIEWS[currentView].shell === 'app');
         if (currentView) {
             const outgoingSection = viewSectionEl(currentView);
             if (outgoingSection) {
-                scrollPositions[currentView] = outgoingSection.scrollTop ?? window.scrollY;
+                scrollPositions[currentView] = scrollEl.scrollTop || window.scrollY || 0;
                 outgoingSection.hidden = true;
             }
             callHook(currentView, 'hide');
@@ -160,8 +193,23 @@
 
         if (typeof bindSignOutButtons === 'function') bindSignOutButtons(incomingSection || document);
 
+        // BUGFIX (see note above): restore the real window scroll
+        // position instead of the section's own (always-0) scrollTop.
         const restoreScroll = scrollPositions[name] || 0;
-        if (incomingSection) incomingSection.scrollTop = restoreScroll;
+        window.scrollTo(0, restoreScroll);
+        if (scrollEl) scrollEl.scrollTop = restoreScroll;
+
+        // Nice-to-have page-switch animation: a quick fade + rise on
+        // the incoming view, tab-bar style (subtle, not a full slide —
+        // the outgoing view is already unmounted by the time this
+        // runs, since it shares the same scroll-locking machinery
+        // several views rely on, so a true two-panel overlap slide
+        // isn't safe to add here without touching that). Only between
+        // app-shell views (not the auth flow), never on cold boot, and
+        // never if the OS/browser asks for reduced motion.
+        if (incomingSection && cameFromAppShell && cfg.shell === 'app') {
+            playViewEnterAnimation(incomingSection);
+        }
 
         currentView = name;
         document.title = cfg.title;

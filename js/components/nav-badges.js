@@ -2,7 +2,9 @@
 //  COMPONENTS/NAV-BADGES.JS
 //  Drives the monochrome "tooltip" badges on the Report and
 //  Notifications bottom-nav links (.bottom-nav-badge--mono,
-//  [data-nav-badge="chat"] / [data-nav-badge="notifications"]).
+//  [data-nav-badge="chat"] / [data-nav-badge="notifications"]),
+//  plus the small unread dots on the Report page's own News /
+//  Community sub-tabs.
 //
 //  Why this is its own poller rather than piggybacking on
 //  views/news.js or views/notifications.js: both of those only
@@ -14,10 +16,16 @@
 //  runs its own lightweight background check, independent of which
 //  view is mounted, for as long as the app is open.
 //
-//  Counts persist in localStorage (survive reload) and are cleared
-//  the moment the user actually visits the corresponding nav route
-//  — at that point the page's own view script (news.js /
-//  notifications.js) is what shows them the new items.
+//  Counts persist in localStorage (survive reload). The Report nav
+//  badge covers News + Community together, but is tracked as two
+//  SEPARATE counts under the hood ('news' / 'community') instead of
+//  one merged 'chat' count. That split is what fixes the bug where
+//  simply clicking into the Report page (which defaults to the News
+//  tab) wiped out a badge that was actually about a new Community
+//  reply the user hadn't looked at yet — now each sub-count only
+//  clears when the user is actually looking at THAT tab (tracked via
+//  chat.js's 'lw:report-tab-changed' event), and a small dot on the
+//  still-unread tab's own button keeps that visible until they do.
 // ============================================================
 
 (function () {
@@ -29,9 +37,8 @@
 
     let pollTimer = null;
     let currentRoute = null;
+    let currentReportTab = 'news'; // 'news' | 'community' — which Report sub-tab is on screen right now
 
-    // ---- Seen-id bookkeeping (same pattern as notifications.js's
-    // own SEEN_NOTIFICATION_NEWS_IDS_KEY) ----------------------------
     function getSeenIds(key) {
         try { return new Set(JSON.parse(localStorage.getItem(key) || '[]')); }
         catch { return new Set(); }
@@ -43,12 +50,17 @@
         } catch { /* storage full/unavailable — badge just won't persist across reload */ }
     }
 
-    // ---- Count persistence + rendering ------------------------------
-    function getCount(navKey) {
-        return Number(localStorage.getItem(COUNT_KEY_PREFIX + navKey) || '0') || 0;
+    function getCount(key) {
+        return Number(localStorage.getItem(COUNT_KEY_PREFIX + key) || '0') || 0;
     }
 
-    function render(navKey, count) {
+    function setCountRaw(key, count) {
+        const clamped = Math.max(0, count);
+        try { localStorage.setItem(COUNT_KEY_PREFIX + key, String(clamped)); } catch {}
+        return clamped;
+    }
+
+    function renderBadgeEl(navKey, count) {
         document.querySelectorAll(`[data-nav-badge="${navKey}"]`).forEach(el => {
             if (count > 0) {
                 el.textContent = count > 9 ? '9+' : String(count);
@@ -60,28 +72,60 @@
         });
     }
 
-    function setCount(navKey, count) {
-        const clamped = Math.max(0, count);
-        try { localStorage.setItem(COUNT_KEY_PREFIX + navKey, String(clamped)); } catch {}
-        render(navKey, clamped);
+    // The single Report/Chat nav badge is the SUM of the two sub-tabs
+    // — so it only fully disappears once both have actually been seen.
+    function renderChatBadge() {
+        renderBadgeEl('chat', getCount('news') + getCount('community'));
     }
 
-    function increment(navKey, by = 1) {
-        if (by <= 0) return;
-        setCount(navKey, getCount(navKey) + by);
+    function renderNotificationsBadge() {
+        renderBadgeEl('notifications', getCount('notifications'));
     }
 
-    function clear(navKey) {
-        setCount(navKey, 0);
+    // Small dot on each Report sub-tab button itself (#reportTabNewsBtn
+    // / #reportTabCommunityBtn) — this is what keeps the "you have
+    // something unread here" signal alive on the Community tab even
+    // after the main nav badge has been partly cleared by opening the
+    // Report page onto its default News tab. Injected once, then just
+    // toggled — no HTML changes needed elsewhere.
+    function toggleTabDot(btnId, show) {
+        const btn = document.getElementById(btnId);
+        if (!btn) return;
+        let dot = btn.querySelector('.report-tab__dot');
+        if (!dot) {
+            dot = document.createElement('span');
+            dot.className = 'report-tab__dot';
+            dot.setAttribute('aria-hidden', 'true');
+            btn.appendChild(dot);
+        }
+        dot.hidden = !show;
+    }
+
+    function renderReportTabDots() {
+        toggleTabDot('reportTabNewsBtn', getCount('news') > 0);
+        toggleTabDot('reportTabCommunityBtn', getCount('community') > 0);
     }
 
     function renderAll() {
-        ['chat', 'notifications'].forEach(k => render(k, getCount(k)));
+        renderChatBadge();
+        renderNotificationsBadge();
+        renderReportTabDots();
     }
 
-    // ---- Whose activity is this? (duplicated small helpers, same
-    // pattern views/news.js and views/notifications.js already use
-    // independently rather than reaching into each other's IIFEs) ----
+    function setCount(key, count) {
+        setCountRaw(key, count);
+        renderAll();
+    }
+
+    function increment(key, by = 1) {
+        if (by <= 0) return;
+        setCount(key, getCount(key) + by);
+    }
+
+    function clear(key) {
+        setCount(key, 0);
+    }
+
     function getCurrentUserId() {
         const session = typeof getSession === 'function' ? getSession() : null;
         if (session?.user?.id) return session.user.id;
@@ -98,14 +142,17 @@
         } catch { return null; }
     }
 
-    // ---- Background checks ------------------------------------------
-    function bumpBadges(count) {
-        // The Report badge covers News + Community activity together;
-        // Notifications mirrors it since that page shows the same
-        // merged feed. Either badge is skipped while its own route is
-        // the one on screen — that page is already showing the item.
-        if (currentRoute !== 'chat') increment('chat', count);
+    function bumpNotifications(count) {
         if (currentRoute !== 'notifications') increment('notifications', count);
+    }
+
+    // Skip incrementing a Report sub-count while the user is right now
+    // looking at that exact tab — same "already showing it" principle
+    // the old single bumpBadges() used, just applied per-tab instead of
+    // per-route.
+    function bumpReportTab(tab, count) {
+        if (currentRoute === 'chat' && currentReportTab === tab) return;
+        increment(tab, count);
     }
 
     function checkNews() {
@@ -120,10 +167,10 @@
                 if (!fresh.length) return;
                 fresh.forEach(a => seen.add(a.id));
                 saveSeenIds(SEEN_NEWS_KEY, seen);
-                // Don't badge a brand-new browser/session for the entire
-                // existing news backlog — only count items that show up
-                // in a check AFTER we've already established a baseline.
-                if (!isFirstRun) bumpBadges(fresh.length);
+                if (!isFirstRun) {
+                    bumpReportTab('news', fresh.length);
+                    bumpNotifications(fresh.length);
+                }
             })
             .catch(() => {});
     }
@@ -142,12 +189,6 @@
                 const items = Array.isArray(data) ? data : [];
                 const localityName = location ? String(location).split(',')[0].trim().toLowerCase() : '';
 
-                // Relevant to this badge: a reply to something the user
-                // posted, a new community message in the user's OWN
-                // location ('chat' — already scoped by the `location`
-                // query param above, same as notifications.js's own
-                // merge), or an "Everyone"-audience message that
-                // mentions the user's location by name in its text.
                 const relevant = items.filter(item => {
                     if (item.type === 'reply' || item.type === 'chat') return true;
                     if (localityName && item.audience === 'everyone' &&
@@ -164,7 +205,10 @@
                 if (!fresh.length) return;
                 fresh.forEach(a => seen.add(a.id));
                 saveSeenIds(SEEN_REPORT_KEY, seen);
-                if (!isFirstRun) bumpBadges(fresh.length);
+                if (!isFirstRun) {
+                    bumpReportTab('community', fresh.length);
+                    bumpNotifications(fresh.length);
+                }
             })
             .catch(() => {});
     }
@@ -180,12 +224,28 @@
         pollTimer = setInterval(runChecks, POLL_MS);
     }
 
-    // ---- React to navigation: clear the badge for whatever route
-    // just became active (that page shows the activity itself now). --
+    function getActiveReportTabFromDom() {
+        const communityBtn = document.getElementById('reportTabCommunityBtn');
+        return (communityBtn && communityBtn.classList.contains('is-active')) ? 'community' : 'news';
+    }
+
+    // Arriving on /chat only marks whichever sub-tab is actually on
+    // screen as read (defaults to News) — the other tab's count and
+    // dot are left alone until the user switches to it themselves (see
+    // onReportTabChanged below, fired by chat.js).
     function onRouteChanged() {
         const activeSection = document.querySelector('[data-view]:not([hidden])');
         currentRoute = activeSection ? activeSection.dataset.view : null;
-        if (currentRoute === 'chat' || currentRoute === 'notifications') clear(currentRoute);
+        if (currentRoute === 'notifications') clear('notifications');
+        if (currentRoute === 'chat') {
+            currentReportTab = getActiveReportTabFromDom();
+            clear(currentReportTab);
+        }
+    }
+
+    function onReportTabChanged(e) {
+        currentReportTab = e?.detail?.tab === 'community' ? 'community' : 'news';
+        clear(currentReportTab);
     }
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -195,15 +255,15 @@
     });
 
     window.addEventListener('lw:route-changed', onRouteChanged);
+    window.addEventListener('lw:report-tab-changed', onReportTabChanged);
 
-    // A different user signing in shouldn't inherit the previous
-    // user's unread counts or seen-id history.
     window.addEventListener('lw-session-changed', () => {
         try {
             localStorage.removeItem(SEEN_NEWS_KEY);
             localStorage.removeItem(SEEN_REPORT_KEY);
         } catch {}
-        clear('chat');
+        clear('news');
+        clear('community');
         clear('notifications');
         startPolling();
     });
