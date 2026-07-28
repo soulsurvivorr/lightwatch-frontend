@@ -111,15 +111,6 @@
   flex-shrink: 0;
 }
 
-.report-item--success {
-  border-color: rgba(61, 217, 194, 0.45);
-}
-
-.report-item--warning,
-.notification-item--warning {
-  border-color: rgba(242, 179, 61, 0.45);
-}
-
 .report-item--info,
 .notification-item--info {
   border-color: rgba(23, 25, 60, 0.15);
@@ -144,6 +135,104 @@
 .notification-item--admin {
   border-color: rgba(242, 179, 61, 0.55);
   background: rgba(242, 179, 61, 0.06);
+}
+
+/* ============================================================
+   Outage / restoration status items get the same "own identity"
+   treatment as news below, instead of just a thin tinted border —
+   a left accent bar plus a status chip, colored with the app's
+   existing red=alert / teal=resolved language (see --red/--teal in
+   variables.css) so an outage reads as urgent and a restoration
+   reads as resolved at a glance, rather than blending into every
+   other bordered card in the feed.
+   ============================================================ */
+.report-item--warning,
+.notification-item--warning {
+  position: relative;
+  padding-left: 20px;
+  background: linear-gradient(90deg, rgba(229, 72, 77, 0.07), transparent 60%);
+  border-color: rgba(229, 72, 77, 0.35);
+}
+
+.report-item--warning::before,
+.notification-item--warning::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 10px;
+  bottom: 10px;
+  width: 3px;
+  border-radius: 999px;
+  background: var(--red);
+}
+
+.notification-item--warning strong {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.notification-item--warning strong::after {
+  content: "Outage";
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--red);
+  background: rgba(229, 72, 77, 0.12);
+  border: 1px solid rgba(229, 72, 77, 0.32);
+  border-radius: 999px;
+  padding: 2px 7px;
+  line-height: 1.4;
+}
+
+.report-item--success,
+.notification-item--success {
+  position: relative;
+  padding-left: 20px;
+  background: linear-gradient(90deg, rgba(61, 217, 194, 0.08), transparent 60%);
+  border-color: rgba(61, 217, 194, 0.4);
+}
+
+.report-item--success::before,
+.notification-item--success::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 10px;
+  bottom: 10px;
+  width: 3px;
+  border-radius: 999px;
+  background: var(--teal);
+}
+
+.notification-item--success strong {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.notification-item--success strong::after {
+  content: "Restored";
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--teal-dim);
+  background: rgba(61, 217, 194, 0.16);
+  border: 1px solid rgba(61, 217, 194, 0.4);
+  border-radius: 999px;
+  padding: 2px 7px;
+  line-height: 1.4;
+}
+
+@media (max-width: 720px) {
+  .report-item--warning,
+  .notification-item--warning,
+  .report-item--success,
+  .notification-item--success {
+    padding-left: 16px;
+  }
 }
 
 /* ============================================================

@@ -123,8 +123,8 @@
     // ---- Rendering ----------------------------------------------------
     function notificationItemMeta(notification) {
         switch (notification.type) {
-            case 'success': return { cls: 'notification-item--success', icon: '' };
-            case 'warning': return { cls: 'notification-item--warning', icon: '' };
+            case 'success': return { cls: 'notification-item--success', icon: '✅ ' };
+            case 'warning': return { cls: 'notification-item--warning', icon: '⚠️ ' };
             case 'chat':    return { cls: 'notification-item--chat', icon: '💬 ' };
             case 'reply':   return { cls: 'notification-item--reply', icon: '↩️ ' };
             case 'news':    return { cls: 'notification-item--news', icon: '📰 ' };
