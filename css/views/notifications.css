@@ -362,7 +362,7 @@
    inherited as-is so the two pages can't visually drift apart.
    ============================================================ */
 .notifications-banner {
-  margin-bottom: 18px;
+  margin-bottom: 6px;
 }
 
 .notif-filter-tabs {

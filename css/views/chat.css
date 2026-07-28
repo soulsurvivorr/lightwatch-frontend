@@ -1593,5 +1593,5 @@
    rule in home.css only reserves 14px, sized for a banner with no
    nested control row like the report-tabs switcher here). */
 .report-banner {
-  margin-bottom: 18px;
+  margin-bottom: 6px;
 }

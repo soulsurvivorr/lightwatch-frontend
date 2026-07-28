@@ -142,11 +142,14 @@
                 const items = Array.isArray(data) ? data : [];
                 const localityName = location ? String(location).split(',')[0].trim().toLowerCase() : '';
 
-                // Relevant to this badge: replies to something the user
-                // posted, or an "Everyone"-audience community message
-                // that mentions the user's own location by name.
+                // Relevant to this badge: a reply to something the user
+                // posted, a new community message in the user's OWN
+                // location ('chat' — already scoped by the `location`
+                // query param above, same as notifications.js's own
+                // merge), or an "Everyone"-audience message that
+                // mentions the user's location by name in its text.
                 const relevant = items.filter(item => {
-                    if (item.type === 'reply') return true;
+                    if (item.type === 'reply' || item.type === 'chat') return true;
                     if (localityName && item.audience === 'everyone' &&
                         typeof item.text === 'string' &&
                         item.text.toLowerCase().includes(localityName)) {
