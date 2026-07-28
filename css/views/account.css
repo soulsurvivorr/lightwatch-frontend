@@ -889,3 +889,9 @@
         display: block;
       }
     }
+/* Account page hero banner — same dark-gradient card as Home,
+   Notifications, and Report; just the eyebrow/title/sub, no stats
+   or filter row. */
+.account-banner {
+  margin-bottom: 18px;
+}

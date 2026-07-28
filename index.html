@@ -1027,29 +1027,33 @@
     <!-- ==== Report page section ==== -->
     <section id="view-chat" data-view="chat" class="report-mode-news" hidden>
       <main class="page">
-        <div class="page__header">
-          <div>
-            <div class="page__eyebrow">Report</div>
-            <h1 class="page__title">Community reports</h1>
-            <p class="page__subtitle">Official updates, stay informed before reporting.</p>
-          </div>
-        </div>
-
         <!-- Report page tabs: Official News (default) / Community Report.
              Panel visibility + #view-chat's report-mode-* class are both
              driven by js/views/chat.js (activateReportTab). The class on
              the section is what chat.css keys off to decide whether the
              fixed-height "app panel" chat layout applies (Community only)
-             or the page behaves like a normal scrolling view (News). -->
-        <div class="report-tabs" role="tablist" aria-label="Report page sections">
-          <button type="button" class="report-tab is-active" id="reportTabNewsBtn" data-tab="news" role="tab" aria-selected="true" aria-controls="reportPanelNews">
-            <span class="report-tab__icon" aria-hidden="true">⚡</span>
-            <span>Official News</span>
-          </button>
-          <button type="button" class="report-tab" id="reportTabCommunityBtn" data-tab="community" role="tab" aria-selected="false" aria-controls="reportPanelCommunity">
-            <span class="report-tab__icon" aria-hidden="true">💬</span>
-            <span>Community Report</span>
-          </button>
+             or the page behaves like a normal scrolling view (News).
+
+             Hero-style banner (same dark-gradient card as Home/
+             Notifications) replaces the old plain .page__header here,
+             with the tab switcher nested inside it — see chat.css's
+             .report-banner rules for the sizing/collapse-on-compose
+             behavior carried over from the old header, and the dark-
+             background report-tab color variant. -->
+        <div class="hero-banner report-banner">
+          <p class="hero-banner__eyebrow">Report</p>
+          <h1 class="hero-banner__greeting">Community reports</h1>
+          <p class="hero-banner__sub">Official updates, stay informed before reporting.</p>
+          <div class="report-tabs" role="tablist" aria-label="Report page sections">
+            <button type="button" class="report-tab is-active" id="reportTabNewsBtn" data-tab="news" role="tab" aria-selected="true" aria-controls="reportPanelNews">
+              <span class="report-tab__icon" aria-hidden="true">⚡</span>
+              <span>Official News</span>
+            </button>
+            <button type="button" class="report-tab" id="reportTabCommunityBtn" data-tab="community" role="tab" aria-selected="false" aria-controls="reportPanelCommunity">
+              <span class="report-tab__icon" aria-hidden="true">💬</span>
+              <span>Community Report</span>
+            </button>
+          </div>
         </div>
 
         <!-- ==== Official News panel (default) ==== -->
@@ -1318,12 +1322,10 @@
 
   <main class="page" id="accountRealContent">
 
-    <div class="page__header">
-      <div>
-        <div class="page__eyebrow">Your account</div>
-        <h1 class="page__title" id="acctPageGreeting">Account</h1>
-        <p class="page__subtitle">Manage your profile, preferences, and locations.</p>
-      </div>
+    <div class="hero-banner account-banner">
+      <p class="hero-banner__eyebrow">Your account</p>
+      <h1 class="hero-banner__greeting" id="acctPageGreeting">Account</h1>
+      <p class="hero-banner__sub">Manage your profile, preferences, and locations.</p>
     </div>
 
     <div class="account-grid">

@@ -71,6 +71,42 @@
   outline-offset: 2px;
 }
 
+/* ============================================================
+   Report page now uses a hero-banner (.report-banner, same dark
+   gradient card as Home/Notifications) in place of the old plain
+   .page__header, with .report-tabs nested inside it instead of
+   sitting on the light .page background below. Every rule further
+   down this file that used to target "#view-chat .page__header" was
+   renamed to "#view-chat .report-banner" — the flex-sizing/collapse
+   behavior is unchanged, only the selector. .report-tabs itself is
+   untouched structurally (still matched by plain ".report-tabs"
+   wherever it lives in the DOM); this block just restyles its colors
+   so the light "raised panel" look doesn't clash sitting on a dark
+   banner.
+   ============================================================ */
+.report-banner .report-tabs {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.report-banner .report-tab {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.report-banner .report-tab:hover:not(.is-active) {
+  color: white;
+}
+
+.report-banner .report-tab.is-active {
+  background: var(--teal);
+  color: var(--teal-dim);
+  box-shadow: none;
+}
+
+.report-banner .report-tab:focus-visible {
+  outline-color: var(--teal);
+}
+
 /* Very small phones: icon + label can crowd two tabs into 320-360px.
    Shrink type/padding rather than wrapping — a two-line tab button
    looks broken next to its sibling. */
@@ -435,7 +471,7 @@
      .page is currently flex (community) or block (news). !important
      matches the pattern already used on .chat-card/.report-panel
      below, since an unseen base rule is fighting the width here too. */
-  #view-chat .page__header,
+  #view-chat .report-banner,
   #view-chat .report-tabs {
     flex-shrink: 0;
     align-self: stretch;
@@ -446,7 +482,7 @@
   /* Keep "Community reports" left-aligned on desktop rather than
      centered — matches the rest of the app's left-aligned page
      headers (Reports/Locations/Account). Applies to both tabs. */
-  #view-chat .page__header {
+  #view-chat .report-banner {
     text-align: left;
     justify-content: flex-start;
     align-items: flex-start;
@@ -603,7 +639,7 @@
      makes both elements render as the exact same box no matter which
      tab is active. !important matches .chat-card/.report-panel below,
      since an unseen base rule is fighting the width here too. */
-  #view-chat .page__header,
+  #view-chat .report-banner,
   #view-chat .report-tabs {
     flex-shrink: 0;
     align-self: stretch;
@@ -1521,14 +1557,14 @@
     padding-top: 6px;
   }
 
-  #view-chat .page__header {
+  #view-chat .report-banner {
     transition: max-height 0.22s ease, opacity 0.18s ease,
       margin 0.22s ease, padding 0.22s ease;
     max-height: 160px;
     overflow: hidden;
   }
 
-  #view-chat .page.is-composing .page__header {
+  #view-chat .page.is-composing .report-banner {
     max-height: 0;
     opacity: 0;
     margin: 0;
@@ -1551,4 +1587,11 @@
     box-shadow: 0 -8px 10px rgba(0, 0, 0, 0.04),
       0 18px 45px rgba(15, 28, 65, 0.16);
   }
+}
+/* Report page hero banner spacing — match the 18px gap used by the
+   Home/Notifications/Account hero-banners (the base .hero-banner
+   rule in home.css only reserves 14px, sized for a banner with no
+   nested control row like the report-tabs switcher here). */
+.report-banner {
+  margin-bottom: 18px;
 }
