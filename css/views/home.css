@@ -4640,6 +4640,29 @@ body:not(.page-data-loading) #view-home #realPageContent {
    so a fix placed here would just get overridden by chat.css's
    fixed sizes.) */
 
+/* ---- 1c) Safe-area top inset (status bar) ----
+   viewport-fit=cover (index.html) + the translucent status-bar meta
+   tag intentionally let the app draw edge-to-edge, so body's
+   background still paints all the way under the status bar/notch.
+   But on mobile .topbar is display:none (see the max-width:768px
+   block above), which left nothing reserving space for the status
+   bar itself — .hero-banner, as the first real content, was sitting
+   directly under it instead of just the background.
+
+   Putting the inset on #appShell (rather than editing every .page
+   padding-top declared at the various phone breakpoints above) keeps
+   this a single, breakpoint-independent fix: #appShell has no
+   padding of its own today, so this can't fight any of those
+   existing rules, and it only pushes the content column down —
+   #appShell's own background stays transparent, so body's edge-to-
+   edge background/gradient is still what renders behind the status
+   bar, not a hard color block. */
+@media (max-width: 768px) {
+  #appShell {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+}
+
 /* ---- 2) Scrolling: mobile sections scrollable ----
    On mobile, make sections scrollable with native momentum scrolling. */
 #realPageContent,
