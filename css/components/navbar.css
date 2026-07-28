@@ -201,6 +201,37 @@
 }
 
 /* ============================================================
+   Monochrome "tooltip" badge — used by the Report and Notifications
+   bottom-nav links for unread-activity counts (new news, replies,
+   location mentions). Deliberately black-and-white rather than the
+   red/amber palette above: this badge means "count of new items",
+   not "something needs your attention/is broken", so it stays
+   neutral instead of reading as an alert. Counts are driven by
+   js/components/nav-badges.js.
+   ============================================================ */
+.bottom-nav-badge--mono {
+  background: #111319;
+  color: white;
+  border: 1.5px solid var(--dark-bg);
+  box-shadow: 0 0 0 2px white, 0 2px 6px rgba(0, 0, 0, 0.25);
+  font-weight: 700;
+}
+
+/* Small pointer nub so the badge reads as a tooltip bubble
+   pointing back at the icon, not just a floating dot. */
+.bottom-nav-badge--mono::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -4px;
+  width: 6px;
+  height: 6px;
+  transform: translateX(-50%) rotate(45deg);
+  background: #111319;
+  border-radius: 1px;
+}
+
+/* ============================================================
    Bottom nav styling (active state, icon swap, tap/press motion)
    now lives entirely in utilities/animations.css, which loads
    after this file. It used to be duplicated here too — a second,

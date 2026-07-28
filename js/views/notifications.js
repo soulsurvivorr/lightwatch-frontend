@@ -32,6 +32,47 @@
     const MAX_SEEN_NEWS_IDS = 300; // cap so this never grows unbounded in localStorage
     let notificationsPollTimer = null;
 
+    // ---- All / Priority / Mentions filter --------------------------
+    // Priority = the stuff that's about the grid itself: news matched
+    // to the user's location(s) plus LightStatus updates for their own
+    // location(s) (the 'success'/'warning' types already used for
+    // outage/restoration events elsewhere in this feed).
+    // Mentions = activity directed at the user personally: replies to
+    // something they posted, or a community message.
+    const FILTER_TYPES = {
+        priority: new Set(['news', 'warning', 'success']),
+        mentions: new Set(['chat', 'reply'])
+    };
+
+    let activeFilter = 'all';
+    let latestMergedNotifications = [];
+
+    function applyNotificationFilter(notifications) {
+        if (activeFilter === 'all') return notifications;
+        const allowed = FILTER_TYPES[activeFilter];
+        if (!allowed) return notifications;
+        return notifications.filter(n => allowed.has(n.type));
+    }
+
+    function bindFilterTabs() {
+        const tabs = document.querySelectorAll('.notifications-banner .notif-filter-tab');
+        if (!tabs.length || tabs[0].dataset.bound === '1') return;
+        tabs.forEach(tab => {
+            tab.dataset.bound = '1';
+            tab.addEventListener('click', () => {
+                const filter = tab.dataset.filter || 'all';
+                if (filter === activeFilter) return;
+                activeFilter = filter;
+                tabs.forEach(t => {
+                    const isActive = t === tab;
+                    t.classList.toggle('is-active', isActive);
+                    t.setAttribute('aria-selected', String(isActive));
+                });
+                renderNotifications(applyNotificationFilter(latestMergedNotifications));
+            });
+        });
+    }
+
     // ---- Whose feed is this? ---------------------------------------
     // Deliberately duplicated (rather than reaching into chat.js's
     // private IIFE, which doesn't expose these) — same small pattern
@@ -238,7 +279,8 @@
     function loadNotifications(isFirstLoad = false) {
         const cached = isFirstLoad ? LWCache.read(NOTIFICATIONS_CACHE_KEY, CACHE_MAX_AGE_SHORT_MS) : null;
         if (cached) {
-            renderNotifications(cached);
+            latestMergedNotifications = cached;
+            renderNotifications(applyNotificationFilter(cached));
         } else if (isFirstLoad) {
             showNotificationLoading();
         }
@@ -247,23 +289,37 @@
             if (notifications === null) {
                 // Notifications fetch failed — still show whatever news matched,
                 // rather than blanking the whole page over one bad call.
-                if (!cached) renderNotifications(newsItems);
+                if (!cached) {
+                    latestMergedNotifications = newsItems;
+                    renderNotifications(applyNotificationFilter(newsItems));
+                }
                 return;
             }
             const merged = [...notifications, ...newsItems]
                 .sort((a, b) => new Date(b.reportedAt) - new Date(a.reportedAt));
-            renderNotifications(merged);
+            latestMergedNotifications = merged;
+            renderNotifications(applyNotificationFilter(merged));
             LWCache.write(NOTIFICATIONS_CACHE_KEY, merged);
         });
     }
 
     function mount() {
         bindCardInteractions();
+        bindFilterTabs();
         loadNotifications(true);
     }
 
     function show() {
         bindCardInteractions();
+        bindFilterTabs();
+        // FIX: this used to only arm the interval, so the very latest
+        // news/activity wouldn't reach the list until the first tick of
+        // POLL_INTERVAL_FAST_MS fired — up to a full poll interval after
+        // the user actually opened the page. Fetching once immediately
+        // (isFirstLoad:false, so it doesn't blow away a still-fresh
+        // cached render, but does hit the network right away) closes
+        // that gap; the interval below just keeps it current afterward.
+        loadNotifications(false);
         clearInterval(notificationsPollTimer);
         notificationsPollTimer = setInterval(() => loadNotifications(false), POLL_INTERVAL_FAST_MS);
     }

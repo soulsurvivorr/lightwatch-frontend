@@ -1223,11 +1223,19 @@
     <section id="view-notifications" data-view="notifications" hidden>
 <main class="page">
 
-    <div class="page__header">
-      <div>
-        <div class="page__eyebrow">Notifications</div>
-        <h1 class="page__title">All notifications</h1>
-        <p class="page__subtitle">Recent alerts and community updates for your LightWatch locations.</p>
+    <!-- Notifications hero banner: same visual language as the Home
+         hero-banner (dark gradient card), but carries the All /
+         Priority / Mentions filter instead of stats. Filtering itself
+         is client-side over the already-merged list — see
+         js/views/notifications.js (applyNotificationFilter). -->
+    <div class="hero-banner notifications-banner">
+      <p class="hero-banner__eyebrow">Notifications</p>
+      <h1 class="hero-banner__greeting">Stay on top of your grid</h1>
+      <p class="hero-banner__sub">Outage alerts, community replies, and news for your locations — all in one feed.</p>
+      <div class="notif-filter-tabs" role="tablist" aria-label="Filter notifications">
+        <button type="button" class="notif-filter-tab is-active" data-filter="all" role="tab" aria-selected="true">All</button>
+        <button type="button" class="notif-filter-tab" data-filter="priority" role="tab" aria-selected="false">Priority</button>
+        <button type="button" class="notif-filter-tab" data-filter="mentions" role="tab" aria-selected="false">Mentions</button>
       </div>
     </div>
 
@@ -1775,6 +1783,7 @@
         <span class="bottom-nav-icon bottom-nav-icon--user">
           <img src="./icons/chat.png" alt="Chat" class="bottom-nav-icon-img bottom-nav-icon-img--light">
           <img src="./icons/chat-active.png" alt="" aria-hidden="true" class="bottom-nav-icon-img bottom-nav-icon-img--active">
+          <span class="bottom-nav-badge bottom-nav-badge--mono" data-nav-badge="chat" hidden aria-hidden="true"></span>
         </span>
         <span class="bottom-nav-label">Report</span>
       </a>
@@ -1782,7 +1791,7 @@
         <span class="bottom-nav-icon bottom-nav-icon--notifications">
           <img src="./icons/notification.png" alt="Notifications" class="bottom-nav-icon-img bottom-nav-icon-img--light">
           <img src="./icons/notification-active.png" alt="" aria-hidden="true" class="bottom-nav-icon-img bottom-nav-icon-img--active">
-          <span class="bottom-nav-badge" data-nav-badge="notifications" hidden aria-hidden="true"></span>
+          <span class="bottom-nav-badge bottom-nav-badge--mono" data-nav-badge="notifications" hidden aria-hidden="true"></span>
           <span class="bottom-nav-dot" data-nav-dot="notifications" hidden aria-hidden="true"></span>
         </span>
         <span class="bottom-nav-label">Notifications</span>
@@ -1815,6 +1824,7 @@
   <script src="./js/components/theme.js"></script>
   <script src="./js/components/nav.js"></script>
   <script src="./js/components/notification.js"></script>
+  <script src="./js/components/nav-badges.js"></script>
   <script src="./js/components/analytics.js"></script>
 
   <!-- ==== JS: views (each wrapped so it can coexist with the others

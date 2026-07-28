@@ -94,10 +94,21 @@
   line-height: 1.4;
 }
 
-.report-item__time {
+.report-item__time,
+.notification-item__time {
+  /* FIX: this rule used to only target .report-item__time — the
+     notification-item version had no white-space/flex-shrink
+     protection of its own, so on narrower cards (or longer titles)
+     the time column would get squeezed and "4d ago" would wrap onto
+     two lines, one word per line. white-space:nowrap keeps the label
+     on one line; flex-shrink:0 stops the flex row (.report-item /
+     .notification-item is display:flex) from shrinking this column
+     at all — the text side (.notification-item__text) wraps instead,
+     which is the column that's supposed to give way. */
   color: var(--text-faint);
   font-size: 0.7rem;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .report-item--success {
@@ -133,6 +144,78 @@
 .notification-item--admin {
   border-color: rgba(242, 179, 61, 0.55);
   background: rgba(242, 179, 61, 0.06);
+}
+
+/* ============================================================
+   News items get their own identity instead of just a tinted
+   border like the other types — a small "News" chip and a left
+   accent bar, so a glance down the feed tells news apart from
+   outage/reply/admin items without reading the text.
+   ============================================================ */
+.report-item--news,
+.notification-item--news {
+  position: relative;
+  padding-left: 20px;
+  background: linear-gradient(90deg, rgba(242, 179, 61, 0.05), transparent 60%);
+}
+
+.report-item--news::before,
+.notification-item--news::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 10px;
+  bottom: 10px;
+  width: 3px;
+  border-radius: 999px;
+  background: var(--amber);
+}
+
+.notification-item--news strong {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.notification-item--news strong::after {
+  content: "News";
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--amber);
+  background: rgba(242, 179, 61, 0.14);
+  border: 1px solid rgba(242, 179, 61, 0.35);
+  border-radius: 999px;
+  padding: 2px 7px;
+  line-height: 1.4;
+}
+
+@media (max-width: 720px) {
+  .report-item--news,
+  .notification-item--news {
+    padding-left: 16px;
+  }
+}
+
+/* ============================================================
+   Card + item polish
+   ============================================================ */
+.notification-card {
+  overflow: hidden;
+}
+
+.notification-item {
+  box-shadow: 0 1px 2px rgba(28, 31, 38, 0.04);
+}
+
+.notification-item:hover {
+  box-shadow: 0 8px 20px rgba(28, 31, 38, 0.08);
+  border-color: color-mix(in srgb, var(--brand2) 30%, var(--border-soft));
+}
+
+.notification-item strong {
+  color: var(--text-bright);
 }
 
 .report-item[role="link"],
@@ -266,5 +349,56 @@
        specificity/source-order reason as the rest of this block. */
     justify-content: flex-start !important;
     align-items: stretch !important;
+  }
+}
+/* ============================================================
+   Notifications hero banner — same visual system as
+   views/home.css's .hero-banner (dark gradient card), reused here
+   with the page title baked in plus the All/Priority/Mentions
+   filter row in place of Home's stat grid. Only banner-specific
+   layout lives here; color/shape/typography for .hero-banner,
+   .hero-banner__eyebrow, .hero-banner__greeting and
+   .hero-banner__sub itself stay defined once in home.css and are
+   inherited as-is so the two pages can't visually drift apart.
+   ============================================================ */
+.notifications-banner {
+  margin-bottom: 18px;
+}
+
+.notif-filter-tabs {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.notif-filter-tab {
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 7px 16px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.notif-filter-tab:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+  color: white;
+}
+
+.notif-filter-tab.is-active {
+  background: var(--teal);
+  border-color: var(--teal);
+  color: var(--teal-dim);
+}
+
+@media (max-width: 720px) {
+  .notif-filter-tab {
+    font-size: 0.74rem;
+    padding: 6px 13px;
   }
 }
