@@ -215,6 +215,7 @@
             };
             const clearKeyboardShift = () => {
                 loginFormSide.style.removeProperty('--login-keyboard-shift');
+                showFooter();
             };
 
             const handleUserInputFocus = () => {

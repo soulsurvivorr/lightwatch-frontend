@@ -143,17 +143,29 @@
        whole pane. Trimming the top padding moves the hero up so the
        full hero+card+footer stack fits in one screen on those
        heights while still leaving it well clear of the edge. */
+    margin: 0;
+    align-items: flex-start;
     justify-content: flex-start;
-    padding: 28px 32px 32px;
+    padding: 0 32px 24px;
+    padding-top: 0;
   }
 
   .login-form-side .login-box {
+    margin-top: -28px;
+    padding-top: 0;
+  }
+
+  .login-hero {
     margin-top: 0;
   }
 
   .login-form-side .login-footer {
-    margin-top: 32px;
+    margin-top: 16px;
     padding-top: 0;
+  }
+
+  .login-form-side .login-card {
+    padding-bottom: 16px;
   }
 }
 
@@ -170,8 +182,8 @@
    just without the squeeze — so iPad widths land on something well
    positioned instead of a half-broken split. True desktop split is
    untouched and only applies again above 1024px. */
-/* Tablet portrait range (e.g. iPad Air, iPad Pro 11") */
-@media (min-width: 769px) and (max-width: 1024px) {
+/* Tablet portrait range (e.g. iPad Air, smaller Android tablets) */
+@media (min-width: 769px) and (max-width: 900px) {
   .login-shell {
     display: flex;
     flex-direction: column;
@@ -425,6 +437,23 @@
   line-height: 1.1;
 }
 
+@media (min-width: 769px) {
+  .login-hero .login-logo-badge {
+    width: 56px;
+    height: 56px;
+    margin-bottom: 8px;
+  }
+
+  .login-hero .login-logo-badge img {
+    width: 30px;
+    height: 30px;
+  }
+
+  .login-hero .login-wordmark {
+    font-size: 1.45rem;
+  }
+}
+
 .login-wordmark__light {
   color: white;
 }
@@ -458,7 +487,7 @@
   background: rgba(255, 255, 255, 0.045);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: var(--radius-lg);
-  padding: 26px 24px 24px;
+  padding: 18px 24px 24px;
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
