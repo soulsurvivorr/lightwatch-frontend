@@ -110,6 +110,7 @@
   <link rel="stylesheet" href="./css/views/profile.css">
   <link rel="stylesheet" href="./css/views/home-reminder.css">
   <link rel="stylesheet" href="./css/views/dashboard.css">
+  <link rel="stylesheet" href="./css/views/animations.css">
 </head>
 <body>
 
@@ -238,57 +239,66 @@
     </section>
 
     <section class="login-form-side" aria-label="Sign in form">
+      <div class="login-form-side__backdrop" aria-hidden="true"></div>
       <div class="login-box">
-        <div class="login-box__brand">
-          <div class="brand-row">
-            <img src="./images/dev-logo.png" alt="LightWatch Logo" width="40" height="40" />
-            <p style="font-size: 1rem; font-weight: 600; color: var(--text-bright); margin: 0;">LightWatch GH</p>
-          </div>
-          <div class="brand-loop-line" aria-live="polite">
-            <p class="brand-loop-text" id="brandLoopText"></p>
-            <span class="brand-loop-cursor" aria-hidden="true"></span>
-          </div>
-        </div>
 
-        <h2>Welcome back</h2>
-        <p class="login-box__subtitle">Enter your email or phone number to receive a verification code.</p>
-
-        <div class="field">
-          <label class="field__label" for="user-input">Email or Phone</label>
-          <div class="field__input-wrap">
-            <input
-              class="field__input"
-              id="user-input"
-              type="email"
-              inputmode="email"
-              placeholder="e.g. user@mail.com or 0551234567"
-              autocomplete="email"
-              required
-            />
+        <div class="login-hero">
+          <span class="login-logo-badge">
+            <img src="./images/dev-logo.png" alt="LightWatch Logo" width="38" height="38" />
+          </span>
+          <p class="login-wordmark">
+            <span class="login-wordmark__light">Light</span><span class="login-wordmark__watch">Watch</span><span class="login-wordmark__gh">GH</span>
+          </p>
+          <div class="brand-loop-line brand-loop-line--light" aria-live="polite">
+            <p class="brand-loop-text brand-loop-text--light" id="brandLoopText"></p>
+            <span class="brand-loop-cursor brand-loop-cursor--light" aria-hidden="true"></span>
           </div>
         </div>
 
-        <p id="login-error-msg" style="color:#c9302c; font-size:0.7rem; margin-bottom: 9px;"></p>
+        <div class="login-card">
+          <h2>Welcome back</h2>
+          <p class="login-box__subtitle">Enter your email or phone number to receive a verification code.</p>
 
-        <div class="field-row">
-          <label class="remember-me-label" for="rememberMe">
-            <input id="rememberMe" type="checkbox" />
-            <span class="remember-me-track"><span class="remember-me-thumb"></span></span>
-            <span>Remember me</span>
-          </label>
+          <div class="field">
+            <label class="field__label" for="user-input">Email or Phone</label>
+            <div class="field__input-wrap">
+              <svg class="field__icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M4 6h16v12H4z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+                <path d="m4 7 8 6 8-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <input
+                class="field__input"
+                id="user-input"
+                type="email"
+                inputmode="email"
+                placeholder="e.g. user@mail.com or 0551234567"
+                autocomplete="email"
+                required
+              />
+            </div>
+          </div>
+
+          <p id="login-error-msg" style="color:#ff8a80; font-size:0.7rem; margin-bottom: 9px;"></p>
+
+          <div class="field-row">
+            <label class="remember-me-label" for="rememberMe">
+              <input id="rememberMe" type="checkbox" />
+              <span class="remember-me-track"><span class="remember-me-thumb"></span></span>
+              <span>Remember me</span>
+            </label>
+          </div>
+
+          <button id="sendCodebtn" type="button" class="btn btn--primary btn--block">Send code</button>
+
+          <div class="divider">or</div>
+
+          <a href="#" data-route-custom="signup" class="btn btn--ghost btn--block login-create-btn">Create account</a>
+
+          <p class="signup-prompt">
+            New to LightWatch?
+            <a href="#" data-route-custom="signup" style="color: rgba(240, 172, 61, 1);">Create account</a>
+          </p>
         </div>
-
-        <button id="sendCodebtn" type="button" class="btn btn--primary btn--block">Send code</button>
-
-        <div class="divider">or</div>
-
-        <a href="#" data-route-custom="signup" class="btn btn--ghost btn--block login-create-btn">Create account</a>
-
-        <p class="signup-prompt">
-          New to LightWatch?
-          <a href="#" data-route-custom="signup" style="color: rgba(240, 172, 61, 1);">Create account</a>
-        </p>
-
       </div>
 
       <footer class="login-footer">

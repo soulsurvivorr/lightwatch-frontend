@@ -1,0 +1,165 @@
+/* ============================================================
+   Shared auth-flow visual language (login / signup / verification)
+   ============================================================
+   A single reusable "skyline hero" backdrop — CSS-only (no image
+   assets required) — applied via the .lw-auth-sky class so all three
+   auth screens read as one continuous flow, matching the reference
+   design's dark gradient sky + city silhouette + glowing power
+   pylons behind a soft, blurred card.
+   ============================================================ */
+
+.lw-auth-sky {
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(ellipse 140% 60% at 50% 0%, rgba(76, 141, 255, 0.16), transparent 60%),
+    linear-gradient(180deg, #0a0f1c 0%, #0d1424 38%, #0a0f1a 100%);
+}
+
+/* City silhouette, built entirely from CSS gradients — a row of
+   flat-topped "buildings" of varying height with a few lit windows,
+   sitting on the horizon behind the auth card. */
+.lw-auth-sky::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 34%;
+  min-height: 140px;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(90deg, rgba(255, 197, 110, 0.55) 0 6%, transparent 6%),
+    linear-gradient(90deg, transparent 14%, rgba(255, 197, 110, 0.4) 14% 17%, transparent 17%),
+    linear-gradient(90deg, transparent 28%, rgba(255, 197, 110, 0.5) 28% 32%, transparent 32%),
+    linear-gradient(90deg, transparent 47%, rgba(255, 197, 110, 0.35) 47% 50%, transparent 50%),
+    linear-gradient(90deg, transparent 63%, rgba(255, 197, 110, 0.5) 63% 67%, transparent 67%),
+    linear-gradient(90deg, transparent 82%, rgba(255, 197, 110, 0.4) 82% 86%, transparent 86%),
+    linear-gradient(180deg, #131b2c, #0a0f1a);
+  background-size:
+    100% 40%, 100% 55%, 100% 30%, 100% 65%, 100% 45%, 100% 58%, 100% 100%;
+  background-position: bottom;
+  background-repeat: no-repeat;
+  clip-path: polygon(
+    0% 100%, 0% 55%, 5% 55%, 5% 40%, 11% 40%, 11% 60%, 18% 60%, 18% 30%,
+    24% 30%, 24% 62%, 31% 62%, 31% 22%, 38% 22%, 38% 58%, 45% 58%, 45% 45%,
+    52% 45%, 52% 68%, 59% 68%, 59% 25%, 66% 25%, 66% 55%, 73% 55%, 73% 35%,
+    80% 35%, 80% 62%, 87% 62%, 87% 42%, 94% 42%, 94% 58%, 100% 58%, 100% 100%
+  );
+  opacity: 0.9;
+}
+
+/* Two thin power-pylon silhouettes with a sagging line between them —
+   the little "grid" motif that ties the background back to the app's
+   subject matter. */
+.lw-auth-sky::after {
+  content: "";
+  position: absolute;
+  right: 6%;
+  bottom: 18%;
+  width: 120px;
+  height: 130px;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.5;
+  background-image:
+    linear-gradient(var(--text-faint), var(--text-faint));
+  background-size: 2px 90px;
+  background-repeat: no-repeat;
+  background-position: 10px 0, 100px 10px;
+  filter: drop-shadow(0 0 1px rgba(0,0,0,0.4));
+}
+
+.lw-auth-sky__glow {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 20% 15%, rgba(76, 141, 255, 0.22), transparent 40%),
+    radial-gradient(circle at 82% 8%, rgba(52, 211, 153, 0.10), transparent 38%);
+}
+
+.lw-auth-sky__birds {
+  position: absolute;
+  top: 14%;
+  left: 12%;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.5;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  letter-spacing: 6px;
+}
+
+/* Frosted-glass card treatment shared by the login box, the signup
+   input panel, and the verification card — sits legibly on top of
+   the skyline instead of a flat opaque panel. */
+.lw-auth-card {
+  position: relative;
+  z-index: 1;
+  background: linear-gradient(180deg, rgba(18, 24, 38, 0.92), rgba(10, 15, 26, 0.96));
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 -20px 50px rgba(0, 0, 0, 0.45);
+}
+
+@media (min-width: 560px) {
+  .lw-auth-card {
+    border-radius: var(--radius-lg);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+  }
+}
+
+/* Social sign-in buttons (Google / Apple) — visual parity with the
+   reference login screen. Not wired to real OAuth (none configured
+   in this app yet); tapping shows a "coming soon" toast, see
+   views/login.js. */
+.lw-social-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  background: var(--bg-panel-raised);
+  border: 1px solid var(--border-soft);
+  color: var(--text-bright);
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.lw-social-btn:hover {
+  border-color: var(--border-strong);
+}
+
+.lw-social-btn svg,
+.lw-social-btn img {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.lw-auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-faint);
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 16px 0;
+}
+
+.lw-auth-divider::before,
+.lw-auth-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border-soft);
+}

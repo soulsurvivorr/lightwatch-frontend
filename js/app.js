@@ -60,17 +60,39 @@
             window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     }
 
-    function playViewEnterAnimation(el) {
+    // Play a small enter animation for incoming views. For app-shell
+    // views we use a horizontal swipe determined by a canonical
+    // ordering (so nav feels like sliding between tabs). Non-app
+    // transitions fall back to a subtle rise/fade.
+    const APP_VIEW_ORDER = ['home', 'location', 'chat', 'notifications', 'account'];
+    function playViewEnterAnimation(el, fromView, toView) {
         if (prefersReducedMotion() || typeof el.animate !== 'function') return;
         try {
             el.getAnimations().forEach((a) => a.cancel());
-            el.animate(
-                [
-                    { opacity: 0, transform: 'translateY(14px) scale(0.985)' },
-                    { opacity: 1, transform: 'translateY(0) scale(1)' }
-                ],
-                { duration: 240, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', fill: 'both' }
-            );
+            // If both views are in our app order list we animate a
+            // horizontal slide. Direction is based on their index.
+            const fromIdx = APP_VIEW_ORDER.indexOf(fromView);
+            const toIdx = APP_VIEW_ORDER.indexOf(toView);
+            const bothInOrder = fromIdx >= 0 && toIdx >= 0 && fromView !== toView;
+
+            if (bothInOrder) {
+                const dir = toIdx >= fromIdx ? 1 : -1;
+                el.animate(
+                    [
+                        { opacity: 0, transform: `translateX(${20 * dir}%)` },
+                        { opacity: 1, transform: 'translateX(0)' }
+                    ],
+                    { duration: 260, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', fill: 'both' }
+                );
+            } else {
+                el.animate(
+                    [
+                        { opacity: 0, transform: 'translateY(14px) scale(0.985)' },
+                        { opacity: 1, transform: 'translateY(0) scale(1)' }
+                    ],
+                    { duration: 240, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', fill: 'both' }
+                );
+            }
         } catch (err) { /* Web Animations unsupported — view just appears instantly */ }
     }
 
@@ -208,7 +230,7 @@
         // app-shell views (not the auth flow), never on cold boot, and
         // never if the OS/browser asks for reduced motion.
         if (incomingSection && cameFromAppShell && cfg.shell === 'app') {
-            playViewEnterAnimation(incomingSection);
+            playViewEnterAnimation(incomingSection, currentView, name);
         }
 
         currentView = name;

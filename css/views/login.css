@@ -126,6 +126,34 @@
   .login-form-side {
     overflow-y: auto;
     min-height: 0;
+    /* FIX: the hero was getting pushed almost off the top of the
+       pane. .login-footer below has margin-top:auto, and inside a
+       flex column an auto margin claims all the leftover space
+       *before* itself — so the hero+card group and the footer never
+       actually get centered as a unit, they just get shoved to their
+       respective ends of the pane with the hero landing right against
+       the top padding. Switching to flex-start + real padding (instead
+       of relying on justify-content:center from global.css) plus a
+       min-height on .login-box__inner-ish content keeps the hero
+       comfortably inset from the top on every desktop height, and lets
+       the pane scroll instead of clipping on shorter windows.
+       FIX: 48px of top padding plus the hero's own spacing pushed the
+       group tall enough that the footer fell below the fold on
+       common laptop heights (~800-900px), forcing a scroll to see the
+       whole pane. Trimming the top padding moves the hero up so the
+       full hero+card+footer stack fits in one screen on those
+       heights while still leaving it well clear of the edge. */
+    justify-content: flex-start;
+    padding: 28px 32px 32px;
+  }
+
+  .login-form-side .login-box {
+    margin-top: 0;
+  }
+
+  .login-form-side .login-footer {
+    margin-top: 32px;
+    padding-top: 0;
   }
 }
 
@@ -296,24 +324,238 @@
   color: white;
 }
 
-/* ---- Form side ---- */
+/* ---- Form side ----
+   Restyled to match the dark "Welcome back" mock: a dark gradient
+   panel (echoes .login-visual so the two-pane desktop split still
+   reads as one product) holding a small centered hero (logo badge +
+   wordmark + the existing typewriter tagline) and, below it, a
+   translucent floating card with the actual sign-in form. All new
+   selectors are scoped under .login-form-side / .login-card so they
+   cannot leak into the left-hand .login-visual pane, which reuses
+   some of the same base classes (.brand-row, .brand-loop-line, etc).
+   ---- */
 
 .login-form-side {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 20px 0px;
-  /*background-color: var(--bg-panel);*/
+
+  padding: 48px 0px 20px;
   position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 20% 0%, rgba(74, 144, 217, 0.18), transparent 45%),
+    radial-gradient(circle at 85% 100%, rgba(240, 172, 61, 0.12), transparent 45%),
+    linear-gradient(160deg, var(--dark-bg), var(--dark-bg-mid) 140%);
+}
+
+/* Skyline artwork behind the hero — anchored to the top of the pane,
+   faded out at the bottom so it blends into the solid dark background
+   the card sits on rather than ending in a hard edge. Purely
+   decorative, so it's aria-hidden and sits behind everything else
+   (z-index 0, .login-box is z-index 1). */
+.login-form-side__backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: min(78%, 660px);
+  min-height: 220px;
+  z-index: 0;
+  background-image: url('../../images/city-img.png');
+  background-repeat: no-repeat;
+  background-position: center bottom;
+  background-size: cover;
+  opacity: 0.9;
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 70%, transparent 100%);
+  mask-image: linear-gradient(to bottom, black 0%, black 70%, transparent 100%);
 }
 
 .login-box {
+  position: relative;
+  z-index: 1;
   width: 100%;
-  max-width: 380px;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   margin-top: 8px;
   transform: translateY(var(--login-keyboard-shift, 0px));
   transition: transform 0.18s ease-out;
+}
+
+/* Hero: logo badge + wordmark + typewriter tagline, centered above the card */
+.login-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: top;
+  gap: 4px;
+  margin-bottom: 22px;
+  margin-top: 0px;
+  width: 100%;
+  max-width: 380px;
+}
+
+.login-logo-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  margin-bottom: 10px;
+  background: radial-gradient(circle at 35% 30%, rgba(74, 144, 217, 0.55), rgba(28, 90, 158, 0.32) 60%, transparent 78%);
+  border: 1px solid rgba(74, 144, 217, 0.45);
+  box-shadow: 0 0 0 6px rgba(74, 144, 217, 0.08), 0 8px 22px rgba(0, 0, 0, 0.35);
+}
+
+.login-logo-badge img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.35));
+}
+
+.login-wordmark {
+  margin: 0;
+  font-size: 1.85rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+}
+
+.login-wordmark__light {
+  color: white;
+}
+
+.login-wordmark__watch {
+  color: var(--brand2);
+}
+
+.login-wordmark__gh {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.5);
+  margin-left: 4px;
+  letter-spacing: 0.02em;
+}
+
+.login-hero .brand-loop-line {
+  justify-content: center;
+  margin-top: 6px;
+}
+
+.login-hero .brand-loop-text {
+  text-align: center;
+}
+
+/* The floating sign-in card */
+.login-card {
+  position: relative;
+  width: 100%;
+  max-width: 380px;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-lg);
+  padding: 26px 24px 24px;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+}
+
+.login-card h2 {
+  color: white;
+  text-align: center;
+}
+
+.login-card .login-box__subtitle {
+  color: rgba(255, 255, 255, 0.62);
+  text-align: center;
+}
+
+.login-card .field__label {
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.login-card .field__icon {
+  position: absolute;
+  left: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  color: rgba(255, 255, 255, 0.4);
+  pointer-events: none;
+}
+
+.login-card .field__input {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: white;
+  padding-left: 42px;
+}
+
+.login-card .field__input::placeholder {
+  color: rgba(255, 255, 255, 0.38);
+}
+
+.login-card .field__input:focus {
+  border-color: var(--brand2);
+  box-shadow: 0 0 0 3px rgba(74, 144, 217, 0.22);
+}
+
+.login-card .remember-me-label {
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.login-card .remember-me-track {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.login-card #sendCodebtn {
+  margin-top: 2px;
+  background: linear-gradient(180deg, var(--brand2) 0%, var(--brand2-dim) 100%);
+  border: 1px solid transparent;
+  color: white;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  box-shadow: 0 10px 24px rgba(74, 144, 217, 0.35);
+}
+
+.login-card #sendCodebtn:hover {
+  background: linear-gradient(180deg, #5a9ee0 0%, var(--brand2) 100%);
+  border-color: transparent;
+  color: white;
+}
+
+.login-card .divider {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.login-card .divider::before,
+.login-card .divider::after {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.login-card a.btn.btn--ghost.login-create-btn,
+.login-card .login-create-btn {
+  background: linear-gradient(180deg, #f2b33d 0%, #dc9a2e 100%);
+  border: 1px solid transparent;
+  color: #241a06;
+  font-weight: 700;
+  box-shadow: 0 10px 24px rgba(240, 172, 61, 0.35);
+}
+
+.login-card a.btn.btn--ghost.login-create-btn:hover,
+.login-card .login-create-btn:hover {
+  background: linear-gradient(180deg, #f7bf58 0%, #e3a439 100%);
+  border-color: transparent;
+  color: #241a06;
+}
+
+.login-card .signup-prompt {
+  color: rgba(255, 255, 255, 0.62);
 }
 
 .login-box__brand {
@@ -588,17 +830,17 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
 .login-footer p {
   margin: 0;
   font-size: calc(0.62rem + 1px);
-  color: var(--text-faint);
+  color: rgba(255, 255, 255, 0.4);
   pointer-events: auto;
 }
 
 .login-footer a {
-  color: var(--text-faint);
+  color: rgba(255, 255, 255, 0.4);
   text-decoration: none;
 }
 
 .login-footer a:hover {
-  color: var(--text-muted);
+  color: rgba(255, 255, 255, 0.68);
   text-decoration: underline;
 }
 
@@ -617,7 +859,7 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
     height: var(--app-vh, 100lvh);
     min-height: var(--app-vh, 100lvh);
     max-height: var(--app-vh, 100lvh);
-    background-color: var(--bg-panel);
+    background-color: var(--dark-bg);
     overflow-x: hidden !important;
     overflow-y: hidden;
     overscroll-behavior: none;
@@ -633,7 +875,7 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
     margin: 0;
     padding: 0;
     gap: 0;
-    background-color: var(--bg-panel);
+    background-color: var(--dark-bg);
     overflow: hidden;
   }
 
@@ -654,54 +896,47 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
     display: flex;
     flex-direction: column;
     align-items: center;
+    /* FIX: flex-start was leaving the hero+card group jammed against
+       the top of the pane, with a big dead gap above the footer.
+       Centering the group vertically (with a min top padding as a
+       floor so it never touches the notch/status-bar area) reads
+       much closer to the reference mock, where the card sits roughly
+       mid-screen rather than pinned to the top. */
     justify-content: center;
     height: 100%;
     min-height: 0;
     overflow: hidden;
     padding: 20px 24px;
-    padding-top: calc(20px + env(safe-area-inset-top, 0px));
+    padding-top: calc(24px + env(safe-area-inset-top, 0px));
     padding-bottom: calc(46px + env(safe-area-inset-bottom, 0px));
   }
 
+  /* FIX: even centered, give the hero a guaranteed minimum gap from
+     the top of the pane so it never reads as flush-to-the-edge on
+     shorter phones where the centered group sits high. */
+  .login-form-side .login-hero {
+    margin-top: 1.5em;
+  }
+
+  /* FIX: the backdrop's default height (up to 560px / 74% of the
+     pane) was tall enough to reach down into where the centered card
+     now sits, so the card ended up overlapping the skyline art or
+     sitting flush against its faded-out bottom edge. Shrinking it to
+     roughly the hero's footprint keeps it purely a backdrop behind
+     the hero, with real dark background — and breathing room — behind
+     the card. */
+  .login-form-side__backdrop {
+    height: min(42%, 370px);
+    min-height: 190px;
+  }
+
+  /* FIX: the two floating animated gradient "bubble" clusters are
+     removed entirely on phone screens per design — the reference
+     mock has a clean, uncluttered dark panel with just the skyline
+     backdrop behind the hero, no decorative blobs. */
   .login-form-side::before,
   .login-form-side::after {
-    content: "";
-    position: absolute;
-    border-radius: 999px;
-    z-index: 0;
-    pointer-events: none;
-    will-change: transform;
-    animation-duration: 4s;
-    animation-iteration-count: infinite;
-    animation-timing-function: ease-in-out;
-  }
-
-  /* Top-right bubble cluster */
-  .login-form-side::before {
-    width: 210px;
-    height: 210px;
-    top: -84px;
-    right: -76px;
-    background:
-      radial-gradient(circle at 34% 32%, rgba(255, 255, 255, 0.28), transparent 22%),
-      radial-gradient(circle at 46% 46%, rgba(214, 162, 74, 0.92), rgba(166, 108, 20, 0.5) 46%, transparent 66%),
-      radial-gradient(circle at 66% 68%, rgba(28, 90, 158, 0.88), transparent 58%);
-    filter: blur(0.5px);
-    animation-name: bubble-float-a;
-  }
-
-  /* Bottom-left bubble cluster */
-  .login-form-side::after {
-    width: 230px;
-    height: 230px;
-    left: -96px;
-    bottom: -104px;
-    background:
-      radial-gradient(circle at 32% 30%, rgba(255, 255, 255, 0.24), transparent 20%),
-      radial-gradient(circle at 58% 42%, rgba(28, 90, 158, 0.85), transparent 55%),
-      radial-gradient(circle at 44% 70%, rgba(214, 162, 74, 0.9), rgba(166, 108, 20, 0.45) 48%, transparent 66%);
-    filter: blur(0.5px);
-    animation-name: bubble-float-b;
+    content: none;
   }
 
   .login-box {
@@ -709,7 +944,7 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
     z-index: 1;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;
     width: 100%;
     max-width: 380px;
     margin: 0 auto;
@@ -734,53 +969,8 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
   }
 
   #view-login .field__input:focus {
-    border-color: rgb(224, 218, 214);
-    box-shadow: 0 0 0 3px rgba(240, 172, 61, 0.15);
-  }
-
-  @keyframes bubble-float-a {
-    0%, 100% {
-      transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
-      opacity: 0.95;
-    }
-    25% {
-      transform: translate3d(-14px, 12px, 0) scale(1.14) rotate(8deg);
-      opacity: 1;
-    }
-    50% {
-      transform: translate3d(-22px, 20px, 0) scale(0.92) rotate(-6deg);
-      opacity: 0.85;
-    }
-    75% {
-      transform: translate3d(-9px, 24px, 0) scale(1.08) rotate(4deg);
-      opacity: 1;
-    }
-  }
-
-  @keyframes bubble-float-b {
-    0%, 100% {
-      transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
-      opacity: 0.92;
-    }
-    30% {
-      transform: translate3d(20px, -16px, 0) scale(1.16) rotate(-10deg);
-      opacity: 1;
-    }
-    60% {
-      transform: translate3d(30px, -26px, 0) scale(0.9) rotate(7deg);
-      opacity: 0.82;
-    }
-    85% {
-      transform: translate3d(12px, -10px, 0) scale(1.1) rotate(-4deg);
-      opacity: 1;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .login-form-side::before,
-    .login-form-side::after {
-      animation: none;
-    }
+    border-color: var(--brand2);
+    box-shadow: 0 0 0 3px rgba(74, 144, 217, 0.22);
   }
 }
 
@@ -792,16 +982,31 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
 @media (max-width: 480px) {
   .login-form-side {
     padding: 16px 18px;
-    padding-top: calc(16px + env(safe-area-inset-top, 0px));
+    padding-top: calc(36px + env(safe-area-inset-top, 0px));
     padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
   }
 
-  .login-box__brand {
-    margin-bottom: 1rem;
+  .login-box__brand,
+  .login-hero {
+    margin-bottom: .5rem;
+  }
+
+  .login-logo-badge {
+    width: 96px;
+    height: 96px;
+  }
+
+  .login-logo-badge img {
+    width: 60px;
+    height: 60px;
+  }
+
+  .login-wordmark {
+    font-size: 1.45rem;
   }
 
   .brand-loop-text {
-    font-size: 0.7rem;
+    font-size: 0.9rem;
   }
 
   .login-box h2 {
@@ -848,32 +1053,6 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
   .login-footer p {
     font-size: calc(0.5rem + 1px);
   }
-
-  .login-form-side::before {
-    width: 150px;
-    height: 150px;
-    top: -58px;
-    right: -54px;
-    background:
-      radial-gradient(circle at 34% 32%, rgba(255, 255, 255, 0.18), transparent 24%),
-      radial-gradient(circle at 46% 46%, rgba(214, 162, 74, 0.68), rgba(166, 108, 20, 0.34) 46%, transparent 68%),
-      radial-gradient(circle at 66% 68%, rgba(28, 90, 158, 0.64), transparent 60%);
-    filter: blur(1.4px) saturate(0.92);
-    animation-duration: 4.2s;
-  }
-
-  .login-form-side::after {
-    width: 162px;
-    height: 162px;
-    left: -60px;
-    bottom: -72px;
-    background:
-      radial-gradient(circle at 32% 30%, rgba(255, 255, 255, 0.14), transparent 22%),
-      radial-gradient(circle at 58% 42%, rgba(28, 90, 158, 0.6), transparent 58%),
-      radial-gradient(circle at 44% 70%, rgba(214, 162, 74, 0.66), rgba(166, 108, 20, 0.3) 48%, transparent 68%);
-    filter: blur(1.4px) saturate(0.92);
-    animation-duration: 4.8s;
-  }
 }
 
 /* Samsung S9+ and similar larger modern devices (~412px width, ~846px height)
@@ -885,8 +1064,23 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
     padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
   }
 
-  .login-box__brand {
+  .login-box__brand,
+  .login-hero {
     margin-bottom: 0.9rem;
+  }
+
+  .login-logo-badge {
+    width: 52px;
+    height: 52px;
+  }
+
+  .login-logo-badge img {
+    width: 28px;
+    height: 28px;
+  }
+
+  .login-wordmark {
+    font-size: 1.15rem;
   }
 
   .brand-loop-text {
@@ -953,10 +1147,10 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
     padding: 12px 24px;
     padding-top: calc(12px + env(safe-area-inset-top, 0px));
     padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
-    justify-content: center;
   }
 
-  .login-box__brand {
+  .login-box__brand,
+  .login-hero {
     margin-bottom: 0.6rem;
   }
 
@@ -1001,11 +1195,30 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
     padding: 8px 18px;
     padding-top: calc(8px + env(safe-area-inset-top, 0px));
     padding-bottom: calc(4px + env(safe-area-inset-bottom, 0px));
-    justify-content: flex-start;
   }
 
-  .login-box__brand {
+  .login-form-side__backdrop {
+    display: none;
+  }
+
+  .login-box__brand,
+  .login-hero {
     margin-bottom: 0.3rem;
+  }
+
+  .login-logo-badge {
+    width: 44px;
+    height: 44px;
+    margin-bottom: 6px;
+  }
+
+  .login-logo-badge img {
+    width: 24px;
+    height: 24px;
+  }
+
+  .login-wordmark {
+    font-size: 1rem;
   }
 
   .brand-loop-line {
@@ -1050,11 +1263,6 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
   .login-footer p {
     font-size: calc(0.4rem + 1px);
   }
-
-  .login-form-side::before,
-  .login-form-side::after {
-    display: none;
-  }
 }
 
 /* ============================================================
@@ -1068,11 +1276,12 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
     padding: 30px 24px;
     padding-top: calc(30px + env(safe-area-inset-top, 0px));
     padding-bottom: calc(50px + env(safe-area-inset-bottom, 0px));
-    justify-content: center;
   }
 
-  .login-box__brand {
+  .login-box__brand,
+  .login-hero {
     margin-bottom: 1.8rem;
+
   }
 
   .login-footer {

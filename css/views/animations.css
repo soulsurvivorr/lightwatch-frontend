@@ -1,0 +1,11 @@
+/* Small helper styles for nav / view transition polish */
+.nav__link{transition:background-color .22s ease, transform .22s cubic-bezier(.2,.9,.3,1)}
+.nav__link--active{background:rgba(255,255,255,0.02);transform:translateY(-2px)}
+
+/* Bottom nav indicators */
+.bottom-nav-link{transition:transform .18s ease}
+.bottom-nav-link--active{transform:translateY(-4px)}
+
+/* Fallback visual when Web Animations not supported: fade-in */
+.view-fallback-fade{animation:lwFadeIn .26s ease both}
+@keyframes lwFadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
