@@ -457,13 +457,25 @@
  
     <main> 
         <div class="verify-card" id="verifyCard"> 
-            <div class="verify-body">
-                <h2>Check your phone</h2>
-                <p class="contact-row">
+                <div class="verify-body">
+                  <h2>Verify Your Account</h2>
+                  <p class="contact-row">
                     <span id="code-text"></span>
-                    <a href="../signup.html" id="editContactLink" class="edit-link">Edit</a>
-                </p>
-                <img class="verify-hero" src="/images/fb_prompt_code_img.png" alt="Verification code prompt" loading="eager" fetchpriority="high" decoding="async" width="320" height="240">
+                    <a href="#" id="editContactLink" class="edit-link">Change phone number</a>
+                  </p>
+                  <div class="verify-hero" role="img" aria-hidden="true">
+                    <div class="verify-hero__city" aria-hidden="true"></div>
+                    <div class="verify-hero__brand">
+                      <span class="verify-hero__badge">
+                        <img src="./images/dev-logo.png" alt="LightWatch" width="48" height="48">
+                      </span>
+                      <svg class="verify-hero__icon" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <circle cx="32" cy="32" r="20" fill="rgba(74,144,217,0.08)" />
+                        <rect x="24" y="28" width="16" height="12" rx="2" stroke="currentColor" stroke-width="2"/>
+                        <path d="M28 28v-4a4 4 0 0 1 8 0v4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    </div>
+                  </div>
                 <div class="otp-boxes" id="otpBoxes">
                     <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" autocomplete="one-time-code" class="otp-box" aria-label="Digit 1">
                     <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" autocomplete="one-time-code" class="otp-box" aria-label="Digit 2">
@@ -471,14 +483,24 @@
                     <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" autocomplete="one-time-code" class="otp-box" aria-label="Digit 4">
                 </div>
                 <p id="error-msg" role="alert"></p>
-                <div class="resend-row"> 
+                  <div class="resend-row"> 
                     <img src="./icons/refresh.png" alt="" width="16" height="16">
-                    <p>It may take a few minutes for you to get this code. <span id="resendCodeLink">Get a new code</span></p> 
-                </div> 
-                <button id="continueBtn" disabled>
-                    <span class="btn-label">Continue</span>
+                    <p>Didn't receive the code? <span id="resendCodeLink">Resend in 00:45</span></p> 
+                  </div>
+                  <button id="continueBtn" disabled>
+                    <span class="btn-label">Verify &amp; Continue</span>
                     <span class="btn-spinner" aria-hidden="true"></span>
-                </button>
+                  </button>
+
+                  <div class="or-divider"><span>OR</span></div>
+
+                  <button id="changeContactBtn" class="btn btn--ghost btn--block change-contact-btn" type="button">
+                    <span class="change-icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 12h16M12 4v8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                    <span>Change phone number</span>
+                    <span class="chev" aria-hidden="true">›</span>
+                  </button>
             </div>
 
             <div class="verify-success" id="verifySuccess" aria-hidden="true">
@@ -490,6 +512,13 @@
             </div>
         </div> 
     </main> 
+
+        <footer class="verify-footer">
+          <div class="verify-footer__inner">
+            <svg class="secure-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 2 4 6v6c0 6 4 8 8 8s8-2 8-8V6l-8-4z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M9 12v-1a3 3 0 1 1 6 0v1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <p>Your information is secure and encrypted</p>
+          </div>
+        </footer>
 
     
     

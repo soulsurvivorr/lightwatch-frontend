@@ -17,7 +17,7 @@
     const RESEND_COOLDOWN_SECONDS = 60;
     const MASK_STAR_COUNT = 4;
 
-    let verifyCard, verifyBody, continueBtn, errorMsg, otpBoxesWrap, otpBoxes, resendLink, editLink;
+    let verifyCard, verifyBody, continueBtn, errorMsg, otpBoxesWrap, otpBoxes, resendLink, editLink, changeContactBtn, backBtn;
     let cooldownInterval = null;
     let verifyInFlight = false;
     let mounted = false;
@@ -239,6 +239,18 @@
         editLink?.addEventListener('click', (e) => {
             e.preventDefault();
             window.LWRouter.navigate('signup');
+        });
+
+        changeContactBtn = document.getElementById('changeContactBtn');
+        changeContactBtn?.addEventListener('click', (e) => {
+            e.preventDefault();
+            window.LWRouter.navigate('signup');
+        });
+
+        backBtn = document.getElementById('verifyBackBtn');
+        backBtn?.addEventListener('click', (e) => {
+            e.preventDefault();
+            window.LWRouter.navigate('login');
         });
 
         otpBoxes.forEach((box, index) => {

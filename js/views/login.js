@@ -170,16 +170,38 @@
         }
     }
 
+    function isNativeApp() {
+        return Boolean(
+            window.Capacitor &&
+            typeof window.Capacitor.isNativePlatform === 'function' &&
+            window.Capacitor.isNativePlatform()
+        );
+    }
+
     function mount() {
+        const isNative = isNativeApp();
+        document.documentElement.classList.toggle('lw-login-native', isNative);
+        document.documentElement.classList.toggle('lw-login-browser', !isNative);
         document.documentElement.classList.add('lw-view-login');
         const sendCodeBtn = document.getElementById('sendCodebtn');
         const userInput = document.getElementById('user-input');
+        const loginFormSide = document.querySelector('#view-login .login-form-side');
 
         sendCodeBtn?.addEventListener('click', e => { e.preventDefault(); handleSubmit(); });
         userInput?.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); handleSubmit(); } });
 
+        const showFooter = () => loginFormSide?.classList.remove('hide-footer');
+        const hideFooter = () => loginFormSide?.classList.add('hide-footer');
+
+        userInput?.addEventListener('focus', () => {
+            hideFooter();
+        });
+
+        userInput?.addEventListener('blur', () => {
+            showFooter();
+        });
+
         if (window.visualViewport && userInput) {
-            const loginFormSide = document.querySelector('#view-login .login-form-side');
             const updateKeyboardShift = () => {
                 if (!loginFormSide || document.activeElement !== userInput) {
                     loginFormSide?.style.removeProperty('--login-keyboard-shift');

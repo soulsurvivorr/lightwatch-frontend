@@ -391,7 +391,7 @@
   align-items: center;
   text-align: top;
   gap: 4px;
-  margin-bottom: 22px;
+  margin-bottom: 20px;
   margin-top: 0px;
   width: 100%;
   max-width: 380px;
@@ -515,6 +515,8 @@
 
 .login-card #sendCodebtn {
   margin-top: 2px;
+  padding: 14px 16px;
+  min-height: 52px;
   background: linear-gradient(180deg, var(--brand2) 0%, var(--brand2-dim) 100%);
   border: 1px solid transparent;
   color: white;
@@ -540,6 +542,8 @@
 
 .login-card a.btn.btn--ghost.login-create-btn,
 .login-card .login-create-btn {
+  padding: 14px 16px;
+  min-height: 52px;
   background: linear-gradient(180deg, #f2b33d 0%, #dc9a2e 100%);
   border: 1px solid transparent;
   color: #241a06;
@@ -552,6 +556,29 @@
   background: linear-gradient(180deg, #f7bf58 0%, #e3a439 100%);
   border-color: transparent;
   color: #241a06;
+}
+
+/* Reduce primary action sizes when rendered inside the form-side
+   pane (compact layout) so the buttons are less tall and fit the
+   visual density the design requests. Keeps desktop/visual pane
+   defaults unchanged outside .login-form-side. */
+.login-form-side .login-card #sendCodebtn,
+.login-form-side .login-card a.btn.btn--ghost.login-create-btn,
+.login-form-side .login-card .login-create-btn {
+  padding: 10px 12px;
+  min-height: 40px;
+  font-size: 0.95rem;
+  box-shadow: 0 8px 18px rgba(74, 144, 217, 0.28);
+}
+
+.login-form-side .login-card #sendCodebtn {
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+.login-form-side .login-card a.btn.btn--ghost.login-create-btn,
+.login-form-side .login-card .login-create-btn {
+  box-shadow: 0 8px 18px rgba(240, 172, 61, 0.28);
 }
 
 .login-card .signup-prompt {
@@ -636,8 +663,8 @@
 
 .login-box__subtitle {
   color: var(--text-muted);
-  font-size: 0.8rem;
-  margin-bottom: 18px;
+  font-size: 0.9rem;
+  margin-bottom: 20px;
 }
 
 .field {
@@ -827,6 +854,10 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
   background: transparent;
 }
 
+.login-form-side.hide-footer .login-footer {
+  display: none;
+}
+
 .login-footer p {
   margin: 0;
   font-size: calc(0.62rem + 1px);
@@ -911,11 +942,21 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
     padding-bottom: calc(46px + env(safe-area-inset-bottom, 0px));
   }
 
+  .login-form-side .login-box {
+    margin-top: -20px;
+  }
+
   /* FIX: even centered, give the hero a guaranteed minimum gap from
      the top of the pane so it never reads as flush-to-the-edge on
      shorter phones where the centered group sits high. */
   .login-form-side .login-hero {
     margin-top: 1.5em;
+    margin-bottom: 20px;
+  }
+
+  .login-box__subtitle {
+    font-size: 0.78rem;
+    margin-bottom: 16px;
   }
 
   /* FIX: the backdrop's default height (up to 560px / 74% of the
@@ -988,25 +1029,31 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
 
   .login-box__brand,
   .login-hero {
-    margin-bottom: .5rem;
+    margin-bottom: 1rem;
   }
 
-  .login-logo-badge {
-    width: 96px;
-    height: 96px;
+  .lw-login-browser .login-card #sendCodebtn,
+  .lw-login-browser .login-card a.btn.btn--ghost.login-create-btn {
+    padding: 12px 14px;
+    min-height: 44px;
   }
 
-  .login-logo-badge img {
-    width: 60px;
-    height: 60px;
+  .lw-login-browser .login-logo-badge {
+    width: 84px;
+    height: 84px;
   }
 
-  .login-wordmark {
+  .lw-login-browser .login-logo-badge img {
+    width: 50px;
+    height: 50px;
+  }
+
+  .lw-login-browser .login-wordmark {
     font-size: 1.45rem;
   }
 
   .brand-loop-text {
-    font-size: 0.9rem;
+    font-size: 1rem;
   }
 
   .login-box h2 {
@@ -1015,8 +1062,8 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
   }
 
   .login-box__subtitle {
-    font-size: 0.64rem;
-    margin-bottom: 12px;
+    font-size: 0.72rem;
+    margin-bottom: 14px;
   }
 
   .field {
@@ -1066,25 +1113,25 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
 
   .login-box__brand,
   .login-hero {
-    margin-bottom: 0.9rem;
+    margin-bottom: 1rem;
   }
 
   .login-logo-badge {
-    width: 52px;
-    height: 52px;
+    width: 78px;
+    height: 78px;
   }
 
   .login-logo-badge img {
-    width: 28px;
-    height: 28px;
+    width: 46px;
+    height: 46px;
   }
 
   .login-wordmark {
-    font-size: 1.15rem;
+    font-size: 1.55rem;
   }
 
   .brand-loop-text {
-    font-size: 0.65rem;
+    font-size: 0.88rem;
   }
 
   .login-box h2 {
@@ -1093,8 +1140,8 @@ a.btn.btn--ghost.login-create-btn:focus-visible,
   }
 
   .login-box__subtitle {
-    font-size: 0.58rem;
-    margin-bottom: 10px;
+    font-size: 0.72rem;
+    margin-bottom: 12px;
   }
 
   .field {
