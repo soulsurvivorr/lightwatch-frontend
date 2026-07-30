@@ -5,15 +5,22 @@
 /*
     HTML -> CSS order guide (pages/verification.html)
     1) .lw-ambient (fixed background blobs)
-    2) header
-    3) main .verify-card
-         - .verify-body
-             - .contact-row / .edit-link
-             - .verify-hero
-             - .otp-boxes / .otp-box
-             - .resend-row
-             - #continueBtn
-         - .verify-success (shown briefly on success, replaces .verify-body)
+    2) header (back button only)
+    3) main .verify-wrap
+         - .verify-wrap__backdrop (skyline art, same motif as login)
+         - .verify-brand (logo badge + wordmark, sits inside the skyline)
+         - .verify-card
+             - .verify-body
+                 - .verify-icon-badge (svg padlock)
+                 - h2 / .verify-subtitle / .contact-row (+ edit-link)
+                 - .verify-label
+                 - .otp-boxes / .otp-box
+                 - .resend-row
+                 - #continueBtn
+                 - .divider
+                 - .verify-change-btn
+             - .verify-success (shown briefly on success, replaces .verify-body)
+         - .verify-footer
 */
 
 /* Scoped with :has() rather than the bare html/body selectors this
@@ -28,16 +35,15 @@ html:has(#view-verification:not([hidden])) {
     height: 100%;
 }
 
-/* Desktop: this page never needs to scroll — it's a fixed,
-   single-viewport card layout. global.css forces
-   `overflow-y: auto !important` on <html> at desktop widths for
-   every other page; this overrides it (higher specificity via
-   :has(), same !important weight) only while verification is the
-   visible view. */
+/* Desktop: content is anchored to the top of the pane (not vertically
+   centered) so the skyline art stays visible above the card, so this
+   is allowed to scroll if a shorter window ever needs it — unlike the
+   old fixed, always-centered layout this used to be. */
 /* Desktop and Large Tablet viewports */
 @media (min-width: 721px) {
     html:has(#view-verification:not([hidden])) {
-        overflow: hidden !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
     }
 }
 
@@ -49,8 +55,8 @@ body:has(#view-verification:not([hidden])) {
     position: relative;
     min-height: 100svh;
     min-height: 100dvh;
-    background-color: var(--bg-deep);
-    color: var(--text-bright);
+    background-color: var(--dark-bg);
+    color: white;
     font-family: var(--font-body);
     overflow-x: hidden;
     overflow-y: auto;
@@ -77,6 +83,7 @@ body:has(#view-verification:not([hidden])) #authShell {
     flex: 1;
     min-height: 100svh;
     min-height: 100dvh;
+    background-color: var(--dark-bg);
 }
 
 body:has(#view-verification:not([hidden])) #view-verification {
@@ -144,34 +151,44 @@ body:has(#view-verification:not([hidden])) #view-verification {
     50% { transform: translate(3vmax, -4vmax) scale(0.95); }
 }
 
+/* ===== Header: just the back arrow, floating over the skyline ===== */
 header {
     display: flex;
     align-items: center;
     padding: .8rem 1.2rem;
     padding-top: calc(.8rem + env(safe-area-inset-top, 0px));
-    gap: 10px;
     position: sticky;
     top: 0;
     left: 0;
     right: 0;
     z-index: 100;
-    background-color: color-mix(in srgb, var(--bg-panel) 80%, transparent);
-    backdrop-filter: blur(10px);
-    border-bottom: 1px solid var(--border-soft);
+    background: transparent;
     animation: lw-fade-up .45s ease both;
 }
 
-header h3 {
-    color: var(--brand);
-    font-family: var(--font-display);
-    font-weight: 700;
+.verify-back-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
     margin: 0;
+    border: none;
+    background: transparent;
+    color: white;
+    cursor: pointer;
+    border-radius: 50%;
+    transition: background-color .15s ease;
 }
 
-header img {
-    height: 34px;
-    width: 34px;
-    border-radius: 8px;
+.verify-back-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.verify-back-btn svg {
+    width: 22px;
+    height: 22px;
 }
 
 @keyframes lw-fade-up {
@@ -179,13 +196,15 @@ header img {
     to { opacity: 1; transform: translateY(0); }
 }
 
+/* ===== Main / wrap ===== */
 main {
     display: flex;
     flex: 1;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
     margin: 0;
-    padding: 1rem;
+    padding: 0 1rem 1rem;
     overflow-x: hidden;
     overflow-y: visible;
     padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
@@ -194,44 +213,115 @@ main {
     min-height: 0;
 }
 
-main div.verify-card {
-    max-height: none;
-    overflow: visible;
-    width: min(100%, 440px);
-    min-width: 0;
-    margin: 0 auto;
+/* Desktop/laptop: anchor the whole stack to the top of the pane
+   instead of vertically centering it, so the skyline backdrop is
+   always visible above the card rather than getting pushed off
+   screen or hidden behind a centered card on tall viewports. */
+@media (min-width: 721px) {
+    main {
+        justify-content: flex-start;
+        align-items: center;
+        padding: calc(2.4rem + env(safe-area-inset-top, 0px)) 1rem 3rem;
+    }
+
+    .verify-wrap {
+        margin: 0 auto;
+    }
 }
 
-/* While an OTP box is focused and .verify-body is actually shifted
-   above its resting position (see verification.js), let it escape
-   the card's normal overflow:hidden clip so it doesn't get cut off
-   mid-float. The card frame itself never moves — only its content. */
-main div.verify-card.kb-active {
-    overflow: visible;
-}
-
-main h2, main p {
-    margin: 0;
-}
-
-main p {
-    font-size: .9rem;
-    color: var(--text-muted);
-}
-
-main div.verify-card {
+.verify-wrap {
     position: relative;
+    width: 100%;
+    max-width: 440px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Skyline artwork behind the brand hero — same motif as the login
+   page's .login-form-side__backdrop. Purely decorative (aria-hidden),
+   anchored to the top and faded out so it blends into the dark page
+   background instead of ending in a hard edge. */
+.verify-wrap__backdrop {
+    position: absolute;
+    top: calc(-1 * (0.8rem + env(safe-area-inset-top, 0px)) - 36px);
+    left: -1rem;
+    right: -1rem;
+    height: 300px;
+    z-index: 0;
+    background-image: url('../../images/city-img.png');
+    background-repeat: no-repeat;
+    background-position: center top;
+    background-size: cover;
+    opacity: 0.85;
+    -webkit-mask-image: linear-gradient(to bottom, black 0%, black 55%, transparent 100%);
+    mask-image: linear-gradient(to bottom, black 0%, black 55%, transparent 100%);
+}
+
+/* ===== Brand hero: logo badge + wordmark over the skyline ===== */
+.verify-brand {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    margin: 8px 0 1.5em;
+    animation: lw-fade-up .45s ease both;
+}
+
+.verify-logo-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 62px;
+    height: 62px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, rgba(74, 144, 217, 0.55), rgba(28, 90, 158, 0.32) 60%, transparent 78%);
+    border: 1px solid rgba(74, 144, 217, 0.45);
+    box-shadow: 0 0 0 6px rgba(74, 144, 217, 0.08), 0 8px 22px rgba(0, 0, 0, 0.35);
+}
+
+.verify-logo-badge img {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.35));
+}
+
+.verify-wordmark {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    line-height: 1.1;
+    font-family: var(--font-display);
+}
+
+.verify-wordmark__light {
+    color: white;
+}
+
+.verify-wordmark__watch {
+    color: var(--brand2);
+}
+
+/* ===== Card ===== */
+.verify-card {
+    position: relative;
+    z-index: 1;
     display: flex;
     flex-direction: column;
     width: 100%;
-    max-width: 440px;
-    background-color: color-mix(in srgb, var(--bg-panel) 88%, transparent);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid var(--border-soft);
-    padding: 1.4rem 1.3rem 1.2rem;
-    border-radius: 16px;
-    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.14);
+    max-width: 400px;
+    background: rgba(255, 255, 255, 0.045);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: var(--radius-lg, 16px);
+    padding: 1.7rem 1.5rem 1.5rem;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
     overflow: hidden;
     animation: lw-panel-in .5s cubic-bezier(.2, .8, .2, 1) both;
 }
@@ -241,11 +331,20 @@ main div.verify-card {
     to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
+/* While an OTP box is focused and .verify-body is actually shifted
+   above its resting position (see verification.js), let it escape
+   the card's normal overflow:hidden clip so it doesn't get cut off
+   mid-float. The card frame itself never moves — only its content. */
+.verify-card.kb-active {
+    overflow: visible;
+}
+
 .verify-body {
     display: flex;
     flex-direction: column;
-    gap: .55rem;
-    margin-top: .32rem;
+    align-items: center;
+    text-align: center;
+    gap: .5rem;
     animation: lw-fade-up .45s ease .08s both;
     position: relative;
     z-index: 2;
@@ -253,40 +352,82 @@ main div.verify-card {
     transition: transform .18s ease-out;
 }
 
-main h2 {
+/* Circular padlock icon badge */
+.verify-icon-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    margin-bottom: 6px;
+    background: radial-gradient(circle at 35% 30%, rgba(74, 144, 217, 0.85), rgba(28, 90, 158, 0.55) 65%, transparent 85%);
+    border: 1px solid rgba(74, 144, 217, 0.5);
+    box-shadow: 0 0 0 8px rgba(74, 144, 217, 0.1), 0 10px 26px rgba(0, 0, 0, 0.35);
+}
+
+.verify-icon-badge svg {
+    width: 30px;
+    height: 30px;
+    color: white;
+}
+
+.verify-card h2 {
     font-family: var(--font-display);
-    font-size: 1.18rem;
+    font-size: 1.4rem;
     font-weight: 800;
     letter-spacing: -.01em;
+    color: white;
+    margin: 0;
+}
+
+.verify-subtitle {
+    font-size: .88rem;
+    color: rgba(255, 255, 255, 0.62);
+    margin: 0;
 }
 
 .contact-row {
     display: flex;
-    align-items: baseline;
-    flex-wrap: wrap;
-    gap: .4rem .5rem;
+    align-items: center;
+    justify-content: center;
+    gap: .4rem;
+    margin: 0 0 .2rem;
+}
+
+#code-text {
+    font-size: .95rem;
+    font-weight: 700;
+    color: var(--brand2);
 }
 
 .edit-link {
-    font-size: .74rem;
-    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: none;
+    background: transparent;
     color: var(--brand2);
-    text-decoration: none;
+    cursor: pointer;
     flex-shrink: 0;
 }
 
-.edit-link:hover {
-    text-decoration: underline;
+.edit-link svg {
+    width: 16px;
+    height: 16px;
 }
 
-.verify-hero {
-    height: auto;
-    width: 100%;
-    max-width: 320px;
-    margin: 0 auto;
-    border-radius: 12px;
-    border: 1px solid var(--border-soft);
-    object-fit: cover; /* lets height be set independently of width on mobile below without stretching/squashing the image */
+.edit-link:hover {
+    color: #6ab0f0;
+}
+
+.verify-label {
+    font-size: .8rem;
+    color: rgba(255, 255, 255, 0.55);
+    margin: .3rem 0 .1rem;
 }
 
 /* ---- OTP boxes: boxed, modern style with pop + error states ----
@@ -295,17 +436,14 @@ main h2 {
    the <input>'s default intrinsic width (~170px+, from the UA default
    size=20), which is why these rendered oversized, especially on
    phones. Explicit width/height here + the media queries below give
-   predictable, compact boxes at every screen size. Margin also
-   tightened (was 1.5rem top/bottom) so there's less dead space between
-   the hero image, the boxes, and the error/resend text under them. */
+   predictable, compact boxes at every screen size. */
 .otp-boxes {
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
-    gap: 8px;
-    margin: 0.32rem auto 0.06rem;
+    gap: 10px;
+    margin: .4rem auto .15rem;
     width: 100%;
-    max-width: 320px; /* matches .verify-hero's max-width so the row starts/ends flush with the image */
 }
 
 .otp-boxes.is-shaking {
@@ -319,30 +457,36 @@ main h2 {
 }
 
 .otp-box {
-    width: 52px;
-    height: 58px;
+    width: 56px;
+    height: 60px;
     min-width: 0;
     margin: 0;
     padding: 0;
     text-align: center;
     font-family: var(--font-display);
-    font-size: 1.05rem;
+    font-size: 1.2rem;
     font-weight: 700;
-    border: 1.5px solid var(--border-soft);
-    border-radius: 9px;
-    background: var(--bg-panel);
-    color: var(--text-bright);
+    border: 1.5px solid rgba(255, 255, 255, 0.16);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.06);
+    color: white;
     transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s cubic-bezier(.3, 1.4, .5, 1);
+}
+
+.otp-box::placeholder {
+    color: rgba(255, 255, 255, 0.28);
 }
 
 .otp-box:focus {
     outline: none;
     border-color: var(--brand2);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand2, #4A90D9) 18%, transparent);
+    box-shadow: 0 0 0 3px rgba(74, 144, 217, 0.22);
+    background: rgba(255, 255, 255, 0.09);
 }
 
 .otp-box.filled {
-    border-color: var(--brand);
+    border-color: var(--brand2);
+    background: rgba(255, 255, 255, 0.09);
     animation: lw-pop .18s ease;
 }
 
@@ -365,20 +509,22 @@ main h2 {
     flex-direction: row;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    margin: 0.1rem 0 0.18rem;
+    gap: 6px;
+    margin: .3rem 0 .1rem;
 }
 
-.resend-row img {
-    height: 16px;
-    width: 16px;
+.resend-row svg {
+    height: 15px;
+    width: 15px;
     flex-shrink: 0;
     display: block;
+    color: var(--brand2);
 }
 
 .resend-row p {
-    font-size: .74rem;
-    color: var(--text-muted);
+    font-size: .78rem;
+    color: rgba(255, 255, 255, 0.55);
+    margin: 0;
 }
 
 #resendCodeLink {
@@ -392,7 +538,7 @@ main h2 {
 }
 
 #resendCodeLink.disabled {
-    color: var(--text-faint);
+    color: rgba(255, 255, 255, 0.4);
     font-weight: 500;
     font-variant-numeric: tabular-nums;
     cursor: default;
@@ -400,27 +546,27 @@ main h2 {
     text-decoration: none;
 }
 
+/* ===== Verify & Continue button ===== */
 button#continueBtn {
     position: relative;
-    padding: 12px;
-    background-color: #c5cbd3;
-    color: white;
-    border-radius: 22px;
-    border: none;
+    width: 100%;
+    padding: 14px 16px;
+    min-height: 52px;
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.5);
+    border-radius: 999px;
+    border: 1px solid transparent;
     font-family: var(--font-body);
-    font-size: .92rem;
-    font-weight: 600;
-    cursor: pointer;
+    font-size: .95rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    cursor: not-allowed;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: .5rem;
-    margin-top: .2rem;
-    transition: background-color 0.15s ease, transform 0.1s ease, box-shadow .15s ease;
-}
-
-button#continueBtn:hover {
-    background-color: #B3B8C0;
+    margin-top: .6rem;
+    transition: background 0.15s ease, transform 0.1s ease, box-shadow .15s ease, color .15s ease;
 }
 
 button#continueBtn:active {
@@ -428,26 +574,25 @@ button#continueBtn:active {
 }
 
 button#continueBtn.active {
-    background-color: color-mix(in srgb, var(--brand, #D6A24A) 78%, #1C1F26 22%);
-    box-shadow: 0 6px 16px color-mix(in srgb, var(--brand, #D6A24A) 30%, transparent);
+    background: linear-gradient(180deg, var(--brand2) 0%, var(--brand2-dim) 100%);
+    color: white;
+    cursor: pointer;
+    box-shadow: 0 10px 24px rgba(74, 144, 217, 0.35);
 }
 
 button#continueBtn.active:hover {
-    background-color: var(--brand-dim);
-    box-shadow: 0 6px 16px color-mix(in srgb, var(--brand, #D6A24A) 35%, transparent);
+    background: linear-gradient(180deg, #5a9ee0 0%, var(--brand2) 100%);
+    box-shadow: 0 10px 24px rgba(74, 144, 217, 0.42);
 }
 
 button#continueBtn.active.is-loading {
-    background-color: var(--brand);
+    background: var(--brand2);
 }
 
 button#continueBtn:disabled {
-    background-color: rgb(224, 219, 211);
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.4);
     cursor: not-allowed;
-}
-
-button#continueBtn:disabled:hover {
-    background-color: rgb(224, 219, 211);
 }
 
 .btn-spinner {
@@ -472,6 +617,76 @@ button#continueBtn.is-loading .btn-label {
     to { transform: rotate(360deg); }
 }
 
+/* ===== OR divider ===== */
+.verify-card .divider {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    margin: .9rem 0 .5rem;
+    font-size: .72rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.verify-card .divider::before,
+.verify-card .divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.14);
+}
+
+.verify-card .divider::before {
+    margin-right: .7rem;
+}
+
+.verify-card .divider::after {
+    margin-left: .7rem;
+}
+
+/* ===== Change phone number button ===== */
+.verify-change-btn {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: .65rem;
+    width: 100%;
+    padding: 13px 16px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.04);
+    color: white;
+    font-family: var(--font-body);
+    font-size: .88rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color .15s ease, border-color .15s ease;
+}
+
+.verify-change-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.22);
+}
+
+.verify-change-btn svg {
+    width: 18px;
+    height: 18px;
+    color: var(--brand2);
+    flex-shrink: 0;
+}
+
+.verify-change-btn span {
+    flex: 1;
+    text-align: left;
+}
+
+.verify-change-btn__chevron {
+    color: rgba(255, 255, 255, 0.4) !important;
+    width: 16px !important;
+    height: 16px !important;
+}
+
 /* ---- Success state: swaps in over the form, then we redirect ---- */
 .verify-success {
     display: none;
@@ -481,7 +696,7 @@ button#continueBtn.is-loading .btn-label {
     justify-content: center;
     gap: .6rem;
     width: 100%;
-    min-height: 180px;
+    min-height: 220px;
     padding: 0;
     text-align: center;
     animation: lw-fade-up .4s ease both;
@@ -496,14 +711,14 @@ button#continueBtn.is-loading .btn-label {
 }
 
 .verify-card.is-success {
-    min-height: 240px;
+    min-height: 260px;
     justify-content: center;
 }
 
 .success-check {
     width: 56px;
     height: 56px;
-    color: var(--brand, #D6A24A);
+    color: var(--brand2, #4A90D9);
 }
 
 .success-ring {
@@ -525,22 +740,39 @@ button#continueBtn.is-loading .btn-label {
 .verify-success p {
     font-size: .82rem;
     font-weight: 600;
-    color: var(--text-muted);
+    color: rgba(255, 255, 255, 0.62);
 }
 
-:root[data-theme="dark"] main div.verify-card {
-    background-color: color-mix(in srgb, var(--bg-panel) 82%, transparent);
-    border-color: #2a3240;
+/* ===== Footer ===== */
+.verify-footer {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    margin-top: 20px;
+    padding-bottom: 6px;
+    text-align: center;
 }
 
-:root[data-theme="dark"] .verify-hero {
-    border-color: #2a3240;
+.verify-footer svg {
+    width: 14px;
+    height: 14px;
+    color: rgba(255, 255, 255, 0.4);
+    flex-shrink: 0;
 }
 
-:root[data-theme="dark"] .otp-box {
-    background: #121821;
-    border-color: #2a3240;
+.verify-footer p {
+    margin: 0;
+    font-size: .72rem;
+    color: rgba(255, 255, 255, 0.4);
 }
+
+/* This view is dark-themed by design (matches the login page's dark
+   panel), regardless of the app's light/dark theme setting, so no
+   [data-theme="dark"] overrides are needed here. */
 
 /* Narrow Phone viewports (e.g. standard iPhone and Galaxy models) */
 @media (max-width: 560px) {
@@ -550,33 +782,29 @@ button#continueBtn.is-loading .btn-label {
     }
 
     main {
-        align-items: center;
-        padding: .6rem .75rem;
+        padding: 0 .75rem .6rem;
     }
 
-    main div.verify-card {
-        width: min(100%, 360px);
+    .verify-wrap__backdrop {
+        height: 260px;
+    }
+
+    /* Extra breathing room below the logo/wordmark hero so the
+       skyline artwork behind it actually reads on a phone screen
+       instead of being crowded out by the card underneath it. */
+    .verify-brand {
+        margin-bottom: 1.5em;
+    }
+
+    .verify-card {
         max-width: 360px;
-        padding: .95rem .9rem .9rem;
-        border-radius: 14px;
+        padding: 1.4rem 1.2rem 1.2rem;
+        border-radius: 18px;
     }
 
-    .verify-hero {
-        width: min(100%, 300px);
-        height: 240px;
-    }
-
-    .otp-boxes {
-        max-width: min(100%, 300px);
-    }
-
-    .contact-row {
-        justify-content: center;
-        text-align: center;
-    }
-
-    button#continueBtn {
-        width: 100%;
+    .otp-box {
+        width: 48px;
+        height: 54px;
     }
 }
 
@@ -587,126 +815,133 @@ button#continueBtn.is-loading .btn-label {
     }
 
     main {
-        padding: .45rem .5rem;
+        padding: 0 .5rem .45rem;
         padding-bottom: calc(.45rem + env(safe-area-inset-bottom, 0px));
     }
 
-    header h3 {
-        font-size: .84rem;
+    .verify-card h2 {
+        font-size: 1.2rem;
     }
 
-    main h2 {
-        font-size: .96rem;
+    .verify-subtitle {
+        font-size: .8rem;
     }
 
-    main p {
-        font-size: .78rem;
-    }
-
-    main div.verify-card {
-        width: min(100%, 320px);
+    .verify-card {
         max-width: 320px;
-        padding: .8rem .75rem .75rem;
-        border-radius: 12px;
+        padding: 1.15rem 1rem 1rem;
+        border-radius: 16px;
     }
 
-    .verify-hero {
-        width: min(100%, 240px);
-        height: 190px;
+    .verify-logo-badge {
+        width: 52px;
+        height: 52px;
+    }
+
+    .verify-logo-badge img {
+        width: 28px;
+        height: 28px;
+    }
+
+    .verify-wordmark {
+        font-size: 1.3rem;
     }
 
     .otp-boxes {
-        max-width: min(100%, 240px);
-        margin: 0.22rem auto 0.03rem;
+        gap: 7px;
+        margin: .3rem auto .1rem;
     }
 
     .otp-box {
-        width: 44px;
+        width: 42px;
         height: 48px;
-        border-radius: 8px;
-        font-size: .92rem;
+        border-radius: 10px;
+        font-size: 1rem;
     }
 
     .resend-row p {
-        font-size: .68rem;
+        font-size: .7rem;
     }
 
     .verify-body {
-        gap: .26rem;
-        margin-top: .14rem;
+        gap: .4rem;
     }
 
     button#continueBtn {
-        padding: 10px;
-        font-size: .86rem;
+        padding: 12px;
+        font-size: .88rem;
+        min-height: 48px;
+    }
+
+    .verify-change-btn {
+        padding: 11px 14px;
+        font-size: .82rem;
     }
 }
 
 /* Smallest phone screens (e.g. iPhone SE 1st-gen, older Androids) */
 @media (max-width: 320px) {
-    main div.verify-card {
-        width: min(100%, 280px);
+    .verify-card {
         max-width: 280px;
-        padding: .65rem .6rem .65rem;
-    }
-
-    .verify-hero {
-        width: min(100%, 190px);
-        height: 150px;
+        padding: 1rem .85rem .9rem;
     }
 
     .otp-boxes {
-        max-width: min(100%, 190px);
-        margin: 0.2rem auto 0;
+        gap: 5px;
     }
 
     .otp-box {
-        width: 38px;
-        height: 44px;
-        font-size: .86rem;
+        width: 36px;
+        height: 42px;
+        font-size: .9rem;
     }
 }
 
-/* ---- Short viewports (landscape phones, small-height devices) ----
-   Width-only breakpoints don't help when the card is too TALL for a
-   short screen. These used to shrink the hero much more aggressively
-   than the width breakpoints above (down to 160px/120px), which meant
-   on most real phones — where the visible viewport is under 700px tall
-   once the browser chrome/address bar is factored in — this quietly
-   overrode the bigger hero sizing set above. Mobile is allowed to
-   scroll a little if it needs to (only desktop had its scrollbar
-   removed), so these now trim gaps first and the hero much less. */
-/* Short viewports (landscape phones or short screens) */
+/* ---- Short viewports (landscape phones, small-height devices) ---- */
 @media (max-height: 700px) {
-    .verify-body {
-        gap: .3rem;
-        margin-top: .18rem;
+    .verify-wrap__backdrop {
+        display: none;
     }
 
-    main div.verify-card {
-        padding-top: .8rem;
+    .verify-brand {
+        margin: 4px 0 12px;
+    }
+
+    .verify-body {
+        gap: .3rem;
+    }
+
+    .verify-icon-badge {
+        width: 48px;
+        height: 48px;
+        margin-bottom: 2px;
+    }
+
+    .verify-icon-badge svg {
+        width: 22px;
+        height: 22px;
     }
 }
 
 /* Very short/landscape viewports */
 @media (max-height: 560px) {
-    .verify-hero {
-        width: min(100%, 190px);
-        height: 120px;
-    }
-
-    .otp-boxes {
-        max-width: min(100%, 190px);
-    }
-
-    .otp-box {
-        width: 38px;
+    .verify-logo-badge {
+        width: 44px;
         height: 44px;
     }
 
-    .verify-body {
-        gap: .22rem;
-        margin-top: .12rem;
+    .verify-logo-badge img {
+        width: 24px;
+        height: 24px;
+    }
+
+    .otp-box {
+        width: 40px;
+        height: 46px;
+    }
+
+    .verify-footer {
+        margin-top: 10px;
     }
 }
 
@@ -716,58 +951,35 @@ button#continueBtn.is-loading .btn-label {
    ============================================================ */
 
 @media (min-width: 400px) and (max-width: 440px) and (min-height: 800px) and (max-height: 860px) {
-    main div.verify-card {
-        padding: 1.1rem 1.05rem;
+    .verify-card {
+        padding: 1.5rem 1.3rem 1.3rem;
     }
 
-    body {
-        font-size: 0.7rem;
+    .verify-card h2 {
+        font-size: 1.3rem;
     }
 
-    .verify-body {
-        gap: 0.45rem;
-    }
-
-    main h2 {
-        font-size: 1.1rem;
-    }
-
-    main p {
-        font-size: 0.82rem;
-    }
-
-    .contact-row {
-        gap: 0.35rem 0.45rem;
-    }
-
-    .edit-link {
-        font-size: 0.72rem;
+    .verify-subtitle {
+        font-size: .84rem;
     }
 
     .otp-boxes {
-        max-width: min(100%, 240px);
-        margin: 0.28rem auto 0.05rem;
+        gap: 8px;
     }
 
     .otp-box {
-        width: 42px;
-        height: 50px;
-        font-size: 1rem;
-    }
-
-    .resend-row {
-        margin: 0.08rem 0 0.15rem;
-        gap: 6px;
+        width: 50px;
+        height: 56px;
+        font-size: 1.1rem;
     }
 
     .resend-row p {
-        font-size: 0.7rem;
+        font-size: .76rem;
     }
 
     button#continueBtn {
-        padding: 11px;
-        font-size: 0.88rem;
-        border-radius: 20px;
+        padding: 13px;
+        font-size: .9rem;
     }
 
     .verify-success p {
@@ -791,6 +1003,6 @@ button#continueBtn.is-loading .btn-label {
 }
 
 :focus-visible {
-    outline: 2px solid var(--brand, #D6A24A);
+    outline: 2px solid var(--brand2, #4A90D9);
     outline-offset: 2px;
 }

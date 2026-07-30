@@ -17,7 +17,7 @@
     const RESEND_COOLDOWN_SECONDS = 60;
     const MASK_STAR_COUNT = 4;
 
-    let verifyCard, verifyBody, continueBtn, errorMsg, otpBoxesWrap, otpBoxes, resendLink, editLink, changeContactBtn, backBtn;
+    let verifyCard, verifyBody, continueBtn, errorMsg, otpBoxesWrap, otpBoxes, resendLink, editLink, backBtn, changeContactBtn;
     let cooldownInterval = null;
     let verifyInFlight = false;
     let mounted = false;
@@ -199,6 +199,8 @@
         otpBoxes = Array.from(document.querySelectorAll('#view-verification .otp-box'));
         resendLink = document.getElementById('resendCodeLink');
         editLink = document.getElementById('editContactLink');
+        backBtn = document.getElementById('verifyBackBtn');
+        changeContactBtn = document.getElementById('changeContactBtn');
 
         const KEYBOARD_TOP_GAP = 16; // px gap kept below the sticky header once shifted up
 
@@ -241,16 +243,19 @@
             window.LWRouter.navigate('signup');
         });
 
-        changeContactBtn = document.getElementById('changeContactBtn');
         changeContactBtn?.addEventListener('click', (e) => {
             e.preventDefault();
-            window.LWRouter.navigate('signup');
+            const cameFromSignup = !!getVerificationValue('signupUser');
+            window.LWRouter.navigate(cameFromSignup ? 'signup' : 'login');
         });
 
-        backBtn = document.getElementById('verifyBackBtn');
         backBtn?.addEventListener('click', (e) => {
             e.preventDefault();
-            window.LWRouter.navigate('login');
+            if (window.history.length > 1) {
+                window.history.back();
+            } else {
+                window.LWRouter.navigate('login');
+            }
         });
 
         otpBoxes.forEach((box, index) => {
