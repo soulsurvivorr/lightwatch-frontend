@@ -239,28 +239,28 @@
         });
     }
 
-    // ---- City field: nudge its container up while it's focused and the
-    // on-screen keyboard is covering it (mobile). Only the city field's
-    // own .field-group gets --signup-keyboard-shift set, via margin-top
-    // rather than transform — the field-group's entrance animation already
-    // owns transform with fill:both, so a transform here would just get
-    // silently overridden by that animation's frozen end state. ----
+    // ---- City field: when it's focused and the on-screen keyboard is up
+    // (mobile), pull the whole signup-card up just enough to keep the
+    // field visible above the keyboard — like a native app would.
+    // margin-top, not transform: signup-card's entrance animation already
+    // owns transform with fill:both, so a transform set here would just
+    // be silently overridden by that animation's frozen end state. ----
     function bindCityKeyboardShift() {
         if (!cityInput) return;
-        const fieldGroup = cityInput.closest('.field-group');
-        if (!fieldGroup) return;
+        const card = cityInput.closest('.signup-card');
+        if (!card) return;
 
         let isFocused = false;
 
         const updateShift = () => {
             if (!isFocused) return;
             const viewportBottom = (window.visualViewport?.height || window.innerHeight) - 18;
-            const fieldBottom = fieldGroup.getBoundingClientRect().bottom;
+            const fieldBottom = cityInput.closest('.field-group').getBoundingClientRect().bottom;
             const shift = Math.min(0, viewportBottom - fieldBottom);
-            fieldGroup.style.setProperty('--signup-keyboard-shift', `${shift}px`);
+            card.style.setProperty('--signup-keyboard-shift', `${shift}px`);
         };
         const clearShift = () => {
-            fieldGroup.style.removeProperty('--signup-keyboard-shift');
+            card.style.removeProperty('--signup-keyboard-shift');
         };
 
         cityInput.addEventListener('focus', () => {
