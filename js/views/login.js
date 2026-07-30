@@ -198,17 +198,22 @@
         });
 
         if (window.visualViewport && userInput) {
+            const initialViewportHeight = window.visualViewport.height;
+            const keyboardThreshold = 120;
+
             const updateKeyboardShift = () => {
                 if (!loginFormSide) {
                     return;
                 }
 
-                const viewportBottom = window.visualViewport.height - 16;
+                const viewportHeight = window.visualViewport.height;
+                const viewportBottom = viewportHeight - 16;
                 const inputBottom = userInput.getBoundingClientRect().bottom;
                 const shift = Math.min(0, viewportBottom - inputBottom);
-                const isKeyboardVisible = document.activeElement === userInput && shift < 0;
+                const viewportShrunk = initialViewportHeight - viewportHeight > keyboardThreshold;
+                const keyboardLikelyOpen = document.activeElement === userInput && (viewportShrunk || shift < 0);
 
-                if (isKeyboardVisible) {
+                if (keyboardLikelyOpen) {
                     loginFormSide.style.setProperty('--login-keyboard-shift', `${shift}px`);
                     hideFooter();
                 } else {
