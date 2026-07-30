@@ -5,19 +5,28 @@
 /*
     HTML -> CSS order guide (pages/signup.html)
     1) .lw-ambient (fixed background blobs)
-    2) section
-         - .brand-row
-         2.1) #main-content_wrapper
-                - .submit-info-section (status-pill, feature-list)
-                - #input-field-section
-                        - .user-icon-container
-                        - .prompt-input-tabs / .prompt-inputs
-                        - .notify-wrapper
-                        - .submit-btn
+    2) main.signup-main
+         - .signup-page-backdrop (full-bleed skyline art, top of screen)
+         - #signupBackBtn (floats over the backdrop, no header bar)
+         - .signup-wrap
+             - .signup-brand (logo badge + wordmark + tagline, sits inside the skyline)
+             - .signup-card
+                 - .signup-card__head (h2 + subtitle)
+                 - #signupForm
+                     - .field-group (Full Name / Email or Phone / Region / City)
+                     - .notify-wrapper
+                     - #signUpBtn
+                 - .signup-login-prompt
+                 - .signup-secure-footer
+
+    Same dark theme, skyline backdrop and card treatment as
+    pages/verification.css — this file mirrors those tokens/patterns
+    on purpose so signup and verification read as one continuous flow.
 */
 
-
-/* Scoped with :has() — only affects pages with the signup view visible */
+/* Scoped with :has() rather than bare html/body selectors — keeps
+   this behaviour isolated to whichever view is actually visible,
+   same reasoning as verification.css / the old signup.css. */
 html:has(#view-signup:not([hidden])) {
     height: auto;
     min-height: 100%;
@@ -26,46 +35,57 @@ html:has(#view-signup:not([hidden])) {
     overscroll-behavior: none;
 }
 
-/* FIX: body intentionally does NOT set its own overflow-x/y here.
-   When both html and body have an explicit (non-visible) overflow at
-   the same time, body's overflow stops propagating up to become the
-   viewport's actual scroll behavior (that propagation only happens
-   per-spec when html's overflow is visible) — body becomes its own
-   separate, nested scrolling box instead. That inner box still grows
-   a scrollbar you can drag, but it's no longer document.scrollingElement,
-   which is why wheel/touch scrolling stopped reliably reaching it while
-   dragging the scrollbar still worked. html is the single scroll owner
-   on this view; body just sizes itself and lets overflow push html
-   taller. */
-body:has(#view-signup:not([hidden])) {
-    margin: 0;
-    min-height: 100vh;
-    min-height: 100svh;
-    min-height: 100dvh;
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    padding: 24px 16px 32px;
-    background: var(--bg-deep);
-    color: var(--text-bright);
-    position: relative;
-    transition: opacity .26s ease;
+/* Desktop: content is anchored to the top of the pane (not vertically
+   centered) so the skyline art stays visible above the card — this is
+   allowed to scroll if a shorter window ever needs it. */
+@media (min-width: 721px) {
+    html:has(#view-signup:not([hidden])) {
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+    }
 }
 
-/* Only target #authShell when signup is visible */
-body:has(#view-signup:not([hidden])) #authShell {
+body:has(#view-signup:not([hidden])) {
+    margin: 0;
+    gap: 0;
     display: flex;
-    flex: 1;
-    width: 100%;
-    min-height: 100%;
-    overflow: visible;
+    flex-direction: column;
+    position: relative;
+    min-height: 100svh;
+    min-height: 100dvh;
+    background-color: var(--dark-bg);
+    color: white;
+    font-family: var(--font-body);
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: none;
+    touch-action: manipulation;
+    transition: opacity .26s ease;
 }
 
 body.lw-leaving {
     opacity: 0;
 }
 
-/* ===== Ambient background ===== */
+body:has(#view-signup:not([hidden])) #authShell {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 100svh;
+    min-height: 100dvh;
+    width: 100%;
+    background-color: var(--dark-bg);
+    overflow: visible;
+}
+
+body:has(#view-signup:not([hidden])) #view-signup {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: inherit;
+}
+
+/* ===== Ambient background (shared motif with verification) ===== */
 .lw-ambient {
     position: fixed;
     inset: 0;
@@ -76,11 +96,11 @@ body.lw-leaving {
 
 .lw-blob {
     position: absolute;
-    width: 46vmax;
-    height: 46vmax;
+    width: 42vmax;
+    height: 42vmax;
     border-radius: 50%;
     filter: blur(70px);
-    opacity: .28;
+    opacity: .22;
     will-change: transform;
 }
 
@@ -99,11 +119,11 @@ body.lw-leaving {
 }
 
 .lw-blob--teal {
-    bottom: 6vmax;
-    left: 18vmax;
-    width: 30vmax;
-    height: 30vmax;
-    opacity: .18;
+    top: 30vmax;
+    left: 30vmax;
+    width: 26vmax;
+    height: 26vmax;
+    opacity: .14;
     background: radial-gradient(circle, var(--teal, #3DD9C2), transparent 70%);
     animation: lw-drift-c 22s ease-in-out infinite;
 }
@@ -123,78 +143,133 @@ body.lw-leaving {
     50% { transform: translate(3vmax, -4vmax) scale(0.95); }
 }
 
-/* ===== Shell ===== */
-#view-signup > section {
-    position: relative;
-    z-index: 1;
-    padding: 1.15rem 1.35rem 1.35rem;
-    width: min(100%, 980px);
-    max-width: 980px;
-    max-height: none;
-    background: color-mix(in srgb, var(--bg-panel) 60%, transparent);
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
-    border-radius: 18px;
-    border: 1px solid var(--border-soft);
-    overflow: visible;
-    overflow-x: hidden;
-    overscroll-behavior: contain;
-    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.16);
-    animation: lw-panel-in .5s cubic-bezier(.2, .8, .2, 1) both;
-}
-
-@keyframes lw-panel-in {
-    from { opacity: 0; transform: translateY(10px) scale(.99); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-.brand-row {
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    gap: .55rem;
-    margin-bottom: .65rem;
-    animation: lw-fade-up .5s ease .05s both;
-}
-
-.brand-row img {
-    width: 34px;
-    height: 34px;
-    border-radius: 8px;
-}
-
-.brand-row p {
-    font-family: var(--font-display);
-    font-weight: 700;
-    font-size: 1rem;
-    letter-spacing: -.01em;
-}
-
 @keyframes lw-fade-up {
-    from { opacity: 0; transform: translateY(8px); }
+    from { opacity: 0; transform: translateY(-6px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
-#main-content_wrapper {
-    display: flex;
-    flex-wrap: nowrap;
+/* ===== Back button — floats directly over the skyline backdrop ===== */
+.signup-back-btn {
+    position: absolute;
+    top: calc(14px + env(safe-area-inset-top, 0px));
+    left: 14px;
+    z-index: 3;
+    display: inline-flex;
+    align-items: center;
     justify-content: center;
-    align-items: stretch;
-    gap: 1.5rem;
-    width: max-content;
-    max-width: 100%;
-    min-width: 0;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    margin: 0;
+    border: none;
+    background: transparent;
+    color: white;
+    cursor: pointer;
+    border-radius: 50%;
+    transition: background-color .15s ease;
+    animation: lw-fade-up .45s ease both;
+}
+
+.signup-back-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.signup-back-btn svg {
+    width: 22px;
+    height: 22px;
+    filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.5));
+}
+
+/* ===== Main / wrap ===== */
+.signup-main {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    margin: 0;
+    padding: 0 1rem 1.5rem;
+    overflow-x: hidden;
+    overflow-y: visible;
+    padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
+    z-index: 1;
+    position: relative;
+    min-height: 0;
+}
+
+/* Skyline artwork — full-bleed across the very top of the view. Purely
+   decorative and faded out at the bottom so it blends into the dark
+   page background instead of ending in a hard edge. */
+.signup-page-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 280px;
+    z-index: 0;
+    background-image: url('../../images/city-img.png');
+    background-repeat: no-repeat;
+    background-position: center top;
+    background-size: cover;
+    opacity: 0.85;
+    -webkit-mask-image: linear-gradient(to bottom, black 0%, black 55%, transparent 100%);
+    mask-image: linear-gradient(to bottom, black 0%, black 55%, transparent 100%);
+}
+
+@media (min-width: 721px) {
+    .signup-main {
+        justify-content: center;
+        padding: calc(2.2rem + env(safe-area-inset-top, 0px)) 1rem 3rem;
+    }
+
+    .signup-wrap {
+        margin: 0 auto;
+    }
+}
+
+/* Two-column shell: marketing panel on the left, brand + card (the
+   .signup-wrap put together for the reference design) on the right.
+   Row by default (desktop/tablet); collapses to a single centered
+   column — with the marketing panel hidden — under the mobile
+   breakpoint further down. */
+.signup-columns {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 3.5rem;
+    width: 100%;
+    max-width: 1080px;
     margin: 0 auto;
 }
 
-/* ===== Left: info panel ===== */
+.signup-wrap {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 460px;
+    flex: 0 0 auto;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* ===== Left: marketing panel ===== */
 .submit-info-section {
     display: flex;
-    flex: 2;
+    flex: 1 1 380px;
     min-width: 0;
-    justify-content: center;
+    max-width: 440px;
     flex-direction: column;
-    padding: .4rem .3rem;
+    justify-content: center;
+    padding: 1.6rem 1.7rem;
+    border-radius: var(--radius-lg, 16px);
+    background: linear-gradient(160deg, rgba(74, 144, 217, 0.1), rgba(74, 144, 217, 0.02));
+    border: 1px solid rgba(74, 144, 217, 0.18);
+    animation: lw-fade-up .5s ease .12s both;
 }
 
 .status-pill {
@@ -205,12 +280,11 @@ body.lw-leaving {
     margin: 0 0 1.1rem;
     padding: .4rem .75rem;
     border-radius: 999px;
-    background: color-mix(in srgb, var(--brand2, #4A90D9) 14%, transparent);
-    border: 1px solid color-mix(in srgb, var(--brand2, #4A90D9) 30%, transparent);
-    color: var(--text-muted);
+    background: rgba(74, 144, 217, 0.14);
+    border: 1px solid rgba(74, 144, 217, 0.32);
+    color: rgba(255, 255, 255, 0.85);
     font-size: .72rem;
     font-weight: 600;
-    animation: lw-fade-up .5s ease .12s both;
 }
 
 .status-dot {
@@ -218,14 +292,14 @@ body.lw-leaving {
     height: 7px;
     border-radius: 50%;
     background: var(--teal, #3DD9C2);
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--teal, #3DD9C2) 60%, transparent);
+    box-shadow: 0 0 0 0 rgba(61, 217, 194, 0.6);
     animation: lw-pulse 1.8s ease-in-out infinite;
 }
 
 @keyframes lw-pulse {
-    0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--teal, #3DD9C2) 55%, transparent); }
-    70% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--teal, #3DD9C2) 0%, transparent); }
-    100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--teal, #3DD9C2) 0%, transparent); }
+    0% { box-shadow: 0 0 0 0 rgba(61, 217, 194, 0.55); }
+    70% { box-shadow: 0 0 0 7px rgba(61, 217, 194, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(61, 217, 194, 0); }
 }
 
 .submit-info-section h3 {
@@ -235,17 +309,15 @@ body.lw-leaving {
     line-height: 1.14;
     letter-spacing: -.02em;
     margin: 0 0 .7rem;
-    color: var(--text-bright);
-    animation: lw-fade-up .5s ease .18s both;
+    color: white;
 }
 
 .lead-copy {
-    color: var(--text-muted);
+    color: rgba(255, 255, 255, 0.62);
     font-size: .92rem;
     line-height: 1.55;
     margin: 0 0 1.4rem;
     max-width: 34ch;
-    animation: lw-fade-up .5s ease .24s both;
 }
 
 .feature-list {
@@ -262,14 +334,9 @@ body.lw-leaving {
     align-items: center;
     gap: .65rem;
     font-size: .86rem;
-    color: var(--text-muted);
+    color: rgba(255, 255, 255, 0.72);
     font-weight: 500;
-    animation: lw-fade-up .5s ease both;
 }
-
-.feature-list li:nth-child(1) { animation-delay: .3s; }
-.feature-list li:nth-child(2) { animation-delay: .36s; }
-.feature-list li:nth-child(3) { animation-delay: .42s; }
 
 .feature-icon {
     flex-shrink: 0;
@@ -279,8 +346,8 @@ body.lw-leaving {
     width: 30px;
     height: 30px;
     border-radius: 9px;
-    background: color-mix(in srgb, var(--brand, #D6A24A) 16%, transparent);
-    color: var(--brand-dim, #A57B2F);
+    background: rgba(214, 162, 74, 0.16);
+    color: var(--brand, #D6A24A);
 }
 
 .feature-icon svg {
@@ -288,53 +355,111 @@ body.lw-leaving {
     height: 16px;
 }
 
-/* ===== Right: form panel ===== */
-#input-field-section {
-    flex: 0 0 380px;
-    width: 380px;
-    background: color-mix(in srgb, var(--bg-panel) 96%, transparent);
-    border: 1px solid var(--border-soft);
-    padding: 1.5rem 1.3rem;
-    border-radius: 14px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, .05);
-    animation: lw-fade-up .5s ease .18s both;
-}
-
-.user-icon-container {
+/* ===== Brand hero: logo badge + wordmark + tagline over the skyline ===== */
+.signup-brand {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    margin: 8px 0 1.4em;
     text-align: center;
-    margin-bottom: .7rem;
+    animation: lw-fade-up .45s ease both;
 }
 
-.user-icon-container h3 {
+.signup-logo-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 62px;
+    height: 62px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, rgba(74, 144, 217, 0.55), rgba(28, 90, 158, 0.32) 60%, transparent 78%);
+    border: 1px solid rgba(74, 144, 217, 0.45);
+    box-shadow: 0 0 0 6px rgba(74, 144, 217, 0.08), 0 8px 22px rgba(0, 0, 0, 0.35);
+}
+
+.signup-logo-badge img {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.35));
+}
+
+.signup-wordmark {
     margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    line-height: 1.1;
     font-family: var(--font-display);
 }
 
-.user-icon-container p {
-    font-size: .76rem;
-    color: var(--text-muted);
+.signup-wordmark__light {
+    color: white;
 }
 
-.user-profile-btn {
-    background: color-mix(in srgb, var(--brand2) 26%, var(--bg-panel));
-    border: none;
-    border-radius: 26px;
-    padding: 12px 14px;
-    margin-bottom: 10px;
-    cursor: default;
+.signup-wordmark__watch {
+    color: var(--brand2);
 }
 
-.user-profile-btn img {
-    height: 24px;
-    width: 24px;
-    display: block;
+.signup-tagline {
+    margin: .3rem 0 0;
+    font-size: .85rem;
+    line-height: 1.4;
+    color: rgba(255, 255, 255, 0.62);
 }
 
-/* Field entrance stagger, driven by --d set inline per field */
-.prompt-input-tabs,
-.notify-wrapper {
+/* ===== Card ===== */
+.signup-card {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 460px;
+    background: rgba(255, 255, 255, 0.045);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: var(--radius-lg, 16px);
+    padding: 1.4rem 1.7rem 1.3rem;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+    animation: lw-panel-in .5s cubic-bezier(.2, .8, .2, 1) both;
+}
+
+@keyframes lw-panel-in {
+    from { opacity: 0; transform: translateY(12px) scale(.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.signup-card__head {
+    text-align: center;
+    margin-bottom: .85rem;
+    animation: lw-fade-up .45s ease .08s both;
+}
+
+.signup-card__head h2 {
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    font-weight: 800;
+    letter-spacing: -.01em;
+    color: white;
+    margin: 0;
+}
+
+.signup-subtitle {
+    margin: .35rem 0 0;
+    font-size: .86rem;
+    color: rgba(255, 255, 255, 0.62);
+}
+
+/* ===== Fields ===== */
+.field-group {
+    margin-bottom: .55rem;
     animation: lw-field-in .45s cubic-bezier(.2, .8, .2, 1) both;
-    animation-delay: calc(.22s + var(--d, 0) * .06s);
+    animation-delay: calc(.14s + var(--d, 0) * .06s);
 }
 
 @keyframes lw-field-in {
@@ -342,46 +467,147 @@ body.lw-leaving {
     to { opacity: 1; transform: translateY(0); }
 }
 
-.prompt-input-tabs {
-    margin-top: .68rem;
-}
-
-.prompt-input-tabs label {
-    display: block;
-    font-weight: 600;
-    font-size: .78rem;
-    color: var(--text-muted);
-    margin-bottom: .28rem;
-}
-
-.prompt-inputs {
-    padding: 13px 12px;
+.input-icon-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
     width: 100%;
-    border: 1px solid var(--border-soft);
-    border-radius: 8px;
+}
+
+.input-icon {
+    position: absolute;
+    left: 14px;
+    width: 18px;
+    height: 18px;
+    color: var(--brand2, #4A90D9);
+    opacity: 0.75;
+    pointer-events: none;
+    flex-shrink: 0;
+}
+
+.signup-input {
+    width: 100%;
+    padding: 11px 14px 11px 42px;
+    border: 1.5px solid rgba(255, 255, 255, 0.14);
+    border-radius: 12px;
     margin: 0;
-    box-shadow: none;
-    background: var(--bg-panel);
-    color: var(--text-bright);
+    background: rgba(255, 255, 255, 0.055);
+    color: white;
     font-family: var(--font-body);
-    font-size: .86rem;
-    transition: border-color .18s ease, box-shadow .18s ease, background .18s ease;
+    font-size: .88rem;
+    transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
 }
 
-.prompt-inputs:hover {
-    border-color: var(--border-strong);
+.signup-input::placeholder {
+    color: rgba(255, 255, 255, 0.36);
 }
 
-.prompt-inputs:focus {
+.signup-input:hover {
+    border-color: rgba(255, 255, 255, 0.24);
+}
+
+.signup-input:focus {
     outline: none;
-    border-color: var(--brand, #D6A24A);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand, #D6A24A) 18%, transparent);
+    border-color: var(--brand2);
+    box-shadow: 0 0 0 3px rgba(74, 144, 217, 0.2);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+/* Region <select>: strip native chrome, add our own icon + chevron */
+.input-icon-wrap--select .signup-input {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    padding-right: 38px;
+    cursor: pointer;
+}
+
+.input-icon-wrap--select .signup-input option {
+    background: var(--dark-bg-mid);
+    color: white;
+}
+
+.select-chevron {
+    position: absolute;
+    right: 14px;
+    width: 16px;
+    height: 16px;
+    color: var(--brand2, #4A90D9);
+    opacity: 0.75;
+    pointer-events: none;
+    flex-shrink: 0;
+}
+
+/* City / Town: leaves room on the right for the locate button */
+.signup-input--with-action {
+    padding-right: 44px;
+}
+
+.locate-btn {
+    position: absolute;
+    right: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--brand2);
+    cursor: pointer;
+    transition: background-color .15s ease, color .15s ease;
+}
+
+.locate-btn:hover {
+    background: rgba(74, 144, 217, 0.14);
+}
+
+.locate-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+.locate-btn.is-loading svg {
+    opacity: 0;
+}
+
+.locate-btn-spinner {
+    display: none;
+    position: absolute;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    border: 2px solid rgba(74, 144, 217, 0.35);
+    border-top-color: var(--brand2);
+}
+
+.locate-btn.is-loading .locate-btn-spinner {
+    display: inline-block;
+    animation: lw-spin .7s linear infinite;
+}
+
+.locate-btn:disabled {
+    cursor: wait;
+}
+
+@keyframes lw-spin {
+    to { transform: rotate(360deg); }
+}
+
+.field-hint {
+    margin: .38rem 0 0;
+    font-size: .72rem;
+    line-height: 1.35;
+    color: rgba(255, 255, 255, 0.42);
 }
 
 #email_phone-error {
     font-size: .72rem;
     color: var(--red, #E5484D);
-    min-height: 1em;
+    min-height: 0;
+    line-height: 1.3;
     margin: .35rem 0 0;
 }
 
@@ -397,13 +623,18 @@ body.lw-leaving {
 
 /* ===== Notify toggle ===== */
 .notify-wrapper {
-    margin-top: 1.3rem;
+    margin-top: .6rem;
+    padding-top: .65rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    animation: lw-field-in .45s cubic-bezier(.2, .8, .2, 1) both;
+    animation-delay: calc(.14s + var(--d, 0) * .06s);
 }
 
 .notify-heading {
     font-weight: 600;
     font-size: .8rem;
     margin: 0 0 .4rem;
+    color: white;
 }
 
 .notify-checkbox {
@@ -417,7 +648,7 @@ body.lw-leaving {
     display: inline-flex;
     align-items: center;
     gap: 10px;
-    margin: .18rem 0 .55rem 0;
+    margin: .18rem 0 .5rem 0;
     cursor: pointer;
     user-select: none;
 }
@@ -427,7 +658,7 @@ body.lw-leaving {
     width: 38px;
     height: 20px;
     border-radius: 999px;
-    background: var(--border-strong);
+    background: rgba(255, 255, 255, 0.18);
     transition: background 0.2s ease;
     flex-shrink: 0;
 }
@@ -440,7 +671,7 @@ body.lw-leaving {
     height: 16px;
     border-radius: 50%;
     background: white;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.22);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
     transition: transform 0.2s cubic-bezier(.3, 1.4, .5, 1);
     display: flex;
     align-items: center;
@@ -450,14 +681,14 @@ body.lw-leaving {
 .notify-check {
     width: 11px;
     height: 11px;
-    color: var(--brand, #D6A24A);
+    color: var(--brand2, #4A90D9);
     opacity: 0;
     transform: scale(.4);
     transition: opacity .16s ease .05s, transform .16s ease .05s;
 }
 
 .notify-checkbox:checked + .notify-toggle-track {
-    background: var(--brand, #D6A24A);
+    background: var(--brand2, #4A90D9);
 }
 
 .notify-checkbox:checked + .notify-toggle-track .notify-toggle-thumb {
@@ -470,46 +701,49 @@ body.lw-leaving {
 }
 
 .notify-checkbox:focus-visible + .notify-toggle-track {
-    outline: 2px solid var(--brand, #D6A24A);
+    outline: 2px solid var(--brand2, #4A90D9);
     outline-offset: 2px;
 }
 
 .notify-toggle-text {
     font-size: .8rem;
     line-height: 1.35;
-    color: var(--text-muted);
+    color: rgba(255, 255, 255, 0.72);
 }
 
 .notify-subtext {
     margin: .3rem 0 0;
     font-size: .74rem;
-    color: var(--text-faint);
+    color: rgba(255, 255, 255, 0.42);
 }
 
 /* ===== Submit ===== */
 .submit-btn {
     position: relative;
-    background-color: var(--brand, #D6A24A);
+    background: linear-gradient(180deg, var(--brand2) 0%, var(--brand2-dim) 100%);
     color: #fff;
     font-family: var(--font-body);
-    font-weight: 600;
+    font-weight: 700;
     font-size: .92rem;
+    letter-spacing: 0.01em;
     width: 100%;
     padding: 13px;
+    min-height: 48px;
     border: none;
-    border-radius: 8px;
+    border-radius: 999px;
     cursor: pointer;
-    margin-top: 1.3rem;
+    margin-top: .85rem;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: .5rem;
-    transition: background-color 0.15s ease, transform 0.1s ease, box-shadow .15s ease;
+    box-shadow: 0 10px 24px rgba(74, 144, 217, 0.35);
+    transition: background 0.15s ease, transform 0.1s ease, box-shadow .15s ease;
 }
 
 .submit-btn:hover {
-    background-color: var(--brand-dim, #A57B2F);
-    box-shadow: 0 6px 16px color-mix(in srgb, var(--brand, #D6A24A) 35%, transparent);
+    background: linear-gradient(180deg, #5a9ee0 0%, var(--brand2) 100%);
+    box-shadow: 0 10px 24px rgba(74, 144, 217, 0.42);
 }
 
 .submit-btn:active {
@@ -539,500 +773,165 @@ body.lw-leaving {
     opacity: .85;
 }
 
-@keyframes lw-spin {
-    to { transform: rotate(360deg); }
-}
-
-#view-signup footer {
+/* ===== Login prompt + secure footer ===== */
+.signup-login-prompt {
+    margin: .75rem 0 0;
     text-align: center;
-    font-size: .7rem;
-    margin-top: .8rem;
-    color: var(--text-faint);
+    font-size: .82rem;
+    color: rgba(255, 255, 255, 0.55);
 }
 
-/* ============================================================
-   Tablet/desktop: only apply when signup is visible
-   ============================================================ */
-/* Tablet and Desktop viewports */
-@media (min-width: 701px) {
-    /* FIX: page no longer scrolls on desktop/laptop — html/body are
-       pinned to the viewport height instead of growing with content.
-       .signup-shell (the #view-signup > section below) gets its own
-       overflow-y:auto fallback so content taller than the viewport is
-       still reachable without the outer page itself scrolling. */
-    html:has(#view-signup:not([hidden])) {
-        height: 100vh;
-        height: 100dvh;
-        overflow: hidden;
-    }
-
-    body:has(#view-signup:not([hidden])) {
-        align-items: center;
-        justify-content: center;
-        padding: 28px 20px 40px;
-        height: 100vh;
-        height: 100dvh;
-        overflow: hidden;
-    }
-
-    /* Only target #authShell when signup is visible on tablet/desktop */
-    body:has(#view-signup:not([hidden])) #authShell {
-        display: flex;
-        flex: 1;
-        width: 100%;
-        min-height: 100%;
-        overflow: hidden;
-    }
-
-    /* FIX: #view-signup becomes the centering context so .signup-shell
-       is centered both horizontally and vertically in the viewport,
-       not just horizontally via margin:auto as before. */
-    #view-signup:not([hidden]) {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-        height: 100%;
-    }
-
-    #view-signup > section {
-        overflow-y: auto;
-        min-height: auto;
-        max-height: 100%;
-        width: max-content;
-        max-width: 100%;
-        margin: 0 auto;
-    }
-
-    #main-content_wrapper {
-        width: max-content;
-        max-width: 100%;
-    }
-
-    .submit-info-section h3 {
-        font-size: 1.75rem;
-    }
-
-    .lead-copy {
-        margin-bottom: 1rem;
-    }
-
-    .feature-list {
-        gap: .5rem;
-    }
+.signup-login-prompt a {
+    color: var(--brand2);
+    font-weight: 600;
 }
 
-/* Laptop/desktop */
-/* Larger Desktop and Laptop viewports */
-@media (min-width: 1024px) {
-    #view-signup > section {
-        padding: 1.4rem 1.6rem 1.6rem;
-    }
+.signup-login-prompt a:hover {
+    text-decoration: underline;
 }
 
-/* ---- FIX: very large desktop / large-monitor range ----
-   The min-width:701px block above has no upper bound, so this range
-   already inherits the same centered, no-scroll layout — spelled out
-   explicitly here so this exact viewport is guaranteed to match
-   desktop/laptop, same as done in login.css. */
-@media (min-width: 2048px) and (min-height: 1111px) {
-    html:has(#view-signup:not([hidden])) {
-        height: 100vh;
-        overflow: hidden;
-    }
-
-    body:has(#view-signup:not([hidden])) {
-        align-items: center;
-        justify-content: center;
-        height: 100vh;
-        overflow: hidden;
-    }
-
-    body:has(#view-signup:not([hidden])) #authShell {
-        display: flex;
-        flex: 1;
-        width: 100%;
-        min-height: 100%;
-        overflow: hidden;
-    }
-
-    #view-signup:not([hidden]) {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-        height: 100%;
-    }
-
-    #view-signup > section {
-        overflow-y: auto;
-        max-height: 100%;
-        width: max-content;
-        max-width: 100%;
-        margin: 0 auto;
-    }
+.signup-secure-footer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    margin-top: .55rem;
+    text-align: center;
 }
 
-/* ============================================================
-   Mobile: only apply when signup is visible
-   ============================================================ */
-/* Mobile Phone and Small Tablet viewports */
-@media (max-width: 768px) {
-    html:has(#view-signup:not([hidden])) {
-        height: auto;
-        min-height: 100svh;
-        overflow-x: hidden;
-        overflow-y: auto;
+.signup-secure-footer svg {
+    width: 14px;
+    height: 14px;
+    color: rgba(255, 255, 255, 0.4);
+    flex-shrink: 0;
+}
+
+.signup-secure-footer p {
+    margin: 0;
+    font-size: .72rem;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+/* This view is dark-themed by design (matches login/verification),
+   regardless of the app's light/dark theme setting, so no
+   [data-theme="dark"] overrides are needed here. */
+
+/* Tablet and below: collapse the two-column layout down to the single
+   centered brand+card column from the reference mobile design, and
+   hide the marketing panel — there's no room for it once the card is
+   full-width. */
+@media (max-width: 900px) {
+    .signup-main {
+        justify-content: center;
     }
 
-    body:has(#view-signup:not([hidden])) {
-        position: relative;
-        inset: auto;
-        align-items: stretch;
-        justify-content: stretch;
-        padding: 0;
-        touch-action: manipulation;
-    }
-
-    body:has(#view-signup:not([hidden])) #authShell {
-        min-height: 100svh;
-        align-items: stretch;
-        overflow: visible;
-    }
-
-    #view-signup:not([hidden]) {
-        width: 100%;
-        min-height: 100svh;
-        height: auto;
-        display: flex;
+    .signup-columns {
         flex-direction: column;
-    }
-
-    #main-content_wrapper {
-        flex-direction: column;
-        flex-wrap: wrap;
-        width: 100%;
-        gap: .5rem;
+        gap: 0;
     }
 
     .submit-info-section {
         display: none;
     }
 
-    #input-field-section {
-        flex: 1;
-        width: 100%;
-        min-width: 0;
-        padding: 1rem .95rem 2rem;
-        transform: translateY(var(--signup-keyboard-shift, 0px));
-        transition: transform .18s ease-out;
+    .signup-wrap {
+        max-width: 440px;
     }
+}
 
-    .user-icon-container {
-        margin-bottom: .4rem;
-    }
-
-    .user-profile-btn {
-        padding: 8px 10px;
-        margin-bottom: 6px;
-    }
-
-    #view-signup > section {
-        width: 100%;
-        height: auto;
-        min-height: 100svh;
-        max-height: none;
-        padding-top: calc(1rem + env(safe-area-inset-top, 0px));
+/* Narrow Phone viewports */
+@media (max-width: 560px) {
+    .signup-main {
+        padding: 0 .75rem 1rem;
         padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
-        background: var(--bg-panel);
-        border: 0;
-        border-radius: 0;
-        box-shadow: none;
-        overflow: visible;
-        overscroll-behavior: contain;
     }
 
-    .user-profile-btn img {
-        height: 20px;
-        width: 20px;
+    .signup-page-backdrop {
+        height: 240px;
     }
 
-    .user-icon-container p {
-        font-size: .72rem;
+    .signup-brand {
+        margin-bottom: 1.3em;
     }
 
-    .prompt-input-tabs {
-        margin-top: .45rem;
-    }
-
-    .prompt-input-tabs label {
-        margin-bottom: .18rem;
-    }
-
-    .prompt-inputs {
-        padding: 10px 11px;
-    }
-
-    .notify-wrapper {
-        margin-top: .75rem;
-    }
-
-    .notify-heading {
-        margin: 0 0 .25rem;
-    }
-
-    .notify-toggle {
-        margin: .12rem 0 .35rem 0;
-    }
-
-    .notify-subtext {
-        font-size: .7rem;
-    }
-
-    .notify-check {
-        width: 9px;
-        height: 9px;
-    }
-
-    .submit-btn {
-        margin-top: .8rem;
-        padding: 11px;
-    }
-
-    #view-signup footer {
-        margin-top: .5rem;
+    .signup-card {
+        max-width: 360px;
+        padding: 1.4rem 1.2rem 1.2rem;
+        border-radius: 18px;
     }
 }
 
-/* Roomier tier for larger phones (iPhone Pro Max, large Android
-   phones, ~420px+ wide). These have enough width and, typically,
-   enough height that the compact base tier above looks undersized —
-   so scale the card and its contents back up rather than reusing the
-   small-phone sizing. */
-/* Large modern phones (e.g. iPhone Pro Max, Pixel 7, S21 Ultra) */
-@media (min-width: 421px) and (max-width: 700px) {
-    #view-signup > section {
-        padding: 1.15rem 1.3rem 1.3rem;
-        padding-top: calc(1.15rem + 2em + env(safe-area-inset-top, 0px));
-        padding-bottom: calc(1.3rem + env(safe-area-inset-bottom, 0px));
+/* Very narrow phones */
+@media (max-width: 420px) {
+    .signup-main {
+        padding: 0 .5rem .8rem;
+        padding-bottom: calc(.8rem + env(safe-area-inset-bottom, 0px));
     }
 
-    #input-field-section {
-        padding: 1.4rem 1.3rem;
+    .signup-card__head h2 {
+        font-size: 1.2rem;
     }
 
-    .user-icon-container {
-        margin-bottom: .65rem;
-    }
-
-    .user-profile-btn {
-        padding: 11px 13px;
-        margin-bottom: 9px;
-    }
-
-    .user-profile-btn img {
-        height: 23px;
-        width: 23px;
-    }
-
-    .user-icon-container h3 {
-        font-size: 1.15rem;
-    }
-
-    .user-icon-container p {
+    .signup-subtitle {
         font-size: .8rem;
     }
 
-    .prompt-input-tabs {
-        margin-top: .65rem;
+    .signup-card {
+        max-width: 320px;
+        padding: 1.15rem 1rem 1rem;
+        border-radius: 16px;
     }
 
-    .prompt-input-tabs label {
+    .signup-logo-badge {
+        width: 52px;
+        height: 52px;
+    }
+
+    .signup-logo-badge img {
+        width: 28px;
+        height: 28px;
+    }
+
+    .signup-wordmark {
+        font-size: 1.3rem;
+    }
+
+    .signup-tagline {
         font-size: .8rem;
-        margin-bottom: .3rem;
-    }
-
-    .prompt-inputs {
-        padding: 13px 12px;
-        font-size: .9rem;
-    }
-
-    .notify-wrapper {
-        margin-top: 1.1rem;
-    }
-
-    .notify-heading {
-        font-size: .92rem;
-    }
-
-    .notify-toggle-text {
-        font-size: .82rem;
-    }
-
-    .notify-subtext {
-        font-size: .76rem;
     }
 
     .submit-btn {
-        margin-top: 1.1rem;
-        padding: 14px;
-        font-size: .95rem;
+        padding: 12px;
+        font-size: .88rem;
+        min-height: 48px;
     }
-
-    #view-signup footer {
-        margin-top: .8rem;
-        font-size: .72rem;
-    }
-
 }
 
-/* Extra-compact tier for genuinely small/narrow phones only (this
-   used to kick in as early as 480px, which was wide enough to also
-   catch Pro Max-class devices and made them look cramped — narrowed
-   to 400px so it's reserved for actually small screens). */
-/* Small-to-narrow phones (e.g. iPhone SE, Galaxy S8/S9, standard iPhone 12/13/14) */
-@media (max-width: 400px) {
-    #view-signup > section {
-        padding: .7rem .85rem .85rem;
-        padding-top: calc(.7rem + 2em + env(safe-area-inset-top, 0px));
-        padding-bottom: calc(.85rem + env(safe-area-inset-bottom, 0px));
+/* Smallest phone screens */
+@media (max-width: 320px) {
+    .signup-card {
+        max-width: 280px;
+        padding: 1rem .85rem .9rem;
     }
-
-    #input-field-section {
-        padding: .9rem .85rem;
-    }
-
-    .prompt-input-tabs label {
-        font-size: .74rem;
-    }
-
-    .prompt-inputs {
-        font-size: .82rem;
-        padding: 9px 10px;
-    }
-
-    .submit-btn {
-        font-size: .86rem;
-        padding: 10px;
-    }
-
-    .user-icon-container h3 {
-        font-size: 1rem;
-    }
-
-    #view-signup footer {
-        font-size: .65rem;
-        margin-top: .4rem;
-    }
-
-      .notify-toggle-text {
-        font-size: .7rem;
-    }
-    
 }
 
-/* Extra compression for short viewports.
-   We no longer hide the icon container or header. */
-/* Short viewports (landscape phones or older small-screen devices) */
-@media (max-width: 700px) and (max-height: 700px) {
-    #input-field-section {
-        padding: 1.2rem 1rem;
+/* Short viewports (landscape phones, small-height devices) */
+@media (max-height: 700px) {
+    .signup-page-backdrop {
+        display: none;
     }
 
-    .user-icon-container {
-        margin-bottom: .3rem;
+    .signup-brand {
+        margin: 4px 0 1.3em;
     }
 
-    .prompt-input-tabs {
-        margin-top: .38rem;
-    }
-
-    .notify-wrapper {
-        margin-top: .55rem;
+    .field-group {
+        margin-bottom: .6rem;
     }
 
     .notify-subtext {
         display: none;
-    }
-
-    .submit-btn {
-        margin-top: .6rem;
-    }
-
-    #view-signup footer {
-        display: none;
-    }
-}
-
-/* ============================================================
-   Samsung S9+ and similar devices (~412px width, ~846px height)
-   Reduce font sizes and spacing specifically for this device
-   ============================================================ */
-
-@media (min-width: 400px) and (max-width: 440px) and (min-height: 800px) and (max-height: 860px) {
-    #view-signup > section {
-        padding: 1rem 1.15rem;
-    }
-
-    body {
-        font-size: 0.7rem;
-    }
-
-    .brand-row {
-        margin-bottom: 0.8rem;
-    }
-
-    .user-icon-container {
-        margin-bottom: 0.4rem;
-    }
-
-    .user-icon-container h3 {
-        font-size: 1.1rem;
-    }
-
-    .user-icon-container p {
-        font-size: 0.7rem;
-    }
-
-    .prompt-input-tabs {
-        margin-top: 0.45rem;
-    }
-
-    .prompt-input-tabs label {
-        font-size: 0.74rem;
-        margin-bottom: 0.2rem;
-    }
-
-    .prompt-inputs {
-        padding: 10px 11px;
-        font-size: 0.84rem;
-    }
-
-    .notify-wrapper {
-        margin-top: 0.8rem;
-    }
-
-    .notify-heading {
-        font-size: 0.82rem;
-    }
-
-    .notify-toggle-text {
-        font-size: 0.74rem;
-    }
-
-    .notify-subtext {
-        font-size: 0.68rem;
-    }
-
-    .submit-btn {
-        margin-top: 0.9rem;
-        padding: 11px;
-        font-size: 0.88rem;
-    }
-
-    #view-signup footer {
-        font-size: 0.64rem;
-        margin-top: 0.5rem;
     }
 }
 
@@ -1046,13 +945,12 @@ body.lw-leaving {
         transition-duration: 0.001ms !important;
     }
 
-    .lw-blob,
-    .status-dot {
+    .lw-blob {
         animation: none !important;
     }
 }
 
 :focus-visible {
-    outline: 2px solid var(--brand, #D6A24A);
+    outline: 2px solid var(--brand2, #4A90D9);
     outline-offset: 2px;
 }

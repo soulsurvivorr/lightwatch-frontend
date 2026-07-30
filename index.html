@@ -324,88 +324,139 @@
         <span class="lw-blob lw-blob--teal"></span>
     </div>
 
-    <section class="signup-shell">
-        <div class="brand-row">
-            <img src="/images/dev-logo.png?v=1.0.18" alt="Site Logo" width="40" height="40" loading="eager" fetchpriority="high" decoding="async">
-            <p>LightWatch GH</p>
+    <main class="signup-main">
+        <div class="signup-page-backdrop" aria-hidden="true"></div>
+
+        <button type="button" class="signup-back-btn" id="signupBackBtn" data-route-custom="login" aria-label="Go back">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M15 5 8 12l7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </button>
+
+        <div class="signup-columns">
+
+        <div class="submit-info-section">
+            <p class="status-pill">
+                <span class="status-dot" aria-hidden="true"></span>
+                Monitoring all 16 regions, live
+            </p>
+
+            <h3>Never get<br>caught in the dark.</h3>
+            <p class="lead-copy">Create your account to get real-time power alerts for your exact area — outages, restorations, and everything between.</p>
+
+            <ul class="feature-list">
+                <li>
+                    <span class="feature-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+                    </span>
+                    <span>Live status for your area</span>
+                </li>
+                <li>
+                    <span class="feature-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 3a5 5 0 0 0-5 5v3.2c0 .7-.24 1.38-.68 1.93L5 15h14l-1.32-1.87c-.44-.55-.68-1.23-.68-1.93V8a5 5 0 0 0-5-5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M10 18a2 2 0 0 0 4 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                    </span>
+                    <span>Instant outage alerts</span>
+                </li>
+                <li>
+                    <span class="feature-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="m5 13 4 4L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                    <span>Know the moment power's back</span>
+                </li>
+            </ul>
         </div>
 
-        <div id="main-content_wrapper">
-            <div class="submit-info-section">
-                <p class="status-pill">
-                    <span class="status-dot" aria-hidden="true"></span>
-                    Monitoring all 16 regions, live
+        <div class="signup-wrap">
+
+            <div class="signup-brand">
+                <span class="signup-logo-badge">
+                    <img src="/images/dev-logo.png?v=1.0.18" alt="LightWatch Logo" width="34" height="34" loading="eager" fetchpriority="high" decoding="async">
+                </span>
+                <p class="signup-wordmark">
+                    <span class="signup-wordmark__light">Light</span><span class="signup-wordmark__watch">Watch</span>
                 </p>
-
-                <h3>Never get<br>caught in the dark.</h3>
-                <p class="lead-copy">Create your account to get real-time power alerts for your exact area — outages, restorations, and everything between.</p>
-
-                <ul class="feature-list">
-                    <li>
-                        <span class="feature-icon" aria-hidden="true">
-                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
-                        </span>
-                        <span>Live status for your area</span>
-                    </li>
-                    <li>
-                        <span class="feature-icon" aria-hidden="true">
-                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 3a5 5 0 0 0-5 5v3.2c0 .7-.24 1.38-.68 1.93L5 15h14l-1.32-1.87c-.44-.55-.68-1.23-.68-1.93V8a5 5 0 0 0-5-5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M10 18a2 2 0 0 0 4 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-                        </span>
-                        <span>Instant outage alerts</span>
-                    </li>
-                    <li>
-                        <span class="feature-icon" aria-hidden="true">
-                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="m5 13 4 4L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                        </span>
-                        <span>Know the moment power's back</span>
-                    </li>
-                </ul>
+                <p class="signup-tagline">Join the community.<br>Stay informed. Stay prepared.</p>
             </div>
 
-            <div id="input-field-section">
-                <div class="user-icon-container">
-                    <button class="user-profile-btn" type="button" aria-hidden="true" tabindex="-1">
-                        <img src="/icons/user.png" alt="" loading="eager" fetchpriority="high" decoding="async">
-                    </button>
-                    <h3>Almost there!</h3>
-                    <p>Kindly provide a few details to get started.</p>
+            <div class="signup-card" id="signupCard">
+                <div class="signup-card__head">
+                    <h2>Create Your Account</h2>
+                    <p class="signup-subtitle">Sign up to begin your LightWatch journey.</p>
                 </div>
 
                 <form id="signupForm">
-                    <div class="prompt-input-tabs" style="--d: 0">
-                        <label for="name">Full Name</label>
-                        <input class="prompt-inputs" type="text" name="name" id="name" placeholder="e.g. Kofi Sarkodie" autocomplete="name" required>
+                    <div class="field-group" style="--d: 0">
+                        <label for="name" class="visually-hidden">Full Name</label>
+                        <div class="input-icon-wrap">
+                            <svg class="input-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                <circle cx="12" cy="8" r="3.5" stroke="currentColor" stroke-width="1.6"/>
+                                <path d="M5 20c0-3.5 3.1-6 7-6s7 2.5 7 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                            </svg>
+                            <input class="signup-input" type="text" name="name" id="name" placeholder="Full Name" autocomplete="name" autocapitalize="words" maxlength="60" required>
+                        </div>
                     </div>
-                    <div class="prompt-input-tabs" style="--d: 1">
-                        <label for="email-phone">Email or Phone number</label>
-                        <input class="prompt-inputs" type="text" name="email-phone" id="email-phone" placeholder="e.g. sark@gmail.com or 123456789" autocomplete="email" required>
+
+                    <div class="field-group" style="--d: 1">
+                        <label for="email-phone" class="visually-hidden">Email or Phone number</label>
+                        <div class="input-icon-wrap">
+                            <svg class="input-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                <path d="M4 6h16v12H4z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+                                <path d="m4 7 8 6 8-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <input class="signup-input" type="text" name="email-phone" id="email-phone" placeholder="Email or Phone Number" autocomplete="email" required>
+                        </div>
                         <p id="email_phone-error" role="alert"></p>
                     </div>
-                    <div class="prompt-input-tabs" style="--d: 2">
-                        <label for="region">Region</label>
-                        <select class="prompt-inputs" id="region" required>
-                            <option value="">Choose your region</option>
-                            <option value="Greater Accra">Greater Accra</option>
-                            <option value="Ashanti">Ashanti</option>
-                            <option value="Eastern">Eastern</option>
-                            <option value="Western">Western</option>
-                            <option value="Volta">Volta</option>
-                            <option value="Central">Central</option>
-                            <option value="Northern">Northern</option>
-                            <option value="Upper East">Upper East</option>
-                            <option value="Upper West">Upper West</option>
-                            <option value="Bono">Bono</option>
-                            <option value="Bono East">Bono East</option>
-                            <option value="Ahafo">Ahafo</option>
-                            <option value="Oti">Oti</option>
-                            <option value="Savannah">Savannah</option>
-                            <option value="North East">North East</option>
-                            <option value="Western North">Western North</option>
-                        </select>
+
+                    <div class="field-group" style="--d: 2">
+                        <label for="region" class="visually-hidden">Region</label>
+                        <div class="input-icon-wrap input-icon-wrap--select">
+                            <svg class="input-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                <path d="M9 4 3 6.5v13L9 17l6 2.5 6-2.5v-13L15 6.5 9 4Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+                                <path d="M9 4v13M15 6.5v13" stroke="currentColor" stroke-width="1.5"/>
+                            </svg>
+                            <select class="signup-input" id="region" required>
+                                <option value="">Choose your region</option>
+                                <option value="Greater Accra">Greater Accra</option>
+                                <option value="Ashanti">Ashanti</option>
+                                <option value="Eastern">Eastern</option>
+                                <option value="Western">Western</option>
+                                <option value="Volta">Volta</option>
+                                <option value="Central">Central</option>
+                                <option value="Northern">Northern</option>
+                                <option value="Upper East">Upper East</option>
+                                <option value="Upper West">Upper West</option>
+                                <option value="Bono">Bono</option>
+                                <option value="Bono East">Bono East</option>
+                                <option value="Ahafo">Ahafo</option>
+                                <option value="Oti">Oti</option>
+                                <option value="Savannah">Savannah</option>
+                                <option value="North East">North East</option>
+                                <option value="Western North">Western North</option>
+                            </select>
+                            <svg class="select-chevron" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                <path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
                     </div>
-                    <div class="prompt-input-tabs" style="--d: 3">
-                        <label for="city">City / Town</label>
-                        <input class="prompt-inputs" type="text" name="city" id="city" placeholder="Enter your city or town" autocomplete="address-level2" required>
+
+                    <div class="field-group" style="--d: 3">
+                        <label for="city" class="visually-hidden">City / Town</label>
+                        <div class="input-icon-wrap">
+                            <svg class="input-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                <path d="M12 21s7-6.4 7-11.5A7 7 0 0 0 5 9.5C5 14.6 12 21 12 21Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+                                <circle cx="12" cy="9.5" r="2.4" stroke="currentColor" stroke-width="1.6"/>
+                            </svg>
+                            <input class="signup-input signup-input--with-action" type="text" name="city" id="city" placeholder="City / Town" autocomplete="address-level2" required>
+                            <button type="button" class="locate-btn" id="useLocationBtn" aria-label="Use my current location">
+                                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                    <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.7"/>
+                                    <path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                                </svg>
+                                <span class="locate-btn-spinner" aria-hidden="true"></span>
+                            </button>
+                        </div>
+                        <p class="field-hint" id="cityLocationHint">Tap the locate icon to fill this in from your device.</p>
                     </div>
 
                     <div class="notify-wrapper" style="--d: 4">
@@ -419,7 +470,6 @@
                             </span>
                             <span class="notify-toggle-text">Receive outage alerts and updates in my area</span>
                         </label>
-                        <p class="notify-subtext">Turn this on to enable push notifications for your device.</p>
                     </div>
 
                     <button class="submit-btn" id="signUpBtn" type="submit">
@@ -428,16 +478,24 @@
                     </button>
                 </form>
 
-                <footer>Your information is secure and will never be shared</footer>
+                <p class="signup-login-prompt">Already have an account? <a href="#" data-route-custom="login">Log in</a></p>
+
+                <footer class="signup-secure-footer">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <path d="M12 3.5 5 6.3v5.4c0 4.7 3 8.6 7 9.8 4-1.2 7-5.1 7-9.8V6.3L12 3.5Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+                        <path d="m9 12.2 2.1 2.1 4-4.3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <p>Your information is secure and encrypted</p>
+                </footer>
             </div>
         </div>
-    </section>
 
-    
-    
-    
-    
-    
+        </div>
+    </main>
+
+    <!-- Name title-casing, the "use my location" flow, and the back/login
+         nav wiring used to live here as an inline script. That's now in
+         views/signup.js's mount(), alongside the rest of this view's JS. -->
 
     </section>
 
@@ -450,17 +508,16 @@
         <span class="lw-blob lw-blob--teal"></span>
     </div>
 
-    <header>
+    <main>
+        <div class="verify-page-backdrop" aria-hidden="true"></div>
+
         <button type="button" class="verify-back-btn" id="verifyBackBtn" aria-label="Go back">
             <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                 <path d="M15 5 8 12l7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
         </button>
-    </header>
 
-    <main>
         <div class="verify-wrap">
-            <div class="verify-wrap__backdrop" aria-hidden="true"></div>
 
             <div class="verify-brand">
                 <span class="verify-logo-badge">

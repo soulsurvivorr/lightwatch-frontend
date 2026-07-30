@@ -2,12 +2,6 @@
 //  VIEWS/SIGNUP.JS
 //  Sends data to backend to START signup. User is NOT saved to
 //  users.json until they pass the verification view.
-// ============================================================
-
-// ==== ========================================================
-//  VIEWS/SIGNUP.JS
-//  Sends data to backend to START signup. User is NOT saved to
-//  users.json until they pass the verification view.
 //
 //  Wrapped into mount()/show()/hide() for the router: all the DOM
 //  queries and event binding that used to run at module-load time
@@ -18,12 +12,19 @@
 //  Navigation change: on successful signup, this now calls
 //  window.LWRouter.navigate('verification') instead of
 //  window.location.replace('../pages/verification.html').
+//
+//  Everything that used to be an inline <script> at the bottom of
+//  the #view-signup markup (name title-casing, the "use my
+//  location" flow, and the back-button/login-link nav) now lives
+//  here in mount(), alongside the rest of this view's JS.
 // ============================================================
 
 (function () {
     let nameInput, emailPhoneInput, regionInput, cityInput,
         notifyUpdatesInput, form, errorEl, submitBtn;
     let isMounted = false;
+
+    const EMOJI_RE = /[\u{1F1E6}-\u{1F1FF}\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{2190}-\u{21FF}\u{2B00}-\u{2BFF}\u{FE0F}\u{200D}]/gu;
 
     function prefillFromPriorAttempt() {
         try {
@@ -117,6 +118,127 @@
         }
     }
 
+    // ---- Full Name: auto Title Case + block emoji input ----
+    function bindNameFormatting() {
+        if (!nameInput) return;
+
+        function toTitleCase(str) {
+            return str.replace(/\S+/g, (word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase());
+        }
+
+        nameInput.addEventListener('input', () => {
+            const start = nameInput.selectionStart;
+            const before = nameInput.value;
+            const stripped = before.replace(EMOJI_RE, '');
+            const removedBeforeCaret = before.slice(0, start).replace(EMOJI_RE, '').length;
+            nameInput.value = toTitleCase(stripped);
+            try { nameInput.setSelectionRange(removedBeforeCaret, removedBeforeCaret); } catch {}
+        });
+    }
+
+    // ---- City / Town: use device location, reverse-geocode, stay editable ----
+    function bindLocateButton() {
+        const locateBtn = document.getElementById('useLocationBtn');
+        const hint = document.getElementById('cityLocationHint');
+        if (!locateBtn || !cityInput) return;
+
+        const setHint = (text) => { if (hint) hint.textContent = text; };
+
+        const runGeolocation = () => {
+            locateBtn.classList.add('is-loading');
+            locateBtn.disabled = true;
+            setHint('Requesting location permission…');
+
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    const { latitude: lat, longitude: lon } = pos.coords;
+                    setHint('Finding your city…');
+
+                    fetch(`${API_URL}/geocode/reverse?lat=${lat}&lng=${lon}`)
+                        .then((res) => res.json())
+                        .then((data) => {
+                            const place = data && data.city;
+                            if (place) {
+                                cityInput.value = place;
+                                setHint('Detected automatically — feel free to edit it if it is not quite right.');
+                            } else {
+                                setHint('Could not determine your city automatically — please type it in.');
+                            }
+                        })
+                        .catch(() => {
+                            setHint('Could not reach the location service — please type your city in.');
+                        })
+                        .finally(() => {
+                            locateBtn.classList.remove('is-loading');
+                            locateBtn.disabled = false;
+                            cityInput.focus();
+                        });
+                },
+                (err) => {
+                    locateBtn.classList.remove('is-loading');
+                    locateBtn.disabled = false;
+                    if (err && err.code === 1) {
+                        // PERMISSION_DENIED. Once an origin has been denied, browsers
+                        // won't show the OS/browser prompt again on subsequent calls —
+                        // they just fail instantly with this same code. If that's
+                        // happening on a *first* attempt, the prompt itself never had
+                        // a chance to fire, which almost always means one of:
+                        //  - the page isn't on HTTPS (or localhost) — geolocation only
+                        //    works in a secure context, and silently no-ops otherwise
+                        //  - this is loaded inside a WebView/app wrapper and the OS-level
+                        //    location permission was never granted to the app itself
+                        //  - a Permissions-Policy header/iframe "allow" attribute upstream
+                        //    is blocking geolocation for this origin
+                        setHint('Location permission was denied — you can still type your city manually.');
+                    } else if (err && err.code === 3) {
+                        setHint('Location request timed out — please type your city manually.');
+                    } else {
+                        setHint('Could not get your location — please type your city manually.');
+                    }
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+            );
+        };
+
+        locateBtn.addEventListener('click', () => {
+            if (!('geolocation' in navigator)) {
+                setHint('Location is not available on this device — please type your city.');
+                return;
+            }
+
+            // Check permission state first so a *previously* denied origin gets an
+            // accurate message (re-prompting won't happen) instead of implying the
+            // browser is about to ask again.
+            if (navigator.permissions?.query) {
+                navigator.permissions.query({ name: 'geolocation' })
+                    .then((status) => {
+                        if (status.state === 'denied') {
+                            setHint('Location is blocked for this site — enable it in your browser/site settings, or type your city manually.');
+                            return;
+                        }
+                        runGeolocation();
+                    })
+                    .catch(runGeolocation); // Permissions API not supported — fall back to asking directly.
+            } else {
+                runGeolocation();
+            }
+        });
+    }
+
+    // ---- Back button + "Log in" link: both use data-route-custom, same
+    // as the "Create account" links on the login view. Wired explicitly
+    // here (rather than assuming a global delegated handler) so this
+    // view's navigation doesn't depend on anything outside this file. ----
+    function bindCustomRouteLinks() {
+        document.querySelectorAll('#view-signup [data-route-custom]').forEach((el) => {
+            el.addEventListener('click', (e) => {
+                e.preventDefault();
+                const target = el.dataset.routeCustom;
+                if (target) window.LWRouter.navigate(target);
+            });
+        });
+    }
+
     function mount() {
         if (isMounted) return;
         isMounted = true;
@@ -161,6 +283,9 @@
         });
 
         prefillFromPriorAttempt();
+        bindNameFormatting();
+        bindLocateButton();
+        bindCustomRouteLinks();
 
         form.addEventListener("submit", (e) => {
             e.preventDefault();
@@ -190,83 +315,29 @@
     }
 
     // ============================================================
-    //  show() / hide() — called by the router when this view
-    //  becomes visible or hidden. This is where we fix the
-    //  scrolling issue by forcing the body to be scrollable.
+    //  show() / hide() — called by the router when this view becomes
+    //  visible or hidden.
+    //
+    //  This used to force a pile of inline styles (display:block,
+    //  height:auto, etc.) onto html/body/#authShell/#view-signup to
+    //  "fix" scrolling. That was the actual bug behind the view not
+    //  stretching full-height on mobile: signup.css already handles
+    //  height/scroll declaratively via `:has(#view-signup:not([hidden]))`,
+    //  which depends on #view-signup staying `display: flex` — but the
+    //  inline `display: 'block'` set here overrode that (inline styles
+    //  beat stylesheet rules), breaking the flex chain `.signup-main`
+    //  relies on to fill the screen. CSS already owns this now, so
+    //  show()/hide() just handle the one thing that IS this view's
+    //  concern: the login-view leftover class.
     // ============================================================
 
     function show() {
-        console.log('Signup view shown - fixing scroll');
-        
-        // Force the html element to be scrollable
-        document.documentElement.style.overflow = 'auto';
-        document.documentElement.style.height = 'auto';
-        document.documentElement.style.minHeight = '100%';
-        document.documentElement.style.position = 'static';
-        
-        // Force the body to be scrollable
-        document.body.style.overflow = 'auto';
-        document.body.style.height = 'auto';
-        document.body.style.minHeight = '100vh';
-        document.body.style.position = 'static';
-        document.body.style.maxHeight = 'none';
-        
-        // Force authShell to not block scrolling
-        const authShell = document.getElementById('authShell');
-        if (authShell) {
-            authShell.style.overflow = 'visible';
-            authShell.style.height = 'auto';
-            authShell.style.minHeight = '100%';
-            authShell.style.position = 'static';
-        }
-
-        // Force the signup view to be visible and scrollable
-        const signupView = document.getElementById('view-signup');
-        if (signupView) {
-            signupView.style.display = 'block';
-            signupView.style.overflow = 'visible';
-            signupView.style.height = 'auto';
-            signupView.style.minHeight = '100dvh';
-        }
-
-        // Force a reflow to ensure the styles apply
-        void document.body.offsetHeight;
-        
-        // Also check if there's a class from login that's blocking scroll
         document.body.classList.remove('login-active');
     }
 
     function hide() {
-        // Reset styles when hiding
-        const signupView = document.getElementById('view-signup');
-        if (signupView && signupView.hidden) {
-            // Only reset if signup is actually hidden
-            document.documentElement.style.overflow = '';
-            document.documentElement.style.height = '';
-            document.documentElement.style.minHeight = '';
-            document.documentElement.style.position = '';
-            
-            document.body.style.overflow = '';
-            document.body.style.height = '';
-            document.body.style.minHeight = '';
-            document.body.style.position = '';
-            document.body.style.maxHeight = '';
-            
-            const authShell = document.getElementById('authShell');
-            if (authShell) {
-                authShell.style.overflow = '';
-                authShell.style.height = '';
-                authShell.style.minHeight = '';
-                authShell.style.position = '';
-            }
-            
-            if (signupView) {
-                signupView.style.display = '';
-                signupView.style.overflow = '';
-                signupView.style.height = '';
-                signupView.style.minHeight = '';
-            }
-        }
+        // Nothing to reset — show() no longer sets anything outside
+        // this view's own styles.
     }
 
     window.LWViews = window.LWViews || {};
