@@ -193,25 +193,28 @@
         const showFooter = () => loginFormSide?.classList.remove('hide-footer');
         const hideFooter = () => loginFormSide?.classList.add('hide-footer');
 
-        userInput?.addEventListener('focus', () => {
-            hideFooter();
-        });
-
         userInput?.addEventListener('blur', () => {
             showFooter();
         });
 
         if (window.visualViewport && userInput) {
             const updateKeyboardShift = () => {
-                if (!loginFormSide || document.activeElement !== userInput) {
-                    loginFormSide?.style.removeProperty('--login-keyboard-shift');
+                if (!loginFormSide) {
                     return;
                 }
 
                 const viewportBottom = window.visualViewport.height - 16;
                 const inputBottom = userInput.getBoundingClientRect().bottom;
                 const shift = Math.min(0, viewportBottom - inputBottom);
-                loginFormSide.style.setProperty('--login-keyboard-shift', `${shift}px`);
+                const isKeyboardVisible = document.activeElement === userInput && shift < 0;
+
+                if (isKeyboardVisible) {
+                    loginFormSide.style.setProperty('--login-keyboard-shift', `${shift}px`);
+                    hideFooter();
+                } else {
+                    loginFormSide.style.removeProperty('--login-keyboard-shift');
+                    showFooter();
+                }
             };
             const clearKeyboardShift = () => {
                 loginFormSide.style.removeProperty('--login-keyboard-shift');
