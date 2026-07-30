@@ -458,6 +458,8 @@ body:has(#view-signup:not([hidden])) #view-signup {
 /* ===== Fields ===== */
 .field-group {
     margin-bottom: .55rem;
+    margin-top: var(--signup-keyboard-shift, 0px);
+    transition: margin-top .18s ease;
     animation: lw-field-in .45s cubic-bezier(.2, .8, .2, 1) both;
     animation-delay: calc(.14s + var(--d, 0) * .06s);
 }
@@ -803,7 +805,8 @@ body:has(#view-signup:not([hidden])) #view-signup {
 .signup-secure-footer svg {
     width: 14px;
     height: 14px;
-    color: rgba(255, 255, 255, 0.4);
+    color: var(--brand2, #4A90D9);
+    opacity: 0.75;
     flex-shrink: 0;
 }
 

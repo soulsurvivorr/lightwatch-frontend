@@ -239,6 +239,44 @@
         });
     }
 
+    // ---- City field: nudge its container up while it's focused and the
+    // on-screen keyboard is covering it (mobile). Only the city field's
+    // own .field-group gets --signup-keyboard-shift set, via margin-top
+    // rather than transform — the field-group's entrance animation already
+    // owns transform with fill:both, so a transform here would just get
+    // silently overridden by that animation's frozen end state. ----
+    function bindCityKeyboardShift() {
+        if (!cityInput) return;
+        const fieldGroup = cityInput.closest('.field-group');
+        if (!fieldGroup) return;
+
+        let isFocused = false;
+
+        const updateShift = () => {
+            if (!isFocused) return;
+            const viewportBottom = (window.visualViewport?.height || window.innerHeight) - 18;
+            const fieldBottom = fieldGroup.getBoundingClientRect().bottom;
+            const shift = Math.min(0, viewportBottom - fieldBottom);
+            fieldGroup.style.setProperty('--signup-keyboard-shift', `${shift}px`);
+        };
+        const clearShift = () => {
+            fieldGroup.style.removeProperty('--signup-keyboard-shift');
+        };
+
+        cityInput.addEventListener('focus', () => {
+            isFocused = true;
+            requestAnimationFrame(updateShift);
+            setTimeout(updateShift, 180); // keyboard animates in — recheck once it's settled
+        });
+        cityInput.addEventListener('blur', () => {
+            isFocused = false;
+            clearShift();
+        });
+        window.visualViewport?.addEventListener('resize', () => {
+            if (isFocused) requestAnimationFrame(updateShift);
+        });
+    }
+
     function mount() {
         if (isMounted) return;
         isMounted = true;
@@ -252,40 +290,11 @@
         errorEl = document.getElementById('email_phone-error');
         submitBtn = document.getElementById('signUpBtn');
 
-        const signupFields = document.querySelectorAll('#view-signup .prompt-inputs');
-        const inputFieldSection = document.getElementById('input-field-section');
-        let focusedField = null;
-        const updateKeyboardShift = () => {
-            if (!focusedField) return;
-            const viewportBottom = (window.visualViewport?.height || window.innerHeight) - 18;
-            const fieldBottom = focusedField.getBoundingClientRect().bottom;
-            const shift = Math.min(0, viewportBottom - fieldBottom);
-            inputFieldSection?.style.setProperty('--signup-keyboard-shift', `${shift}px`);
-        };
-        const clearKeyboardShift = () => {
-            inputFieldSection?.style.removeProperty('--signup-keyboard-shift');
-        };
-        signupFields.forEach((field) => {
-            field.addEventListener('focus', () => {
-                focusedField = field;
-                requestAnimationFrame(updateKeyboardShift);
-                setTimeout(updateKeyboardShift, 180);
-            });
-            field.addEventListener('blur', () => {
-                if (focusedField === field) {
-                    focusedField = null;
-                    clearKeyboardShift();
-                }
-            });
-        });
-        window.visualViewport?.addEventListener('resize', () => {
-            if (focusedField) requestAnimationFrame(updateKeyboardShift);
-        });
-
         prefillFromPriorAttempt();
         bindNameFormatting();
         bindLocateButton();
         bindCustomRouteLinks();
+        bindCityKeyboardShift();
 
         form.addEventListener("submit", (e) => {
             e.preventDefault();
