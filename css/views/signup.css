@@ -423,8 +423,6 @@ body:has(#view-signup:not([hidden])) #view-signup {
     border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: var(--radius-lg, 16px);
     padding: 1.4rem 1.7rem 1.3rem;
-    margin-top: var(--signup-keyboard-shift, 0px);
-    transition: margin-top .2s ease;
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);

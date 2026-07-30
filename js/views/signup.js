@@ -239,28 +239,33 @@
         });
     }
 
-    // ---- City field: when it's focused and the on-screen keyboard is up
-    // (mobile), pull the whole signup-card up just enough to keep the
-    // field visible above the keyboard — like a native app would.
-    // margin-top, not transform: signup-card's entrance animation already
-    // owns transform with fill:both, so a transform set here would just
-    // be silently overridden by that animation's frozen end state. ----
+    // ---- City field only: when it's focused and the on-screen keyboard is
+    // up (mobile), nudge just this field's own row up enough to clear the
+    // keyboard. Applied as an inline style directly on this one field-group
+    // instance (not through the shared .field-group class), so nothing else
+    // on the form is touched. margin-top, not transform: the entrance
+    // animation on .field-group already owns transform with fill:both, so a
+    // transform here would just be silently overridden by its frozen end
+    // state. Clamped so it can never overshoot into the fields above it. ----
     function bindCityKeyboardShift() {
         if (!cityInput) return;
-        const card = cityInput.closest('.signup-card');
-        if (!card) return;
+        const fieldGroup = cityInput.closest('.field-group');
+        if (!fieldGroup) return;
 
+        const MAX_SHIFT = 140; // px — a sane ceiling regardless of viewport math
         let isFocused = false;
+
+        fieldGroup.style.transition = 'margin-top .2s ease';
 
         const updateShift = () => {
             if (!isFocused) return;
             const viewportBottom = (window.visualViewport?.height || window.innerHeight) - 18;
-            const fieldBottom = cityInput.closest('.field-group').getBoundingClientRect().bottom;
-            const shift = Math.min(0, viewportBottom - fieldBottom);
-            card.style.setProperty('--signup-keyboard-shift', `${shift}px`);
+            const fieldBottom = fieldGroup.getBoundingClientRect().bottom;
+            const shift = Math.max(-MAX_SHIFT, Math.min(0, viewportBottom - fieldBottom));
+            fieldGroup.style.marginTop = `${shift}px`;
         };
         const clearShift = () => {
-            card.style.removeProperty('--signup-keyboard-shift');
+            fieldGroup.style.marginTop = '';
         };
 
         cityInput.addEventListener('focus', () => {

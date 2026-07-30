@@ -198,18 +198,41 @@
         });
 
         if (window.visualViewport && userInput) {
+            // Gap kept between the bottom of the field and the top of the
+            // keyboard once the box has been pulled up — a little more
+            // than the old 16px so the input clears the keyboard with
+            // comfortable breathing room instead of sitting flush against it.
+            const KEYBOARD_BOTTOM_GAP = 20;
+
             const updateKeyboardShift = () => {
                 if (!loginFormSide) {
                     return;
                 }
 
-                const viewportBottom = window.visualViewport.height - 16;
+                // Measure the box's natural (unshifted) position first —
+                // getBoundingClientRect() reflects any transform already
+                // applied, so briefly zeroing it out gives the true resting
+                // position to shift from. Without this, every subsequent
+                // visualViewport 'resize'/'scroll' event (the keyboard's
+                // open animation fires several) would measure off the
+                // previous shift instead of the natural layout and keep
+                // compounding the offset — which is why the box could end
+                // up drifting further than intended, or not settling
+                // where the field actually needed to land.
+                loginFormSide.style.setProperty('--login-keyboard-shift', '0px');
                 const inputBottom = userInput.getBoundingClientRect().bottom;
+
+                const viewportBottom = window.visualViewport.height - KEYBOARD_BOTTOM_GAP;
                 const shift = Math.min(0, viewportBottom - inputBottom);
                 const isKeyboardVisible = document.activeElement === userInput && shift < 0;
 
                 if (isKeyboardVisible) {
                     loginFormSide.style.setProperty('--login-keyboard-shift', `${shift}px`);
+                    // Footer sits below the fold once the keyboard is up
+                    // regardless — hiding it outright (rather than letting
+                    // it just be covered) keeps it from being announced to
+                    // screen readers or tabbed to while off-screen, and
+                    // avoids any chance of it trailing the shift visually.
                     hideFooter();
                 } else {
                     loginFormSide.style.removeProperty('--login-keyboard-shift');
