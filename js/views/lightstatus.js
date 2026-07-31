@@ -736,11 +736,42 @@ function initForLocation(location) {
 // profile.js dispatches 'locationReady' (and sets window.currentChatLocation)
 // once it knows the user's location — that fetch is async, so it may not
 // have happened yet when this script runs. Handle both orders.
+//
+// FIX: if profile.js's fetch resolves and dispatches 'locationReady'
+// BEFORE this script has run far enough to attach its listener (a real
+// race, not hypothetical — script load order isn't a guarantee here),
+// the event is missed forever and currentLocation never gets set, so
+// the card silently never paints anything past its initial skeleton
+// text. Short interval below catches that case within 300ms without
+// needing profile.js to change how/when it dispatches.
 if (window.currentChatLocation) {
     initForLocation(window.currentChatLocation);
 } else {
     window.addEventListener('locationReady', (e) => initForLocation(e.detail?.location));
+    const locationReadyFallback = setInterval(() => {
+        if (window.currentChatLocation) {
+            clearInterval(locationReadyFallback);
+            initForLocation(window.currentChatLocation);
+        }
+    }, 300);
+    setTimeout(() => clearInterval(locationReadyFallback), 15000);
 }
+
+// FIX: a status change made elsewhere (the admin panel, another
+// device, another tab) only reached this card on the next 20s poll
+// tick — so testing a toggle by flipping to the admin panel and back
+// could sit on stale data for up to 20s, which read as "it just
+// didn't update." Refetching immediately whenever the tab regains
+// focus/visibility closes that gap without shortening the background
+// poll interval for everyone.
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && currentLocation) {
+        fetchPrimaryLightStatus();
+    }
+});
+window.addEventListener('focus', () => {
+    if (currentLocation) fetchPrimaryLightStatus();
+});
 
 loadAchievements();
 // -----------------------------------------------------

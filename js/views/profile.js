@@ -271,61 +271,43 @@ function getTimeGreeting() {
     return "Good evening";
 }
 
+// FIX: this used to also repaint #statusBadge/#statusPulse/
+// #statusPillText/#statusIcon — the PRIMARY status-hero elements —
+// every time this ran (on load, and on this file's own 10s poll
+// below). Those are now lightstatus.js's exclusive responsibility: it
+// has its own poller, its own colored-SVG icon states, its own tap-
+// to-report animation, and its own focus/visibility-triggered
+// refresh. With both files writing to the same four elements on two
+// different timers, whichever one happened to run last won — which is
+// why the primary icon could revert to a raster <img> and a different
+// "unknown" message moments after lightstatus.js had just painted the
+// correct state. (Same class of bug as the fix already applied to the
+// secondary-location panel — see paintSecondaryLocationStatus's note
+// in home.js.) This function now only drives what it uniquely owns:
+// the hidden legacy #lightSwitch toggle.
 function setLightStatus(status) {
-    const statusBadge = document.getElementById("statusBadge");
-    const statusPulse = document.getElementById("statusPulse");
-    const statusPillText = document.getElementById("statusPillText");
-    const statusIcon = document.getElementById("statusIcon");
     const lightSwitch = document.getElementById("lightSwitch");
     const lightSwitchState = document.getElementById("lightSwitchState");
 
-    if (!statusBadge || !statusPulse || !statusPillText || !statusIcon || !lightSwitch || !lightSwitchState) {
+    if (!lightSwitch || !lightSwitchState) {
         return;
     }
 
-    statusBadge.className = "badge";
-    statusPulse.className = "pulse";
-    statusIcon.className = "status-hero__icon";
-
     if (status === "on") {
-        statusBadge.classList.add("badge--on");
-        statusBadge.textContent = "Light on";
-        statusPulse.classList.add("pulse--on");
-        statusIcon.classList.add("status-hero__icon--on");
-        statusIcon.innerHTML = "<img src='/images/light-on.png' alt='Light on' style='width: 1.2em; height: 1.2em;'>";
-        statusPillText.textContent = "Light is on now";
         lightSwitch.classList.add("light-switch--on");
         lightSwitch.classList.remove("light-switch--off");
         lightSwitchState.textContent = "ON";
         lightSwitch.setAttribute("aria-checked", "true");
     } else if (status === "off") {
-        statusBadge.classList.add("badge--off");
-        statusBadge.textContent = "Light off";
-        statusPulse.classList.add("pulse--off");
-        statusIcon.classList.add("status-hero__icon--off");
-        statusIcon.innerHTML = "<img src='/images/light-off.png' alt='Light off' style='width: 1.2em; height: 1.2em;'>";
-        statusPillText.textContent = "Light is off now";
         lightSwitch.classList.remove("light-switch--on");
         lightSwitch.classList.add("light-switch--off");
         lightSwitchState.textContent = "OFF";
         lightSwitch.setAttribute("aria-checked", "false");
-    } else if (status === "loading") {
-        statusBadge.classList.add("badge--low");
-        statusBadge.textContent = "Checking status";
-        statusPulse.classList.add("pulse--low");
-        statusIcon.classList.add("status-hero__icon--unknown");
-        statusIcon.innerHTML = "<svg viewBox='0 0 20 20' fill='none' xmlns='http://www.w3.org/2000/svg' style='width:1.1em;height:1.1em;' aria-hidden='true'><path d='M6 3h8M6 17h8M6.5 3c0 4 3 4.5 3.5 5-0.5 0.5-3.5 1-3.5 5M13.5 3c0 4-3 4.5-3.5 5 0.5 0.5 3.5 1 3.5 5' stroke='currentColor' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/></svg>";
-        statusPillText.textContent = "Checking live status";
-        lightSwitch.classList.remove("light-switch--on", "light-switch--off");
-        lightSwitchState.textContent = "CHECK";
-        lightSwitch.setAttribute("aria-checked", "false");
     } else {
-        statusBadge.classList.add("badge--low");
-        statusBadge.textContent = "Unconfirmed";
-        statusPulse.classList.add("pulse--low");
-        statusIcon.classList.add("status-hero__icon--unknown");
-        statusIcon.innerHTML = "<svg viewBox='0 0 20 20' fill='none' xmlns='http://www.w3.org/2000/svg' style='width:1.1em;height:1.1em;' aria-hidden='true'><circle cx='10' cy='10' r='8.3' stroke='currentColor' stroke-width='1.4'/><path d='M7.6 8.1a2.4 2.4 0 1 1 3.3 2.2c-0.7 0.3-1 0.8-1 1.5v0.4' stroke='currentColor' stroke-width='1.4' stroke-linecap='round'/><circle cx='10' cy='14.6' r='0.9' fill='currentColor'/></svg>";
-        statusPillText.textContent = "Flip if you can see the area";
+        // Covers both "loading" and genuinely-unknown — the switch
+        // itself only has three real states (on/off/unset), unlike the
+        // primary card's icon which distinguishes "checking" from
+        // "no reports yet."
         lightSwitch.classList.remove("light-switch--on", "light-switch--off");
         lightSwitchState.textContent = "CHECK";
         lightSwitch.setAttribute("aria-checked", "false");

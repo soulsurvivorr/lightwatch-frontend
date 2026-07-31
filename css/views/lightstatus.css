@@ -123,16 +123,38 @@
 }
 
 .status-hero__icon--switching-on {
-  animation: lw-icon-power-on 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: lw-icon-power-on 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both !important;
 }
 
 .status-hero__icon--switching-off {
-  animation: lw-icon-power-off 0.7s ease both;
+  animation: lw-icon-power-off 0.7s ease both !important;
+}
+
+/* Slow ambient glow while the light is confirmed ON — separate from
+   the one-shot tap animations above, which only play for ~0.7s right
+   after a tap. This runs continuously so the icon reads as "alive"
+   at rest, not just at the moment someone taps it. The tap animations
+   above use !important specifically so they still take priority over
+   this for the brief moment both classes are on the element together
+   mid-tap (see animateIconDecision in lightstatus.js). */
+@keyframes lw-icon-lazy-glow {
+  0%, 100% { box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.16), 0 0 14px rgba(52, 211, 153, 0.14), 0 0 24px rgba(52, 211, 153, 0.22); }
+  50%      { box-shadow: 0 0 0 6px rgba(52, 211, 153, 0.24), 0 0 20px rgba(52, 211, 153, 0.22), 0 0 34px rgba(52, 211, 153, 0.32); }
+}
+
+#view-home .lw-status-hero .status-hero__icon--on {
+  animation: lw-icon-lazy-glow 2.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #view-home .lw-status-hero .status-hero__icon--on {
+    animation: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .status-hero__icon--switching-on,
   .status-hero__icon--switching-off {
-    animation: none;
+    animation: none !important;
   }
 }
