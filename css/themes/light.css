@@ -13,6 +13,10 @@
   --text-faint: #4f576b;
   --font-display: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-body: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  /* Light-theme app background token */
+  --app-bg-gradient: linear-gradient(180deg, #FFFFFF 0%, #F4F6FB 100%);
+  --app-bg-solid: #FFFFFF;
+  --meta-theme-color: #FFFFFF;
 }
 
 @media (prefers-color-scheme: dark) {

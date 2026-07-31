@@ -225,8 +225,8 @@
     }
 
     function getActiveReportTabFromDom() {
-        const communityBtn = document.getElementById('reportTabCommunityBtn');
-        return (communityBtn && communityBtn.classList.contains('is-active')) ? 'community' : 'news';
+        const communityPanel = document.getElementById('reportPanelCommunity');
+        return (communityPanel && !communityPanel.hidden) ? 'community' : 'news';
     }
 
     // Arriving on /chat only marks whichever sub-tab is actually on

@@ -60,6 +60,34 @@
     animation: none;
   }
 }
+
+/* ============================================================
+   Status-hero icon — tappable light on/off toggle (Home page)
+   Small "pop" — shrink then overshoot-grow then settle — plays
+   once per tap so the icon gives immediate physical feedback
+   before the network request resolves. See report-modal.js for
+   the click handler that adds/removes this class.
+   ============================================================ */
+.status-hero__icon {
+  cursor: pointer;
+}
+
+@keyframes status-icon-pop {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(0.82); }
+  65%  { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
+
+.status-hero__icon--pop {
+  animation: status-icon-pop 0.42s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .status-hero__icon--pop {
+    animation: none;
+  }
+}
 /* Bottom Nav Section for smaller screens
    Flush, edge-to-edge bar — sits directly on the bottom of the screen
    (full width, no floating side margins) with safe-area padding baked
@@ -70,21 +98,8 @@
   left: 0;
   right: 0;
   z-index: 45;
-  /* No unconditional display:none here anymore — it was fighting the
-     "display: block" overrides in app-shell.css / home.css's
-     max-width:768px blocks purely on cross-file load order, which is
-     fragile (a bundler reordering the <link> tags, or these three
-     rules ending up in a different file next time, silently flips
-     which one wins). The desktop-hide case is handled explicitly and
-     unambiguously below via !important, keyed off min-width — this
-     wrapper is visible by default and only hidden on wide screens. */
-  /* Floating-pill layout (App Store style): the wrapper's own padding
-     is what insets the pill from the screen edges. Left/right pull it
-     off the side edges; bottom clears the home-indicator safe area
-     plus a visible gap so page content is genuinely visible scrolling
-     underneath and around the pill, not just under a translucent
-     strip that still touches all three edges. */
-  padding: 0 14px calc(env(safe-area-inset-bottom, 0px) + 14px);
+  /* Remove wrapper padding and let the inner pill control spacing. */
+  padding: 0;
   pointer-events: none;
 }
 
@@ -95,6 +110,12 @@
 }
 
 .bottom-icons-container {
+  /* Explicitly kept visible now that it no longer carries its own
+     background fill — with the color gone there was nothing else
+     forcing this, so state it directly rather than relying on the
+     absence of a "display: none" elsewhere. */
+  visibility: visible;
+  opacity: 1;
   pointer-events: auto;
   width: 100%;
   max-width: 420px;
@@ -111,12 +132,11 @@
      hero gradient was the only reason transparency read as visible
      there. This makes the glass effect visible by its own contrast,
      not dependent on what happens to be behind it. */
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.02) 45%, transparent 75%),
-    color-mix(in srgb, var(--bottom-nav-surface) 25%, transparent);
-  /* Full border instead of border-top only — a floating pill needs an
-     edge all the way around, not just a seam against the screen edge. */
-  border: 1px solid var(--bottom-nav-border);
+    /* Make the pill visually transparent by default; individual themes
+      can add a background if desired. */
+    background: transparent;
+    /* No border by default. */
+    border: none;
   /* Pill radius: half the bar's own height reads as a true capsule
      (the App Store bar), rather than the previous 0 (flush strip). */
   border-radius: 28px;
@@ -127,7 +147,7 @@
   gap: 2px;
   /* Inset highlight along the top edge — another glass cue that reads
      regardless of backdrop content. */
-  box-shadow: var(--bottom-nav-shadow), 0 12px 30px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  box-shadow: none;
   /* Heavier blur/saturation than the flush-bar version so content
      scrolling directly behind the pill (not just underneath a
      screen-wide strip) still reads clearly through it. */
@@ -144,14 +164,11 @@
 }
 
 :root[data-theme="dark"] .bottom-icons-container {
-  /* Same translucent-gradient tint, dropped from ~95% opaque to ~40%
-     so the frosted-glass blur still reads instead of the pill going
-     back to a near-solid slab in dark mode. Sheen layer added on top
-     for the same reason as the base rule — visible on flat page
-     backgrounds, not just Home's gradient hero. */
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.015) 45%, transparent 75%),
-    linear-gradient(165deg, rgba(53, 59, 69, 0.22), rgba(30, 35, 44, 0.2));
+  /* Background/gradient tint removed on request — the pill now stays
+     fully transparent in dark mode too, so it just picks up whatever
+     page background sits behind it instead of carrying its own
+     color/image. Blur + border-color kept so the pill edge still
+     reads without a fill. */
   border-color: rgba(153, 178, 218, 0.4);
   box-shadow:
     0 -16px 36px rgba(0, 0, 0, 0.4),
@@ -160,9 +177,6 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) .bottom-icons-container {
-    background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.015) 45%, transparent 75%),
-      linear-gradient(165deg, rgba(46, 55, 69, 0.22), rgba(28, 35, 46, 0.2));
     border-color: rgba(153, 178, 218, 0.4);
     box-shadow:
       0 -16px 36px rgba(0, 0, 0, 0.4),

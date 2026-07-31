@@ -124,7 +124,7 @@
      zoom, etc.) instead of silently clipping — .login-visual stays
      put since it has nothing that needs to scroll. */
   .login-form-side {
-    overflow-y: auto;
+    overflow-y: auto !important;
     min-height: 0;
     /* FIX: the hero was getting pushed almost off the top of the
        pane. .login-footer below has margin-top:auto, and inside a
@@ -255,7 +255,7 @@
   }
 
   .login-form-side {
-    overflow-y: auto;
+    overflow-y: auto !important;
     min-height: 0;
   }
 }

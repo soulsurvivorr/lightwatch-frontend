@@ -407,7 +407,7 @@ function renderLocationPage(user) {
     if (locationName) locationName.textContent = location;
     if (locationNameCard) locationNameCard.textContent = location;
     if (locationMeta) locationMeta.textContent = `${location} · LightWatch verified`;
-    if (locationSubtitle) locationSubtitle.textContent = `Real-time grid and crowd-sourced reporting for ${location}.`;
+    if (locationSubtitle) locationSubtitle.textContent = `Here's what's happening in ${location}`;
     if (locationMap) locationMap.src = mapSrc;
     const locationMapLabel = document.getElementById("locationMapLabel");
     if (locationMapLabel) locationMapLabel.textContent = `${location} location map`;

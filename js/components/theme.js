@@ -19,20 +19,18 @@
         return value === 'light' || value === 'dark' ? value : null;
     }
 
-    function isPhoneViewport() {
-        return phoneMedia.matches;
-    }
-
     function getResolvedTheme() {
         const stored = getStoredTheme();
-        if (isPhoneViewport()) return 'light';
-        return stored || (darkMedia.matches ? 'dark' : 'light');
+        // Default to dark when the user has not chosen a theme.
+        // This makes the app default to the login/signup dark styling
+        // as the app's baseline look, across native and web.
+        return stored || 'dark';
     }
 
     function setMetaThemeColor(theme) {
         const meta = document.querySelector('meta[name="theme-color"]');
         if (!meta) return;
-        meta.setAttribute('content', theme === 'dark' ? '#12151B' : '#F4F3F7');
+        meta.setAttribute('content', theme === 'dark' ? '#0B3D91' : '#FFFFFF');
     }
 
     function applyTheme(theme) {
@@ -77,7 +75,10 @@
             document.body.appendChild(btn);
         }
 
-        btn.hidden = !laptopMedia.matches;
+        // Always allow the theme toggle to be visible (mobile + desktop).
+        // Users can pick the white/light theme on any device; account
+        // settings will later provide a persisted preference.
+        btn.hidden = false;
         syncToggleUI(root.getAttribute('data-theme') || getResolvedTheme());
     }
 
@@ -94,7 +95,7 @@
 
     darkMedia.addEventListener('change', () => {
         // Keep following device theme only if user has not explicitly chosen one.
-        if (!getStoredTheme() && !isPhoneViewport()) {
+        if (!getStoredTheme() && !phoneMedia.matches) {
             applyTheme(getResolvedTheme());
         }
     });

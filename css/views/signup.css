@@ -225,6 +225,18 @@ body:has(#view-signup:not([hidden])) #view-signup {
     .signup-wrap {
         margin: 0 auto;
     }
+
+    /* Make the right-side signup column scroll independently on desktop
+       so very short viewports or large font zoom won't clip the form. */
+    .signup-columns {
+        align-items: stretch;
+    }
+
+    .signup-wrap {
+        min-height: 0;
+        max-height: calc(100svh - 48px);
+        overflow-y: auto !important;
+    }
 }
 
 /* Two-column shell: marketing panel on the left, brand + card (the

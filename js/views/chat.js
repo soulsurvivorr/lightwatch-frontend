@@ -1178,11 +1178,29 @@ function applyIncomingChatDeepLink(search) {
 // it behaves like a normal page instead.
 const reportViewEl = document.getElementById('view-chat');
 const reportTabButtons = Array.from(document.querySelectorAll('#view-chat .report-tab'));
+const reportStandalone = reportViewEl?.dataset?.standaloneSections === 'true';
 const reportPanelNews = document.getElementById('reportPanelNews');
 const reportPanelCommunity = document.getElementById('reportPanelCommunity');
+let currentReportPanel = 'news';
 
 function activateReportTab(tab) {
     const nextTab = tab === 'community' ? 'community' : 'news';
+    currentReportPanel = nextTab;
+    if (typeof window.LWNav === 'object' && typeof window.LWNav.applyActiveNav === 'function') {
+        window.LWNav.applyActiveNav(nextTab === 'news' ? 'news' : 'community');
+    }
+
+    // If the report page is configured to show standalone sections,
+    // keep both panels visible and skip tab-switching behavior.
+    if (reportStandalone) {
+        if (reportPanelNews) reportPanelNews.hidden = false;
+        if (reportPanelCommunity) reportPanelCommunity.hidden = false;
+        reportViewEl?.classList.remove('report-mode-community');
+        reportViewEl?.classList.remove('report-mode-news');
+        document.documentElement.classList.add('lw-report-community-open');
+        document.body.classList.add('lw-report-community-open');
+        return;
+    }
 
     reportTabButtons.forEach((btn) => {
         const isActive = btn.dataset.tab === nextTab;
@@ -1257,6 +1275,26 @@ officialNewsFeed?.addEventListener('click', (e) => {
 // Community Report tab instead of only ever landing on News.
 window.LWReportTabs = { activate: activateReportTab };
 
+// Elevated report CTA (from the bottom nav) requests an explicit
+// compose/open action without auto-routing. Listen and open Community.
+window.addEventListener('lw:report-elevated-click', () => {
+    if (typeof window.LWNav === 'object' && typeof window.LWNav.applyActiveNav === 'function') {
+        window.LWNav.applyActiveNav('community');
+    }
+    if (typeof window.LWRouter === 'object' && typeof window.LWRouter.navigate === 'function') {
+        window.LWRouter.navigate('chat');
+        setTimeout(() => {
+            try {
+                activateReportTab('community');
+                document.getElementById('chatInput')?.focus();
+            } catch (e) { /* ignore */ }
+        }, 120);
+    } else {
+        activateReportTab('community');
+        document.getElementById('chatInput')?.focus();
+    }
+});
+
 // Same pause/resume the tab-visibility handler above already uses,
 // triggered by view switches instead of (or in addition to) tab
 // visibility — see file header.
@@ -1275,6 +1313,9 @@ window.addEventListener('lw:route-changed', (e) => {
     const isChatView = e.detail.view === 'chat';
     const isFreshEntry = isChatView && lastRouteView !== 'chat';
     lastRouteView = e.detail.view;
+    if (isChatView && typeof window.LWNav === 'object' && typeof window.LWNav.applyActiveNav === 'function') {
+        window.LWNav.applyActiveNav(currentReportPanel === 'news' ? 'news' : 'community');
+    }
 
     if (e.detail.view !== 'home' && !isChatView) {
         clearInterval(pollInterval);
@@ -1296,9 +1337,17 @@ window.addEventListener('lw:route-changed', (e) => {
 
     if (isChatView) {
         const hasDeepLinkedMessage = !!new URLSearchParams(e.detail.search || window.location.search).get('chatId');
-        if (isFreshEntry) {
-            activateReportTab(hasDeepLinkedMessage ? 'community' : 'news');
+        const pendingPanel = window.__lwPendingReportPanel;
+        if (pendingPanel === 'community' || pendingPanel === 'news') {
+            console.debug('[chat] pending report panel:', pendingPanel);
+            activateReportTab(pendingPanel);
+            window.__lwPendingReportPanel = null;
+        } else if (isFreshEntry) {
+            const defaultPanel = hasDeepLinkedMessage ? 'community' : 'news';
+            console.debug('[chat] default report panel:', defaultPanel, 'freshEntry=', isFreshEntry, 'hasDeepLinkedMessage=', hasDeepLinkedMessage);
+            activateReportTab(defaultPanel);
         } else if (hasDeepLinkedMessage) {
+            console.debug('[chat] deep link forces community panel');
             activateReportTab('community');
         }
         applyIncomingChatDeepLink(e.detail.search);

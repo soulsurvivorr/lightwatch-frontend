@@ -144,6 +144,25 @@
   min-width: 0;
 }
 
+#view-chat[data-standalone-sections="true"] .report-tabs {
+  display: none !important;
+}
+
+#view-chat[data-standalone-sections="true"] .report-panel {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-bottom: 20px !important;
+}
+
+#view-chat[data-standalone-sections="true"] .report-panel:last-child {
+  margin-bottom: 0 !important;
+}
+
+#view-chat[data-standalone-sections="true"] .report-banner {
+  margin-bottom: 18px !important;
+}
+
 /* ---- Official News feed ---- */
 .news-feed {
   display: flex;
@@ -669,13 +688,14 @@
     max-width: 100% !important;
   }
 
-  /* Same reasoning as the desktop block: .chat-card is now nested
-     inside .report-panel[data-panel="community"], so that panel needs
-     to be a flex item + flex container itself to pass the available
-     height down to the card. Scoped to report-mode-community only —
-     News's .report-panel must NOT get this internal-scroll treatment,
-     or its feed gets capped short instead of running full length with
-     the page scrolling underneath it. */
+  #view-chat .report-banner {
+    background: var(--app-bg-gradient);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-soft);
+    padding: 18px 20px;
+    color: white;
+  }
+
   #view-chat.report-mode-community .report-panel:not([hidden]) {
     flex: 1 1 auto;
     min-height: 0;
@@ -761,6 +781,18 @@
     display: none;
     width: 0;
     height: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  html:has(#view-chat.report-mode-community:not([hidden])) .topbar,
+  body:has(#view-chat.report-mode-community:not([hidden])) .topbar {
+    display: none !important;
+  }
+
+  html:has(#view-chat.report-mode-news:not([hidden])) .topbar,
+  body:has(#view-chat.report-mode-news:not([hidden])) .topbar {
+    display: block !important;
   }
 }
 

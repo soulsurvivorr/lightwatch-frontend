@@ -46,6 +46,15 @@ const achievementTotalReports = document.getElementById('achievementTotalReports
 const sourceConfidenceEl = document.getElementById('sourceConfidence');
 const heroContributorsPillEl = document.getElementById('heroContributorsPill');
 
+const ICON_PEOPLE = '👥';
+const ICON_BOLT = '⚡';
+const ICON_WARNING = '⚠️';
+const ICON_CHECK = '✓';
+const ICON_STAR_FILLED = '★';
+const ICON_STAR_EMPTY = '☆';
+const ICON_DOT_ON = '●';
+const ICON_DOT_OFF = '●';
+const ICON_DOT_UNKNOWN = '○';
 
 // -----------------------------------------------------
 // GHANA_NAMES — cosmetic display names for the recent-reports

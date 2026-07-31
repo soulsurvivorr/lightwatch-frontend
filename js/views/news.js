@@ -1,16 +1,20 @@
 // ============================================================
 //  VIEWS/NEWS.JS
-//  Populates the "Official News" tab on the Report page
-//  (#view-chat -> #reportPanelNews -> #officialNewsFeed) with
-//  real articles from GET /news, and owns the News/Community
-//  tab switching for that page.
+//  Fetches real articles from GET /news and renders them into
+//  every container marked [data-news-feed] on the page — currently
+//  the "Official News" tab on the Report page
+//  (#view-chat -> #reportPanelNews -> #officialNewsFeed) and the
+//  Home page's "Latest power news" section (#homeNewsFeed). Same
+//  fetch, same render, same articles in both places. Also owns the
+//  News/Community tab switching on the Report page.
 //
 //  This intentionally does NOT register on window.LWViews.chat —
 //  that key belongs to chat.js (the Community-report chat panel).
 //  Instead it listens for the router's 'lw:route-changed' event
-//  and reacts whenever the 'chat' view is the one on screen,
-//  polling only while the News tab is actually visible (same
-//  start/stop-on-visibility pattern as views/reports.js).
+//  and reacts whenever the 'chat' view OR the 'home' view is the
+//  one on screen, polling only while at least one feed container is
+//  actually visible (same start/stop-on-visibility pattern as
+//  views/reports.js).
 //
 //  Tab-switching (News <-> Community) is bound defensively: if
 //  chat.js already wires #reportTabNewsBtn/#reportTabCommunityBtn,
@@ -111,28 +115,87 @@
         </article>`;
     }
 
+    // Every container that should show the live news feed carries
+    // [data-news-feed] — right now that's the Report page's News tab
+    // (#officialNewsFeed) and the Home page's "Latest power news"
+    // section (#homeNewsFeed). Both get the exact same rendered
+    // articles; there's no per-container filtering.
+    function getFeedContainers() {
+        return document.querySelectorAll('[data-news-feed]');
+    }
+
+    // ---- Compact card (used by limited containers, e.g. Home) -----
+    // A single small teaser card — thumbnail, source, headline, time —
+    // rather than the full expandable .news-item used by the Report
+    // page's News tab. This is real fetched article data, just a
+    // smaller template, not a second data source.
+    function renderCompactNewsCard(article) {
+        const sourceIconHtml = renderSourceIcon(article);
+        const dateLabel = article.publishedAt ? new Date(article.publishedAt).toLocaleDateString() : '';
+        const relativeLabel = article.timeAgo
+            || (window.LWHelpers && typeof window.LWHelpers.formatRelativeTimeFromDate === 'function'
+                ? window.LWHelpers.formatRelativeTimeFromDate(article.publishedAt)
+                : '');
+        const timeLabel = [dateLabel, relativeLabel].filter(Boolean).join(' · ');
+        const thumbHtml = article.image
+            ? `<img class="lw-news-card__thumb" src="${escapeHtml(article.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">`
+            : '';
+
+        return `
+        <a class="lw-news-card" href="${escapeHtml(article.url)}" target="_blank" rel="noopener noreferrer" data-article-id="${article.id}">
+          ${thumbHtml}
+          <span class="lw-news-card__body">
+            <span class="lw-news-card__tag"><span aria-hidden="true">${sourceIconHtml}</span> ${escapeHtml(article.source)}${article.isOfficial ? ' · Official' : ''}</span>
+            <span class="lw-news-card__headline">${escapeHtml(article.title)}</span>
+            <span class="lw-news-card__time">${timeLabel}</span>
+          </span>
+        </a>`;
+    }
+
     function renderNews(articles) {
-        const feed = document.getElementById('officialNewsFeed');
-        if (!feed) return;
-        feed.classList.remove('loading');
+        const feeds = getFeedContainers();
+        if (!feeds.length) return;
 
-        if (!articles || articles.length === 0) {
-            feed.innerHTML = '<article class="news-item"><p class="news-item__preview">No electricity-related news right now. Check back soon.</p></article>';
-            return;
-        }
+        const sorted = sortNewsForDisplay(articles);
+        const fullHtml = (!sorted.length)
+            ? '<article class="news-item"><p class="news-item__preview">No electricity-related news right now. Check back soon.</p></article>'
+            : sorted.map(renderNewsItem).join('');
 
-        feed.innerHTML = sortNewsForDisplay(articles).map(renderNewsItem).join('');
+        feeds.forEach((feed) => {
+            feed.classList.remove('loading');
+            const limit = parseInt(feed.dataset.newsFeedLimit, 10);
+
+            if (!(limit > 0)) {
+                feed.innerHTML = fullHtml;
+                return;
+            }
+
+            // Limited container (Home): just the newest article(s) as
+            // compact cards. The "View more news" doorway into the
+            // full News tab lives once, in the section header
+            // (.lw-section__viewall) — no longer duplicated here.
+            if (!sorted.length) {
+                feed.innerHTML = '<p class="lw-news-card__empty">No electricity-related news right now.</p>';
+                return;
+            }
+            const cards = sorted.slice(0, limit).map(renderCompactNewsCard).join('');
+            feed.innerHTML = cards;
+        });
     }
 
     function showNewsLoading() {
-        const feed = document.getElementById('officialNewsFeed');
-        if (!feed) return;
-        feed.classList.add('loading');
-        feed.innerHTML = Array.from({ length: 4 }).map(() => `
+        const feeds = getFeedContainers();
+        if (!feeds.length) return;
+        feeds.forEach((feed) => {
+            feed.classList.add('loading');
+            const limit = parseInt(feed.dataset.newsFeedLimit, 10);
+            const count = limit > 0 ? limit : 4;
+            feed.innerHTML = Array.from({ length: count }).map(() => `
         <article class="news-item news-item--skeleton">
           <div style="height: 72px;"></div>
         </article>
     `).join('');
+        });
     }
 
     function loadNews(isFirstLoad) {
@@ -170,48 +233,54 @@
 
     // ---- Toggle (expand/collapse) + card-click-through ------------
     function bindCardInteractions() {
-        const feed = document.getElementById('officialNewsFeed');
-        if (!feed || feed.dataset.interactionsBound === '1') return;
-        feed.dataset.interactionsBound = '1';
+        getFeedContainers().forEach((feed) => {
+            if (feed.dataset.interactionsBound === '1') return;
+            feed.dataset.interactionsBound = '1';
 
-        feed.addEventListener('click', (e) => {
-            const toggleBtn = e.target.closest('[data-action="toggle-news"]');
-            if (toggleBtn && feed.contains(toggleBtn)) {
-                const item = toggleBtn.closest('.news-item');
-                if (!item) return;
-                const expanded = toggleBtn.getAttribute('aria-expanded') === 'true';
-                toggleBtn.setAttribute('aria-expanded', String(!expanded));
-                item.classList.toggle('is-expanded', !expanded);
-                const label = toggleBtn.querySelector('[data-toggle-label]');
-                if (label) label.textContent = expanded ? 'Show more' : 'Show less';
-                return;
-            }
+            feed.addEventListener('click', (e) => {
+                const toggleBtn = e.target.closest('[data-action="toggle-news"]');
+                if (toggleBtn && feed.contains(toggleBtn)) {
+                    const item = toggleBtn.closest('.news-item');
+                    if (!item) return;
+                    const expanded = toggleBtn.getAttribute('aria-expanded') === 'true';
+                    toggleBtn.setAttribute('aria-expanded', String(!expanded));
+                    item.classList.toggle('is-expanded', !expanded);
+                    const label = toggleBtn.querySelector('[data-toggle-label]');
+                    if (label) label.textContent = expanded ? 'Show more' : 'Show less';
+                    return;
+                }
 
-            if (e.target.closest('[data-action="read-article"]')) return;
+                if (e.target.closest('[data-action="read-article"]')) return;
 
-            const card = e.target.closest('.news-item[data-url]');
-            if (card && feed.contains(card) && card.dataset.url) {
+                const card = e.target.closest('.news-item[data-url]');
+                if (card && feed.contains(card) && card.dataset.url) {
+                    window.open(card.dataset.url, '_blank', 'noopener,noreferrer');
+                }
+            });
+
+            feed.addEventListener('keydown', (e) => {
+                if (e.key !== 'Enter' && e.key !== ' ') return;
+                const card = e.target.closest('.news-item[data-url]');
+                if (!card || !feed.contains(card)) return;
+                if (e.target.closest('[data-action="toggle-news"], [data-action="read-article"]')) return;
+                e.preventDefault();
                 window.open(card.dataset.url, '_blank', 'noopener,noreferrer');
-            }
-        });
-
-        feed.addEventListener('keydown', (e) => {
-            if (e.key !== 'Enter' && e.key !== ' ') return;
-            const card = e.target.closest('.news-item[data-url]');
-            if (!card || !feed.contains(card)) return;
-            if (e.target.closest('[data-action="toggle-news"], [data-action="read-article"]')) return;
-            e.preventDefault();
-            window.open(card.dataset.url, '_blank', 'noopener,noreferrer');
+            });
         });
     }
 
     // ---- Visibility ------------------------------------------------
+    // Poll while EITHER the Report page's News tab is open OR the
+    // Home page (which now embeds the same live feed) is on screen.
     function isNewsPanelVisible() {
         const panel = document.getElementById('reportPanelNews');
         const section = document.getElementById('view-chat');
-        if (!panel || !section) return false;
-        if (section.hidden || panel.hidden) return false;
-        return panel.offsetParent !== null;
+        const reportTabVisible = !!(panel && section && !section.hidden && !panel.hidden && panel.offsetParent !== null);
+
+        const homeSection = document.getElementById('view-home');
+        const homeVisible = !!(homeSection && !homeSection.hidden && homeSection.offsetParent !== null);
+
+        return reportTabVisible || homeVisible;
     }
 
     let visibilityObserverBound = false;
@@ -220,12 +289,14 @@
         if (visibilityObserverBound) return;
         const panel = document.getElementById('reportPanelNews');
         const section = document.getElementById('view-chat');
-        if (!panel || !section) return;
+        const homeSection = document.getElementById('view-home');
+        if (!panel || !section || !homeSection) return;
         visibilityObserverBound = true;
 
         const observer = new MutationObserver(syncPollingToVisibility);
         observer.observe(panel, { attributes: true, attributeFilter: ['hidden', 'class', 'style'] });
         observer.observe(section, { attributes: true, attributeFilter: ['hidden', 'class', 'style'] });
+        observer.observe(homeSection, { attributes: true, attributeFilter: ['hidden', 'class', 'style'] });
     }
 
     function syncPollingToVisibility() {

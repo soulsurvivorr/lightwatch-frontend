@@ -2,18 +2,24 @@
    media query gating in the original variables.css) */
 
 :root[data-theme="dark"] {
-  --bg-deep: #0f1318;
-  --bg-panel: #161b22;
-  --bg-panel-raised: #1b212b;
-  --border-soft: #2a3240;
-  --border-strong: #3a4759;
-  --dark-bg: #0b1016;
-  --dark-bg-mid: #151d28;
+  --bg-deep: rgb(10, 15, 26);
+  --bg-panel: rgb(10, 15, 26);
+  --bg-panel-raised: rgb(10, 15, 26);
+  --border-soft: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --dark-bg: rgb(10, 15, 26);
+  --dark-bg-mid: rgb(10, 15, 26);
   --text-bright: #eef3fb;
   --text-muted: #bdc8da;
   --text-faint: #90a0b8;
   --font-display: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-body: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+  /* App-wide dark mode solid background */
+  --app-bg-gradient: rgb(10, 15, 26);
+  --app-bg-solid: rgb(10, 15, 26);
+  /* Meta theme color used for mobile browser UI */
+  --meta-theme-color: rgb(10, 15, 26);
 
   /* Higher-contrast nav appearance for dark mode */
   --bottom-nav-surface: linear-gradient(165deg, rgba(46, 55, 69, 0.96), rgba(28, 35, 46, 0.94));

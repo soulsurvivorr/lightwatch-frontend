@@ -246,6 +246,11 @@
         const state = { view: name, search };
         const url = cfg.path + (search || '');
         const currentUrl = window.location.pathname + window.location.search;
+        const canUseHistory = window.location.protocol !== 'file:' && window.location.origin && window.location.origin !== 'null';
+
+        if (!canUseHistory) {
+            return;
+        }
 
         if (push && currentUrl !== url) {
             window.history.pushState(state, '', url);

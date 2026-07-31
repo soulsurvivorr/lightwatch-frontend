@@ -50,7 +50,7 @@
 
 /* ---- Hero greeting banner ---- */
     .hero-banner {
-      background: linear-gradient(135deg, #1C1F26 0%, #2A2E38 55%, #123D36 100%);
+      background: var(--app-bg-gradient);
       border-radius: var(--radius-lg);
       padding: 16px 18px 14px;
       margin: 0 0 14px;
@@ -568,12 +568,36 @@
   justify-content: center;
   font-size: 1.5rem;
   flex-shrink: 0;
-  transition: background 0.3s;
+  cursor: pointer;
+  transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+  user-select: none;
 }
 
-.status-hero__icon--on  { background: rgba(0, 0, 0, 0.15); }
-.status-hero__icon--off { background: rgba(233, 54, 60, 0.15); }
-.status-hero__icon--unknown { background: rgba(242,179,61,0.15); }
+.status-hero__icon:focus-visible {
+  outline: 2px solid rgba(74, 144, 217, 0.8);
+  outline-offset: 3px;
+}
+
+.status-hero__icon--on {
+  background: radial-gradient(circle, rgba(52, 211, 153, 0.32), rgba(0, 0, 0, 0.06));
+  border: 2px solid rgba(52, 211, 153, 0.85);
+  box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.16), 0 0 14px rgba(52, 211, 153, 0.14), 0 0 24px rgba(52, 211, 153, 0.22);
+  color: #6ee7b7;
+}
+
+.status-hero__icon--off {
+  background: radial-gradient(circle, rgba(242, 85, 92, 0.28), rgba(0, 0, 0, 0.04));
+  border: 2px solid rgba(242, 85, 92, 0.75);
+  box-shadow: 0 0 0 4px rgba(242, 85, 92, 0.18), 0 0 20px rgba(242, 85, 92, 0.25);
+  color: #f87171;
+}
+
+.status-hero__icon--unknown {
+  background: rgba(242, 179, 61, 0.15);
+}
 
 .status-hero__text { flex: 1; }
 
@@ -3655,6 +3679,49 @@ body.lw-location-panel-open {
     font-size: 0.78rem;
   }
 
+/* ============================================================
+   Overrides: enforce bottom-nav appearance and mobile status-hero
+   These live at the end of home.css so they win the cascade over
+   earlier, more general rules and view-specific redesign layers.
+   ============================================================ */
+
+/* Ensure the wrapper itself doesn't add extra padding */
+#bottom_nav_wrapper {
+  padding: 0 !important;
+}
+
+/* Bottom pill: transparent by default now (background/image removed
+   on request) so it just shows whatever page is behind it — border
+   + blur (below) still give it a visible edge. */
+#bottom_nav_wrapper .bottom-icons-container {
+  background: transparent !important;
+  border-top: 1px solid var(--bottom-nav-border) !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
+  padding: 8px max(10px, env(safe-area-inset-right)) 8px max(10px, env(safe-area-inset-left)) !important;
+  backdrop-filter: none !important;
+}
+
+/* Make the pill sit flush with the app theme: remove translucent sheen
+   in cases where a more specific theme rule tried to reintroduce it. */
+#bottom_nav_wrapper .bottom-icons-container:before,
+#bottom_nav_wrapper .bottom-icons-container:after {
+  display: none !important;
+}
+
+/* Mobile: match the desktop lw-status-hero styling (column layout,
+   background image, full-size icon/text) — only the height is kept
+   pinned to the existing 160px instead of desktop's taller natural
+   height, per feedback. */
+@media (max-width: 720px) {
+  #view-home .location-card.lw-status-hero {
+    min-height: 160px !important;
+    height: 160px !important;
+  }
+}
+
   .form-field input,
   .form-field select {
     font-size: 0.72rem;
@@ -4171,7 +4238,7 @@ body.lw-location-panel-open {
   overflow: hidden;
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-lg);
-  background: linear-gradient(135deg, #1C1F26 0%, #2A2E38 55%, #123D36 100%);
+  background: var(--app-bg-gradient);
   animation: fadeInUp 0.5s ease both;
 }
 
@@ -4273,7 +4340,8 @@ body.lw-location-panel-open {
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 999px;
   padding: 6px 14px;
-  font-size: 0.8rem;
+  font-size: calc(0.8rem - 1px);
+  font-weight: 300;
   color: rgba(255, 255, 255, 0.85);
   max-width: 100%;
   min-width: 0;
@@ -4387,7 +4455,7 @@ body:not(.page-data-loading) #view-home #realPageContent {
 #view-home .location-primary {
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: 12px;
 }
 
 #view-home .location-card {
@@ -4754,4 +4822,1122 @@ body:not(.page-data-loading) #view-home #realPageContent {
   #view-account .card__meta {
     font-size: 0.82rem;
   }
+}
+
+/* ============================================================
+   HOME REDESIGN — additive layer, loaded LAST (after home.css)
+   ============================================================
+   This file does not touch views/home.css. It restyles the Home
+   view (and the shared topbar/bottom-nav chrome it sits inside)
+   to match the new mobile reference design, reusing every element
+   ID the existing view already writes real data into — nothing
+   here is decorative fake data, it's the same bound elements
+   relocated and reskinned. A few legacy sub-panels that had no
+   place in the new layout (the old accordion "Grid Insights"
+   chrome, the secondary hero-mini-card, the old reliability meter
+   block) are folded into a single "More insights" section further
+   down the page instead of being deleted, so nothing users relied
+   on disappears.
+
+   Desktop (>1024px) gets its own layout pass — the reference image
+   is mobile-only, so above phone width this switches to a calmer
+   two-column dashboard using the same components.
+   ============================================================ */
+
+/* ---- Theme tokens, scoped to the Home view + the shared chrome
+   around it (topbar / bottom nav). These now map onto the app's real
+   design tokens (variables.css + themes/light.css + themes/dark.css)
+   instead of a hardcoded, permanently-dark palette, so Home follows
+   the same light/dark toggle every other view already respects.
+   --lw-green stays a literal constant: it's a semantic "power is
+   on / trending down" accent this redesign needs that the shared
+   token set doesn't define (teal/amber/red/brand/brand2 only). ---- */
+#view-home,
+.topbar,
+#bottom_nav_wrapper {
+  --lw-bg: var(--bg-deep);
+  --lw-bg-raised: var(--bg-panel-raised);
+  --lw-panel: var(--bg-panel);
+  --lw-panel-2: var(--bg-panel-raised);
+  --lw-border: var(--border-soft);
+  --lw-border-soft: var(--border-soft);
+  --lw-text: var(--text-bright);
+  --lw-text-muted: var(--text-muted);
+  --lw-text-faint: var(--text-faint);
+  --lw-teal: var(--teal);
+  --lw-green: #0b6b3a;
+  --lw-red: var(--red);
+  --lw-amber: var(--amber);
+  --lw-blue: #7c4dff;
+}
+
+/* theme.js's getResolvedTheme() hard-returns 'light' for any viewport
+   ≤1023px regardless of system preference or a stored choice — its
+   dark-mode toggle button is itself hidden below 1024px (see
+   global.css's .lw-theme-toggle media query), so phones can never
+   actually be in data-theme="dark". Without this override, Home
+   (whose reference design IS a dark phone screenshot) would silently
+   render in light colors on every phone. Re-lock the dark palette at
+   phone widths only; ≥1024px keeps following the real toggle above. */
+@media (max-width: 1023px) {
+  #view-home,
+  .topbar,
+  #bottom_nav_wrapper {
+    --lw-bg: #0a0f1a;
+    --lw-bg-raised: #121a2b;
+    --lw-panel: #141c2e;
+    --lw-panel-2: #182238;
+    --lw-border: rgba(255, 255, 255, 0.08);
+    --lw-border-soft: rgba(255, 255, 255, 0.06);
+    --lw-text: #f3f6fc;
+    --lw-text-muted: #a7b1c4;
+    --lw-text-faint: #6f7a90;
+    --lw-teal: #3b82f6;
+    --lw-red: #f2555c;
+    --lw-amber: #d6a24a;
+    --lw-blue: #7c4dff;
+    --lw-green: #0b6b3a;
+  }
+}
+
+#view-home {
+  background: var(--lw-bg);
+  color: var(--lw-text);
+  min-height: 100%;
+  padding-bottom: 24px;
+}
+
+#view-home #realPageContent {
+  /* Match location spacing: give the page top breathing room
+     so content doesn't appear pinned under the native status area. */
+  padding: 20px 16px 64px;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+/* Match the location page background token so Home follows the
+   same dark theme baseline as the Location view. */
+#view-home {
+  background: var(--dark-bg);
+}
+
+/* ============================================================
+   TOPBAR — brand left, bell + avatar right. Shared chrome, so this
+   applies everywhere, not just Home (per the redesign brief).
+   ============================================================ */
+.topbar {
+  /* background already comes from navbar.css's theme-aware
+     linear-gradient(var(--dark-bg), var(--dark-bg-mid)); no border
+     under the bar, to match the reference image. */
+  border-bottom: none;
+}
+
+.topbar .nav-toggle,
+.topbar .nav-toggle-label {
+  display: none;
+}
+
+.topbar__inner {
+  gap: 12px;
+}
+
+.topbar__brand-watch {
+  color: var(--brand2, #4A90D9);
+}
+
+.topbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.lw-icon-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  height: auto;
+  padding: 6px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+}
+
+.lw-icon-btn svg {
+  width: 26px;
+  height: 26px;
+}
+
+.lw-icon-btn__badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+}
+
+.lw-icon-btn__dot {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+}
+
+.lw-header-avatar-btn {
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  display: inline-flex;
+}
+
+.lw-header-avatar-btn .avatar--nav {
+  width: 38px;
+  height: 38px;
+  border: 2px solid rgba(255, 255, 255, 0.14);
+}
+
+/* Desktop nav trimmed to the 3 links that still make sense once
+   Notifications + Account live in topbar__actions. */
+@media (min-width: 1024px) {
+  .nav .nav__link[data-nav="notifications"],
+  .nav .nav__link--account {
+    display: none;
+  }
+}
+
+@media (max-width: 1023px) {
+  .topbar .nav {
+    display: none;
+  }
+}
+
+/* ============================================================
+   GREETING
+   ============================================================ */
+.lw-home-header {
+  padding: 0 2px 4px;
+}
+
+.lw-home-header__greeting {
+  font-size: calc(1.08rem - 1px);
+  font-weight: 300;
+  color: var(--lw-text-faint);
+  line-height: 1.3;
+}
+
+.lw-home-header__sub {
+  margin-top: 4px;
+  font-size: 0.82rem;
+  color: var(--lw-text-muted);
+  line-height: 1.4;
+}
+
+/* Keep the secondary-location chip working, just restyled dark. */
+#view-home .secondary-location-chip {
+  margin-top: 10px;
+  background: var(--lw-panel);
+  border: 1px solid var(--lw-border);
+  color: var(--lw-text);
+}
+
+/* ============================================================
+   CURRENT STATUS CARD — birds-city background + big power dial
+   ============================================================ */
+#view-home .location-card.lw-status-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: 0;
+  border-radius: var(--radius-lg, 16px);
+  border: 1px solid var(--lw-border);
+  background-color: #0e1626;
+  /* Lighter overlay than before — just enough at the bottom for text
+     contrast — so the skyline/birds photo actually reads clearly
+     instead of being mostly hidden under a near-opaque scrim. */
+  background-image:
+    linear-gradient(180deg, rgba(8, 13, 24, 0.08) 0%, rgba(8, 13, 24, 0.35) 65%, rgba(6, 10, 18, 0.6) 100%),
+    url("../../images/birds-city.png");
+  background-size: cover, cover;
+  background-position: center, center bottom;
+  background-repeat: no-repeat;
+  min-height: 210px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+}
+
+#view-home .lw-status-hero .card__head {
+  position: relative;
+  z-index: 1;
+  padding: 20px 20px 0;
+  display: flex;
+  justify-content: flex-start;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+#view-home .lw-status-hero .card__title {
+  color: var(--lw-text-faint);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  align-self: flex-start;
+}
+
+#view-home .lw-status-hero .status-hero {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 20px 20px;
+}
+
+#view-home .lw-status-hero .status-hero__title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #fff;
+}
+
+/* Location line — small green dot + location name, sitting between
+   the big status title and the "Since ..." line, matching the
+   reference image. Uses ::before (rather than a nested span) so it
+   survives any script that sets #locationMeta's textContent directly. */
+#view-home .lw-status-hero .status-hero__location {
+  margin-top: 4px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--lw-green);
+}
+
+#view-home .lw-status-hero .status-hero__location::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--lw-green);
+  vertical-align: middle;
+}
+
+#view-home .lw-status-hero .status-hero__sub {
+  margin-top: 4px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.85rem;
+}
+
+/* Big circular power toggle, standing in for the old small icon. */
+#view-home .lw-status-hero .status-hero__icon {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-left: auto;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+  border: 2.5px solid rgba(52, 211, 153, 0.55);
+  background: radial-gradient(circle, rgba(52, 211, 153, 0.16), rgba(52, 211, 153, 0.02));
+  box-shadow: 0 0 22px rgba(52, 211, 153, 0.35);
+  color: #6ee7b7;
+}
+
+#view-home .lw-status-hero .status-hero__icon svg {
+  width: 34px !important;
+  height: 34px !important;
+}
+
+#view-home .lw-status-hero .status-hero__icon--on {
+  border-color: rgba(52, 211, 153, 0.85);
+  background: radial-gradient(circle, rgba(52, 211, 153, 0.32), rgba(0, 0, 0, 0.06));
+  box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.16), 0 0 14px rgba(52, 211, 153, 0.14), 0 0 24px rgba(52, 211, 153, 0.22);
+  color: #6ee7b7;
+}
+
+#view-home .lw-status-hero .status-hero__icon--off {
+  border-color: rgba(242, 85, 92, 0.85);
+  background: radial-gradient(circle, rgba(242, 85, 92, 0.35), rgba(0, 0, 0, 0.08));
+  box-shadow: 0 0 0 4px rgba(242, 85, 92, 0.24), 0 0 0 10px rgba(242, 85, 92, 0.14), 0 0 22px rgba(242, 85, 92, 0.28);
+  color: #fee2e2;
+}
+
+#view-home .lw-status-hero .status-hero__icon--unknown {
+  border-color: rgba(214, 162, 74, 0.55);
+  color: var(--lw-amber);
+}
+
+#view-home .lw-status-hero .status-hero__icon--unknown {
+  border-color: rgba(214, 162, 74, 0.55);
+  color: var(--lw-amber);
+}
+
+#view-home .lw-status-hero #statusBadge {
+  display: none;
+}
+
+/* Everything below the status row inside the old markup (grid
+   insights accordion, the light-switch row, the official-updates
+   panel, the meta-panel) is repurposed elsewhere on the page now —
+   hide the old chrome here so only the background + status row show. */
+#view-home .lw-status-hero .location-card__top,
+#view-home .lw-status-hero .light-toggle-row {
+  display: none;
+}
+
+/* ============================================================
+   STAT GRID — Outage today / Avg outage / Confidence / Reports
+   REDO (Eric, Jul 30): reference image shows all 4 cards across a
+   single row (icon + label sharing one line, big value below,
+   small caption/delta line under that) even on a narrow phone —
+   not the 2x2 grid the first pass shipped. Rebuilt mobile-first
+   as 4 columns; desktop override below just gives them more
+   breathing room instead of changing the column count.
+   ============================================================ */
+.lw-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.lw-stat-card {
+  background: var(--lw-panel);
+  border: 1px solid var(--lw-border);
+  border-radius: var(--radius-md, 10px);
+  padding: 9px 10.5px;
+  min-width: 0;
+}
+
+@media (max-width: 720px) {
+  .lw-stat-card {
+    min-height: 76px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .lw-stat-card {
+    min-height: 72px !important;
+    width: calc(100% + 2.5px) !important;
+    margin-left: -1.25px !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .lw-stat-card {
+    min-height: 86px !important;
+    padding: 8px 10px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .lw-stat-card {
+    min-height: 76px !important;
+    width: calc(100% + 2.5px) !important;
+    margin-left: -1.25px !important;
+  }
+}
+
+/* Icon + label share the top row, like the reference cards. Icons are
+   now solid, saturated color circles with a white glyph (rather than
+   a tiny tinted-background dot with a colored glyph) so they read as
+   brightly as the reference image at a glance. */
+.lw-stat-card__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  vertical-align: middle;
+  margin-right: 6px;
+  color: #fff;
+}
+
+.lw-stat-card__icon svg { width: 15px; height: 15px; }
+
+.lw-stat-card__icon--green { background: var(--lw-green); }
+.lw-stat-card__icon--blue  { background: var(--lw-blue); }
+.lw-stat-card__icon--amber { background: var(--lw-amber); }
+.lw-stat-card__icon--teal  { background: var(--lw-teal); }
+
+.lw-stat-card__label {
+  display: inline-block;
+  vertical-align: middle;
+  font-size: 0.62rem;
+  font-weight: 500;
+  line-height: 1.15;
+  color: var(--lw-text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: calc(100% - 32px);
+}
+
+.lw-stat-card__value {
+  display: block;
+  margin-top: 6px;
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--lw-text);
+  line-height: 1.1;
+}
+
+.lw-stat-card__sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.62rem;
+  font-weight: 400;
+  line-height: 1.2;
+  color: var(--lw-text-faint);
+}
+
+/* Optional trend/delta line (e.g. "\u2193 30% vs yesterday") — only
+   renders once real data fills it in; JS doesn't populate these two
+   yet (outageFreqTrend / avgOutageTrend), so they stay collapsed
+   rather than shipping a fake percentage. Wire them up in
+   home.js/lightstatus.js alongside outageFreq/avgOutage to get the
+   colored arrow line from the reference design. */
+.lw-stat-card__sub:empty {
+  display: none;
+}
+
+.lw-stat-card__delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-weight: 700;
+}
+
+.lw-stat-card__delta svg { width: 9px; height: 9px; }
+
+.lw-stat-card__delta--down { color: var(--lw-green); }
+.lw-stat-card__delta--up { color: var(--lw-amber); }
+
+/* Elements relocated here from elsewhere in the DOM (heroContributors,
+   heroUptime) are still written to by existing JS but aren't part of
+   the 4-card layout — kept invisible rather than removed. */
+.lw-visually-hidden-data {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+/* ============================================================
+   SECTION SHELL — shared heading row ("Title" + "View all") used
+   by Live updates / Latest power news / Community activity.
+   ============================================================ */
+.lw-section {
+  margin-top: 22px;
+}
+
+.lw-section__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.lw-section__title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--lw-text);
+}
+
+.lw-section__viewall {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--lw-blue);
+}
+
+.lw-section__viewall:hover { text-decoration: underline; }
+
+/* ---- Live updates card ---- */
+.lw-live-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(52, 211, 153, 0.08);
+  border: 1px solid rgba(52, 211, 153, 0.25);
+  border-radius: var(--radius-lg, 16px);
+  padding: 14px 16px;
+}
+
+.lw-live-card__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: var(--lw-green);
+  background: rgba(52, 211, 153, 0.16);
+  border-radius: 999px;
+  padding: 2px 8px;
+  margin-bottom: 6px;
+}
+
+.lw-live-card__title {
+  color: var(--lw-text);
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.lw-live-card__meta {
+  color: var(--lw-text-faint);
+  font-size: 0.78rem;
+  margin-top: 3px;
+}
+
+.lw-live-card__icon {
+  margin-left: auto;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  color: var(--lw-green);
+}
+
+.lw-live-card__icon svg { width: 100%; height: 100%; }
+
+/* ---- Latest power news card ---- */
+.lw-news-card {
+  display: flex;
+  gap: 12px;
+  background: var(--lw-panel);
+  border: 1px solid var(--lw-border);
+  border-radius: var(--radius-lg, 16px);
+  padding: 12px;
+  text-decoration: none;
+}
+
+.lw-news-card__thumb {
+  width: 76px;
+  height: 76px;
+  flex-shrink: 0;
+  border-radius: var(--radius-md, 10px);
+  display: block;
+  object-fit: cover;
+  background: linear-gradient(160deg, #2a1f14, #0d0f1a) center/cover;
+  background-image:
+    linear-gradient(180deg, rgba(10,14,22,0.15), rgba(10,14,22,0.65)),
+    linear-gradient(160deg, #4a3520, #191d29);
+}
+
+.lw-news-card__body { flex: 1; min-width: 0; }
+
+.lw-news-card__tag {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: var(--lw-blue);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.lw-news-card__headline {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--lw-text);
+  line-height: 1.3;
+}
+
+.lw-news-card__time {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.72rem;
+  color: var(--lw-text-faint);
+}
+
+.lw-news-card__empty {
+  font-size: 0.82rem;
+  color: var(--lw-text-faint);
+  margin: 0;
+}
+
+/* ---- Community activity teaser ---- */
+.lw-community-card {
+  background: var(--lw-panel);
+  border: 1px solid var(--lw-border);
+  border-radius: var(--radius-lg, 16px);
+  overflow: hidden;
+}
+
+.lw-community-card .report-list--compact {
+  padding: 6px 6px 8px;
+}
+
+/* ---- "More insights" bonus section (item 10): folds the old
+   reliability meter, hero-mini-card and today's timeline / nearby
+   list into one place instead of deleting real bound data. ---- */
+.lw-more-insights {
+  background: var(--lw-panel);
+  border: 1px solid var(--lw-border);
+  border-radius: var(--radius-lg, 16px);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ============================================================
+   Card/text color overrides — everything under #view-home that
+   still uses the light-theme tokens (card, card__title, badge,
+   location-card__label, pulse-section__title, etc.) gets remapped
+   to the dark palette above so nothing looks like a mismatched
+   light-mode leftover inside the new dark page.
+   ============================================================ */
+#view-home .card,
+#view-home .location-card,
+#view-home .profile-card,
+#view-home .achievement-card {
+  background: var(--lw-panel);
+  border-color: var(--lw-border);
+}
+
+#view-home .card__title,
+#view-home .status-hero__title,
+#view-home .pulse-section__title,
+#view-home .status-insight__title,
+#view-home .trend-banner__text strong,
+#view-home .profile-card__name,
+#view-home .status-timeline__body strong {
+  color: var(--lw-text);
+}
+
+#view-home .card__meta,
+#view-home .location-card__label,
+#view-home .status-hero__sub,
+#view-home .status-insight__sub,
+#view-home .reliability-meter__caption,
+#view-home .trend-banner__text span,
+#view-home .location-expand-stat__label {
+  color: var(--lw-text-muted);
+}
+
+/* ============================================================
+   BOTTOM NAV — dark surface + elevated Report button
+   ============================================================ */
+#bottom_nav_wrapper {
+  background: transparent;
+  border-top: 1px solid var(--lw-border);
+}
+
+.bottom-nav-link {
+  color: var(--lw-text-faint);
+}
+
+.bottom-nav-link[aria-current="page"],
+.bottom-nav-link.is-active {
+  color: var(--lw-teal);
+}
+
+.bottom-nav-link--elevated {
+  position: relative;
+  margin-top: -22px;
+}
+
+.bottom-nav-icon--elevated {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(160deg, var(--brand2, #4a90d9), var(--brand2-dim, #3574b0));
+  color: #fff;
+  box-shadow: 0 10px 24px rgba(74, 144, 217, 0.45);
+  border: 4px solid var(--lw-bg-raised);
+}
+
+.bottom-nav-icon--elevated svg { width: 22px; height: 22px; }
+
+/* ============================================================
+   DESKTOP (≥1024px) — calmer two-column dashboard layout, since
+   the reference image only specifies mobile.
+   ============================================================ */
+@media (min-width: 1024px) {
+  #view-home #realPageContent {
+    max-width: var(--max-width, 1180px);
+    padding: 28px 24px 40px;
+  }
+
+  #view-home .location-page-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
+    gap: 24px;
+    align-items: start;
+  }
+
+  #view-home .lw-status-hero {
+    min-height: 260px;
+  }
+
+  .lw-stat-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  #bottom_nav_wrapper {
+    display: none;
+  }
+}
+/* ============================================================
+   MOBILE FIXES — Jul 30 pass (Eric's feedback round)
+   Everything below targets the gap between the redesign CSS
+   above and the actual phone reference image. Appended last so
+   it wins the cascade the same way home-redesign.css used to
+   (this file loads after app-shell.css, header.css, navbar.css —
+   see index.html <head> order).
+   ============================================================ */
+
+/* ---- 1 & 5. Show the real topbar on mobile instead of hiding it ----
+   app-shell.css sets ".topbar{display:none}" below 768px and relies
+   on #bottom_nav_wrapper alone — that's why the bell/avatar (which
+   live in .topbar__actions) never appeared on phone screens. The
+   reference image has a header row on every screen size: brand top
+   left, notification bell + account avatar top right. header.css's
+   absolute-positioned brand + 190px padding-left were written for
+   desktop only but were never gated behind a min-width, so they were
+   quietly wrecking this row on phones too — reset them back to
+   normal flow here. */
+@media (max-width: 768px) {
+  .topbar {
+    display: block !important;
+    padding-top: env(safe-area-inset-top, 0px);
+    position: relative;
+    z-index: 40;
+  }
+
+  .topbar__brand {
+    position: static !important;
+    left: auto !important;
+    top: auto !important;
+    transform: none !important;
+    margin-right: 0 !important;
+  }
+
+  .topbar__inner {
+    padding: 14px 16px 0 !important;
+    justify-content: space-between !important;
+    gap: 12px !important;
+  }
+
+  .topbar .nav,
+  .topbar .nav-toggle-label {
+    display: none !important;
+  }
+
+  .topbar__actions {
+    margin-left: 0;
+  }
+
+  #bottom_nav_wrapper {
+    display: block;
+  }
+}
+
+/* Not gated to mobile — this shouldn't be needed if nothing else is
+   overlapping, but it costs nothing and rules out a z-index/
+   pointer-events stacking issue as the reason tapping the bell/
+   avatar doesn't open Notifications/Account. If they still don't
+   navigate after this, the cause is almost certainly in nav.js's
+   click-delegation logic (not part of this upload batch) rather
+   than CSS — worth checking whether it matches on `a[data-route]`
+   specifically, since these two are `<button>` elements, not `<a>`,
+   unlike every other nav link in the app. */
+.topbar__actions,
+.topbar__actions button {
+  position: relative;
+  z-index: 5;
+  pointer-events: auto;
+}
+
+/* ---- 1. Remove the old pulse-dot "location" pill from the greeting
+   header — it's not part of the reference design; the bell + avatar
+   in the topbar now occupy that "top of screen, right side" role
+   instead. locationName/locationSubtitle text is unaffected — this
+   only hides the small rounded pill, not the greeting/subtitle. */
+#view-home .lw-home-header .hero-banner__location {
+  display: none;
+}
+
+/* ---- 5. Bottom nav — active state + sizing to match the reference
+   (Home highlighted blue when active, elevated Report button in the
+   middle, compact icon/label sizing on phone widths). footer.css
+   (not in this batch of files) owns the base layout; these are
+   overrides on top of whatever it already sets, kept !important so
+   they aren't silently lost to unknown specificity there.
+
+   Kept as a hardcoded literal (not var(--bottom-nav-surface) etc.)
+   on purpose: this element is display:none at ≥1024px (see the
+   desktop override further down), so it only ever renders at phone
+   widths — and theme.js hard-forces those to data-theme="light"
+   (its dark-mode toggle is itself hidden below 1024px), where the
+   --bottom-nav-* tokens resolve to their light variant. Using the
+   token here would make the bottom nav render light on every phone,
+   not the dark frosted look the reference image shows. */
+#bottom_nav_wrapper {
+  background: transparent !important;
+  border-top: 1px solid rgba(153, 178, 218, 0.28) !important;
+  box-shadow: none !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.bottom-icons-container {
+  display: flex !important;
+  align-items: flex-end;
+  justify-content: space-around;
+}
+
+.bottom-nav-link {
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: var(--lw-text-faint, #6f7a90) !important;
+}
+
+.bottom-nav-link .bottom-nav-label {
+  font-size: 0.68rem;
+}
+
+.bottom-nav-link--active,
+.bottom-nav-link[aria-current="page"] {
+  color: var(--brand2, #4A90D9) !important;
+}
+
+/* Two-image active/inactive icon swap (light vs active PNG) — shown
+   here in case footer.css doesn't already gate this; harmless if it
+   duplicates an existing rule since the result is identical. */
+.bottom-nav-icon-img--active {
+  display: none;
+}
+
+.bottom-nav-link--active .bottom-nav-icon-img--light,
+.bottom-nav-link[aria-current="page"] .bottom-nav-icon-img--light {
+  display: none;
+}
+
+.bottom-nav-link--active .bottom-nav-icon-img--active,
+.bottom-nav-link[aria-current="page"] .bottom-nav-icon-img--active {
+  display: block;
+}
+
+.bottom-nav-icon--elevated {
+  width: 50px;
+  height: 50px;
+  background: linear-gradient(160deg, var(--brand2, #4A90D9), var(--brand2-dim, #3574B0)) !important;
+  box-shadow: 0 10px 22px rgba(74, 144, 217, 0.45);
+}
+
+.bottom-nav-link--elevated .bottom-nav-label {
+  color: var(--brand2, #4A90D9);
+  font-weight: 600;
+}
+
+/* ---- 3 & 6. Latest power news — now a real, live feed instead of a
+   single static teaser link. news.js renders into every element
+   carrying [data-news-feed] (see news.js changes), so this container
+   fills with real fetched articles, one card per article, styled
+   with the same .news-item classes the Report page's News tab
+   already uses. */
+#view-home #officialUpdatesPanel .lw-home-news-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ---- 3. Community activity gets its own clearly separate card
+   shell (already its own .lw-section — this just gives it the same
+   visual weight/spacing as the news section above it so the two
+   don't read as one continuous block). */
+#view-home .lw-community-card {
+  margin-top: 2px;
+}
+
+/* ============================================================
+   BOTTOM NAV — SVG icons (Home / Map / News / Chats)
+   Home, Map and Chats used to be two swapped PNGs each
+   (…-light.png shown normally, …-active.png shown while the tab is
+   active, toggled purely by CSS display:none/block). Replaced with
+   a single inline SVG per icon (matching how News/Report already
+   work) so there's one element instead of two images to keep in
+   sync, and so the "turns a different color when active/theme
+   changes" behavior below is just a `color` change on one element
+   instead of an image swap.
+   ============================================================ */
+.bottom-nav-icon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bottom-nav-icon svg {
+  width: 22px;
+  height: 22px;
+  transition: color 0.15s ease;
+}
+
+/* Active-tab color change: .bottom-nav-link--active / [aria-current]
+   already force `color: var(--brand2) !important` on the <a> itself
+   (see the BOTTOM NAV block above) — the SVGs use stroke="currentColor"
+   so they pick that up automatically with no extra rule needed. This
+   media query only widens the touch target very slightly + keeps the
+   svg crisp at the smaller icon size used on very narrow phones. */
+@media (max-width: 390px) {
+  .bottom-nav-icon svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+/* ---- Theme-reactive icon color ----
+   The bottom nav's base color today is locked to a dark-mode palette
+   below 1024px (see the --lw-text-faint override earlier in this
+   file) regardless of the user's actual light/dark preference, so a
+   user in light theme still saw pale/light-colored icons on a dark
+   bar. These two rules make the icons themselves follow the real
+   `data-theme` attribute (set by theme.js on <html>) instead: solid
+   dark icons in light theme, the existing pale/brand2 behavior
+   unchanged in dark theme. Targets the <svg> directly (not the
+   parent <a>) so it wins over that earlier `!important` color
+   without needing an !important of its own. */
+html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-icon svg {
+  color: #1c1f26;
+}
+
+html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link--active .bottom-nav-icon svg,
+html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page"] .bottom-nav-icon svg {
+  color: var(--brand2, #4A90D9);
+}
+
+/* Default (non-active, dark-context) icon color was inheriting the
+   very muted --lw-text-faint tone, which made the new SVGs look
+   dim/washed out next to the old PNGs. Brighter, more visible
+   default; light-theme rule above still overrides this. */
+#bottom_nav_wrapper .bottom-nav-icon svg {
+  color: rgba(255, 255, 255, 0.88);
+}
+
+#bottom_nav_wrapper .bottom-nav-link--active .bottom-nav-icon svg,
+#bottom_nav_wrapper .bottom-nav-link[aria-current="page"] .bottom-nav-icon svg {
+  color: var(--brand2, #4A90D9);
+}
+
+/* ============================================================
+   BOTTOM NAV PILL — strip border-radius / border-color / blur
+   Removes the rounded pill edge, the border line, and the glass
+   blur effect the bar previously had, per request — just a plain
+   flat bar now.
+   ============================================================ */
+#bottom_nav_wrapper,
+#bottom_nav_wrapper .bottom-icons-container {
+  border-radius: 0 !important;
+  border: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* ============================================================
+   DESKTOP TOPBAR — hide on scroll down, reveal on scroll up
+   Driven by components/nav.js toggling .lw-topbar--hidden based on
+   scroll direction. Only takes effect >=1024px, matching the tier
+   the rest of the app treats as "desktop" (bottom nav hidden there).
+   ============================================================ */
+@media (min-width: 1024px) {
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 60;
+    transition: transform 0.28s ease;
+  }
+
+  .topbar.lw-topbar--hidden {
+    transform: translateY(-100%);
+  }
+}
+
+/* ============================================================
+   BOTTOM NAV — unread badge ("tooltip")
+   .bottom-nav-badge / .bottom-nav-badge--mono (populated by
+   components/nav-badges.js) had no visual styling anywhere in the
+   codebase — it rendered as bare unstyled text next to the icon
+   instead of a proper notification bubble. Positioned off
+   .bottom-nav-icon (now position:relative, above) so it sits at the
+   icon's top-right corner regardless of which nav item it's on.
+   ============================================================ */
+.bottom-nav-badge--mono {
+  position: absolute;
+  top: -5px;
+  right: -9px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--brand2, #4A90D9);
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  border: 2px solid var(--lw-bg, #0a0f1a);
+  box-sizing: content-box;
+}
+/* ============================================================
+   BOTTOM NAV — theme-following background + active "deep blue"
+   icon chip
+   ------------------------------------------------------------
+   1) #bottom_nav_wrapper / .bottom-icons-container previously sat on
+      a hardcoded transparent/blurred background regardless of the
+      user's chosen theme. This makes the bar follow --bg-panel
+      instead, so it switches cleanly between the dark and white
+      themes (theme.js / themes/dark.css / themes/light.css) along
+      with the rest of the app. Appended last on purpose so it wins
+      the cascade over the earlier `background: transparent
+      !important` rule further up this file.
+   2) .bottom-icons-container gets margin: 0 explicitly — it never
+      had a stray margin, this just guarantees it going forward.
+   3) Tapped/active nav item now gets a solid deep-blue circular chip
+      behind its icon (matching the Map tab in the redesigned
+      Locations page) instead of only a color change on the glyph.
+   ============================================================ */
+#bottom_nav_wrapper {
+  background: var(--bg-panel) !important;
+  border-top: 1px solid var(--border-soft) !important;
+}
+
+.bottom-icons-container {
+  margin: 0;
+  background: var(--bg-panel);
+}
+
+.bottom-nav-link--active .bottom-nav-icon,
+.bottom-nav-link[aria-current="page"] .bottom-nav-icon {
+  background: var(--brand2-dim, #3574B0);
+  border-radius: 50%;
+  width: 34px;
+  height: 34px;
+  box-shadow: 0 6px 14px rgba(53, 116, 176, 0.45);
+}
+
+.bottom-nav-link--active .bottom-nav-icon svg,
+.bottom-nav-link[aria-current="page"] .bottom-nav-icon svg {
+  color: white !important;
 }

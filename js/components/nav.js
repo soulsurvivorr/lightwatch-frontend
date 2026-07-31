@@ -63,11 +63,42 @@ function applyNavVisibility() {
 
 function applyActiveNav(section) {
     document.querySelectorAll('#primaryNav .nav__link').forEach(link => {
-        link.classList.toggle('nav__link--active', link.dataset.nav === section);
+        const isActive = link.dataset.nav === section;
+        link.classList.toggle('nav__link--active', isActive);
+        if (isActive) {
+            link.setAttribute('aria-current', 'page');
+        } else {
+            link.removeAttribute('aria-current');
+        }
     });
     document.querySelectorAll('.bottom-nav-link[data-nav]').forEach(link => {
-        link.classList.toggle('bottom-nav-link--active', link.dataset.nav === section);
+        const isActive = link.dataset.nav === section;
+        link.classList.toggle('bottom-nav-link--active', isActive);
+        if (isActive) {
+            link.setAttribute('aria-current', 'page');
+        } else {
+            link.removeAttribute('aria-current');
+        }
     });
+}
+
+// ── Report page panel switching (News / Community) ──────────────
+// The actual switching lives in chat.js's activateReportTab (it does
+// more than a plain show/hide — scroll-to-bottom, live polling,
+// nav-highlight sync). The bug was that chat.js's own
+// 'lw:route-changed' listener unconditionally reset every fresh
+// arrival at /chat back to 'news', with no way to know a specific
+// panel had just been requested — so it always won the race against
+// whatever this file tried to activate, regardless of order. Setting
+// window.__lwPendingReportPanel right before navigate() lets that
+// listener respect the actual request (see chat.js) instead of
+// fighting it. This still calls activate() directly too, for instant
+// feedback rather than waiting on the route-changed round trip.
+function activateReportPanel(panel) {
+    window.__lwPendingReportPanel = panel === 'community' ? 'community' : 'news';
+    if (typeof window.LWReportTabs?.activate === 'function') {
+        window.LWReportTabs.activate(panel);
+    }
 }
 
 function bindRouteLinks() {
@@ -75,20 +106,51 @@ function bindRouteLinks() {
     // being queried here, only the mobile '.bottom-nav-link' elements
     // were, so clicking Home/Locations/Report/Reports/Account in the
     // desktop topbar had no listener attached and did nothing.
-    document.querySelectorAll('.bottom-nav-link[data-nav], #primaryNav .nav__link[data-nav]').forEach(link => {
+    //
+    // '.lw-icon-btn' / '.lw-header-avatar-btn' (the header bell +
+    // avatar added by the Home redesign) were never queried here
+    // either — that's the actual reason tapping them didn't open
+    // Notifications/Account, not their tag name. Added below.
+    document.querySelectorAll(
+        '.bottom-nav-link[data-nav], #primaryNav .nav__link[data-nav], .lw-icon-btn[data-nav], .lw-header-avatar-btn[data-nav], .lw-section__viewall[data-route]'
+    ).forEach(link => {
         if (link.dataset.navBound === '1') return;
         link.dataset.navBound = '1';
         link.addEventListener('click', (e) => {
+            // If a specific panel is requested (data-panel) while
+            // routing to the report view, allow the handler to open
+            // that panel once navigation completes. Otherwise behave
+            // as before.
             const view = link.dataset.route || link.dataset.nav;
             if (!view) return;
 
             applyActiveNav(link.dataset.nav || view);
 
+            const panel = link.dataset.panel;
+
             if (link.hasAttribute('data-route')) {
                 e.preventDefault();
                 if (typeof window.LWRouter?.navigate === 'function') {
+                    // Set before navigate() so chat.js's 'lw:route-changed'
+                    // listener — fired from inside navigate(), timing
+                    // unknown from here — sees the pending panel no matter
+                    // when it actually runs.
+                    if (panel && view === 'chat') {
+                        window.__lwPendingReportPanel = panel;
+                    }
                     window.LWRouter.navigate(view);
+                    // Also activate directly for instant feedback rather
+                    // than waiting on the route-changed round trip.
+                    if (panel && view === 'chat') {
+                        activateReportPanel(panel);
+                    }
                 }
+            } else if (link.dataset.action === 'report-elevated') {
+                // Elevated CTA shouldn't auto-navigate; instead open the
+                // community report compose flow. Let chat.js decide how to
+                // handle a quick-report action by dispatching a custom event.
+                e.preventDefault();
+                window.dispatchEvent(new CustomEvent('lw:report-elevated-click'));
             }
         });
     });
@@ -257,6 +319,44 @@ function syncNavBadgesToSession() {
         setNavDot('account', false);
     }
 }
+
+// ── Desktop topbar: hide on scroll down, reveal on scroll up ────
+// Only meaningful at >=1024px — that's the same tier the rest of
+// this file treats as "desktop" (bottom nav is display:none there,
+// see home.css). Below that the topbar is display:none anyway (see
+// the 768px tier in home.css), so this is a no-op on phones.
+const TOPBAR_REVEAL_MIN_SCROLL = 72; // stay put near the very top instead of hiding immediately
+let topbarLastScrollY = window.scrollY;
+let topbarScrollTicking = false;
+
+function updateTopbarVisibility() {
+    topbarScrollTicking = false;
+    const topbar = document.querySelector('.topbar');
+    if (!topbar) return;
+
+    if (window.innerWidth < 1024) {
+        topbar.classList.remove('lw-topbar--hidden');
+        topbarLastScrollY = window.scrollY;
+        return;
+    }
+
+    const currentY = window.scrollY;
+    if (currentY <= TOPBAR_REVEAL_MIN_SCROLL || currentY < topbarLastScrollY) {
+        topbar.classList.remove('lw-topbar--hidden'); // scrolling up (or near top) -> show
+    } else if (currentY > topbarLastScrollY) {
+        topbar.classList.add('lw-topbar--hidden'); // scrolling down -> hide
+    }
+    topbarLastScrollY = currentY;
+}
+
+function onTopbarScroll() {
+    if (topbarScrollTicking) return;
+    topbarScrollTicking = true;
+    requestAnimationFrame(updateTopbarVisibility);
+}
+
+window.addEventListener('scroll', onTopbarScroll, { passive: true });
+window.addEventListener('resize', updateTopbarVisibility);
 
 function initNav() {
     applyNavVisibility();

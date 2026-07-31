@@ -113,6 +113,12 @@ function setSecondaryStatusDot(status) {
     else if (status === 'off') dot.classList.add('location-expand-status__dot--off');
 }
 
+function applyStatusIconState(icon, status) {
+    if (!icon) return;
+    icon.classList.remove('status-hero__icon--on', 'status-hero__icon--off', 'status-hero__icon--unknown');
+    icon.classList.add(status === 'on' ? 'status-hero__icon--on' : status === 'off' ? 'status-hero__icon--off' : 'status-hero__icon--unknown');
+}
+
 function formatSecondaryDuration(ms) {
     if (ms == null) return '—';
     const totalMinutes = Math.round(ms / 60000);
@@ -136,6 +142,14 @@ function paintSecondaryLocationStatus(data, loc) {
     const noteEl = document.getElementById('secondaryLocationNote');
 
     setSecondaryStatusDot(data.status);
+    const statusIcon = document.getElementById('statusIcon');
+    const statusPillText = document.getElementById('statusPillText');
+    if (statusIcon && statusPillText) {
+        applyStatusIconState(statusIcon, data.status);
+        statusPillText.textContent = data.status === 'on' ? 'Light is on'
+            : data.status === 'off' ? 'Light is off'
+            : 'No reports yet for this area';
+    }
     if (labelEl) {
         labelEl.textContent = data.status === 'on' ? 'Light is on'
             : data.status === 'off' ? 'Light is off'

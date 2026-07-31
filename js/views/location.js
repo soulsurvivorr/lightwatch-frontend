@@ -1,124 +1,190 @@
 // ============================================================
 //  VIEWS/LOCATION.JS
-//  Dense, scannable list of Kumasi neighborhoods and their current
-//  light status, with a confidence signal, search, and status
-//  filtering.
+//  Map + "Nearby Locations" view of Kumasi neighborhoods and their
+//  current light status, with search, category filters, favorites,
+//  and a collapsible nearby-locations list.
 //
-//  Changed vs. the original location.js-style implementation:
-//   - Wrapped into mount()/show()/hide() for the router. Polling
-//     (POLL_INTERVAL_STANDARD_MS, from utils/constants.js) now
-//     starts in show() and stops in hide() — no point fetching
-//     Bantama's live status every 45s while someone's looking at
-//     Reports or Account instead.
-//   - The render-cache read/write now goes through services/cache.js
-//     (LWCache) instead of its own inline localStorage helpers —
-//     same behavior, one implementation.
+//  Changed vs. the previous list-only implementation:
+//   - Rendering now targets the new map (#locMapPins / #locMapUser)
+//     and the redesigned #locNearbyList row layout instead of the
+//     old #areaGrid liveboard.
+//   - Still wrapped into mount()/show()/hide() for the router. Polling
+//     (POLL_INTERVAL_STANDARD_MS, from utils/constants.js) starts in
+//     show() and stops in hide(), same as before.
+//   - The render-cache read/write still goes through services/cache.js
+//     (LWCache) — unchanged.
+//   - New: favorites persist in localStorage and drive the
+//     "Favorites" filter pill + each row's star toggle.
 // ============================================================
 
 (function () {
     const DEMO_LOCATIONS = [
-        { name: 'Asokwa', status: 'on', minutesAgo: 12, confirmations: 5 },
-        { name: 'Adum', status: 'off', minutesAgo: 244, confirmations: 2 },
-        { name: 'Suame', status: 'on', minutesAgo: 18, confirmations: 6 },
-        { name: 'Ahodwo', status: 'off', minutesAgo: 9, confirmations: 1 },
-        { name: 'Nhyiaeso', status: 'on', minutesAgo: 1450, confirmations: 8 },
-        { name: 'Tafo', status: 'unknown', minutesAgo: 7, confirmations: 0 },
-        { name: 'KNUST', status: 'on', minutesAgo: 5, confirmations: 4 },
-        { name: 'Ejisu', status: 'unknown', minutesAgo: 130, confirmations: 1 },
-        { name: 'Kwadaso', status: 'off', minutesAgo: 11, confirmations: 3 }
+        { name: 'Asokwa', status: 'on', minutesAgo: 12, confirmations: 5, distanceKm: 0.6 },
+        { name: 'Adum', status: 'off', minutesAgo: 244, confirmations: 2, distanceKm: 2.0 },
+        { name: 'Suame', status: 'on', minutesAgo: 18, confirmations: 6, distanceKm: 3.1 },
+        { name: 'Ahodwo', status: 'off', minutesAgo: 9, confirmations: 1, distanceKm: 2.6 },
+        { name: 'Nhyiaeso', status: 'on', minutesAgo: 1450, confirmations: 8, distanceKm: 3.8 },
+        { name: 'Tafo', status: 'unknown', minutesAgo: 7, confirmations: 0, distanceKm: 2.3 },
+        { name: 'KNUST', status: 'on', minutesAgo: 5, confirmations: 4, distanceKm: 4.2 },
+        { name: 'Ejisu', status: 'unknown', minutesAgo: 130, confirmations: 1, distanceKm: 5.4 },
+        { name: 'Kwadaso', status: 'off', minutesAgo: 11, confirmations: 3, distanceKm: 1.8 }
     ];
 
+    // Percent-based positions on the static map image, keyed by
+    // location name (case-insensitive). Purely presentational — this
+    // is an illustrative map, not a real geocoded one.
+    const MAP_POSITIONS = {
+        'bantama': { left: 20, top: 52 },
+        'asokwa': { left: 78, top: 40 },
+        'adum': { left: 60, top: 70 },
+        'suame': { left: 22, top: 24 },
+        'ahodwo': { left: 34, top: 82 },
+        'nhyiaeso': { left: 74, top: 78 },
+        'tafo': { left: 68, top: 20 },
+        'knust': { left: 46, top: 14 },
+        'ejisu': { left: 88, top: 58 },
+        'kwadaso': { left: 12, top: 78 }
+    };
+
+    function normalizeAreaName(name) {
+        return String(name || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+    }
+
     const LOCATION_CACHE_KEY = 'lw_cache_location_bantama';
+    const FAVORITES_KEY = 'lw_location_favorites';
 
     let locationPollTimer = null;
     let currentFilter = 'all';
     let currentSearch = '';
     let controlsBound = false;
+    let latestLocations = [];
+    let nearbyCollapsed = false;
 
-    function confidenceInfo(confirmations) {
-        if (confirmations === null || confirmations === undefined) {
-            return { label: 'Unverified', cls: 'unverified', title: 'No community confirmations yet' };
+    function readFavorites() {
+        try {
+            const raw = localStorage.getItem(FAVORITES_KEY);
+            return raw ? JSON.parse(raw) : [];
+        } catch (err) {
+            return [];
         }
-        if (confirmations >= 4) {
-            return { label: 'High', cls: 'high', title: `High confidence — ${confirmations} matching reports` };
-        }
-        if (confirmations >= 2) {
-            return { label: 'Medium', cls: 'medium', title: `Medium confidence — ${confirmations} matching reports` };
-        }
-        if (confirmations === 1) {
-            return { label: 'Low', cls: 'low', title: '1 report — not yet confirmed by others' };
-        }
-        return { label: 'Unverified', cls: 'unverified', title: 'No community confirmations yet' };
     }
 
-    function confidencePercent(confirmations) {
-        if (confirmations === null || confirmations === undefined) return 20;
-        if (confirmations <= 0) return 16;
-        if (confirmations === 1) return 38;
-        if (confirmations === 2) return 57;
-        if (confirmations === 3) return 71;
-        return Math.min(96, 78 + (confirmations - 4) * 4);
+    function writeFavorites(list) {
+        try {
+            localStorage.setItem(FAVORITES_KEY, JSON.stringify(list));
+        } catch (err) {
+            // Storage unavailable — favorites just won't persist this session.
+        }
     }
 
-    function areaRowTemplate({ name, status, minutesAgo, confirmations, live }) {
+    function isFavorited(name) {
+        return readFavorites().includes(name);
+    }
+
+    function toggleFavorite(name) {
+        const list = readFavorites();
+        const idx = list.indexOf(name);
+        if (idx === -1) {
+            list.push(name);
+        } else {
+            list.splice(idx, 1);
+        }
+        writeFavorites(list);
+    }
+
+    function statusMeta(status) {
         const isOn = status === 'on';
         const isUnknown = status === 'unknown' || !status;
-        const statusLabel = isUnknown ? 'Checking' : isOn ? 'On' : 'Off';
-        const badgeClass = isUnknown ? 'badge--low' : isOn ? 'badge--on' : 'badge--off';
-        const pulseClass = isUnknown ? 'pulse--low' : isOn ? 'pulse--on' : 'pulse--off';
-        const timeText = LWHelpers.formatRelativeTimeFromMinutes(minutesAgo);
-        const confidence = confidenceInfo(confirmations);
-        const confidencePct = confidencePercent(confirmations);
-        const confidenceCount = confirmations === null || confirmations === undefined ? 0 : confirmations;
-        const statusInsight = isUnknown
-            ? 'Signal is still settling. More reports will lock this in.'
-            : isOn
-                ? 'Power is stable in recent checks. Risk of disruption is currently low.'
-                : 'Recent reports lean toward outage. Keep devices charged as a backup.';
-        const detailsId = `area-details-${LWHelpers.safeId(name)}`;
+        return {
+            isOn,
+            isUnknown,
+            label: isUnknown ? 'Checking' : isOn ? 'Power is ON' : 'Power is OFF',
+            cls: isUnknown ? 'checking' : isOn ? 'on' : 'off'
+        };
+    }
+
+    function getCurrentUserData() {
+        try {
+            const raw = localStorage.getItem('currentUserData') || sessionStorage.getItem('currentUserData');
+            return JSON.parse(raw || '{}');
+        } catch (err) {
+            return {};
+        }
+    }
+
+    function getRegisteredLocationName() {
+        const user = getCurrentUserData();
+        if (user.city && String(user.city).trim()) {
+            return String(user.city).trim();
+        }
+        return user.region ? String(user.region).trim() : null;
+    }
+
+    // ---- Map pins ----
+
+    function pinTemplate(area) {
+        const normalized = normalizeAreaName(area.name);
+        const pos = MAP_POSITIONS[normalized] || { left: 50, top: 50 };
+        const meta = statusMeta(area.status);
+        const labelText = area.name || getRegisteredLocationName() || 'Location';
+        return `
+      <div class="loc-map__pin loc-map__pin--${meta.cls}" style="left:${pos.left}%;top:${pos.top}%" data-area="${area.name}" title="${labelText} — ${meta.label}">
+        ${meta.isOn ? `<span class="loc-map__pin__label">${labelText}</span>` : ''}
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" fill="currentColor"/></svg>
+      </div>
+    `;
+    }
+
+    function renderMapPins(locations) {
+        const pinsEl = document.getElementById('locMapPins');
+        if (!pinsEl) return;
+        pinsEl.innerHTML = locations.map(pinTemplate).join('');
+    }
+
+    // ---- Nearby locations list ----
+
+    function nearbyRowTemplate(area) {
+        const meta = statusMeta(area.status);
+        const timeText = LWHelpers.formatRelativeTimeFromMinutes(area.minutesAgo);
+        const favorited = isFavorited(area.name);
+        const distanceText = typeof area.distanceKm === 'number' ? `${area.distanceKm.toFixed(1)} km` : '';
 
         return `
-      <div class="area-row" data-area="${name}" data-status="${status}" data-name="${name.toLowerCase()}" role="listitem">
-        <div class="area-row__main">
-          <span class="area-row__dot pulse ${pulseClass}"></span>
-          <span class="area-row__name">${name}${live ? ' <span class="area-row__live">LIVE</span>' : ''}</span>
-          <span class="area-row__confidence area-row__confidence--${confidence.cls}" title="${confidence.title}">${confidence.label}</span>
-          <span class="area-row__time">${timeText}</span>
-          <span class="badge ${badgeClass} area-row__badge">${statusLabel}</span>
-          <span class="area-row__toggle" role="button" tabindex="0" aria-expanded="false" aria-controls="${detailsId}" aria-label="Show ${name} details"></span>
+      <div class="loc-row" data-area="${area.name}" data-status="${area.status}" data-favorite="${favorited ? '1' : '0'}" data-name="${area.name.toLowerCase()}" role="listitem">
+        <span class="loc-row__icon loc-row__icon--${meta.cls}">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" fill="currentColor"/></svg>
+        </span>
+        <div class="loc-row__body">
+          <div class="loc-row__name-line">
+            <span class="loc-row__name">${area.name}</span>
+            ${area.live ? '<span class="loc-row__badge">Your Area</span>' : ''}
+          </div>
+          <p class="loc-row__status loc-row__status--${meta.cls}">${meta.label}</p>
+          <p class="loc-row__meta">Updated ${timeText} · ${area.confirmations || 0} reports</p>
         </div>
-        <div class="area-row__details" id="${detailsId}">
-          <p class="area-details__summary">${statusInsight}</p>
-          <div class="area-details__metric-row">
-            <span class="area-details__label">Confidence</span>
-            <span class="area-details__value">${confidencePct}% (${confidenceCount} reports)</span>
-          </div>
-          <div class="area-details__meter" role="presentation" aria-hidden="true">
-            <span style="width:${confidencePct}%"></span>
-          </div>
-          <div class="area-details__meta">Community pulse updates: ${timeText}</div>
+        <div class="loc-row__aside">
+          <button type="button" class="loc-row__star ${favorited ? 'is-active' : ''}" aria-label="${favorited ? 'Remove from favorites' : 'Add to favorites'}" aria-pressed="${favorited ? 'true' : 'false'}">
+            <svg viewBox="0 0 24 24" fill="${favorited ? 'currentColor' : 'none'}" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="m12 3.5 2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 16.9l-5.2 2.8 1-5.9-4.3-4.1 5.9-.8L12 3.5Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+          </button>
+          ${distanceText ? `<span class="loc-row__distance">${distanceText}</span>` : ''}
+          <svg class="loc-row__chevron" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="m9 6 6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </div>
       </div>
     `;
     }
 
-    function renderSummary(locations) {
-        const onCount = locations.filter(a => a.status === 'on').length;
-        const offCount = locations.filter(a => a.status === 'off').length;
-        const unknownCount = locations.filter(a => a.status === 'unknown' || !a.status).length;
-        const summaryEl = document.getElementById('locationSummaryText');
-        if (summaryEl) {
-            summaryEl.textContent = `${onCount} on · ${offCount} off · ${unknownCount} checking`;
-        }
-    }
-
     function applyFilters() {
-        const grid = document.getElementById('areaGrid');
-        if (!grid) return;
+        const list = document.getElementById('locNearbyList');
+        if (!list) return;
 
         let visibleCount = 0;
-        grid.querySelectorAll('.area-row').forEach(row => {
-            const matchesFilter = currentFilter === 'all' || row.dataset.status === currentFilter;
+        list.querySelectorAll('.loc-row').forEach(row => {
+            let matchesFilter = true;
+            if (currentFilter === 'favorites') {
+                matchesFilter = row.dataset.favorite === '1';
+            } else if (currentFilter === 'myareas') {
+                matchesFilter = row.dataset.area === 'Bantama';
+            }
             const matchesSearch = !currentSearch || row.dataset.name.includes(currentSearch);
             const show = matchesFilter && matchesSearch;
             row.style.display = show ? '' : 'none';
@@ -132,26 +198,28 @@
     }
 
     function renderLocations(locations) {
-        const grid = document.getElementById('areaGrid');
-        if (!grid) return;
+        latestLocations = locations;
 
-        const prioritized = locations
-            .map((area, index) => ({ area, index }))
-            .sort((a, b) => {
-                const aOn = a.area.status === 'on' ? 1 : 0;
-                const bOn = b.area.status === 'on' ? 1 : 0;
-                if (aOn !== bOn) return bOn - aOn;
-                return a.index - b.index;
-            })
-            .map(entry => entry.area);
+        const list = document.getElementById('locNearbyList');
+        if (list) {
+            // User's own (live) location always sits first; the rest keep
+            // their existing order. If "Nearby" is the active filter, sort
+            // everyone else by distance ascending.
+            const own = locations.filter(a => a.live);
+            let rest = locations.filter(a => !a.live);
+            if (currentFilter === 'nearby') {
+                rest = rest.slice().sort((a, b) => (a.distanceKm || 0) - (b.distanceKm || 0));
+            }
+            list.innerHTML = own.concat(rest).map(nearbyRowTemplate).join('');
+        }
 
-        renderSummary(prioritized);
-        grid.innerHTML = prioritized.map(areaRowTemplate).join('');
+        renderMapPins(locations);
         applyFilters();
     }
 
     async function fetchLiveTowns() {
-        const name = 'Bantama';
+        const registeredName = getRegisteredLocationName();
+        const name = registeredName || 'Bantama';
         try {
             const res = await fetch(`${LWHelpers.apiBase()}/lightstatus?location=${encodeURIComponent(name)}`);
             if (!res.ok) throw new Error(`Bad response for ${name}`);
@@ -163,11 +231,12 @@
                 status: data.status || 'unknown',
                 minutesAgo,
                 confirmations: data.stats ? data.stats.uniqueContributors : null,
+                distanceKm: 0,
                 live: true
             };
         } catch (err) {
             console.error(`Failed to load live status for ${name}:`, err.message);
-            return { name, status: 'unknown', minutesAgo: null, confirmations: null, live: true };
+            return { name, status: 'unknown', minutesAgo: null, confirmations: null, distanceKm: 0, live: true };
         }
     }
 
@@ -176,11 +245,7 @@
     // .app-loading — and therefore display:block — is still in effect),
     // then once that's had a moment to actually paint, drop .app-loading
     // (snapping the now-invisible skeleton to display:none) and let
-    // #locationRealContent play its entrance animation. Without this, the
-    // skeleton used to just vanish and reappear instantly instead of
-    // fading, and — before location.css's display:none/block gate existed —
-    // both elements were visible in normal flow at once, which is what
-    // pushed the real content down beneath the skeleton.
+    // #locationRealContent play its entrance animation.
     function hideLocationSkeleton() {
         if (!document.body.classList.contains('app-loading')) return;
         const skeleton = document.getElementById('locationSkeleton');
@@ -196,7 +261,7 @@
         if (isFirstLoad) {
             const cached = LWCache.read(LOCATION_CACHE_KEY, CACHE_MAX_AGE_MEDIUM_MS);
             if (cached) {
-                renderLocations([cached, ...DEMO_LOCATIONS]);
+                renderLocations([{ ...cached, live: true }, ...DEMO_LOCATIONS]);
                 hideLocationSkeleton();
             }
         }
@@ -210,12 +275,17 @@
         if (controlsBound) return;
         controlsBound = true;
 
-        document.querySelectorAll('#view-location .location-filter-tab').forEach(tab => {
-            tab.addEventListener('click', () => {
-                document.querySelectorAll('#view-location .location-filter-tab').forEach(t => t.classList.remove('is-active'));
-                tab.classList.add('is-active');
-                currentFilter = tab.dataset.filter;
-                applyFilters();
+        // Category filter pills (All Locations / Favorites / Nearby / My Areas)
+        document.querySelectorAll('#locFilters .loc-filter').forEach(pill => {
+            pill.addEventListener('click', () => {
+                document.querySelectorAll('#locFilters .loc-filter').forEach(p => {
+                    p.classList.remove('is-active');
+                    p.setAttribute('aria-selected', 'false');
+                });
+                pill.classList.add('is-active');
+                pill.setAttribute('aria-selected', 'true');
+                currentFilter = pill.dataset.filter;
+                renderLocations(latestLocations);
             });
         });
 
@@ -227,24 +297,42 @@
             });
         }
 
-        const grid = document.getElementById('areaGrid');
-        if (grid) {
-            grid.addEventListener('click', (event) => {
-                const toggle = event.target.closest('.area-row__toggle');
-                if (!toggle) return;
-                const row = toggle.closest('.area-row');
-                if (!row) return;
-                const willOpen = !row.classList.contains('is-open');
-                row.classList.toggle('is-open', willOpen);
-                toggle.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
-            });
-
-            grid.addEventListener('keydown', (event) => {
-                if (event.key !== 'Enter' && event.key !== ' ') return;
-                const toggle = event.target.closest('.area-row__toggle');
-                if (!toggle) return;
+        // Star / favorite toggle
+        const list = document.getElementById('locNearbyList');
+        if (list) {
+            list.addEventListener('click', (event) => {
+                const star = event.target.closest('.loc-row__star');
+                if (!star) return;
                 event.preventDefault();
-                toggle.click();
+                event.stopPropagation();
+                const row = star.closest('.loc-row');
+                if (!row) return;
+                toggleFavorite(row.dataset.area);
+                renderLocations(latestLocations);
+            });
+        }
+
+        // Collapsible nearby-locations panel
+        const handle = document.getElementById('locNearbyHandle');
+        const nearby = document.getElementById('locNearby');
+        if (handle && nearby) {
+            handle.addEventListener('click', () => {
+                nearbyCollapsed = !nearbyCollapsed;
+                nearby.classList.toggle('loc-nearby--collapsed', nearbyCollapsed);
+                handle.setAttribute('aria-expanded', nearbyCollapsed ? 'false' : 'true');
+                handle.setAttribute('aria-label', nearbyCollapsed ? 'Expand nearby locations' : 'Collapse nearby locations');
+            });
+        }
+
+        // Re-center / re-ping the user's pin
+        const locateBtn = document.getElementById('locMapLocateBtn');
+        const userMarker = document.getElementById('locMapUser');
+        if (locateBtn && userMarker) {
+            locateBtn.addEventListener('click', () => {
+                userMarker.classList.remove('loc-map__user--ping');
+                // Force reflow so the animation can restart on repeated clicks.
+                void userMarker.offsetWidth;
+                userMarker.classList.add('loc-map__user--ping');
             });
         }
     }
@@ -255,11 +343,13 @@
     }
 
     function show() {
+        document.body.classList.add('view-location-active');
         clearInterval(locationPollTimer);
         locationPollTimer = setInterval(() => loadLocations(false), POLL_INTERVAL_STANDARD_MS);
     }
 
     function hide() {
+        document.body.classList.remove('view-location-active');
         clearInterval(locationPollTimer);
         locationPollTimer = null;
     }
