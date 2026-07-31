@@ -74,7 +74,14 @@ body:has(#view-signup:not([hidden])) #authShell {
     min-height: 100svh;
     min-height: 100dvh;
     width: 100%;
-    background-color: var(--dark-bg);
+    /* Matches login-form-side's background exactly (login.css) — same
+       radial highlights + diagonal gradient — instead of a flat
+       --dark-bg fill, so signup and login read as one consistent dark
+       theme rather than two different-looking dark screens. */
+    background:
+        radial-gradient(circle at 20% 0%, rgba(74, 144, 217, 0.18), transparent 45%),
+        radial-gradient(circle at 85% 100%, rgba(240, 172, 61, 0.12), transparent 45%),
+        linear-gradient(160deg, var(--dark-bg), var(--dark-bg-mid) 140%);
     overflow: visible;
 }
 

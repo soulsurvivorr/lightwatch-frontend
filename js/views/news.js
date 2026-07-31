@@ -44,12 +44,53 @@
     }
 
     // ---- Rendering ----------------------------------------------
-    function categoryTag(category) {
-        if (category === 'maintenance') return { icon: '🟠', label: 'Planned Maintenance', cls: 'news-item__tag--maintenance' };
-        if (category === 'outage')      return { icon: '🔧', label: 'Outage / Fault',        cls: 'news-item__tag--warning' };
-        if (category === 'restoration') return { icon: '✅', label: 'Power Restored',         cls: 'news-item__tag--success' };
-        if (category === 'tariff')      return { icon: '💰', label: 'Tariff Update',           cls: 'news-item__tag--maintenance' };
-        return null;
+    // Small colored eyebrow above the headline — ECG OFFICIAL / OUTAGE
+    // UPDATE / MEDIA REPORT, matching the source-tag styling in the
+    // redesigned card. Official items always read "ECG OFFICIAL"
+    // regardless of category (a maintenance notice from ECG itself is
+    // still "official"); everything else falls back to category, then
+    // to a generic media label.
+    function sourceLabel(article) {
+        if (article.isOfficial) return { label: 'ECG Official', cls: 'news-item__source-tag--official' };
+        if (article.category === 'outage') return { label: 'Outage Update', cls: 'news-item__source-tag--outage' };
+        if (article.category === 'maintenance') return { label: 'Maintenance', cls: 'news-item__source-tag--maintenance' };
+        if (article.category === 'restoration') return { label: 'Power Restored', cls: 'news-item__source-tag--restoration' };
+        if (article.category === 'tariff') return { label: 'Tariff Update', cls: 'news-item__source-tag--maintenance' };
+        return { label: 'Media Report', cls: 'news-item__source-tag--media' };
+    }
+
+    // Best-effort location string for the small pin row under the
+    // preview text. The backend field name for this has varied
+    // (location / locations / mentionedLocations) across versions of
+    // the news module, so this checks all of them rather than
+    // assuming one shape — an article with none of these just skips
+    // the location row entirely instead of showing something wrong.
+    function articleLocationText(article) {
+        const raw = article.location || article.locations || article.mentionedLocations || article.mentionedLocation;
+        if (!raw) return null;
+        if (Array.isArray(raw)) return raw.filter(Boolean).join(', ') || null;
+        return String(raw).trim() || null;
+    }
+
+    // ---- Bookmarks (local only — no backend endpoint for this yet) --
+    const BOOKMARKS_KEY = 'lw_news_bookmarks';
+
+    function readBookmarks() {
+        try { return JSON.parse(localStorage.getItem(BOOKMARKS_KEY) || '[]'); }
+        catch { return []; }
+    }
+
+    function isBookmarked(articleId) {
+        return readBookmarks().includes(String(articleId));
+    }
+
+    function toggleBookmark(articleId) {
+        const id = String(articleId);
+        const list = readBookmarks();
+        const idx = list.indexOf(id);
+        if (idx === -1) list.push(id); else list.splice(idx, 1);
+        try { localStorage.setItem(BOOKMARKS_KEY, JSON.stringify(list)); } catch {}
+        return idx === -1;
     }
 
     // article.sourceIcon from the backend is usually a favicon URL (e.g.
@@ -74,42 +115,41 @@
     }
 
     function renderNewsItem(article, index) {
-        const tag = categoryTag(article.category);
-        const detailsId = `newsDetails-${article.id || index}`;
+        const tag = sourceLabel(article);
         const isAlert = article.category === 'outage' || article.category === 'maintenance';
         const sourceIconHtml = renderSourceIcon(article);
-        const dateLabel = article.publishedAt ? new Date(article.publishedAt).toLocaleDateString() : '';
         const relativeLabel = article.timeAgo
             || (window.LWHelpers && typeof window.LWHelpers.formatRelativeTimeFromDate === 'function'
                 ? window.LWHelpers.formatRelativeTimeFromDate(article.publishedAt)
                 : '');
-        const timeLabel = [dateLabel, relativeLabel].filter(Boolean).join(' · ');
+        const timeLabel = relativeLabel || (article.publishedAt ? new Date(article.publishedAt).toLocaleDateString() : '');
+        const locationText = articleLocationText(article);
+        const bookmarked = isBookmarked(article.id ?? index);
+        const mediaHtml = article.image
+            ? `<img class="news-item__image" src="${escapeHtml(article.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.closest('.news-item__media')?.classList.add('news-item__media--placeholder'); this.remove()">`
+            : `<span class="news-item__media-fallback" aria-hidden="true">${sourceIconHtml}</span>`;
 
         // data-url carries the source article's real URL so the whole
-        // card can act as a link (see bindCardInteractions below) — not
-        // just the small "Read full article" line inside the expanded
-        // details.
+        // card can act as a link (see bindCardInteractions below).
         return `
-        <article class="news-item${isAlert ? ' news-item--alert' : ''}" data-article-id="${article.id}" data-url="${escapeHtml(article.url)}" tabindex="0" role="link">
-          <div class="news-item__source">
-            <span class="news-item__source-icon" aria-hidden="true">${sourceIconHtml}</span>
-            <span class="news-item__source-name">${escapeHtml(article.source)}${article.isOfficial ? ' · Official' : ''}</span>
-            <span class="news-item__time">${timeLabel}</span>
-          </div>
-          ${tag ? `<span class="news-item__tag ${tag.cls}"><span aria-hidden="true">${tag.icon}</span> ${tag.label}</span>` : ''}
-          ${article.image ? `<img class="news-item__image" src="${escapeHtml(article.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="console.warn('[news.js] image failed to load:', this.src); this.remove()">` : ''}
-          <div class="news-item__row">
+        <article class="news-item${isAlert ? ' news-item--alert' : ''}" data-article-id="${article.id}" data-url="${escapeHtml(article.url)}" data-category="${escapeHtml(article.category || '')}" data-official="${article.isOfficial ? '1' : '0'}" tabindex="0" role="link">
+          <div class="news-item__media${article.image ? '' : ' news-item__media--placeholder'}">${mediaHtml}</div>
+          <div class="news-item__body">
+            <div class="news-item__source">
+              <span class="news-item__source-tag ${tag.cls}">${tag.label}</span>
+              <span class="news-item__time">${escapeHtml(timeLabel)}</span>
+            </div>
             <h3 class="news-item__headline">${escapeHtml(article.title)}</h3>
-            <button type="button" class="news-item__toggle" aria-expanded="false" aria-controls="${detailsId}" data-action="toggle-news">
-              <span class="visually-hidden" data-toggle-label>Show more</span>
-              <svg class="news-item__chevron" viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7.5l5 5 5-5"/></svg>
-            </button>
-          </div>
-          <p class="news-item__preview">${escapeHtml(article.summary)}</p>
-          <div class="news-item__details-wrap">
-            <div class="news-item__details" id="${detailsId}">
-              <p>${escapeHtml(article.summary)}</p>
-              <a class="news-item__link" href="${escapeHtml(article.url)}" target="_blank" rel="noopener noreferrer" data-action="read-article">Read full article <span aria-hidden="true">→</span></a>
+            <p class="news-item__preview">${escapeHtml(article.summary)}</p>
+            <div class="news-item__footer">
+              ${locationText ? `
+              <span class="news-item__location">
+                <svg viewBox="0 0 20 20" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 18s6-5.1 6-9.8A6 6 0 0 0 4 8.2C4 12.9 10 18 10 18Z"/><circle cx="10" cy="8.2" r="2"/></svg>
+                ${escapeHtml(locationText)}
+              </span>` : '<span></span>'}
+              <button type="button" class="news-item__bookmark${bookmarked ? ' is-active' : ''}" data-action="toggle-bookmark" aria-label="${bookmarked ? 'Remove bookmark' : 'Save article'}" aria-pressed="${bookmarked ? 'true' : 'false'}">
+                <svg viewBox="0 0 20 20" width="15" height="15" fill="${bookmarked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M5 3.5h10a1 1 0 0 1 1 1V17l-6-3.5L4 17V4.5a1 1 0 0 1 1-1Z"/></svg>
+              </button>
             </div>
           </div>
         </article>`;
@@ -152,34 +192,86 @@
         </a>`;
     }
 
+    // Last full, unfiltered article list — kept around so a tab click
+    // can re-render instantly from memory instead of refetching.
+    let latestArticles = [];
+    let activeNewsFilter = 'all';
+
+    function filterArticlesByCategory(articles, filter) {
+        if (filter === 'all') return articles;
+        if (filter === 'official') return articles.filter(a => a.isOfficial);
+        if (filter === 'outage') return articles.filter(a => a.category === 'outage');
+        if (filter === 'maintenance') return articles.filter(a => a.category === 'maintenance');
+        if (filter === 'alert') return articles.filter(a => a.category === 'outage' || a.category === 'maintenance');
+        return articles;
+    }
+
+    function emptyStateHtml(filter) {
+        const messages = {
+            all: 'No electricity-related news right now. Check back soon.',
+            official: 'No official ECG announcements right now.',
+            outage: 'No outage reports in the news right now.',
+            maintenance: 'No planned maintenance notices right now.',
+            alert: 'No outage or maintenance alerts right now.'
+        };
+        return `<article class="news-item news-item--empty"><p class="news-item__preview">${messages[filter] || messages.all}</p></article>`;
+    }
+
     function renderNews(articles) {
         const feeds = getFeedContainers();
         if (!feeds.length) return;
 
-        const sorted = sortNewsForDisplay(articles);
-        const fullHtml = (!sorted.length)
-            ? '<article class="news-item"><p class="news-item__preview">No electricity-related news right now. Check back soon.</p></article>'
-            : sorted.map(renderNewsItem).join('');
+        latestArticles = sortNewsForDisplay(articles);
+        renderFullFeeds();
 
         feeds.forEach((feed) => {
             feed.classList.remove('loading');
             const limit = parseInt(feed.dataset.newsFeedLimit, 10);
-
-            if (!(limit > 0)) {
-                feed.innerHTML = fullHtml;
-                return;
-            }
+            if (!(limit > 0)) return; // full containers handled by renderFullFeeds()
 
             // Limited container (Home): just the newest article(s) as
-            // compact cards. The "View more news" doorway into the
-            // full News tab lives once, in the section header
-            // (.lw-section__viewall) — no longer duplicated here.
-            if (!sorted.length) {
+            // compact cards, always unfiltered. The "View more news"
+            // doorway into the full News tab lives once, in the section
+            // header (.lw-section__viewall) — no longer duplicated here.
+            if (!latestArticles.length) {
                 feed.innerHTML = '<p class="lw-news-card__empty">No electricity-related news right now.</p>';
                 return;
             }
-            const cards = sorted.slice(0, limit).map(renderCompactNewsCard).join('');
-            feed.innerHTML = cards;
+            feed.innerHTML = latestArticles.slice(0, limit).map(renderCompactNewsCard).join('');
+        });
+    }
+
+    // Re-renders only the full (unlimited) feed containers — e.g. the
+    // Report page's #officialNewsFeed — using the current category
+    // filter. Called both after a fresh fetch and after a tab click.
+    function renderFullFeeds() {
+        const filtered = filterArticlesByCategory(latestArticles, activeNewsFilter);
+        const html = filtered.length ? filtered.map(renderNewsItem).join('') : emptyStateHtml(activeNewsFilter);
+
+        getFeedContainers().forEach((feed) => {
+            const limit = parseInt(feed.dataset.newsFeedLimit, 10);
+            if (limit > 0) return; // compact containers handled in renderNews()
+            feed.innerHTML = html;
+        });
+    }
+
+    // ---- Category tabs ---------------------------------------------
+    function bindCategoryTabs() {
+        const tabsEl = document.getElementById('newsCategoryTabs');
+        if (!tabsEl || tabsEl.dataset.tabsBound === '1') return;
+        tabsEl.dataset.tabsBound = '1';
+
+        tabsEl.addEventListener('click', (e) => {
+            const btn = e.target.closest('.news-category-tab');
+            if (!btn || !tabsEl.contains(btn)) return;
+
+            activeNewsFilter = btn.dataset.newsFilter || 'all';
+            tabsEl.querySelectorAll('.news-category-tab').forEach((tab) => {
+                const isActive = tab === btn;
+                tab.classList.toggle('is-active', isActive);
+                tab.setAttribute('aria-selected', String(isActive));
+            });
+            renderFullFeeds();
         });
     }
 
@@ -238,15 +330,17 @@
             feed.dataset.interactionsBound = '1';
 
             feed.addEventListener('click', (e) => {
-                const toggleBtn = e.target.closest('[data-action="toggle-news"]');
-                if (toggleBtn && feed.contains(toggleBtn)) {
-                    const item = toggleBtn.closest('.news-item');
-                    if (!item) return;
-                    const expanded = toggleBtn.getAttribute('aria-expanded') === 'true';
-                    toggleBtn.setAttribute('aria-expanded', String(!expanded));
-                    item.classList.toggle('is-expanded', !expanded);
-                    const label = toggleBtn.querySelector('[data-toggle-label]');
-                    if (label) label.textContent = expanded ? 'Show more' : 'Show less';
+                const bookmarkBtn = e.target.closest('[data-action="toggle-bookmark"]');
+                if (bookmarkBtn && feed.contains(bookmarkBtn)) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const item = bookmarkBtn.closest('.news-item[data-article-id]');
+                    const nowBookmarked = toggleBookmark(item?.dataset.articleId);
+                    bookmarkBtn.classList.toggle('is-active', nowBookmarked);
+                    bookmarkBtn.setAttribute('aria-pressed', String(nowBookmarked));
+                    bookmarkBtn.setAttribute('aria-label', nowBookmarked ? 'Remove bookmark' : 'Save article');
+                    const svg = bookmarkBtn.querySelector('svg');
+                    if (svg) svg.setAttribute('fill', nowBookmarked ? 'currentColor' : 'none');
                     return;
                 }
 
@@ -301,6 +395,7 @@
 
     function syncPollingToVisibility() {
         bindCardInteractions();
+        bindCategoryTabs();
         observeVisibility();
 
         if (isNewsPanelVisible()) startNewsPolling();
@@ -311,6 +406,7 @@
 
     document.addEventListener('DOMContentLoaded', () => {
         bindCardInteractions();
+        bindCategoryTabs();
         observeVisibility();
         syncPollingToVisibility();
     });

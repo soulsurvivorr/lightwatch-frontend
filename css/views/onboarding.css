@@ -242,12 +242,14 @@ body.lw-onboarding-open {
 
 .onboarding-next {
   min-width: 108px;
-  background: var(--brand);
-  color: #fff;
+  background: linear-gradient(180deg, #f2b33d 0%, #dc9a2e 100%);
+  color: #241a06;
+  border-color: transparent;
 }
 
 .onboarding-next:hover {
-  background: var(--brand-dim);
+  background: linear-gradient(180deg, #f7bf58 0%, #e3a439 100%);
+  color: #241a06;
   opacity: 1;
 }
 

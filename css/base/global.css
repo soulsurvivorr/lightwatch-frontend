@@ -1,3 +1,32 @@
+/* ---- Default background + horizontal padding for every app view ----
+   Scoped to `#appShell section[data-view]` specifically: view-login/
+   view-signup/view-verification sit outside #appShell entirely (see
+   index.html) and were deliberately made edge-to-edge/gradient
+   earlier, so this can't touch them.
+
+   Background: #view-home (home.css) sets an explicit flat
+   `background: var(--dark-bg)`, which blocks body's own background
+   from ever showing through it. Every other view (Location, Chat,
+   Notifications, Account) never set that, so THEY fall through to
+   body's background in typography.css — the same base dark color,
+   but with two teal/amber radial-gradient glows layered on top. That
+   gradient-vs-flat difference is what read as "the theme doesn't
+   match" between Home and Location. Setting the same flat
+   var(--dark-bg) here for every view (this rule outranks #view-home's
+   own on specificity, so it's harmless there) makes all of them
+   consistently flat instead of only Home.
+
+   Padding: each view's own .page/#realPageContent already carries
+   its own (larger) padding — this 5px is just the floor, in case a
+   view ever renders content directly inside its <section> without
+   going through .page. */
+#appShell section[data-view] {
+  background: var(--dark-bg);
+  padding-left: 2px;
+  padding-right: 2px;
+  box-sizing: border-box;
+}
+
 /* Auth visibility gates + general utility classes, shared across every view. */
 
 /* ============================================================

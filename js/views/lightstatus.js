@@ -46,6 +46,14 @@ const achievementTotalReports = document.getElementById('achievementTotalReports
 const sourceConfidenceEl = document.getElementById('sourceConfidence');
 const heroContributorsPillEl = document.getElementById('heroContributorsPill');
 
+// -- Primary status-hero elements — the tap-to-report light toggle
+//    (see LIGHT TOGGLE section below, after STATE) reads/writes these. --
+const statusIconEl = document.getElementById('statusIcon');
+const statusPillTextEl = document.getElementById('statusPillText');
+const statusBadgeEl = document.getElementById('statusBadge');
+const lastVerifiedEl = document.getElementById('lastVerified');
+const statusPulseEl = document.getElementById('statusPulse');
+
 const ICON_PEOPLE = '👥';
 const ICON_BOLT = '⚡';
 const ICON_WARNING = '⚠️';
@@ -164,6 +172,163 @@ let currentLocationKey = null;
 let currentUserId = (typeof getSession === 'function' && getSession()?.user?.id) || localStorage.getItem('currentUserId');
 let locationReports = []; // reports scoped to the current location, newest first
 let reportsPollInterval = null;
+
+
+// -----------------------------------------------------
+// LIGHT TOGGLE — status-hero__icon as a tap-to-report control.
+//
+// This is the missing wiring for the toggle that used to live as a
+// dedicated on/off switch — the backend side (POST/GET /lightstatus,
+// applyLightStatusUpdate in server.js) never went anywhere; only the
+// frontend control did. #statusIcon already ships with cursor:pointer
+// and a transition in home.css, which is why it was always the
+// intended target for this rather than a new element.
+//
+// Same POST /lightstatus { location, status, userId } contract every
+// other reporter in this app uses (the old dedicated switch, the
+// admin panel, presumably a future report-modal quick-action) — a tap
+// here shows up identically everywhere else that reads GET
+// /lightstatus: this file's own primary card, home.js's secondary-
+// location panel, and location.js's per-area rows.
+// -----------------------------------------------------
+let currentReportedStatus = 'unknown';
+let lightToggleInFlight = false;
+
+// One glyph per state — a filled/glowing bulb for ON (green via the
+// --on class's color), an outlined/crossed bulb for OFF (red via the
+// --off class's color), and the neutral power glyph for unknown. Both
+// use currentColor so the existing --on/--off/--unknown classes below
+// still drive the actual color.
+const STATUS_ICON_SVG = {
+    on: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M9 21h6M10 18h4M8.5 14.5A5.5 5.5 0 1 1 15.5 14.5c-.7.9-1.5 1.8-1.5 3H10c0-1.2-.8-2.1-1.5-3Z" fill="currentColor" fill-opacity="0.18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    off: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M9 21h6M10 18h4M8.5 14.5A5.5 5.5 0 1 1 15.5 14.5c-.7.9-1.5 1.8-1.5 3H10c0-1.2-.8-2.1-1.5-3Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 4l16 16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+    unknown: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 3v8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M7 6.3a7.5 7.5 0 1 0 10 0" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>'
+};
+
+function applyPrimaryStatusIconState(status) {
+    if (!statusIconEl) return;
+    statusIconEl.classList.remove('status-hero__icon--on', 'status-hero__icon--off', 'status-hero__icon--unknown');
+    const key = status === 'on' ? 'on' : status === 'off' ? 'off' : 'unknown';
+    statusIconEl.classList.add(`status-hero__icon--${key}`);
+    statusIconEl.innerHTML = STATUS_ICON_SVG[key];
+}
+
+// Paints every element the primary status-hero row owns from a
+// { status, reportedAt } shape — the same shape both GET /lightstatus
+// and the record POST /lightstatus returns use.
+function paintPrimaryStatus(data) {
+    currentReportedStatus = data.status || 'unknown';
+    applyPrimaryStatusIconState(currentReportedStatus);
+
+    if (statusPillTextEl) {
+        statusPillTextEl.textContent = currentReportedStatus === 'on' ? 'Light is on now'
+            : currentReportedStatus === 'off' ? 'Light is off now'
+            : 'No reports yet — tap to check in';
+    }
+
+    if (statusBadgeEl) {
+        const known = currentReportedStatus === 'on' || currentReportedStatus === 'off';
+        statusBadgeEl.hidden = !known;
+        statusBadgeEl.classList.remove('badge--low');
+        statusBadgeEl.classList.toggle('badge--on', currentReportedStatus === 'on');
+        statusBadgeEl.classList.toggle('badge--off', currentReportedStatus === 'off');
+        if (known) statusBadgeEl.textContent = currentReportedStatus === 'on' ? 'Power ON' : 'Power OFF';
+    }
+
+    if (lastVerifiedEl && data.reportedAt) {
+        lastVerifiedEl.textContent = formatRelativeTime(new Date(data.reportedAt).getTime());
+    }
+
+    if (statusPulseEl) {
+        statusPulseEl.classList.remove('pulse--on', 'pulse--off', 'pulse--low');
+        statusPulseEl.classList.add(
+            currentReportedStatus === 'on' ? 'pulse--on'
+            : currentReportedStatus === 'off' ? 'pulse--off'
+            : 'pulse--low'
+        );
+    }
+
+    renderHeroMiniCard();
+}
+
+async function fetchPrimaryLightStatus() {
+    if (!currentLocation) return;
+    try {
+        const res = await fetch(`${API_BASE}/lightstatus?location=${encodeURIComponent(currentLocation)}`);
+        if (!res.ok) throw new Error('bad response');
+        const data = await res.json();
+        paintPrimaryStatus(data);
+    } catch (err) {
+        // Leave whatever was last painted on screen rather than blank it.
+    }
+}
+
+// Runs the same brief "deciding" animation on any status-hero__icon-
+// shaped element, primary or secondary — see home.js's secondary-
+// location panel, which reuses this so both toggles feel identical.
+function animateIconDecision(iconEl, nextStatus) {
+    if (!iconEl) return;
+    iconEl.classList.remove('status-hero__icon--switching-on', 'status-hero__icon--switching-off');
+    void iconEl.offsetWidth; // restart the animation on repeated taps
+    iconEl.classList.add(nextStatus === 'on' ? 'status-hero__icon--switching-on' : 'status-hero__icon--switching-off');
+    setTimeout(() => {
+        iconEl.classList.remove('status-hero__icon--switching-on', 'status-hero__icon--switching-off');
+    }, 700);
+}
+
+async function toggleLightStatus() {
+    if (lightToggleInFlight || !currentLocation) return;
+    lightToggleInFlight = true;
+
+    const previousStatus = currentReportedStatus;
+    const nextStatus = previousStatus === 'on' ? 'off' : 'on';
+
+    animateIconDecision(statusIconEl, nextStatus);
+    statusIconEl?.setAttribute('aria-busy', 'true');
+    if (statusPillTextEl) {
+        statusPillTextEl.textContent = nextStatus === 'on' ? 'Reporting light on…' : 'Reporting light off…';
+    }
+
+    try {
+        const res = await fetch(`${API_BASE}/lightstatus`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ location: currentLocation, status: nextStatus, userId: currentUserId || undefined })
+        });
+        if (!res.ok) throw new Error('report failed');
+        const record = await res.json();
+        paintPrimaryStatus({ status: record.status, reportedAt: record.reportedAt });
+
+        // Broadcast so any other view currently on screen (Locations'
+        // per-area rows, Home's secondary-location panel) can refresh
+        // instead of showing a status that just went stale.
+        window.dispatchEvent(new CustomEvent('lw:lightstatus-changed', {
+            detail: { locationKey: currentLocationKey, status: record.status }
+        }));
+
+        refreshLocationPanel();
+    } catch (err) {
+        // Revert to the last confirmed state rather than leave the
+        // optimistic "Reporting…" label stuck on screen.
+        paintPrimaryStatus({ status: previousStatus, reportedAt: null });
+    } finally {
+        statusIconEl?.removeAttribute('aria-busy');
+        lightToggleInFlight = false;
+    }
+}
+
+if (statusIconEl) {
+    statusIconEl.setAttribute('role', 'button');
+    statusIconEl.setAttribute('tabindex', '0');
+    statusIconEl.setAttribute('aria-label', 'Tap to report the current light status');
+    statusIconEl.addEventListener('click', toggleLightStatus);
+    statusIconEl.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            toggleLightStatus();
+        }
+    });
+}
 
 
 // -----------------------------------------------------
@@ -545,6 +710,7 @@ async function loadAchievements() {
 async function refreshLocationPanel() {
     if (!currentLocation) return;
     locationReports = await fetchLocationReports(currentLocation);
+    fetchPrimaryLightStatus();
     renderCommunityActivity();
     syncReliabilityMeter();
     updateTrendBanner();
@@ -577,6 +743,33 @@ if (window.currentChatLocation) {
 }
 
 loadAchievements();
+// -----------------------------------------------------
+// PUBLIC API — lets other views drive the exact same report
+// (POST /lightstatus), icon-state, and tap-animation logic instead of
+// re-implementing it. Used by home.js's secondary-location panel and
+// location.js's per-area rows.
+// -----------------------------------------------------
+window.LWLightStatus = {
+    // POSTs a report for any location (not just the primary one) and
+    // returns the updated { status, reportedAt, ... } record.
+    async report(location, status, userId) {
+        const res = await fetch(`${API_BASE}/lightstatus`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ location, status, userId: userId || undefined })
+        });
+        if (!res.ok) throw new Error('report failed');
+        const record = await res.json();
+        window.dispatchEvent(new CustomEvent('lw:lightstatus-changed', {
+            detail: { locationKey: slugify(location), status: record.status }
+        }));
+        return record;
+    },
+    animateIcon: animateIconDecision,
+    applyIconState: applyPrimaryStatusIconState,
+    formatRelativeTime
+};
+
 window.addEventListener('lw:route-changed', (e) => {
     if (e.detail.view !== 'home') {
         clearInterval(reportsPollInterval);

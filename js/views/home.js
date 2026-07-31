@@ -118,6 +118,9 @@ function applyStatusIconState(icon, status) {
     icon.classList.remove('status-hero__icon--on', 'status-hero__icon--off', 'status-hero__icon--unknown');
     icon.classList.add(status === 'on' ? 'status-hero__icon--on' : status === 'off' ? 'status-hero__icon--off' : 'status-hero__icon--unknown');
 }
+// (kept above for any code still calling it directly; the secondary
+// panel itself no longer needs it now that it owns its own dot state)
+
 
 function formatSecondaryDuration(ms) {
     if (ms == null) return '—';
@@ -131,6 +134,19 @@ function formatSecondaryDuration(ms) {
 const SECONDARY_LOCATION_CACHE_PREFIX = 'lw_cache_secondary_status_';
 const SECONDARY_LOCATION_CACHE_MAX_AGE_MS = 30 * 60 * 1000; // matches profile.js's light-status cache
 
+// Set whenever the panel opens for a given second location — the
+// toggle handler below (bound once, since the row itself never
+// leaves the DOM) reads this rather than closing over a stale `sec`.
+let currentSecondaryLoc = null;
+let secondaryToggleInFlight = false;
+
+function currentUserIdForReports() {
+    return (typeof getSession === 'function' && getSession()?.user?.id)
+        || localStorage.getItem('currentUserId')
+        || getCachedUserForSecondaryLocation().id
+        || null;
+}
+
 function paintSecondaryLocationStatus(data, loc) {
     const labelEl = document.getElementById('secondaryLocationStatusLabel');
     const subEl = document.getElementById('secondaryLocationStatusSub');
@@ -142,17 +158,17 @@ function paintSecondaryLocationStatus(data, loc) {
     const noteEl = document.getElementById('secondaryLocationNote');
 
     setSecondaryStatusDot(data.status);
-    const statusIcon = document.getElementById('statusIcon');
-    const statusPillText = document.getElementById('statusPillText');
-    if (statusIcon && statusPillText) {
-        applyStatusIconState(statusIcon, data.status);
-        statusPillText.textContent = data.status === 'on' ? 'Light is on'
-            : data.status === 'off' ? 'Light is off'
-            : 'No reports yet for this area';
-    }
+    // NOTE: this used to also repaint #statusIcon/#statusPillText — the
+    // PRIMARY location's status-hero elements — with the SECONDARY
+    // location's data any time this panel loaded. That's gone now: the
+    // primary card is its own tap-to-report control (see lightstatus.js)
+    // with its own live state, and clobbering it with a different
+    // location's data on every panel open just meant the two fought
+    // over the same two DOM nodes. This panel has its own label/dot/sub
+    // elements below and doesn't need the primary's at all.
     if (labelEl) {
-        labelEl.textContent = data.status === 'on' ? 'Light is on'
-            : data.status === 'off' ? 'Light is off'
+        labelEl.textContent = data.status === 'on' ? 'Light is on now'
+            : data.status === 'off' ? 'Light is off now'
             : 'No reports yet for this area';
     }
     if (subEl) {
@@ -194,6 +210,7 @@ async function loadSecondaryLocationStatus(sec) {
     const subEl = document.getElementById('secondaryLocationStatusSub');
 
     const loc = `${sec.city}, ${sec.region || ''}`.replace(/,\s*$/, '');
+    currentSecondaryLoc = loc;
     const cacheKey = SECONDARY_LOCATION_CACHE_PREFIX + loc.toLowerCase().trim();
 
     // Paint the last-known status/stats for this second location
@@ -263,6 +280,58 @@ function setLocationPanelScrollLock(locked) {
         window.scrollTo(0, lwLocationPanelLockedScrollY);
     }
 }
+
+// -----------------------------------------------------
+// SECONDARY LOCATION TOGGLE — same tap-to-report interaction as the
+// primary status-hero__icon (see lightstatus.js), applied to this
+// panel's own dot/status row instead of a second copy of the primary
+// card's elements. Goes through window.LWLightStatus.report(), the
+// exact same POST /lightstatus call, so a report made here shows up
+// identically anywhere else that reads this location's status.
+// -----------------------------------------------------
+async function toggleSecondaryLightStatus() {
+    if (secondaryToggleInFlight || !currentSecondaryLoc || !window.LWLightStatus) return;
+    secondaryToggleInFlight = true;
+
+    const labelEl = document.getElementById('secondaryLocationStatusLabel');
+    const dot = document.getElementById('secondaryLocationStatusDot');
+    const currentlyOn = dot?.classList.contains('location-expand-status__dot--on');
+    const nextStatus = currentlyOn ? 'off' : 'on';
+
+    dot?.classList.add('location-expand-status__dot--deciding');
+    if (labelEl) labelEl.textContent = nextStatus === 'on' ? 'Reporting light on…' : 'Reporting light off…';
+
+    try {
+        const record = await window.LWLightStatus.report(currentSecondaryLoc, nextStatus, currentUserIdForReports());
+        paintSecondaryLocationStatus({ status: record.status, reportedAt: record.reportedAt }, currentSecondaryLoc);
+        LWCache.write(SECONDARY_LOCATION_CACHE_PREFIX + currentSecondaryLoc.toLowerCase().trim(), {
+            status: record.status,
+            stats: null,
+            reportedAt: record.reportedAt || null
+        });
+    } catch (err) {
+        if (labelEl) labelEl.textContent = currentlyOn ? 'Light is on now' : 'Light is off now';
+    } finally {
+        dot?.classList.remove('location-expand-status__dot--deciding');
+        secondaryToggleInFlight = false;
+    }
+}
+
+(function bindSecondaryStatusToggle() {
+    const row = document.getElementById('secondaryLocationStatusRow');
+    if (!row) return;
+    row.classList.add('location-expand-status--interactive');
+    row.setAttribute('role', 'button');
+    row.setAttribute('tabindex', '0');
+    row.setAttribute('aria-label', 'Tap to report the light status for this location');
+    row.addEventListener('click', toggleSecondaryLightStatus);
+    row.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            toggleSecondaryLightStatus();
+        }
+    });
+})();
 
 function openSecondaryLocationPanel() {
     const overlay = document.getElementById('secondaryLocationOverlay');

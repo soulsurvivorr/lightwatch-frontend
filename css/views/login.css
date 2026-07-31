@@ -486,7 +486,7 @@
   max-width: 380px;
   background: rgba(255, 255, 255, 0.045);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-lg) !important;
   padding: 18px 24px 24px;
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
@@ -548,6 +548,7 @@
   min-height: 52px;
   background: linear-gradient(180deg, var(--brand2) 0%, var(--brand2-dim) 100%);
   border: 1px solid transparent;
+  border-radius: var(--radius-md) !important;
   color: white;
   font-weight: 700;
   letter-spacing: 0.01em;
@@ -575,6 +576,7 @@
   min-height: 52px;
   background: linear-gradient(180deg, #f2b33d 0%, #dc9a2e 100%);
   border: 1px solid transparent;
+  border-radius: var(--radius-md) !important;
   color: #241a06;
   font-weight: 700;
   box-shadow: 0 10px 24px rgba(240, 172, 61, 0.35);
@@ -793,7 +795,7 @@
 }
 
 .remember-me-label input:checked ~ .remember-me-track {
-  background: var(--brand);
+  background: linear-gradient(135deg, #f2b33d, #dc9a2e);
 }
 
 .remember-me-label input:checked ~ .remember-me-track .remember-me-thumb {

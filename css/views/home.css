@@ -18,22 +18,21 @@
 
 /* General Mobile Phone and Small Tablet layout */
 @media (max-width: 720px) {
-  /* Was raw 100dvh/100svh. chat.js already measures window.innerHeight
-     itself (unconditionally, on every page load - see its top-level
-     updateKeyboardOffset() call and resize/visualViewport listeners)
-     and publishes it as --lw-vh precisely because dvh/svh don't
-     reliably track the real visual viewport on every mobile browser/
-     WebView (chat.css hit this same issue first - see its #view-chat
-     .page height rule). Reusing that already-running measurement here
-     instead of a second, independent raw-unit guess keeps html/body's
-     locked height consistent with the rest of the app, and with
-     whatever fixed-position content (e.g. #bottom_nav_wrapper) sits
-     against it - dvh/svh stay as the fallback for the first frame
-     before chat.js's measurement lands. */
-  html:has(#appShell:not([hidden])),
-  body:has(#appShell:not([hidden])) {
-      height: var(--lw-vh, 100dvh) !important;
-  }
+  /* FIX (max-content sections): this used to force html/body to a
+     hard `height` (not min-height) equal to the full viewport on
+     every view under #appShell — Home, Location, Chat, Notifications,
+     Account alike — regardless of how much real content each one
+     actually had. A `height` (rather than `min-height`) can't shrink
+     below that value, so any view shorter than one screen was left
+     with dead scrollable space below its own content, all the way
+     down to the locked height. global.css's #appShell already has
+     `height: auto !important` (auto, content-sized) so nothing here
+     still needs an ancestor pinned to a fixed screen height — removed
+     so each view's real height is just however tall its content is
+     (Location/Account: shorter than one screen and now correctly
+     stop scrolling right after their last card; Home/Chat: still
+     scroll normally once their content genuinely exceeds one screen,
+     driven by global.css's overflow-y:auto on html). */
 }
 
 /* Tablet and Desktop viewports */
@@ -1931,6 +1930,37 @@ body.lw-location-panel-open {
 }
 @media (prefers-reduced-motion: reduce) {
   .location-expand-status__dot--on { animation: none; }
+}
+
+/* Tap-to-report affordance — mirrors the primary status-hero__icon's
+   cursor/focus treatment, scaled down for this row's small dot. */
+.location-expand-status--interactive {
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.location-expand-status--interactive:hover {
+  background: linear-gradient(135deg, rgba(28, 140, 122, 0.14), rgba(28, 140, 122, 0.05));
+}
+
+.location-expand-status--interactive:focus-visible {
+  outline: 2px solid rgba(74, 144, 217, 0.8);
+  outline-offset: 3px;
+}
+
+.location-expand-status__dot--deciding {
+  animation: lwSecondaryDotDecide 0.6s ease both;
+}
+
+@keyframes lwSecondaryDotDecide {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.6); filter: brightness(1.5); }
+  100% { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .location-expand-status__dot--deciding { animation: none; }
 }
 .location-expand-status__label { font-size: 0.92rem; font-weight: 600; color: #1C1F26; }
 .location-expand-status__sub { font-size: 0.76rem; color: #6B7280; margin-top: 2px; }
@@ -4711,27 +4741,18 @@ body:not(.page-data-loading) #view-home #realPageContent {
    fixed sizes.) */
 
 /* ---- 1c) Safe-area top inset (status bar) ----
-   viewport-fit=cover (index.html) + the translucent status-bar meta
-   tag intentionally let the app draw edge-to-edge, so body's
-   background still paints all the way under the status bar/notch.
-   But on mobile .topbar is display:none (see the max-width:768px
-   block above), which left nothing reserving space for the status
-   bar itself — .hero-banner, as the first real content, was sitting
-   directly under it instead of just the background.
-
-   Putting the inset on #appShell (rather than editing every .page
-   padding-top declared at the various phone breakpoints above) keeps
-   this a single, breakpoint-independent fix: #appShell has no
-   padding of its own today, so this can't fight any of those
-   existing rules, and it only pushes the content column down —
-   #appShell's own background stays transparent, so body's edge-to-
-   edge background/gradient is still what renders behind the status
-   bar, not a hard color block. */
-@media (max-width: 768px) {
-  #appShell {
-    padding-top: env(safe-area-inset-top, 0px);
-  }
-}
+   Originally put here because .topbar was display:none on mobile at
+   the time (see the max-width:768px block above), leaving nothing to
+   reserve space for the status bar/notch. That's no longer true: the
+   "MOBILE FIXES — Jul 30 pass" section further down in this file
+   re-enables .topbar on mobile AND gives it its own
+   `padding-top: env(safe-area-inset-top, 0px)`. With both rules
+   active, the inset was being applied twice — once here on #appShell,
+   again on .topbar inside it — which is why the topbar sat roughly
+   2x the real status-bar height below the top edge on an actual
+   device (env() resolves to 0 in most desktop/browser previews, so
+   this only showed up natively). Removed here; .topbar's own inset
+   further down is now the single source of truth for this. */
 
 /* ---- 2) Scrolling: mobile sections scrollable ----
    On mobile, make sections scrollable with native momentum scrolling. */
@@ -4904,13 +4925,12 @@ body:not(.page-data-loading) #view-home #realPageContent {
   background: var(--lw-bg);
   color: var(--lw-text);
   min-height: 100%;
-  padding-bottom: 24px;
 }
 
 #view-home #realPageContent {
   /* Match location spacing: give the page top breathing room
      so content doesn't appear pinned under the native status area. */
-  padding: 20px 16px 64px;
+  padding: 6px 16px 0px;
   max-width: 640px;
   margin: 0 auto;
 }
@@ -5023,13 +5043,19 @@ body:not(.page-data-loading) #view-home #realPageContent {
 .lw-home-header__greeting {
   font-size: calc(1.08rem - 1px);
   font-weight: 300;
-  color: var(--lw-text-faint);
+  /* Was --lw-text-faint (the dimmest text tier, #6f7a90 on mobile —
+     barely readable against the near-black page background). Bumped
+     one tier up to --lw-text-muted (#a7b1c4 on mobile) so the
+     greeting reads clearly without going all the way to full
+     --lw-text brightness, which is reserved for the actual page
+     title below it. */
+  color: whitesmoke;
   line-height: 1.3;
 }
 
 .lw-home-header__sub {
   margin-top: 4px;
-  font-size: 0.82rem;
+  font-size: 0.72rem;
   color: var(--lw-text-muted);
   line-height: 1.4;
 }
@@ -5092,14 +5118,20 @@ body:not(.page-data-loading) #view-home #realPageContent {
   position: relative;
   z-index: 1;
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
   gap: 2px;
   padding: 8px 20px 20px;
+  /* Reserve room on the right so the text column doesn't run under the
+     absolutely-positioned icon below. */
+  padding-right: 108px;
 }
 
+/* Reduced from 1.5rem per request — this is now the biggest thing in
+   the card since the location line under it was removed, and it read
+   too large next to the "Since ..." line. */
 #view-home .lw-status-hero .status-hero__title {
-  font-size: 1.5rem;
+  font-size: 1.1rem;
   font-weight: 800;
   color: #fff;
 }
@@ -5107,7 +5139,10 @@ body:not(.page-data-loading) #view-home #realPageContent {
 /* Location line — small green dot + location name, sitting between
    the big status title and the "Since ..." line, matching the
    reference image. Uses ::before (rather than a nested span) so it
-   survives any script that sets #locationMeta's textContent directly. */
+   survives any script that sets #locationMeta's textContent directly.
+   NOTE: the #locationMeta element itself was removed from the markup
+   per request; this rule is now unreachable and kept only as a no-op
+   in case something re-adds a `.status-hero__location` element later. */
 #view-home .lw-status-hero .status-hero__location {
   margin-top: 4px;
   font-size: 0.9rem;
@@ -5129,16 +5164,26 @@ body:not(.page-data-loading) #view-home #realPageContent {
 #view-home .lw-status-hero .status-hero__sub {
   margin-top: 4px;
   color: rgba(255, 255, 255, 0.6);
-  font-size: 0.85rem;
+  font-size: 0.78rem;
 }
 
-/* Big circular power toggle, standing in for the old small icon. */
+/* Big circular power toggle, standing in for the old small icon.
+   FIX (centering): this used to just be a flex child with
+   `margin-left: auto`, which shoved it flush to the card's right
+   edge and only centered it vertically against whatever height the
+   text column happened to be — so removing the location line above
+   shifted where it sat. Absolute + top:50%/translateY(-50%) instead
+   centers it on the *card's* full height, on its own right-hand
+   side, regardless of how tall the text column is. */
 #view-home .lw-status-hero .status-hero__icon {
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
   width: 76px;
   height: 76px;
   border-radius: 50%;
   flex-shrink: 0;
-  margin-left: auto;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   tap-highlight-color: transparent;
@@ -5148,6 +5193,9 @@ body:not(.page-data-loading) #view-home #realPageContent {
   background: radial-gradient(circle, rgba(52, 211, 153, 0.16), rgba(52, 211, 153, 0.02));
   box-shadow: 0 0 22px rgba(52, 211, 153, 0.35);
   color: #6ee7b7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 #view-home .lw-status-hero .status-hero__icon svg {
@@ -5205,7 +5253,7 @@ body:not(.page-data-loading) #view-home #realPageContent {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 8px;
-  margin-top: 14px;
+  margin-top: 4px;
 }
 
 .lw-stat-card {
@@ -5218,13 +5266,13 @@ body:not(.page-data-loading) #view-home #realPageContent {
 
 @media (max-width: 720px) {
   .lw-stat-card {
-    min-height: 76px !important;
+    min-height: 60px !important;
   }
 }
 
 @media (max-width: 480px) {
   .lw-stat-card {
-    min-height: 72px !important;
+    min-height: 60px !important;
     width: calc(100% + 2.5px) !important;
     margin-left: -1.25px !important;
   }
@@ -5232,14 +5280,14 @@ body:not(.page-data-loading) #view-home #realPageContent {
 
 @media (max-width: 720px) {
   .lw-stat-card {
-    min-height: 86px !important;
+    min-height: 66px !important;
     padding: 8px 10px !important;
   }
 }
 
 @media (max-width: 480px) {
   .lw-stat-card {
-    min-height: 76px !important;
+    min-height: 60px !important;
     width: calc(100% + 2.5px) !important;
     margin-left: -1.25px !important;
   }
@@ -5337,7 +5385,7 @@ body:not(.page-data-loading) #view-home #realPageContent {
    by Live updates / Latest power news / Community activity.
    ============================================================ */
 .lw-section {
-  margin-top: 22px;
+  margin-top: 6px;
 }
 
 .lw-section__head {
@@ -5356,7 +5404,7 @@ body:not(.page-data-loading) #view-home #realPageContent {
 .lw-section__viewall {
   font-size: 0.82rem;
   font-weight: 600;
-  color: var(--lw-blue);
+  color: white;
 }
 
 .lw-section__viewall:hover { text-decoration: underline; }
@@ -5628,7 +5676,7 @@ body:not(.page-data-loading) #view-home #realPageContent {
   }
 
   .topbar__inner {
-    padding: 14px 16px 0 !important;
+    padding: 14px 0 0 !important;
     justify-content: space-between !important;
     gap: 12px !important;
   }
@@ -5838,6 +5886,15 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
   color: var(--brand2, #4A90D9);
 }
 
+/* Profile tab (moved down from the topbar's top-right corner) swaps an
+   SVG icon for the account avatar circle — give it the same
+   active-tab highlight the SVG icons get above, as a border instead
+   of a stroke color since there's no currentColor path to recolor. */
+#bottom_nav_wrapper .bottom-nav-link--active .avatar--nav,
+#bottom_nav_wrapper .bottom-nav-link[aria-current="page"] .avatar--nav {
+  border-color: var(--brand2, #4A90D9);
+}
+
 /* ============================================================
    BOTTOM NAV PILL — strip border-radius / border-color / blur
    Removes the rounded pill edge, the border line, and the glass
@@ -5940,4 +5997,38 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
 .bottom-nav-link--active .bottom-nav-icon svg,
 .bottom-nav-link[aria-current="page"] .bottom-nav-icon svg {
   color: white !important;
+}
+
+/* Requested: 2px of breathing room below the icons themselves, on
+   top of whatever safe-area/bottom padding the container already
+   has (see the #bottom_nav_wrapper .bottom-icons-container !important
+   padding rule earlier in this file, and app-shell.css's narrow-phone
+   version) — targets the same ID-scoped selector at equal specificity,
+   appended last so it wins the cascade without needing !important. */
+#bottom_nav_wrapper .bottom-icons-container {
+  padding-bottom: calc(8px + 2px) !important;
+}
+
+/* ============================================================
+   BOTTOM NAV — stop the tap/press transform
+   ------------------------------------------------------------
+   The tap animation itself (translateY bounce, glow blob, dot,
+   click-pulse ring) is defined in css/utilities/animations.css and
+   css/views/animations.css — neither of which was included in this
+   file set, so it can't be edited at its source here. Both of those
+   sheets load AFTER this file, so this can't just be removed there;
+   instead this neutralizes the transform component specifically
+   (leaving any color/opacity/glow part of the same animation intact)
+   by winning the cascade on `transform` for every state of
+   .bottom-nav-icon and its svg. If the animation is later found to
+   still move the icon, the actual keyframes need a `transform: none`
+   step added at their source in animations.css.
+   ============================================================ */
+#bottom_nav_wrapper .bottom-nav-icon,
+#bottom_nav_wrapper .bottom-nav-icon svg,
+#bottom_nav_wrapper .bottom-nav-link:active .bottom-nav-icon,
+#bottom_nav_wrapper .bottom-nav-link.is-active .bottom-nav-icon,
+#bottom_nav_wrapper .bottom-nav-link--active .bottom-nav-icon {
+  transform: none !important;
+  animation: none !important;
 }

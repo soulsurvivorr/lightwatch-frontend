@@ -288,6 +288,18 @@
       margin-bottom: 14px;
     }
 
+    .danger-zone__signout-btn {
+      width: 100%;
+      border-color: var(--red);
+      color: var(--red);
+    }
+
+    .danger-zone__signout-btn:hover {
+      background: var(--red-dim);
+      border-color: var(--red);
+      color: var(--red);
+    }
+
     /* #accountSignOutZone is a grid child (via the .account-grid > div
        display:contents flatten above) on every width now, so this
        reorder applies everywhere, not just <=768px. */

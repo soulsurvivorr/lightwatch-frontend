@@ -36,10 +36,69 @@ const chatReplyText = document.getElementById('chatReplyText');
 const chatReplyCancel = document.getElementById('chatReplyCancel');
 const chatScopeLocalBtn = document.getElementById('chatScopeLocalBtn');
 const chatScopeGlobalBtn = document.getElementById('chatScopeGlobalBtn');
+const statusOnBtn = document.getElementById('statusOnBtn');
+const statusOffBtn = document.getElementById('statusOffBtn');
+const communityFabBtn = document.getElementById('communityFabBtn');
+const communitySearchBtn = document.getElementById('communitySearchBtn');
+const communitySortBtn = document.getElementById('communitySortBtn');
+const communityNearbyBtn = document.getElementById('communityNearbyBtn');
 
 const CHAT_SCOPE_KEY = 'lw_chat_scope_pref';
 const CHAT_SCOPE_LOCAL = 'local';
 const CHAT_SCOPE_GLOBAL = 'global';
+
+// ---- Light status quick-tag ----
+// There's no separate "status" field on a chat message server-side, so
+// the ON/OFF quick-select in the composer is encoded as a small plain-
+// text prefix on the message itself (LIGHTWATCH_STATUS_PREFIX below).
+// Every card in the feed — not just the sender's own — reads this same
+// prefix back out to show the ON/OFF badge, so it works consistently
+// across users without any backend schema change. The prefix is
+// stripped back off before the text is shown.
+const LIGHT_STATUS_PREFIX = { on: '[Light is ON] ', off: '[Light is OFF] ' };
+let selectedLightStatus = null; // 'on' | 'off' | null
+
+function parseLightStatus(rawText) {
+    const text = rawText || '';
+    for (const key of ['on', 'off']) {
+        const prefix = LIGHT_STATUS_PREFIX[key];
+        if (text.startsWith(prefix)) {
+            return { status: key, text: text.slice(prefix.length) };
+        }
+    }
+    return { status: null, text };
+}
+
+function setSelectedLightStatus(next) {
+    selectedLightStatus = selectedLightStatus === next ? null : next;
+    statusOnBtn?.classList.toggle('is-active', selectedLightStatus === 'on');
+    statusOnBtn?.setAttribute('aria-pressed', selectedLightStatus === 'on' ? 'true' : 'false');
+    statusOffBtn?.classList.toggle('is-active', selectedLightStatus === 'off');
+    statusOffBtn?.setAttribute('aria-pressed', selectedLightStatus === 'off' ? 'true' : 'false');
+}
+
+statusOnBtn?.addEventListener('click', () => setSelectedLightStatus('on'));
+statusOffBtn?.addEventListener('click', () => setSelectedLightStatus('off'));
+
+communityFabBtn?.addEventListener('click', () => {
+    chatInput?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    chatInput?.focus();
+});
+
+communitySearchBtn?.addEventListener('click', () => {
+    chatInput?.focus();
+});
+
+communitySortBtn?.addEventListener('click', () => {
+    const isOpen = communitySortBtn.getAttribute('aria-expanded') === 'true';
+    communitySortBtn.setAttribute('aria-expanded', String(!isOpen));
+});
+
+communityNearbyBtn?.addEventListener('click', () => {
+    const isActive = communityNearbyBtn.getAttribute('aria-pressed') === 'true';
+    communityNearbyBtn.setAttribute('aria-pressed', String(!isActive));
+    communityNearbyBtn.classList.toggle('is-active', !isActive);
+});
 
 const initialChatParams = new URLSearchParams(window.location.search);
 const targetChatIdFromNotification = initialChatParams.get('chatId') || '';
@@ -102,7 +161,9 @@ function updateScopeButtons() {
     if (chatScopeLocalBtn) {
         chatScopeLocalBtn.classList.toggle('is-active', isLocal);
         chatScopeLocalBtn.setAttribute('aria-selected', isLocal ? 'true' : 'false');
-        chatScopeLocalBtn.textContent = `Only ${getLocationNameOnly()}`;
+        const label = chatScopeLocalBtn.querySelector('.chat-scope-option__label');
+        const locName = getLocationNameOnly();
+        if (label) label.textContent = locName === 'your location' ? 'Your Location' : `Your Location (${locName})`;
     }
     if (chatScopeGlobalBtn) {
         chatScopeGlobalBtn.classList.toggle('is-active', !isLocal);
@@ -168,11 +229,14 @@ function handleAccentColor(handle) {
 // Once a message has been replied to, its "seen" eye disappears — the
 // reply itself is the stronger signal, so we don't keep both.
 function computeRepliedToIds(chats) {
-    const ids = new Set();
+    const counts = new Map();
     chats.forEach(c => {
-        if (c.replyTo && c.replyTo.chatId) ids.add(String(c.replyTo.chatId));
+        if (c.replyTo && c.replyTo.chatId) {
+            const key = String(c.replyTo.chatId);
+            counts.set(key, (counts.get(key) || 0) + 1);
+        }
     });
-    return ids;
+    return counts;
 }
 
 // The "seen" eye is only ever eligible to appear on ONE bubble at a time:
@@ -267,10 +331,17 @@ function markVisibleMessagesSeen(chats) {
 // when a message is first added) because seenBy/replies both change on
 // messages that are already rendered.
 function syncSeenIndicators(chats) {
-    const repliedToIds = computeRepliedToIds(chats);
+    const repliedCounts = computeRepliedToIds(chats);
     const myId = getCurrentUserId();
     const latestOwnId = getLatestOwnMessageId(chats, myId);
     const byId = new Map(chats.map(c => [String(c._id || c.id || ''), c]));
+
+    chatThread?.querySelectorAll('.chat-message').forEach(el => {
+        const id = el.dataset.chatId;
+        if (!id) return;
+        const commentCountEl = el.querySelector('.report-card__stat--comment .report-card__stat-count');
+        if (commentCountEl) commentCountEl.textContent = String(repliedCounts.get(id) || 0);
+    });
 
     chatThread?.querySelectorAll('.chat-message--own').forEach(el => {
         try {
@@ -283,7 +354,7 @@ function syncSeenIndicators(chats) {
             const chat = byId.get(id);
             const seenByIds = normalizeSeenByIds(chat);
             const hasBeenSeen = seenByIds.some(seenById => seenById && seenById !== myId);
-            const hasReply = repliedToIds.has(id);
+            const hasReply = (repliedCounts.get(id) || 0) > 0;
             const isLatestOwn = id === latestOwnId;
             seenEl.classList.toggle('is-visible', isLatestOwn && hasBeenSeen && !hasReply);
         } catch (syncErr) {
@@ -353,9 +424,10 @@ setInterval(refreshChatTimestamps, 30000);
 // -------------------------------------------------------
 // BUILD A MESSAGE ELEMENT
 // -------------------------------------------------------
-function buildMessageEl(chat, isOwn, enterAnimationClass, hasReply, isLatestOwn) {
+function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOwn) {
+    const hasReply = Boolean(replyCount);
     const el = document.createElement('div');
-    el.className = isOwn ? "chat-message chat-message--own" : "chat-message";
+    el.className = isOwn ? "chat-message report-card chat-message--own" : "chat-message report-card";
     if (enterAnimationClass) el.classList.add(enterAnimationClass);
     el.dataset.chatId   = chat._id || chat.id || "";
     el.dataset.createdAt = chat.createdAt;
@@ -369,17 +441,85 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, hasReply, isLatestOwn)
     }
     if (chat.isAdmin) el.classList.add('chat-message--admin');
 
+    const { status: lightStatus, text: cleanText } = parseLightStatus(chat.text);
+    if (lightStatus) el.classList.add(`report-card--${lightStatus}`);
+
+    // ---- Head row: avatar, name + location/time, status badge, menu ----
+    const head = document.createElement('div');
+    head.className = 'report-card__head';
+
+    const avatar = document.createElement('span');
+    avatar.className = 'report-card__avatar';
+    avatar.setAttribute('aria-hidden', 'true');
+    avatar.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 12.5a4.3 4.3 0 1 0 0-8.6 4.3 4.3 0 0 0 0 8.6Z" stroke="currentColor" stroke-width="1.6"/><path d="M4.2 20c1.1-3.6 3.9-5.8 7.8-5.8s6.7 2.2 7.8 5.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+
+    const who = document.createElement('div');
+    who.className = 'report-card__who';
+
     const author = document.createElement('span');
-    author.className   = "chat-message__author";
+    author.className   = "report-card__name";
     author.textContent = chat.isAdmin ? `📢 ${chat.handle}` : chat.handle;
 
-    const body = document.createElement('p');
-    body.className   = "chat-message__text";
-    body.textContent = chat.text;
+    const meta = document.createElement('span');
+    meta.className = 'report-card__meta';
+    const locLabel = chatScope === CHAT_SCOPE_GLOBAL ? (chat.location || 'Everyone') : (chat.location || getLocationNameOnly());
+    const metaLoc = document.createElement('span');
+    metaLoc.className = 'report-card__meta-location';
+    metaLoc.textContent = locLabel;
+    const time = document.createElement('span');
+    time.className   = "chat-message__time report-card__meta-time";
+    time.textContent = formatRelativeTime(chat.createdAt);
+    meta.appendChild(metaLoc);
+    meta.appendChild(time);
 
+    who.appendChild(author);
+    who.appendChild(meta);
+
+    const headActions = document.createElement('div');
+    headActions.className = 'report-card__head-actions';
+
+    if (lightStatus) {
+        const badge = document.createElement('span');
+        badge.className = `report-card__status-badge report-card__status-badge--${lightStatus}`;
+        badge.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>';
+        const badgeLabel = document.createElement('span');
+        badgeLabel.textContent = lightStatus === 'on' ? 'Light is ON' : 'Light is OFF';
+        badge.appendChild(badgeLabel);
+        headActions.appendChild(badge);
+    }
+
+    const menuBtn = document.createElement('button');
+    menuBtn.type = 'button';
+    menuBtn.className = 'report-card__menu-btn';
+    menuBtn.setAttribute('aria-label', 'More options');
+    menuBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="5" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="19" r="1.6" fill="currentColor"/></svg>';
+    menuBtn.addEventListener('click', () => {
+        replyTarget = {
+            chatId: chat._id || chat.id || '',
+            handle: chat.handle || 'someone',
+            text: cleanText || ''
+        };
+        if (chatReplyHandle) chatReplyHandle.textContent = replyTarget.handle;
+        if (chatReplyText) chatReplyText.textContent = replyTarget.text;
+        if (chatReplyPreview) chatReplyPreview.hidden = false;
+        chatInput?.focus();
+    });
+    headActions.appendChild(menuBtn);
+
+    head.appendChild(avatar);
+    head.appendChild(who);
+    head.appendChild(headActions);
+
+    // ---- Body text ----
+    const body = document.createElement('p');
+    body.className   = "chat-message__text report-card__text";
+    body.textContent = cleanText;
+
+    // ---- Reply-to preview, if any ----
+    let replyEl = null;
     const reply = chat.replyTo;
     if (reply && (reply.handle || reply.text)) {
-        const replyEl = document.createElement('div');
+        replyEl = document.createElement('div');
         replyEl.className = 'chat-message__reply';
 
         const replyHandleEl = document.createElement('span');
@@ -392,59 +532,79 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, hasReply, isLatestOwn)
 
         replyEl.appendChild(replyHandleEl);
         replyEl.appendChild(replyTextEl);
-        el.appendChild(replyEl);
     }
 
-    const time = document.createElement('span');
-    time.className   = "chat-message__time";
-    time.textContent = formatRelativeTime(chat.createdAt);
-
+    // ---- Footer row: location/area tags on the left, comment/like stats on the right ----
     const footer = document.createElement('div');
-    footer.className = 'chat-message__footer';
-    footer.appendChild(time);
+    footer.className = 'report-card__footer';
 
-    // "Seen" eye — lives OUTSIDE the bubble (bottom-left, overhanging the
-    // card) rather than inline with the timestamp, so it reads as a
-    // status pinned to the message rather than another piece of its
-    // content. Only ever shown on the single most recent own message
-    // (isLatestOwn), and only until someone replies to it — see
-    // syncSeenIndicators, which keeps this in sync as new seenBy/reply
-    // data comes in from polling, including moving it off this bubble
-    // onto a newer one once one exists.
+    const tags = document.createElement('div');
+    tags.className = 'report-card__tags';
+
+    const locTag = document.createElement('span');
+    locTag.className = 'report-card__tag report-card__tag--location';
+    locTag.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 21s7-7.02 7-12a7 7 0 1 0-14 0c0 4.98 7 12 7 12Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="12" cy="9" r="2.2" stroke="currentColor" stroke-width="1.7"/></svg>';
+    const locTagLabel = document.createElement('span');
+    locTagLabel.textContent = locLabel;
+    locTag.appendChild(locTagLabel);
+
+    // Area type isn't a real field on a chat message yet — every card
+    // shows the same "Residential Area" tag as a static label for now.
+    const areaTag = document.createElement('span');
+    areaTag.className = 'report-card__tag report-card__tag--area';
+    areaTag.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>';
+    const areaTagLabel = document.createElement('span');
+    areaTagLabel.textContent = 'Residential Area';
+    areaTag.appendChild(areaTagLabel);
+
+    tags.appendChild(locTag);
+    tags.appendChild(areaTag);
+
+    const stats = document.createElement('div');
+    stats.className = 'report-card__stats';
+
+    const commentStat = document.createElement('button');
+    commentStat.type = 'button';
+    commentStat.className = 'report-card__stat report-card__stat--comment';
+    commentStat.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9A1.5 1.5 0 0 1 18.5 16H9l-4 4v-4H5.5A1.5 1.5 0 0 1 4 14.5v-9Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg><span class="report-card__stat-count">' + (replyCount || 0) + '</span>';
+    commentStat.addEventListener('click', () => menuBtn.click());
+
+    // No backing "likes" counter on a chat message yet — visual only.
+    const likeStat = document.createElement('button');
+    likeStat.type = 'button';
+    likeStat.className = 'report-card__stat report-card__stat--like';
+    likeStat.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 20s-7.5-4.6-9.7-9A5.4 5.4 0 0 1 12 6a5.4 5.4 0 0 1 9.7 5c-2.2 4.4-9.7 9-9.7 9Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg><span class="report-card__stat-count">0</span>';
+    likeStat.addEventListener('click', () => {
+        const isLiked = likeStat.classList.toggle('is-liked');
+        const countEl = likeStat.querySelector('.report-card__stat-count');
+        if (countEl) countEl.textContent = String(Math.max(0, Number(countEl.textContent || 0) + (isLiked ? 1 : -1)));
+    });
+
+    stats.appendChild(commentStat);
+    stats.appendChild(likeStat);
+
+    footer.appendChild(tags);
+    footer.appendChild(stats);
+
+    // "Seen" eye — own messages only, overhanging the card corner. See
+    // syncSeenIndicators for how this stays in sync after the initial
+    // render (new replies/seenBy arriving via polling).
+    let seenEl = null;
     if (isOwn) {
-        const seenEl = document.createElement('span');
+        seenEl = document.createElement('span');
         seenEl.className = 'chat-message__seen';
         seenEl.title = 'Seen';
         seenEl.setAttribute('aria-hidden', 'true');
         seenEl.textContent = '👀';
         const hasBeenSeen = Boolean(chat.seenBy && chat.seenBy.length > 0);
         seenEl.classList.toggle('is-visible', Boolean(isLatestOwn) && hasBeenSeen && !hasReply);
-        el.appendChild(seenEl);
     }
 
-    const actions = document.createElement('div');
-    actions.className = 'chat-message__actions';
-    const replyBtn = document.createElement('button');
-    replyBtn.type = 'button';
-    replyBtn.className = 'chat-message__reply-btn';
-    replyBtn.textContent = 'Reply';
-    replyBtn.addEventListener('click', () => {
-        replyTarget = {
-            chatId: chat._id || chat.id || '',
-            handle: chat.handle || 'someone',
-            text: chat.text || ''
-        };
-        if (chatReplyHandle) chatReplyHandle.textContent = replyTarget.handle;
-        if (chatReplyText) chatReplyText.textContent = replyTarget.text;
-        if (chatReplyPreview) chatReplyPreview.hidden = false;
-        chatInput?.focus();
-    });
-    actions.appendChild(replyBtn);
-
-    el.appendChild(author);
+    el.appendChild(head);
+    if (replyEl) el.appendChild(replyEl);
     el.appendChild(body);
     el.appendChild(footer);
-    el.appendChild(actions);
+    if (seenEl) el.appendChild(seenEl);
     return el;
 }
 
@@ -475,8 +635,8 @@ let typingIndicatorEl  = null;
 function updateChatPlaceholder() {
     if (!chatInput) return;
     chatInput.placeholder = chatScope === CHAT_SCOPE_GLOBAL
-        ? 'Message everyone...'
-        : 'Share an update...';
+        ? "What's happening with power, anywhere?"
+        : "What's happening with power in your area?";
 }
 
 // Send stays visible at all times — it just looks "off" (dimmed,
@@ -626,13 +786,13 @@ function loadChatHistory() {
         .then(r => r.json())
         .then(chats => {
             const myId = getCurrentUserId();
-            const repliedToIds = computeRepliedToIds(chats);
+            const repliedCounts = computeRepliedToIds(chats);
             const latestOwnId = getLatestOwnMessageId(chats, myId);
             // Reverse: API returns newest-first, we want oldest-first
             ;[...chats].reverse().forEach(chat => {
                 const id = chat._id || chat.id;
                 if (id) knownIds.add(id);
-                addToThread(chat, resolveUserId(chat) === myId, false, false, repliedToIds.has(id), String(id) === latestOwnId);
+                addToThread(chat, resolveUserId(chat) === myId, false, false, repliedCounts.get(id) || 0, String(id) === latestOwnId);
             });
             chatThread.scrollTop = chatThread.scrollHeight;
             focusTargetMessageIfPresent();
@@ -669,7 +829,7 @@ async function pollChatsOnce() {
         if (!res.ok) return;
         const chats = await res.json();
         const myId  = getCurrentUserId();
-        const repliedToIds = computeRepliedToIds(chats);
+        const repliedCounts = computeRepliedToIds(chats);
         const latestOwnId = getLatestOwnMessageId(chats, myId);
 
         ;[...chats].reverse().forEach(chat => {
@@ -683,7 +843,7 @@ async function pollChatsOnce() {
                 const id = chat._id || chat.id;
                 if (!id || knownIds.has(id)) return; // skip already-shown messages
                 knownIds.add(id);
-                addToThread(chat, resolveUserId(chat) === myId, false, true, repliedToIds.has(id), String(id) === latestOwnId);
+                addToThread(chat, resolveUserId(chat) === myId, false, true, repliedCounts.get(id) || 0, String(id) === latestOwnId);
                 focusTargetMessageIfPresent();
             } catch (renderErr) {
                 // silent — this message gets another shot next tick
@@ -1073,8 +1233,9 @@ if (window.visualViewport) {
 chatForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    const text = chatInput.value.trim();
-    if (!text) return;
+    const rawText = chatInput.value.trim();
+    if (!rawText) return;
+    const text = selectedLightStatus ? `${LIGHT_STATUS_PREFIX[selectedLightStatus]}${rawText}` : rawText;
 
     const myId = getCurrentUserId();
     const loc  = chatLocation || getCurrentChatLocation();
@@ -1112,7 +1273,7 @@ chatForm?.addEventListener('submit', async (e) => {
 
         if (!res.ok) {
             // Put text back so user can retry
-            chatInput.value = text;
+            chatInput.value = rawText;
             updateSendButtonState();
             autoGrowChatInput();
             return;
@@ -1128,9 +1289,10 @@ chatForm?.addEventListener('submit', async (e) => {
 
         replyTarget = null;
         if (chatReplyPreview) chatReplyPreview.hidden = true;
+        setSelectedLightStatus(null);
     } catch(err) {
         console.error("Failed to send:", err);
-        chatInput.value = text; // restore on failure
+        chatInput.value = rawText; // restore on failure
         updateSendButtonState();
         autoGrowChatInput();
     }

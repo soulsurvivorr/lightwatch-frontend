@@ -25,6 +25,107 @@ requireAuth(); // redirects to login if no session — defined in auth.js
 const el = (id) => document.getElementById(id);
 
 // ------------------------------------------------------------
+// UNIQUE USER AVATAR — deterministic colored SVG per user
+// ------------------------------------------------------------
+// FIX: profile/sidebar avatars used to just show a bare "?" — nothing
+// ever generated a real per-user graphic. This builds a small colored
+// "star burst" glyph purely from a seed string (the user's id, or
+// their chat handle as a fallback), so the same user always gets the
+// same avatar, but different users land on visibly different shapes
+// and colors instead of everyone sharing one generic look.
+// Exposed as window.LWAvatar so other views (e.g. the nav bar, chat
+// message authors) can reuse it without duplicating this logic.
+(function () {
+    // Hue families spread around the wheel so colors read as distinct
+    // from each other rather than clustering in one range.
+    const HUES = [4, 24, 44, 96, 152, 178, 200, 222, 258, 284, 318, 340];
+    const SHAPES = ['star', 'spark', 'diamond', 'burst'];
+
+    function seedHash(seed) {
+        let hash = 0;
+        const str = String(seed || 'anon');
+        for (let i = 0; i < str.length; i++) {
+            hash = (hash * 31 + str.charCodeAt(i)) >>> 0;
+        }
+        return hash;
+    }
+
+    // Simple seeded PRNG (mulberry32) so a single hash can drive several
+    // independent "random" choices (shape, point count, rotation,
+    // second color) while staying fully deterministic per seed.
+    function makeRng(seed) {
+        let a = seedHash(seed) || 1;
+        return function () {
+            a |= 0; a = (a + 0x6D2B79F5) | 0;
+            let t = Math.imul(a ^ (a >>> 15), 1 | a);
+            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+    }
+
+    function starPoints(cx, cy, points, outerR, innerR, rotation) {
+        const step = Math.PI / points;
+        let d = '';
+        for (let i = 0; i < points * 2; i++) {
+            const r = i % 2 === 0 ? outerR : innerR;
+            const angle = i * step - Math.PI / 2 + rotation;
+            const x = cx + r * Math.cos(angle);
+            const y = cy + r * Math.sin(angle);
+            d += (i === 0 ? 'M' : 'L') + x.toFixed(1) + ',' + y.toFixed(1) + ' ';
+        }
+        return d + 'Z';
+    }
+
+    // Builds the actual <svg> markup for a given seed.
+    function avatarSvg(seed) {
+        const rng = makeRng(seed);
+        const hue1 = HUES[Math.floor(rng() * HUES.length)];
+        const hue2 = (hue1 + 40 + Math.floor(rng() * 60)) % 360;
+        const shape = SHAPES[Math.floor(rng() * SHAPES.length)];
+        const points = 4 + Math.floor(rng() * 4); // 4–7 points
+        const rotation = rng() * Math.PI * 2;
+        const gradId = 'lwav' + seedHash(seed).toString(36);
+
+        const bgGradient = `<linearGradient id="${gradId}" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="hsl(${hue1},62%,30%)"/>
+      <stop offset="100%" stop-color="hsl(${hue2},62%,20%)"/>
+    </linearGradient>`;
+
+        let glyph;
+        if (shape === 'diamond') {
+            glyph = `<rect x="18" y="18" width="28" height="28" rx="6" transform="rotate(${(rotation * 180 / Math.PI).toFixed(0)} 32 32)" fill="hsl(${hue1},85%,68%)"/>`;
+        } else if (shape === 'burst') {
+            glyph = `<path d="${starPoints(32, 32, points, 22, 8, rotation)}" fill="hsl(${hue1},90%,70%)"/>
+      <circle cx="32" cy="32" r="6" fill="hsl(${hue2},90%,82%)"/>`;
+        } else {
+            // 'star' / 'spark' — same construction, spark just gets one
+            // extra thin inner ring for a bit more sparkle.
+            glyph = `<path d="${starPoints(32, 32, points, 21, shape === 'spark' ? 6 : 9, rotation)}" fill="hsl(${hue1},88%,70%)"/>`;
+            if (shape === 'spark') {
+                glyph += `<path d="${starPoints(32, 32, points + 1, 12, 4, rotation + 0.4)}" fill="hsl(${hue2},90%,84%)" opacity="0.85"/>`;
+            }
+        }
+
+        return `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="User avatar">
+      <defs>${bgGradient}</defs>
+      <circle cx="32" cy="32" r="32" fill="url(#${gradId})"/>
+      ${glyph}
+    </svg>`;
+    }
+
+    // Renders into any element (clears its content, e.g. the "?"
+    // placeholder text) for the given seed.
+    function renderInto(el, seed) {
+        if (!el) return;
+        el.innerHTML = avatarSvg(seed);
+        el.classList.add('avatar--generated');
+    }
+
+    window.LWAvatar = { svg: avatarSvg, renderInto };
+})();
+
+
+// ------------------------------------------------------------
 // SESSION-AWARE STORAGE READS
 // saveSession() (services/auth.js) puts currentUserId/currentUserData in
 // localStorage when "Remember me" was checked, but in sessionStorage
@@ -582,6 +683,15 @@ function initSecondaryLocationForm() {
 function paintAccountExtras(user) {
     if (el('profileCity')) el('profileCity').textContent = user.city || '—';
     if (el('acctProfileRegion')) el('acctProfileRegion').textContent = user.region || '—';
+
+    // Unique per-user colored SVG avatar — replaces the old bare "?"
+    // placeholder. Seeded on the user's id so it's stable across visits;
+    // falls back to their chat handle if id isn't available yet.
+    const avatarSeed = user._id || user.id || user.chatHandle || localStorage.getItem('chatHandle');
+    if (window.LWAvatar && avatarSeed) {
+        window.LWAvatar.renderInto(el('profileAvatar'), avatarSeed);
+        window.LWAvatar.renderInto(el('sidebarAvatar'), avatarSeed);
+    }
 
     // The badge used to say "Active contributor" for everyone, whether
     // or not they'd ever done anything — swap it for something true:

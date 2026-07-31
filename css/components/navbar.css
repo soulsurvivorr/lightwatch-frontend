@@ -3,7 +3,16 @@
    ============================================================ */
 
 .topbar {
+  /* Matches #view-home's actual page background (var(--dark-bg), see
+     home.css) and location.css's var(--dark-bg) panel background —
+     confirmed by a pre-existing comment further down in home.css that
+     already documented this as the intended value. Previously used
+     --bottom-nav-surface (the bottom nav's lighter gray-blue "raised
+     pill" token) instead, which is why the topbar visibly read as a
+     different, lighter shade than the rest of the page on Home. */
+  background: linear-gradient(180deg, var(--dark-bg), var(--dark-bg-mid));
   backdrop-filter: blur(6px);
+  width: 100%;
   position: sticky;
   top: 0;
   z-index: 10;

@@ -641,8 +641,8 @@
           <span class="lw-icon-btn__badge bottom-nav-badge bottom-nav-badge--mono" data-nav-badge="notifications" hidden aria-hidden="true"></span>
           <span class="lw-icon-btn__dot bottom-nav-dot" data-nav-dot="notifications" hidden aria-hidden="true"></span>
         </a>
-        <a href="#" class="lw-header-avatar-btn" data-nav="account" data-route="account" role="button" aria-label="Account">
-          <span class="avatar avatar--nav" id="navAccountAvatar">?</span>
+        <a href="#" class="lw-icon-btn" data-nav="favorites" data-route="location" data-filter="favorites" role="button" aria-label="Favorites">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="m12 4 2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 18.9l-5.8 3 1.1-6.5L2.6 10.8l6.5-.9L12 4Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
         </a>
       </div>
     </div>
@@ -794,7 +794,6 @@
           <div class="status-hero">
             <div class="status-hero__text">
               <div class="status-hero__title" id="statusPillText" data-skel="line">Checking status…</div>
-              <p class="card__meta status-hero__location" id="locationMeta" data-skel="line">Your chosen location</p>
               <div class="status-hero__sub">
                 Since <strong id="lastVerified" data-skel="line">—</strong>
                 <span class="pulse pulse--low" id="statusPulse" style="display:inline-block;width:6px;height:6px;vertical-align:middle;margin-left:8px;"></span>
@@ -872,7 +871,6 @@
         <div class="lw-section">
           <div class="lw-section__head">
             <span class="lw-section__title">Live updates in your area</span>
-            <a href="#" class="lw-section__viewall" data-route="chat" data-panel="news" aria-label="Open Official News">View more news</a>
           </div>
           <div class="lw-live-card trend-banner trend-banner--stable" id="trendBanner">
             <div>
@@ -909,7 +907,6 @@
         <div class="lw-section">
           <div class="lw-section__head">
             <span class="lw-section__title">Community activity</span>
-            <a href="#" class="lw-section__viewall" data-route="chat" data-panel="news" aria-label="Open Official News">View more news</a>
           </div>
           <div class="lw-community-card">
             <div class="community-activity" id="communityActivity">
@@ -993,7 +990,7 @@
             <div><span>Contact</span><strong id="profileContact" data-skel="line">—</strong></div>
             <div><span>Location</span><strong id="profileRegion" data-skel="line">—</strong></div>
           </div>
-          <button type="button" class="btn btn--ghost" id="profileSignOutBtn" data-action="signout">Log out</button>
+          <button type="button" class="btn btn--ghost" id="homeProfileSignOutBtn" data-action="signout">Log out</button>
         </div>
 
         <div class="card achievement-card" id="achievementCard" hidden>
@@ -1134,12 +1131,31 @@
              see below. -->
         <!-- ==== Official News panel (default) ==== -->
         <div class="report-panel" id="reportPanelNews" data-panel="news" role="region" aria-labelledby="reportTabNewsBtn">
-          <h2 id="reportTabNewsBtn" class="card__title">Official News</h2>
+          <div class="report-tabs" role="tablist" aria-label="Report page section">
+            <button type="button" class="report-tab is-active" data-tab="news" role="tab" aria-selected="true" aria-controls="reportPanelNews">Official News</button>
+            <button type="button" class="report-tab" data-tab="community" role="tab" aria-selected="false" aria-controls="reportPanelCommunity">Community Report</button>
+          </div>
+          <div class="news-page-header">
+            <h1 class="news-page-header__title" id="reportTabNewsBtn">Power News</h1>
+            <p class="news-page-header__sub">Latest updates from ECG and media outlets.</p>
+          </div>
+
+          <!-- Client-side filter over the same fetched article list —
+               js/views/news.js keeps the last GET /news response around
+               and re-renders from it on tab click, no extra fetch. -->
+          <div class="news-category-tabs" id="newsCategoryTabs" role="tablist" aria-label="Filter news by category">
+            <button type="button" class="news-category-tab is-active" data-news-filter="all" role="tab" aria-selected="true">All News</button>
+            <button type="button" class="news-category-tab" data-news-filter="official" role="tab" aria-selected="false">ECG Official</button>
+            <button type="button" class="news-category-tab" data-news-filter="outage" role="tab" aria-selected="false">Outages</button>
+            <button type="button" class="news-category-tab" data-news-filter="maintenance" role="tab" aria-selected="false">Maintenance</button>
+            <button type="button" class="news-category-tab" data-news-filter="alert" role="tab" aria-selected="false">Alerts</button>
+          </div>
+
           <!-- Populated live by js/views/news.js from GET /news — ECG's
                own announcements first, then other trusted outlets,
-               newest first. Toggle (chevron) and expand/collapse
-               behavior is bound once by news.js on this container via
-               a delegated click listener, so newly-rendered articles
+               newest first. Card click-through (open source article)
+               is bound once by news.js on this container via a
+               delegated click listener, so newly-rendered articles
                need no per-item JS. -->
           <div class="news-feed" id="officialNewsFeed" data-news-feed></div>
         </div>
@@ -1152,27 +1168,96 @@
              the bottom nav's data-nav="community" data-route="chat"
              data-panel="community" link. -->
         <div class="report-panel" id="reportPanelCommunity" data-panel="community" role="region" aria-labelledby="reportPanelCommunity" hidden>
-          <div class="hero-banner report-banner">
-            <p class="hero-banner__eyebrow">Report</p>
-            <h1 class="hero-banner__greeting">Community reports</h1>
-            <p class="hero-banner__sub">Official updates, stay informed before reporting.</p>
-          </div>
-          <h2 id="reportPanelCommunity" class="card__title">Community Report</h2>
-          <div class="card chat-card">
-            <div class="card__head chat-card__head">
-              <div>
-                <span class="card__title">Community reports</span>
-                <span class="card__meta">Posting as <strong id="chatHandle" data-skel="line">anon-glow-291</strong></span>
+          <div class="hero-banner report-banner community-banner">
+            <div class="community-banner__row">
+              <div class="community-banner__text">
+                <h1 class="community-banner__title" id="reportPanelCommunity">Community Report</h1>
+                <p class="community-banner__sub">Real-time updates from the community</p>
               </div>
-              <button type="button" id="mobileChatClose" class="chat-close-btn" aria-label="Close chat"><svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:0.9em;height:0.9em;" aria-hidden="true"><path d="M3 3l10 10M13 3 3 13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+              <!-- Mobile-only quick actions — the topbar (with its own
+                   search/notifications) is hidden while this panel is
+                   active on small screens, see chat.css, so this row
+                   stands in for it there. Hidden again on desktop where
+                   the real topbar is visible. -->
+              <div class="community-banner__actions">
+                <button type="button" class="community-banner__icon-btn" id="communitySearchBtn" aria-label="Search reports">
+                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/><path d="m20 20-3.2-3.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                </button>
+                <a href="#" class="community-banner__icon-btn" data-nav="notifications" data-route="notifications" aria-label="Notifications">
+                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 3.5c-3.2 0-5.6 2.5-5.6 5.8v3.1c0 .6-.2 1.2-.6 1.7l-1 1.3c-.6.8 0 2 1 2h12.4c1 0 1.6-1.2 1-2l-1-1.3c-.4-.5-.6-1.1-.6-1.7V9.3c0-3.3-2.4-5.8-5.6-5.8Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9.7 19.5a2.4 2.4 0 0 0 4.6 0" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+                  <span class="lw-icon-btn__badge bottom-nav-badge bottom-nav-badge--mono" data-nav-badge="notifications" hidden aria-hidden="true"></span>
+                </a>
+              </div>
             </div>
+            <div class="report-tabs" role="tablist" aria-label="Report page section">
+              <button type="button" class="report-tab" data-tab="news" role="tab" aria-selected="false" aria-controls="reportPanelNews">Official News</button>
+              <button type="button" class="report-tab is-active" data-tab="community" role="tab" aria-selected="true" aria-controls="reportPanelCommunity">Community Report</button>
+            </div>
+          </div>
+
+          <div class="card chat-card">
             <div class="chat-scope-row" aria-label="Chat visibility scope">
               <span class="chat-scope-label">Audience</span>
               <div class="chat-scope-options" role="tablist" aria-label="Chat audience">
-                <button type="button" class="chat-scope-option is-active" id="chatScopeLocalBtn" data-scope="local" role="tab" aria-selected="true">Only your location</button>
-                <button type="button" class="chat-scope-option" id="chatScopeGlobalBtn" data-scope="global" role="tab" aria-selected="false">Everyone</button>
+                <button type="button" class="chat-scope-option is-active" id="chatScopeLocalBtn" data-scope="local" role="tab" aria-selected="true">
+                  <svg class="chat-scope-option__icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 21s7-7.02 7-12a7 7 0 1 0-14 0c0 4.98 7 12 7 12Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="9" r="2.4" stroke="currentColor" stroke-width="1.8"/></svg>
+                  <span class="chat-scope-option__label">Your Location</span>
+                </button>
+                <button type="button" class="chat-scope-option" id="chatScopeGlobalBtn" data-scope="global" role="tab" aria-selected="false">
+                  <svg class="chat-scope-option__icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 12h17M12 3.5c2.4 2.3 3.7 5.4 3.7 8.5s-1.3 6.2-3.7 8.5c-2.4-2.3-3.7-5.4-3.7-8.5S9.6 5.8 12 3.5Z" stroke="currentColor" stroke-width="1.6"/></svg>
+                  <span class="chat-scope-option__label">Everyone</span>
+                </button>
               </div>
             </div>
+
+            <form class="chat-form community-composer" id="chatForm" action="javascript:void(0)">
+              <div class="community-composer__top">
+                <span class="avatar community-composer__avatar" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 12.5a4.3 4.3 0 1 0 0-8.6 4.3 4.3 0 0 0 0 8.6Z" stroke="currentColor" stroke-width="1.6"/><path d="M4.2 20c1.1-3.6 3.9-5.8 7.8-5.8s6.7 2.2 7.8 5.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+                </span>
+                <div class="chat-reply-preview" id="chatReplyPreview" hidden>
+                  <span class="chat-reply-preview__label">Replying to <strong id="chatReplyHandle">someone</strong></span>
+                  <p class="chat-reply-preview__text" id="chatReplyText"></p>
+                  <button type="button" class="chat-reply-preview__cancel" id="chatReplyCancel" aria-label="Cancel reply">×</button>
+                </div>
+                <textarea class="chat-form__input community-composer__input" id="chatInput" placeholder="What's happening with power in your area?" maxlength="240" data-skel="input" rows="1" enterkeyhint="send"></textarea>
+              </div>
+              <div class="community-composer__bottom">
+                <div class="community-composer__status" role="group" aria-label="Report status">
+                  <button type="button" class="community-status-btn community-status-btn--on" id="statusOnBtn" data-status="on" aria-pressed="false">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+                    Light is ON
+                  </button>
+                  <button type="button" class="community-status-btn community-status-btn--off" id="statusOffBtn" data-status="off" aria-pressed="false">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+                    Light is OFF
+                  </button>
+                  <button type="button" class="community-status-btn community-status-btn--media" id="statusMediaBtn" aria-label="Add photo">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1-1.6h7l1 1.6h2A1.5 1.5 0 0 1 20 8.5v9A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5v-9Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.2" stroke="currentColor" stroke-width="1.6"/></svg>
+                    <span class="community-status-btn__label-full">Add Photo</span>
+                  </button>
+                </div>
+                <button type="submit" class="btn btn--primary community-post-btn" id="chatSendBtn" disabled>
+                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4 12 20 4l-6 16-3-7-7-1Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+                  Post
+                </button>
+              </div>
+            </form>
+
+            <div class="community-reports-head">
+              <h2 class="community-reports-head__title">Recent Reports</h2>
+              <div class="community-reports-head__actions">
+                <button type="button" class="community-sort-btn" id="communitySortBtn" aria-expanded="false">
+                  Latest
+                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+                <button type="button" class="community-nearby-btn" id="communityNearbyBtn" aria-pressed="false">
+                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 21s7-7.02 7-12a7 7 0 1 0-14 0c0 4.98 7 12 7 12Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="12" cy="9" r="2.2" stroke="currentColor" stroke-width="1.7"/></svg>
+                  Nearby
+                </button>
+              </div>
+            </div>
+
             <div class="chat-thread-wrap">
               <button type="button" class="chat-scroll-top-btn" id="chatScrollTopBtn" aria-label="Scroll to earliest messages" hidden>
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -1186,16 +1271,11 @@
                 </svg>
               </button>
             </div>
-            <form class="chat-form" id="chatForm" action="javascript:void(0)">
-              <div class="chat-reply-preview" id="chatReplyPreview" hidden>
-                <span class="chat-reply-preview__label">Replying to <strong id="chatReplyHandle">someone</strong></span>
-                <p class="chat-reply-preview__text" id="chatReplyText"></p>
-                <button type="button" class="chat-reply-preview__cancel" id="chatReplyCancel" aria-label="Cancel reply">×</button>
-              </div>
-              <textarea class="chat-form__input" id="chatInput" placeholder="Share an update..." maxlength="240" data-skel="input" rows="1" enterkeyhint="send"></textarea>
-              <button type="submit" class="btn btn--primary" id="chatSendBtn" disabled>Send</button>
-            </form>
           </div>
+
+          <button type="button" class="community-fab" id="communityFabBtn" aria-label="Make a report">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+          </button>
         </div>
       </main>
     </section>
@@ -1461,7 +1541,7 @@
         <div class="danger-zone" id="accountSignOutZone" style="margin-top: 16px;">
           <div class="danger-zone__title">Sign out</div>
           <div class="danger-zone__sub">You'll need to verify your contact to sign back in.</div>
-          <button type="button" class="btn btn--ghost" id="profileSignOutBtn" data-action="signout" style="border-color: var(--red); color: var(--red); width:100%;">
+          <button type="button" class="btn btn--ghost danger-zone__signout-btn" id="profileSignOutBtn" data-action="signout">
             Log out of LightWatch
           </button>
         </div>
@@ -1879,13 +1959,19 @@
         <span class="bottom-nav-label">News</span>
       </a>
 
-       <!-- Chats — open the community report panel when tapped. -->
-       <a href="#" class="bottom-nav-link" data-nav="community" data-route="chat" data-panel="community" aria-label="Chats">
+       <!-- Account/Profile — moved down here from the topbar's top-right
+         corner (see .topbar__actions, now a Favorites shortcut instead).
+         FIX: this used to render the user's avatar circle (a bare "?"
+         placeholder, since nothing ever populated it here) — swapped for
+         a plain user-outline SVG matching the other nav icons' style so
+         it's never blank/unstyled, per request. The personalized,
+         per-user avatar (see account.js) still shows on the Account page
+         itself. -->
+       <a href="#" class="bottom-nav-link" data-nav="account" data-route="account" aria-label="Profile">
         <span class="bottom-nav-icon bottom-nav-icon--user">
-          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4 12c0-4.2 3.6-7.5 8-7.5s8 3.3 8 7.5-3.6 7.5-8 7.5c-1.02 0-2-.16-2.9-.46L4.5 20l1.1-3.36A7.1 7.1 0 0 1 4 12Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <span class="bottom-nav-badge bottom-nav-badge--mono" data-nav-badge="chat" hidden aria-hidden="true"></span>
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="8" r="3.4" stroke="currentColor" stroke-width="1.8"/><path d="M4.5 20c1.4-3.6 4.6-5.6 7.5-5.6s6.1 2 7.5 5.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </span>
-        <span class="bottom-nav-label">Chats</span>
+        <span class="bottom-nav-label">Profile</span>
       </a>
     </div>
   </div>

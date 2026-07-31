@@ -170,12 +170,42 @@
 }
 
 .news-item {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
+  display: grid;
+  grid-template-columns: 104px 1fr;
+  column-gap: 12px;
+  row-gap: 6px;
+  align-items: stretch;
   padding: 16px 4px;
   border-top: 1px solid var(--border-soft);
+}
+
+/* Media sits alone in the first column and spans the full height of
+   the card (all the way from the first to the last content row),
+   instead of sitting inline above the text as a capped-height strip.
+   Everything else (source row, headline, preview, schedule, link,
+   details) is a direct child of .news-item too — this places all of
+   it in the second column regardless of nesting, so no markup change
+   in views/news.js is required for this layout to take effect. Items
+   with no image (news.js removes a broken <img> via onerror) simply
+   leave column 1 empty and the text column still renders normally. */
+.news-item__image,
+.news-item__media {
+  grid-column: 1;
+  grid-row: 1 / -1;
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  object-fit: cover;
+  border-radius: var(--radius-sm, 10px);
+  margin: 0;
+}
+
+.news-item > *:not(.news-item__image):not(.news-item__media) {
+  grid-column: 2;
+}
+
+.news-item:not(:has(.news-item__image)):not(:has(.news-item__media)) {
+  grid-template-columns: 1fr;
 }
 
 .news-item:first-child {
@@ -283,16 +313,11 @@
   color: #3dd9c2;
 }
 
-/* Fetched-article thumbnail. Optional — items without an image just
-   skip this element entirely (news.js removes a broken <img> too, via
-   onerror, so a dead image link never leaves an empty gap). */
-.news-item__image {
-  width: 100%;
-  max-height: 160px;
-  object-fit: cover;
-  border-radius: var(--radius-sm, 10px);
-  margin: 2px 0;
-}
+/* Fetched-article thumbnail sizing lives with the grid-based
+   .news-item layout near the top of this file (full-height left
+   column) — this used to be a second, capped-height (160px)
+   definition of the same selector that, being later in the file,
+   silently overrode that one on every screen size. */
 
 /* Relative "2h ago" timestamp, sits at the end of the source row. */
 .news-item__time {
@@ -622,19 +647,21 @@
     padding: 14px 16px;
   }
 
-  /* More breathing room per article on desktop, and a taller image
-     cap — 160px (the unconditional .news-item__image rule near the
-     top of this file, sized for phone-width cards) crops most
-     landscape article photos down to a thin strip on a desktop-width
-     card. Scoped to News only; Community's chat bubbles don't carry
-     images and shouldn't grow to match. */
+  /* More breathing room per article on desktop. The media column is
+     now a full-height left block (see the grid-based .news-item
+     rules near the top of this file) rather than a capped-height
+     strip, so there's no image max-height to raise here anymore —
+     giving the row itself a min-height keeps the media column from
+     looking too short next to a long headline+preview instead. */
   #view-chat.report-mode-news .news-item {
     padding: 22px 6px;
     gap: 10px;
+    min-height: 132px;
   }
 
-  #view-chat.report-mode-news .news-item__image {
-    max-height: 320px;
+  #view-chat.report-mode-news .news-item__image,
+  #view-chat.report-mode-news .news-item__media {
+    min-height: 100%;
   }
 }
 
@@ -1648,4 +1675,578 @@
    nested control row like the report-tabs switcher here). */
 .report-banner {
   margin-bottom: 6px;
+}
+/* ============================================================
+   COMMUNITY REPORT REDESIGN (reconstruction of the reference
+   screenshot). Everything below is scoped with #view-chat so it
+   reliably wins over the older bubble-chat rules earlier in this
+   file (which stay in place — account.js's own message-preview
+   list on the Account page still uses the plain .chat-message
+   bubble look and isn't touched by any of this).
+   ============================================================ */
+
+/* ---- Mobile-only banner header (replaces the topbar while this
+   panel is open on small screens — see the .topbar display:none
+   rule further up this file) ---- */
+#view-chat .community-banner {
+  color: white;
+}
+
+#view-chat .community-banner__row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+#view-chat .community-banner__title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: white;
+  margin: 0;
+}
+
+#view-chat .community-banner__sub {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.68);
+  margin: 4px 0 0;
+}
+
+#view-chat .community-banner__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+#view-chat .community-banner__icon-btn {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: white;
+  cursor: pointer;
+}
+
+#view-chat .community-banner__icon-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+#view-chat .community-banner .report-tabs {
+  margin-top: 16px;
+  margin-bottom: 0;
+}
+
+/* Desktop: the real topbar is visible, so the mobile stand-in
+   search/notification icons are redundant here. */
+@media (min-width: 769px) {
+  #view-chat .community-banner__actions {
+    display: none;
+  }
+}
+
+/* ---- Audience row: icon + label pill buttons ---- */
+#view-chat .chat-scope-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+}
+
+#view-chat .chat-scope-option__icon {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+
+/* ---- Composer ---- */
+#view-chat .chat-form.community-composer {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  background: var(--bg-panel-raised);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  padding: 14px;
+  margin-top: 4px;
+}
+
+#view-chat .community-composer__top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+#view-chat .community-composer__avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+#view-chat .community-composer__avatar svg {
+  width: 17px;
+  height: 17px;
+}
+
+#view-chat .chat-form__input.community-composer__input {
+  flex: 1 1 160px;
+  min-width: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  padding: 6px 0;
+  min-height: 34px;
+  color: var(--text-bright);
+  font-size: 0.88rem;
+}
+
+#view-chat .community-composer__input:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+#view-chat .community-composer__bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-soft);
+}
+
+#view-chat .community-composer__status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+#view-chat .community-status-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border-soft);
+  background: transparent;
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-family: var(--font-body);
+  color: var(--text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+#view-chat .community-status-btn svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+#view-chat .community-status-btn--on {
+  color: var(--teal);
+}
+#view-chat .community-status-btn--on.is-active {
+  background: var(--teal-dim);
+  border-color: color-mix(in srgb, var(--teal) 45%, transparent);
+}
+
+#view-chat .community-status-btn--off {
+  color: var(--red);
+}
+#view-chat .community-status-btn--off.is-active {
+  background: var(--red-dim);
+  border-color: color-mix(in srgb, var(--red) 45%, transparent);
+}
+
+#view-chat .community-status-btn--media {
+  color: var(--text-muted);
+}
+
+#view-chat .community-post-btn {
+  margin-left: auto;
+  padding: 10px 18px;
+}
+
+@media (max-width: 480px) {
+  #view-chat .community-status-btn__label-full {
+    display: none;
+  }
+  #view-chat .community-status-btn--media {
+    padding: 8px;
+  }
+  #view-chat .community-post-btn {
+    padding: 9px 14px;
+  }
+}
+
+/* ---- "Recent Reports" head row ---- */
+#view-chat .community-reports-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 18px;
+  flex-wrap: wrap;
+}
+
+#view-chat .community-reports-head__title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text-bright);
+  margin: 0;
+}
+
+#view-chat .community-reports-head__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#view-chat .community-sort-btn,
+#view-chat .community-nearby-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-panel);
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+#view-chat .community-sort-btn {
+  border-color: color-mix(in srgb, var(--brand2) 45%, var(--border-soft));
+  color: var(--brand2);
+}
+
+#view-chat .community-sort-btn svg,
+#view-chat .community-nearby-btn svg {
+  width: 13px;
+  height: 13px;
+}
+
+#view-chat .community-nearby-btn.is-active {
+  border-color: color-mix(in srgb, var(--teal) 45%, var(--border-soft));
+  color: var(--teal);
+  background: var(--teal-dim);
+}
+
+/* ---- Report cards ---- */
+#view-chat .chat-message.report-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  max-width: 100%;
+  margin-left: 0;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  background: var(--bg-panel);
+  border: 1px solid var(--border-soft);
+  box-shadow: none;
+  position: relative;
+}
+
+#view-chat .chat-message.report-card.chat-message--tinted {
+  background: var(--bg-panel);
+  border-color: var(--border-soft);
+}
+
+#view-chat .chat-message.report-card.chat-message--own {
+  border-left: 3px solid var(--teal);
+}
+
+#view-chat .chat-message.report-card.chat-message--admin {
+  border-color: rgba(242, 179, 61, 0.55);
+  background: rgba(242, 179, 61, 0.06);
+}
+
+#view-chat .report-card__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+#view-chat .report-card__avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-panel-raised);
+  border: 1px solid var(--border-strong);
+  color: var(--text-muted);
+}
+
+#view-chat .chat-message.report-card.chat-message--tinted .report-card__avatar {
+  background: color-mix(in srgb, var(--msg-accent) 20%, var(--bg-panel-raised));
+  color: var(--msg-accent);
+  border-color: color-mix(in srgb, var(--msg-accent) 40%, var(--border-strong));
+}
+
+#view-chat .report-card__avatar svg {
+  width: 18px;
+  height: 18px;
+}
+
+#view-chat .report-card__who {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+#view-chat .report-card__name {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text-bright);
+  font-family: var(--font-display);
+}
+
+#view-chat .report-card__meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  color: var(--text-faint);
+}
+
+#view-chat .report-card__meta-location {
+  color: var(--brand2);
+  font-weight: 600;
+}
+
+#view-chat .report-card__meta-time::before {
+  content: "•";
+  margin-right: 6px;
+  color: var(--text-faint);
+}
+
+#view-chat .report-card__head-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+#view-chat .report-card__status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+#view-chat .report-card__status-badge svg {
+  width: 12px;
+  height: 12px;
+}
+
+#view-chat .report-card__status-badge--on {
+  background: var(--teal-dim);
+  color: var(--teal);
+  border-color: color-mix(in srgb, var(--teal) 40%, transparent);
+}
+
+#view-chat .report-card__status-badge--off {
+  background: var(--red-dim);
+  color: var(--red);
+  border-color: color-mix(in srgb, var(--red) 40%, transparent);
+}
+
+#view-chat .report-card__menu-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--text-faint);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+#view-chat .report-card__menu-btn:hover {
+  background: var(--bg-panel-raised);
+  color: var(--text-muted);
+}
+
+#view-chat .report-card__menu-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+#view-chat .report-card__text {
+  font-size: 0.86rem;
+  line-height: 1.45;
+  color: var(--text-bright);
+  margin: 0;
+}
+
+#view-chat .report-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+#view-chat .report-card__tags {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+#view-chat .report-card__tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: var(--bg-panel-raised);
+  border: 1px solid var(--border-soft);
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+#view-chat .report-card__tag svg {
+  width: 12px;
+  height: 12px;
+}
+
+#view-chat .report-card__stats {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+#view-chat .report-card__stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: none;
+  background: transparent;
+  color: var(--text-faint);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 2px;
+}
+
+#view-chat .report-card__stat svg {
+  width: 17px;
+  height: 17px;
+}
+
+#view-chat .report-card__stat--like.is-liked {
+  color: var(--red);
+}
+
+#view-chat .report-card__stat--like.is-liked svg {
+  fill: var(--red);
+}
+
+/* Reply-to preview sits between the head and the body text on a
+   report card (unchanged element, just repositioned/restyled to fit
+   the card rather than a chat bubble). */
+#view-chat .report-card .chat-message__reply {
+  order: initial;
+  margin: 0;
+}
+
+#view-chat .chat-message.report-card .chat-message__seen {
+  right: auto;
+  left: 14px;
+  bottom: -8px;
+}
+
+/* Card feed spacing — the thread is now a stack of full-width cards,
+   not a column of small right/left aligned bubbles. */
+#view-chat .chat-thread {
+  gap: 12px;
+  padding: 2px 2px 2px 0;
+}
+
+@media (min-width: 769px) {
+  #view-chat .chat-message.report-card,
+  #view-chat .chat-message.report-card.chat-message--own {
+    max-width: 100%;
+  }
+}
+
+/* ---- Floating "+" quick-report button ---- */
+#view-chat .community-fab {
+  position: sticky;
+  float: right;
+  bottom: 20px;
+  margin-top: -64px;
+  margin-right: 4px;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: none;
+  background: var(--brand);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
+  cursor: pointer;
+  z-index: 4;
+}
+
+#view-chat .community-fab svg {
+  width: 24px;
+  height: 24px;
+}
+
+#view-chat .community-fab:active {
+  transform: scale(0.95);
+}
+
+/* ---- Mobile text-size overrides, same pattern the file already
+   uses (#view-chat-scoped so it wins over the report-card rules
+   above regardless of source order) ---- */
+@media (max-width: 720px) {
+  #view-chat .report-card__text {
+    font-size: 0.82rem;
+  }
+  #view-chat .report-card__name {
+    font-size: 0.86rem;
+  }
+  #view-chat .community-banner__title {
+    font-size: 1.32rem;
+  }
 }

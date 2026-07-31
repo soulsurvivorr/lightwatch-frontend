@@ -920,7 +920,14 @@
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
   padding-bottom: 2px;
-  padding-left: 6px;
+  /* Was padding-left: 6px, which nudged this row 6px further right
+     than .loc-search/.loc-header above it (neither has that extra
+     inset) — the row's left edge now lines up with the rest of the
+     page's own padding instead of its own separate margin. The
+     matching padding-right keeps the last pill from sitting flush
+     against the screen edge once scrolled all the way to the right. */
+  padding-left: 0;
+  padding-right: 16px;
 }
 
 .loc-filters::-webkit-scrollbar {
@@ -966,8 +973,7 @@
 .loc-map {
   position: relative;
   width: 100%;
-  aspect-ratio: 4 / 5;
-  max-height: 500px;
+  height: 350px;
   border-radius: var(--radius-lg);
   overflow: hidden;
   border: 1px solid var(--border-soft);
@@ -977,10 +983,6 @@
 @media (max-width: 768px) {
   .loc-header {
     padding: 8px;
-  }
-
-  .loc-map {
-    max-height: calc(100% - 10px);
   }
 
   .loc-map__img {
@@ -1338,9 +1340,7 @@
   }
 
   .loc-map {
-    aspect-ratio: auto;
-    height: 420px;
-    max-height: 420px;
+    height: 350px;
     background: var(--app-bg-gradient);
   }
 
@@ -1352,10 +1352,6 @@
 @media (max-width: 520px) {
   .loc-header__title {
     font-size: 1.3rem;
-  }
-
-  .loc-map {
-    aspect-ratio: 1 / 1.05;
   }
 }
 
