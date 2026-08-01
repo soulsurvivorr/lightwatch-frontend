@@ -1,76 +1,93 @@
 // ============================================================
 //  VIEWS/NOTIFICATIONS.JS
-//  Loads the latest notification events for the "All notifications"
-//  page (#view-notifications .notification-list).
+//  Loads the latest notification events for the redesigned
+//  Notifications page (header + All/Priority/Mentions/System tabs +
+//  Priority preview + Earlier list — see index.html's #view-notifications).
 //
-//  Changed vs. the original reports.js:
-//   - wrapped into mount()/show()/hide(); polling starts/stops with
-//     visibility; cache read/write goes through services/cache.js
-//     (LWCache) instead of its own inline localStorage helpers.
-//   - the feed is no longer just LightStatusEvent rows. Three more
-//     kinds of activity are merged in, sorted together by time:
-//       1. community-report messages posted in the user's OWN
-//          location (server-side merge, GET /reports?includeCommunity=1)
-//       2. replies to a message THIS user posted, from anywhere
-//          (same server-side merge)
-//       3. news articles that mention the user's location by name, or
-//          that are flagged nationwide (services/news.js computes both
-//          — mentionedLocations / isNationwide — at fetch time and
-//          already pushes for them; this just also surfaces them here,
-//          via GET /news?location=...&includeNationwide=1)
-//     A new match under (3) also fires a one-time in-app toast via
-//     components/notification.js's window.lwToast, as a same-session
-//     nicety layered on top of the real push notification that already
-//     went out when the article was stored — see the comment on
-//     notifyNewMatchedNews() below.
+//  Changed vs. the previous pass:
+//   - fetch/merge pipeline (fetchCommunityNotifications, fetchMatchedNews,
+//     notifyNewMatchedNews, getCurrentUserId/getCurrentLocation) is
+//     UNCHANGED — still three sources merged and sorted by time.
+//   - NEW: classifyNotification() maps each merged item's server `type`
+//     (success/warning/chat/reply/news/admin/info) onto a display
+//     "kind" (power_off/power_on/outage_alert/trending/mention/
+//     community/report_update/system/news) plus a tab "bucket"
+//     (priority/mentions/system/other), since the reference design
+//     needs finer visual/labeling distinction than the server's flat
+//     type field gives us. Where the server doesn't carry a subtype
+//     (e.g. a generic "warning" event could be either a direct outage
+//     on the user's own location or a nearby community-reported one),
+//     this falls back to a title-text heuristic — flagged below.
+//   - NEW: synthesizeTrendingNotification() builds a client-side-only
+//     "High report activity in your area" priority card when enough
+//     community messages have landed in the last hour, matching the
+//     reference design's "Trending Report" card. Purely a UI nicety —
+//     there's no server endpoint for this, so it never gets persisted
+//     or pushed, and is recomputed fresh on every merge.
+//   - NEW: local read/unread tracking (READ_IDS_KEY) since the server
+//     data has no read flag; "Mark all as read" and opening a card
+//     both write to it. Tab badge counts are unread tallies per bucket.
+//   - NEW: renderNotifications() replaced by render(), which fills
+//     either (a) the Priority preview + Earlier list (All tab) or
+//     (b) a single flat list (Priority/Mentions/System tabs).
+//   - NEW: mount()/show()/hide() now toggle body.lw-notif-view, which
+//     css/views/notifications.css uses to hide the shared .topbar on
+//     this view below the 1024px breakpoint (req: page gets its own
+//     header instead of the shared brand bar).
 // ============================================================
 
 (function () {
     const NOTIFICATIONS_CACHE_KEY = 'lw_cache_notifications_list';
     const NOTIFICATIONS_NEWS_CACHE_KEY = 'lw_cache_notifications_matched_news';
     const SEEN_NOTIFICATION_NEWS_IDS_KEY = 'lw_seen_notification_news_ids';
+    const READ_IDS_KEY = 'lw_read_notification_ids';
     const MAX_SEEN_NEWS_IDS = 300; // cap so this never grows unbounded in localStorage
+    const MAX_READ_IDS = 500;
+    const TRENDING_REPORT_THRESHOLD = 8; // community messages in the last hour
     let notificationsPollTimer = null;
 
-    // ---- All / Priority / Mentions filter --------------------------
-    // Priority = the stuff that's about the grid itself: news matched
-    // to the user's location(s) plus LightStatus updates for their own
-    // location(s) (the 'success'/'warning' types already used for
-    // outage/restoration events elsewhere in this feed).
-    // Mentions = activity directed at the user personally: replies to
-    // something they posted, or a community message.
-    const FILTER_TYPES = {
-        priority: new Set(['news', 'warning', 'success']),
-        mentions: new Set(['chat', 'reply'])
-    };
-
+    // ---- All / Priority / Mentions / System tabs --------------------
+    // Bucket assignment happens per-item in classifyNotification() below
+    // (not by raw server `type` alone) so it can match the reference
+    // design's grouping: e.g. a "power restored" event is NOT priority
+    // there (only an active outage is), even though both come from the
+    // same server type family.
     let activeFilter = 'all';
     let latestMergedNotifications = [];
+    let searchQuery = '';
 
     function applyNotificationFilter(notifications) {
-        if (activeFilter === 'all') return notifications;
-        const allowed = FILTER_TYPES[activeFilter];
-        if (!allowed) return notifications;
-        return notifications.filter(n => allowed.has(n.type));
+        let list = notifications;
+        if (activeFilter !== 'all') {
+            list = list.filter(n => n._bucket === activeFilter);
+        }
+        if (searchQuery) {
+            const q = searchQuery.toLowerCase();
+            list = list.filter(n =>
+                (n.title || '').toLowerCase().includes(q) ||
+                (n.text || '').toLowerCase().includes(q));
+        }
+        return list;
     }
 
     function bindFilterTabs() {
-        const tabs = document.querySelectorAll('.notifications-banner .notif-filter-tab');
+        const tabs = document.querySelectorAll('.notif-tabs .notif-tab');
         if (!tabs.length || tabs[0].dataset.bound === '1') return;
         tabs.forEach(tab => {
             tab.dataset.bound = '1';
-            tab.addEventListener('click', () => {
-                const filter = tab.dataset.filter || 'all';
-                if (filter === activeFilter) return;
-                activeFilter = filter;
-                tabs.forEach(t => {
-                    const isActive = t === tab;
-                    t.classList.toggle('is-active', isActive);
-                    t.setAttribute('aria-selected', String(isActive));
-                });
-                renderNotifications(applyNotificationFilter(latestMergedNotifications));
-            });
+            tab.addEventListener('click', () => setActiveFilter(tab.dataset.filter || 'all'));
         });
+    }
+
+    function setActiveFilter(filter) {
+        if (filter === activeFilter) return;
+        activeFilter = filter;
+        document.querySelectorAll('.notif-tabs .notif-tab').forEach(t => {
+            const isActive = t.dataset.filter === filter;
+            t.classList.toggle('is-active', isActive);
+            t.setAttribute('aria-selected', String(isActive));
+        });
+        render();
     }
 
     // ---- Whose feed is this? ---------------------------------------
@@ -102,6 +119,12 @@
             .replace(/"/g, '&quot;');
     }
 
+    function initials(name) {
+        const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+        if (!parts.length) return '?';
+        return (parts[0][0] + (parts[1] ? parts[1][0] : '')).toUpperCase();
+    }
+
     // News matching itself now happens server-side (GET /news?location=
     // &includeNationwide=1) against services/news.js's real computed
     // mentionedLocations/isNationwide fields — not a client-side keyword
@@ -120,71 +143,282 @@
         };
     }
 
-    // ---- Rendering ----------------------------------------------------
-    function notificationItemMeta(notification) {
+    // ---- Classification ---------------------------------------------
+    // Maps a merged item's server `type` (plus a light title heuristic
+    // where the server doesn't carry a finer subtype) onto:
+    //   kind   — which visual template/icon/label to use
+    //   bucket — which tab it counts toward ('priority' | 'mentions' |
+    //            'system' | 'other'; 'other' only ever shows under the
+    //            All tab's Earlier list, matching the reference design
+    //            where a restored/"Power ON" event isn't urgent enough
+    //            to be Priority but also isn't a Mention or a System
+    //            message)
+    //   accent — whether it gets the left accent-stripe treatment
+    //            (reference design reserves that for Priority items)
+    const KIND_META = {
+        power_off:    { label: 'Power Off',      chip: 'POWER OFF',      color: 'red',    bucket: 'priority', accent: true  },
+        outage_alert: { label: 'Outage Alert',   chip: 'OUTAGE ALERT',   color: 'amber',  bucket: 'priority', accent: true  },
+        trending:     { label: 'Trending Report',chip: 'TRENDING REPORT',color: 'blue',   bucket: 'priority', accent: true  },
+        news:         { label: 'News',           chip: 'NEWS',           color: 'amber',  bucket: 'priority', accent: true  },
+        power_on:     { label: 'Power On',       chip: 'POWER ON',       color: 'green',  bucket: 'other',    accent: false },
+        mention:      { label: 'Mention',        chip: 'MENTION',        color: 'blue',   bucket: 'mentions', accent: false },
+        community:    { label: 'Community',      chip: 'COMMUNITY',      color: 'teal',   bucket: 'mentions', accent: false },
+        report_update:{ label: 'Report Update',  chip: 'REPORT UPDATE',  color: 'purple', bucket: 'system',   accent: false },
+        system:       { label: 'System',         chip: 'SYSTEM',         color: 'blue',   bucket: 'system',   accent: false }
+    };
+
+    function classifyNotification(notification) {
+        let kind;
         switch (notification.type) {
-            case 'success': return { cls: 'notification-item--success', icon: '✅ ' };
-            case 'warning': return { cls: 'notification-item--warning', icon: '⚠️ ' };
-            case 'chat':    return { cls: 'notification-item--chat', icon: '💬 ' };
-            case 'reply':   return { cls: 'notification-item--reply', icon: '↩️ ' };
-            case 'news':    return { cls: 'notification-item--news', icon: '📰 ' };
-            case 'admin':   return { cls: 'notification-item--admin', icon: '' }; // icon is already baked into notification.title server-side
-            default:        return { cls: 'notification-item--info', icon: '' };
+            case 'warning':
+                // Server "warning" covers both a direct outage on a
+                // followed location and a nearby community-reported one;
+                // it doesn't carry which. Titles written by the outage
+                // pipeline start "Power is OFF ..." — anything else in
+                // this type is treated as a nearby community alert.
+                kind = /^power is off/i.test(notification.title || '') ? 'power_off' : 'outage_alert';
+                break;
+            case 'success':
+                kind = 'power_on';
+                break;
+            case 'reply':
+                kind = 'mention';
+                break;
+            case 'chat':
+                kind = 'community';
+                break;
+            case 'admin':
+                kind = 'report_update';
+                break;
+            case 'news':
+                kind = 'news';
+                break;
+            case 'trending':
+                kind = 'trending';
+                break;
+            default:
+                kind = 'system';
+        }
+        const meta = KIND_META[kind];
+        return { ...notification, _kind: kind, _bucket: meta.bucket, _meta: meta };
+    }
+
+    // A purely client-side insight, not a real server notification: if
+    // enough community messages for the user's own location landed in
+    // the last hour, surface a "High report activity" priority card,
+    // matching the reference design's Trending Report item. Recomputed
+    // on every merge; never cached/persisted on its own.
+    function synthesizeTrendingNotification(notifications) {
+        const location = getCurrentLocation();
+        const oneHourAgo = Date.now() - 60 * 60 * 1000;
+        const recentCommunityCount = notifications.filter(n =>
+            n.type === 'chat' && new Date(n.reportedAt).getTime() >= oneHourAgo
+        ).length;
+        if (recentCommunityCount < TRENDING_REPORT_THRESHOLD) return null;
+        return {
+            id: `trending-${new Date().toISOString().slice(0, 13)}`, // stable per hour, so it doesn't re-"arrive" every poll
+            title: 'High report activity in your area',
+            text: `More than ${recentCommunityCount} reports in the last hour.`,
+            reportedAt: new Date().toISOString(),
+            type: 'trending',
+            location: location || undefined
+        };
+    }
+
+    // ---- Read/unread tracking ----------------------------------------
+    // The server data has no read flag, so read state is tracked
+    // locally per notification id. Anything not in this set counts as
+    // unread for badge counts and the small side dot.
+    function getReadIds() {
+        try { return new Set(JSON.parse(localStorage.getItem(READ_IDS_KEY) || '[]')); }
+        catch { return new Set(); }
+    }
+
+    function markIdsRead(ids) {
+        if (!ids.length) return;
+        const set = getReadIds();
+        ids.forEach(id => set.add(id));
+        const trimmed = Array.from(set).slice(-MAX_READ_IDS);
+        localStorage.setItem(READ_IDS_KEY, JSON.stringify(trimmed));
+    }
+
+    // ---- Rendering ----------------------------------------------------
+    function metaLine(notification) {
+        const parts = [];
+        if (notification.location) parts.push(escapeHtml(notification.location));
+        parts.push(LWHelpers.formatRelativeTimeFromDate(notification.reportedAt));
+        return parts.join(' <span class="notif-card__meta-dot">•</span> ');
+    }
+
+    function kindIconSvg(kind) {
+        switch (kind) {
+            case 'power_off':
+            case 'power_on':
+                return '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>';
+            case 'outage_alert':
+                return '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="8.4" stroke="currentColor" stroke-width="1.6"/><path d="M12 7.8v5.6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><circle cx="12" cy="16.4" r="1" fill="currentColor"/></svg>';
+            case 'trending':
+            case 'community':
+                return '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4.5 6.8c0-1.3 1-2.3 2.3-2.3h10.4c1.3 0 2.3 1 2.3 2.3v6.6c0 1.3-1 2.3-2.3 2.3H9.8L6 19v-3.3H6.8c-1.3 0-2.3-1-2.3-2.3V6.8Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M8 8.6h8M8 11.4h5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>';
+            case 'news':
+                return '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M5 4h11a2 2 0 0 1 2 2v13a1 1 0 0 1-1.5.87L15 18.7l-1.5 1.17a1 1 0 0 1-1.2 0L11 18.7l-1.5 1.17a1 1 0 0 1-1.5-.87V6a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M8 8h6M8 11h6M8 14h3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>';
+            case 'report_update':
+                return '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M7.5 4.2h9a1 1 0 0 1 1 1v14.3l-5.5-3.6-5.5 3.6V5.2a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>';
+            case 'system':
+            default:
+                return '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 3.5 19 6v5.4c0 4.4-3 7.9-7 9.1-4-1.2-7-4.7-7-9.1V6l7-2.5Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M9 12.1l2 2 4-4.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
         }
     }
 
-    function renderNotifications(notifications) {
-        const notificationList = document.querySelector('#view-notifications .notification-list');
-        if (!notificationList) return;
-        notificationList.classList.remove('loading');
+    const CHEVRON_SVG = '<svg class="notif-card__chevron" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
-        if (!notifications || notifications.length === 0) {
-            notificationList.innerHTML = '<article class="notification-item notification-item--info"><div><strong>No recent notifications yet</strong><p class="notification-item__text">Once users start sharing updates, they will appear here.</p></div><span class="notification-item__time">—</span></article>';
-            return;
-        }
+    function renderCard(notification, readIds) {
+        const { _kind: kind, _meta: meta } = notification;
+        const isUnread = !readIds.has(notification.id);
+        const isClickable = kind === 'mention' || kind === 'community' || kind === 'news' || kind === 'report_update';
+        const dataAttrs = kind === 'news'
+            ? `data-action="open-news" data-url="${escapeHtml(notification.url)}"`
+            : (kind === 'mention' || kind === 'community' || kind === 'report_update')
+                ? `data-action="open-chat" data-chat-id="${escapeHtml(notification.chatId)}" data-chat-scope="${escapeHtml(notification.chatScope || 'local')}" data-chat-location="${escapeHtml(notification.chatLocation || '')}"`
+                : '';
 
-        notificationList.innerHTML = notifications.map(notification => {
-            const { cls, icon } = notificationItemMeta(notification);
-            const isClickable = notification.type === 'chat' || notification.type === 'reply' || notification.type === 'news' || notification.type === 'admin';
-            const dataAttrs = notification.type === 'news'
-                ? `data-action="open-news" data-url="${escapeHtml(notification.url)}"`
-                : (notification.type === 'chat' || notification.type === 'reply' || notification.type === 'admin')
-                    ? `data-action="open-chat" data-chat-id="${escapeHtml(notification.chatId)}" data-chat-scope="${escapeHtml(notification.chatScope || 'local')}" data-chat-location="${escapeHtml(notification.chatLocation || '')}"`
-                    : '';
-            return `
-            <article class="notification-item ${cls}"${isClickable ? ` tabindex="0" role="link" ${dataAttrs}` : ''}>
-              <div>
-                <strong>${icon}${escapeHtml(notification.title)}</strong>
-                <p class="notification-item__text">${escapeHtml(notification.text)}</p>
+        const iconOrAvatar = kind === 'mention'
+            ? `<span class="notif-card__avatar" style="background:${avatarGradient(notification.fromUser || notification.title)}">${escapeHtml(initials(notification.fromUser))}<span class="notif-card__avatar-badge">@</span></span>`
+            : `<span class="notif-card__icon notif-card__icon--${meta.color}">${kindIconSvg(kind)}</span>`;
+
+        const handleLine = kind === 'mention' && notification.handle
+            ? `<p class="notif-card__text"><span class="notif-card__handle">@${escapeHtml(notification.handle)}</span> ${escapeHtml(notification.text)}</p>`
+            : `<p class="notif-card__text">${escapeHtml(notification.text)}</p>`;
+
+        return `
+            <article class="notif-card${meta.accent ? ` notif-card--accent notif-card--${meta.color}` : ''}"${isClickable ? ` tabindex="0" role="link" ${dataAttrs}` : ''} data-id="${escapeHtml(notification.id)}">
+              ${iconOrAvatar}
+              <div class="notif-card__body">
+                <span class="notif-card__label notif-card__label--${meta.color}">${meta.chip}</span>
+                <strong class="notif-card__title">${escapeHtml(notification.title)}</strong>
+                <p class="notif-card__meta">${metaLine(notification)}</p>
+                ${handleLine}
               </div>
-              <span class="notification-item__time">${LWHelpers.formatRelativeTimeFromDate(notification.reportedAt)}</span>
-            </article>
-        `;
-        }).join('');
+              <div class="notif-card__side">
+                ${isUnread ? `<span class="notif-card__dot notif-card__dot--${meta.accent ? meta.color : 'gray'}" aria-hidden="true"></span>` : ''}
+                ${CHEVRON_SVG}
+              </div>
+            </article>`;
+    }
+
+    // Deterministic-ish gradient per person so the same author always
+    // gets the same avatar color within a session, without needing a
+    // real per-user avatar image/URL from the server.
+    const AVATAR_PALETTES = [
+        'linear-gradient(135deg, var(--teal), var(--teal-dim))',
+        'linear-gradient(135deg, #7c4dff, #4527a0)',
+        'linear-gradient(135deg, var(--brand2), var(--brand2-dim))',
+        'linear-gradient(135deg, var(--amber), var(--amber-dim))'
+    ];
+    function avatarGradient(seed) {
+        const str = String(seed || '');
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) hash = (hash * 31 + str.charCodeAt(i)) >>> 0;
+        return AVATAR_PALETTES[hash % AVATAR_PALETTES.length];
+    }
+
+    function emptyStateHtml(message) {
+        return `<article class="notif-card notif-card--empty"><div class="notif-card__body"><strong class="notif-card__title">${escapeHtml(message)}</strong></div></article>`;
+    }
+
+    function updateTabBadges(notifications, readIds) {
+        const counts = { all: 0, priority: 0, mentions: 0, system: 0 };
+        notifications.forEach(n => {
+            if (readIds.has(n.id)) return;
+            counts.all++;
+            if (n._bucket === 'priority') counts.priority++;
+            else if (n._bucket === 'mentions') counts.mentions++;
+            else if (n._bucket === 'system') counts.system++;
+        });
+        Object.keys(counts).forEach(key => {
+            const badge = document.querySelector(`.notif-tabs [data-tab-count="${key}"]`);
+            if (!badge) return;
+            badge.textContent = String(counts[key]);
+            badge.hidden = counts[key] === 0;
+        });
+    }
+
+    const FILTER_TITLES = { priority: 'Priority', mentions: 'Mentions', system: 'System' };
+
+    function render() {
+        const classified = latestMergedNotifications;
+        const readIds = getReadIds();
+        updateTabBadges(classified, readIds);
+
+        const prioritySection = document.getElementById('notifPrioritySection');
+        const earlierSection = document.getElementById('notifEarlierSection');
+        const flatSection = document.getElementById('notifFlatSection');
+        if (!prioritySection || !earlierSection || !flatSection) return;
+
+        const filtered = applyNotificationFilter(classified);
+
+        if (activeFilter === 'all') {
+            flatSection.hidden = true;
+            prioritySection.hidden = false;
+            earlierSection.hidden = false;
+
+            const priorityItems = filtered.filter(n => n._bucket === 'priority');
+            const earlierItems = filtered.filter(n => n._bucket !== 'priority');
+
+            const priorityList = document.getElementById('notifPriorityList');
+            const earlierList = document.getElementById('notifEarlierList');
+
+            priorityList.innerHTML = priorityItems.length
+                ? priorityItems.slice(0, 3).map(n => renderCard(n, readIds)).join('')
+                : emptyStateHtml('No priority alerts right now');
+
+            earlierList.innerHTML = earlierItems.length
+                ? earlierItems.map(n => renderCard(n, readIds)).join('')
+                : emptyStateHtml('Nothing else to catch up on');
+        } else {
+            prioritySection.hidden = true;
+            earlierSection.hidden = true;
+            flatSection.hidden = false;
+
+            document.getElementById('notifFlatTitle').textContent = FILTER_TITLES[activeFilter] || 'Notifications';
+            const flatList = document.getElementById('notifFlatList');
+            flatList.innerHTML = filtered.length
+                ? filtered.map(n => renderCard(n, readIds)).join('')
+                : emptyStateHtml(`No ${(FILTER_TITLES[activeFilter] || 'matching').toLowerCase()} notifications yet`);
+        }
     }
 
     function showNotificationLoading() {
-        const notificationList = document.querySelector('#view-notifications .notification-list');
-        if (!notificationList) return;
-        notificationList.classList.add('loading');
-        notificationList.innerHTML = Array.from({ length: 4 }).map(() => `
-        <article class="notification-item notification-skeleton">
-          <div style="height: 60px;"></div>
-        </article>
-    `).join('');
+        ['notifPriorityList', 'notifEarlierList', 'notifFlatList'].forEach(id => {
+            const list = document.getElementById(id);
+            if (!list) return;
+            list.innerHTML = Array.from({ length: 3 }).map(() => `
+              <article class="notif-card notif-card--skeleton"><div class="skel skel-block" style="height:76px;"></div></article>
+            `).join('');
+        });
+        const prioritySection = document.getElementById('notifPrioritySection');
+        const earlierSection = document.getElementById('notifEarlierSection');
+        if (activeFilter === 'all' && prioritySection && earlierSection) {
+            prioritySection.hidden = false;
+            earlierSection.hidden = false;
+        }
     }
 
-    // ---- Click-through: news opens the source article; chat/reply
-    // items jump into the Community chat tab at that message, same
-    // deep-link contract views/chat.js already reads off a route change
-    // (chatId/chatScope/chatLocation) for tapped push notifications. ----
+    // ---- Click-through: news opens the source article; mention/
+    // community/report-update items jump into the Community chat tab
+    // at that message, same deep-link contract views/chat.js already
+    // reads off a route change (chatId/chatScope/chatLocation) for
+    // tapped push notifications. Opening any clickable card also marks
+    // it read. ----
     let interactionsBound = false;
     function bindCardInteractions() {
-        const notificationList = document.querySelector('#view-notifications .notification-list');
-        if (!notificationList || interactionsBound) return;
+        const page = document.querySelector('#view-notifications');
+        if (!page || interactionsBound) return;
         interactionsBound = true;
 
         const openNotification = (card) => {
+            markIdsRead([card.dataset.id]);
+            card.querySelector('.notif-card__dot')?.remove();
             if (card.dataset.action === 'open-news' && card.dataset.url) {
                 window.open(card.dataset.url, '_blank', 'noopener,noreferrer');
             } else if (card.dataset.action === 'open-chat' && card.dataset.chatId) {
@@ -195,18 +429,46 @@
                 });
                 window.LWRouter?.navigate('chat', { search: `?${params.toString()}` });
             }
+            updateTabBadges(latestMergedNotifications, getReadIds());
         };
 
-        notificationList.addEventListener('click', (e) => {
-            const card = e.target.closest('.notification-item[data-action]');
-            if (card && notificationList.contains(card)) openNotification(card);
+        page.addEventListener('click', (e) => {
+            const actionBtn = e.target.closest('[data-action]');
+            if (actionBtn?.dataset.action === 'view-all-priority') { setActiveFilter('priority'); return; }
+            if (actionBtn?.dataset.action === 'mark-all-read') {
+                markIdsRead(latestMergedNotifications.map(n => n.id));
+                render();
+                return;
+            }
+            const card = e.target.closest('.notif-card[data-action]');
+            if (card) openNotification(card);
         });
-        notificationList.addEventListener('keydown', (e) => {
+        page.addEventListener('keydown', (e) => {
             if (e.key !== 'Enter' && e.key !== ' ') return;
-            const card = e.target.closest('.notification-item[data-action]');
-            if (!card || !notificationList.contains(card)) return;
+            const card = e.target.closest('.notif-card[data-action]');
+            if (!card) return;
             e.preventDefault();
             openNotification(card);
+        });
+    }
+
+    function bindSearch() {
+        const toggle = document.getElementById('notifSearchToggle');
+        const bar = document.getElementById('notifSearchBar');
+        const input = document.getElementById('notifSearchInput');
+        if (!toggle || !bar || !input || toggle.dataset.bound === '1') return;
+        toggle.dataset.bound = '1';
+
+        toggle.addEventListener('click', () => {
+            const willShow = bar.hidden;
+            bar.hidden = !willShow;
+            toggle.setAttribute('aria-expanded', String(willShow));
+            if (willShow) input.focus();
+            else { input.value = ''; searchQuery = ''; render(); }
+        });
+        input.addEventListener('input', () => {
+            searchQuery = input.value.trim();
+            render();
         });
     }
 
@@ -276,11 +538,20 @@
         }
     }
 
+    function mergeAndClassify(notifications, newsItems) {
+        const raw = [...notifications, ...newsItems];
+        const trending = synthesizeTrendingNotification(notifications);
+        if (trending) raw.push(trending);
+        return raw
+            .sort((a, b) => new Date(b.reportedAt) - new Date(a.reportedAt))
+            .map(classifyNotification);
+    }
+
     function loadNotifications(isFirstLoad = false) {
         const cached = isFirstLoad ? LWCache.read(NOTIFICATIONS_CACHE_KEY, CACHE_MAX_AGE_SHORT_MS) : null;
         if (cached) {
-            latestMergedNotifications = cached;
-            renderNotifications(applyNotificationFilter(cached));
+            latestMergedNotifications = cached.map(classifyNotification);
+            render();
         } else if (isFirstLoad) {
             showNotificationLoading();
         }
@@ -290,28 +561,30 @@
                 // Notifications fetch failed — still show whatever news matched,
                 // rather than blanking the whole page over one bad call.
                 if (!cached) {
-                    latestMergedNotifications = newsItems;
-                    renderNotifications(applyNotificationFilter(newsItems));
+                    latestMergedNotifications = mergeAndClassify([], newsItems);
+                    render();
                 }
                 return;
             }
-            const merged = [...notifications, ...newsItems]
-                .sort((a, b) => new Date(b.reportedAt) - new Date(a.reportedAt));
-            latestMergedNotifications = merged;
-            renderNotifications(applyNotificationFilter(merged));
-            LWCache.write(NOTIFICATIONS_CACHE_KEY, merged);
+            latestMergedNotifications = mergeAndClassify(notifications, newsItems);
+            render();
+            LWCache.write(NOTIFICATIONS_CACHE_KEY, [...notifications, ...newsItems]
+                .sort((a, b) => new Date(b.reportedAt) - new Date(a.reportedAt)));
         });
     }
 
     function mount() {
         bindCardInteractions();
         bindFilterTabs();
+        bindSearch();
         loadNotifications(true);
     }
 
     function show() {
         bindCardInteractions();
         bindFilterTabs();
+        bindSearch();
+        document.body.classList.add('lw-notif-view');
         // FIX: this used to only arm the interval, so the very latest
         // news/activity wouldn't reach the list until the first tick of
         // POLL_INTERVAL_FAST_MS fired — up to a full poll interval after
@@ -325,6 +598,7 @@
     }
 
     function hide() {
+        document.body.classList.remove('lw-notif-view');
         clearInterval(notificationsPollTimer);
         notificationsPollTimer = null;
     }

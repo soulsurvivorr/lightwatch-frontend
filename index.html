@@ -1379,31 +1379,78 @@
 
     <!-- ==== Notifications page section ==== -->
     <section id="view-notifications" data-view="notifications" hidden>
-<main class="page">
+<main class="page notif-page">
 
-    <!-- Notifications hero banner: same visual language as the Home
-         hero-banner (dark gradient card), but carries the All /
-         Priority / Mentions filter instead of stats. Filtering itself
-         is client-side over the already-merged list — see
-         js/views/notifications.js (applyNotificationFilter). -->
-    <div class="hero-banner notifications-banner">
-      <p class="hero-banner__eyebrow">Notifications</p>
-      <h1 class="hero-banner__greeting">Stay on top of your grid</h1>
-      <p class="hero-banner__sub">Outage alerts, community replies, and news for your locations — all in one feed.</p>
-      <div class="notif-filter-tabs" role="tablist" aria-label="Filter notifications">
-        <button type="button" class="notif-filter-tab is-active" data-filter="all" role="tab" aria-selected="true">All</button>
-        <button type="button" class="notif-filter-tab" data-filter="priority" role="tab" aria-selected="false">Priority</button>
-        <button type="button" class="notif-filter-tab" data-filter="mentions" role="tab" aria-selected="false">Mentions</button>
+    <!-- Page-specific header, replacing the shared app .topbar on this
+         view (mobile only — js/views/notifications.js's show()/hide()
+         toggle body.lw-notif-view, which css/views/notifications.css
+         uses to hide .topbar below the 1024px breakpoint, matching the
+         reference design's plain "Notifications" header with no brand
+         bar above it). Title + subtitle sit on the left; search and
+         settings actions sit on the right. -->
+    <header class="notif-header">
+      <div class="notif-header__text">
+        <h1 class="notif-header__title">Notifications</h1>
+        <p class="notif-header__subtitle">Stay updated with what matters most.</p>
       </div>
+      <div class="notif-header__actions">
+        <button type="button" class="notif-icon-btn" id="notifSearchToggle" aria-label="Search notifications" aria-expanded="false">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="11" cy="11" r="6.4" stroke="currentColor" stroke-width="1.8"/><path d="M20 20l-4.3-4.3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </button>
+        <a href="#" class="notif-icon-btn" data-nav="account" data-route="account" aria-label="Notification settings">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Z" stroke="currentColor" stroke-width="1.6"/><path d="M19.4 13.6c.04-.53.04-1.06 0-1.6l1.6-1.24-1.6-2.76-1.9.5a7.6 7.6 0 0 0-1.38-.8L17.2 5.6h-3.2l-.3 1.9a7.6 7.6 0 0 0-1.38.8l-1.9-.5-1.6 2.76 1.6 1.24c-.04.54-.04 1.07 0 1.6l-1.6 1.24 1.6 2.76 1.9-.5a7.6 7.6 0 0 0 1.38.8l.3 1.9h3.2l.3-1.9a7.6 7.6 0 0 0 1.38-.8l1.9.5 1.6-2.76-1.6-1.24Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+        </a>
+      </div>
+    </header>
+
+    <!-- Inline search bar, hidden until the search icon above is
+         tapped. Client-side text filter over whatever list is
+         currently rendered — see js/views/notifications.js. -->
+    <div class="notif-search" id="notifSearchBar" hidden>
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="11" cy="11" r="6.4" stroke="currentColor" stroke-width="1.8"/><path d="M20 20l-4.3-4.3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <input type="search" id="notifSearchInput" placeholder="Search notifications" autocomplete="off">
     </div>
 
-    <div class="card notification-card">
-      <div class="card__head">
-        <span class="card__title">Recent activity</span>
-        <span class="card__meta">Sorted by newest first</span>
-      </div>
-      <div class="notification-list"></div>
+    <!-- All / Priority / Mentions / System. Counts are unread tallies
+         per bucket, computed client-side in notifications.js from the
+         merged feed; each badge is hidden while its count is 0. -->
+    <div class="notif-tabs" role="tablist" aria-label="Filter notifications">
+      <button type="button" class="notif-tab is-active" data-filter="all" role="tab" aria-selected="true">All<span class="notif-tab__badge notif-tab__badge--blue" data-tab-count="all" hidden>0</span></button>
+      <button type="button" class="notif-tab" data-filter="priority" role="tab" aria-selected="false">Priority<span class="notif-tab__badge notif-tab__badge--red" data-tab-count="priority" hidden>0</span></button>
+      <button type="button" class="notif-tab" data-filter="mentions" role="tab" aria-selected="false">Mentions<span class="notif-tab__badge notif-tab__badge--blue" data-tab-count="mentions" hidden>0</span></button>
+      <button type="button" class="notif-tab" data-filter="system" role="tab" aria-selected="false">System<span class="notif-tab__badge notif-tab__badge--gray" data-tab-count="system" hidden>0</span></button>
     </div>
+
+    <!-- "All" tab view: a Priority preview (top 3 priority items, with
+         "View all" jumping to the Priority tab) followed by an Earlier
+         list of everything else. Hidden together in favor of
+         #notifFlatSection whenever a specific tab (Priority/Mentions/
+         System) is active — see notifications.js's render(). -->
+    <section class="notif-section" id="notifPrioritySection" hidden>
+      <div class="notif-section__head">
+        <span class="notif-section__title"><i class="notif-dot notif-dot--red" aria-hidden="true"></i>Priority</span>
+        <button type="button" class="notif-section__action" data-action="view-all-priority">View all</button>
+      </div>
+      <div class="notif-list" id="notifPriorityList"></div>
+    </section>
+
+    <section class="notif-section" id="notifEarlierSection" hidden>
+      <div class="notif-section__head">
+        <span class="notif-section__title">Earlier</span>
+        <button type="button" class="notif-section__action" data-action="mark-all-read">Mark all as read</button>
+      </div>
+      <div class="notif-list" id="notifEarlierList"></div>
+    </section>
+
+    <!-- Priority / Mentions / System tab view: one flat list, no
+         Priority/Earlier split. -->
+    <section class="notif-section" id="notifFlatSection" hidden>
+      <div class="notif-section__head">
+        <span class="notif-section__title" id="notifFlatTitle">Priority</span>
+        <button type="button" class="notif-section__action" data-action="mark-all-read">Mark all as read</button>
+      </div>
+      <div class="notif-list" id="notifFlatList"></div>
+    </section>
   </main>
     </section>
 

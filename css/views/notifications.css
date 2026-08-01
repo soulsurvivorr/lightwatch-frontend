@@ -323,80 +323,16 @@
 }
 
 /* ============================================================
-   Notifications page - Desktop styling
+   Notifications page — structural .page fixes (KEPT from the
+   previous pass; still needed regardless of the markup redesign
+   below, since they fix real row-vs-column / width / scroll-height
+   bugs in the shared, unseen base .page rule — see the long
+   comments below for the original diagnosis of each).
    ============================================================ */
 @media (min-width: 981px) {
-  /* FIX: on desktop #view-notifications .page was rendering
-     page__header and .notification-card side-by-side instead of
-     stacked — header on the left, card floated to the right and
-     bottom-aligned against it. That's a flex ROW layout: .page's
-     base definition is display:flex (no direction set, so it
-     defaults to row), and nothing here ever overrode that to
-     column. Mobile never shows this because home.css's own
-     `.page { display:block; }` rule (max-width:768px) masks it —
-     but that rule stops applying above 768px, and desktop has no
-     replacement. Community Report already works around this for
-     itself with `#view-chat.report-mode-community .page {
-     display:flex; flex-direction:column; }` in chat.css; this is
-     the same fix for Notifications. flex-direction:column also
-     means the default align-items:stretch makes page__header and
-     .notification-card fill the full width automatically — no
-     separate width/margin override needed on the card itself. */
   #view-notifications .page {
     display: flex;
     flex-direction: column;
-  }
-
-  #view-notifications .page__header {
-    margin-bottom: 6px;
-  }
-
-  #view-notifications .page__title {
-    font-size: 1.65rem;
-  }
-
-  #view-notifications .page__subtitle {
-    font-size: 0.94rem;
-    margin-top: 6px;
-  }
-
-  #view-notifications .notification-card,
-  #view-notifications .report-card {
-    padding: 24px;
-  }
-
-  #view-notifications .card__title {
-    font-size: 1.02rem;
-  }
-
-  #view-notifications .card__meta {
-    font-size: 0.78rem;
-  }
-
-  #view-notifications .notification-list,
-  #view-notifications .report-list {
-    gap: 12px;
-  }
-
-  #view-notifications .notification-item,
-  #view-notifications .report-item {
-    padding: 16px 18px;
-  }
-
-  #view-notifications .notification-item strong,
-  #view-notifications .report-item strong {
-    font-size: 0.92rem;
-    margin-bottom: 6px;
-  }
-
-  #view-notifications .notification-item__text,
-  #view-notifications .report-item__text {
-    font-size: 0.82rem;
-  }
-
-  #view-notifications .notification-item__time,
-  #view-notifications .report-item__time {
-    font-size: 0.72rem;
   }
 }
 
@@ -440,54 +376,471 @@
     align-items: stretch !important;
   }
 }
+
 /* ============================================================
-   Notifications hero banner — same visual system as
-   views/home.css's .hero-banner (dark gradient card), reused here
-   with the page title baked in plus the All/Priority/Mentions
-   filter row in place of Home's stat grid. Only banner-specific
-   layout lives here; color/shape/typography for .hero-banner,
-   .hero-banner__eyebrow, .hero-banner__greeting and
-   .hero-banner__sub itself stay defined once in home.css and are
-   inherited as-is so the two pages can't visually drift apart.
+   NOTIFICATIONS REDESIGN — matches the reference mobile design:
+   plain page header (no shared app topbar), All/Priority/Mentions/
+   System count tabs, a Priority preview section, and an Earlier
+   section. Locked to a dark palette below 1024px the same way
+   views/home.css's end-of-file "HOME REDESIGN" layer locks Home to
+   dark on phones (theme.js hard-forces light theme under 1024px
+   regardless of system/stored preference, so without this lock the
+   phone screenshot's dark design would render in light colors);
+   above 1024px this instead follows the real light/dark tokens from
+   variables.css + themes/light.css + themes/dark.css, matching how
+   every non-phone-locked view in this app already behaves.
    ============================================================ */
-.notifications-banner {
-  margin-bottom: 6px;
+#view-notifications {
+  --notif-bg: var(--bg-deep);
+  --notif-panel: var(--bg-panel);
+  --notif-border: var(--border-soft);
+  --notif-text: var(--text-bright);
+  --notif-text-muted: var(--text-muted);
+  --notif-text-faint: var(--text-faint);
+  --notif-red: var(--red);
+  --notif-amber: var(--amber);
+  --notif-blue: var(--brand2, #4A90D9);
+  --notif-green: #2ecc71;
+  --notif-teal: var(--teal);
+  --notif-purple: #a855f7;
+  --notif-gray: #7b8496;
 }
 
-.notif-filter-tabs {
+@media (max-width: 1023px) {
+  #view-notifications {
+    --notif-bg: #0a0f1a;
+    --notif-panel: #141c2e;
+    --notif-border: rgba(255, 255, 255, 0.08);
+    --notif-text: #f3f6fc;
+    --notif-text-muted: #a7b1c4;
+    --notif-text-faint: #6f7a90;
+    --notif-blue: #3b82f6;
+  }
+
+  /* Requirement: this page gets its own header instead of the
+     shared brand bar. body.lw-notif-view is toggled by
+     js/views/notifications.js's show()/hide() (mount() doesn't need
+     it — mount always runs right before show()). Scoped to phone
+     widths only, since the reference design is mobile-only and the
+     shared topbar's nav links have no equivalent on this page. */
+  body.lw-notif-view .topbar {
+    display: none !important;
+  }
+}
+
+#view-notifications {
+  background: var(--notif-bg);
+  color: var(--notif-text);
+  min-height: 100%;
+}
+
+#view-notifications .notif-page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 6px 16px 90px;
+}
+
+/* ---- Header: title + subtitle left, search + settings right ---- */
+.notif-header {
   display: flex;
-  gap: 6px;
-  margin-top: 6px;
-  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: env(safe-area-inset-top, 0px);
+  margin: 10px 0 4px;
 }
 
-.notif-filter-tab {
-  appearance: none;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.72);
-  font-size: 0.8rem;
-  font-weight: 600;
-  border-radius: 999px;
-  padding: 7px 16px;
+.notif-header__title {
+  font-size: 1.7rem;
+  font-weight: 800;
+  color: var(--notif-text);
+  letter-spacing: -0.01em;
+}
+
+.notif-header__subtitle {
+  margin-top: 4px;
+  font-size: 0.86rem;
+  color: var(--notif-text-muted);
+}
+
+.notif-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.notif-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--notif-text);
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
-.notif-filter-tab:hover {
-  border-color: rgba(255, 255, 255, 0.3);
+.notif-icon-btn svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* ---- Inline search bar ---- */
+.notif-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--notif-panel);
+  border: 1px solid var(--notif-border);
+  border-radius: 999px;
+  padding: 9px 14px;
+  margin-bottom: 12px;
+  color: var(--notif-text-faint);
+}
+
+.notif-search svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.notif-search input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  outline: none;
+  color: var(--notif-text);
+  font-size: 0.88rem;
+}
+
+.notif-search input::placeholder {
+  color: var(--notif-text-faint);
+}
+
+/* ---- Tabs: All / Priority / Mentions / System ---- */
+.notif-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-bottom: 1px solid var(--notif-border);
+  margin-bottom: 18px;
+}
+
+.notif-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.notif-tab {
+  appearance: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--notif-text-muted);
+  font-size: 0.86rem;
+  font-weight: 600;
+  padding: 10px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.notif-tab.is-active {
+  color: var(--notif-text);
+  border-bottom-color: var(--notif-blue);
+}
+
+.notif-tab__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
   color: white;
 }
 
-.notif-filter-tab.is-active {
-  background: var(--teal);
-  border-color: var(--teal);
-  color: var(--teal-dim);
+.notif-tab__badge--red { background: var(--notif-red); }
+.notif-tab__badge--blue { background: var(--notif-blue); }
+.notif-tab__badge--gray { background: var(--notif-gray); }
+
+/* ---- Sections: Priority preview / Earlier / flat tab list ---- */
+.notif-section {
+  margin-bottom: 22px;
 }
 
-@media (max-width: 720px) {
-  .notif-filter-tab {
-    font-size: 0.74rem;
-    padding: 6px 13px;
+.notif-section__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.notif-section__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--notif-text);
+}
+
+.notif-section__action {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--notif-blue);
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.notif-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.notif-dot--red { background: var(--notif-red); }
+
+/* ---- Cards ---- */
+.notif-list {
+  display: grid;
+  gap: 10px;
+}
+
+.notif-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: var(--notif-panel);
+  border: 1px solid var(--notif-border);
+  border-radius: 16px;
+  padding: 14px;
+}
+
+.notif-card[role="link"] {
+  cursor: pointer;
+}
+
+.notif-card[role="link"]:hover,
+.notif-card[role="link"]:focus-visible {
+  border-color: color-mix(in srgb, var(--notif-blue) 35%, var(--notif-border));
+  outline: none;
+}
+
+.notif-card--empty {
+  color: var(--notif-text-faint);
+}
+
+.notif-card--skeleton {
+  padding: 0;
+  overflow: hidden;
+  background: transparent;
+  border: none;
+}
+
+/* Priority-only left accent stripe + faint background tint, keyed
+   off the same color the card's icon/chip use. */
+.notif-card--accent {
+  position: relative;
+  padding-left: 16px;
+}
+
+.notif-card--accent::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 10px;
+  bottom: 10px;
+  width: 3px;
+  border-radius: 999px;
+}
+
+.notif-card--red::before { background: var(--notif-red); }
+.notif-card--amber::before { background: var(--notif-amber); }
+.notif-card--blue::before { background: var(--notif-blue); }
+
+.notif-card--red { background: linear-gradient(90deg, color-mix(in srgb, var(--notif-red) 8%, var(--notif-panel)), var(--notif-panel) 65%); }
+.notif-card--amber { background: linear-gradient(90deg, color-mix(in srgb, var(--notif-amber) 8%, var(--notif-panel)), var(--notif-panel) 65%); }
+.notif-card--blue.notif-card--accent { background: linear-gradient(90deg, color-mix(in srgb, var(--notif-blue) 8%, var(--notif-panel)), var(--notif-panel) 65%); }
+
+/* ---- Icon circle ---- */
+.notif-card__icon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notif-card__icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.notif-card__icon--red { background: color-mix(in srgb, var(--notif-red) 16%, transparent); color: var(--notif-red); }
+.notif-card__icon--amber { background: color-mix(in srgb, var(--notif-amber) 16%, transparent); color: var(--notif-amber); }
+.notif-card__icon--blue { background: color-mix(in srgb, var(--notif-blue) 16%, transparent); color: var(--notif-blue); }
+.notif-card__icon--green { background: color-mix(in srgb, var(--notif-green) 16%, transparent); color: var(--notif-green); }
+.notif-card__icon--teal { background: color-mix(in srgb, var(--notif-teal) 18%, transparent); color: var(--notif-teal); }
+.notif-card__icon--purple { background: color-mix(in srgb, var(--notif-purple) 16%, transparent); color: var(--notif-purple); }
+
+/* ---- Mention avatar (initials, since notification authors don't
+   carry a real profile-photo URL from the server) ---- */
+.notif-card__avatar {
+  flex-shrink: 0;
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.notif-card__avatar-badge {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  background: var(--notif-blue);
+  border: 2px solid var(--notif-panel);
+  color: white;
+  font-size: 0.6rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ---- Body text ---- */
+.notif-card__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.notif-card__label {
+  display: block;
+  font-size: 0.66rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 3px;
+}
+
+.notif-card__label--red { color: var(--notif-red); }
+.notif-card__label--amber { color: var(--notif-amber); }
+.notif-card__label--blue { color: var(--notif-blue); }
+.notif-card__label--green { color: var(--notif-green); }
+.notif-card__label--teal { color: var(--notif-teal); }
+.notif-card__label--purple { color: var(--notif-purple); }
+
+.notif-card__title {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--notif-text);
+}
+
+.notif-card__meta {
+  margin-top: 3px;
+  font-size: 0.76rem;
+  color: var(--notif-text-faint);
+}
+
+.notif-card__meta-dot {
+  margin: 0 2px;
+}
+
+.notif-card__text {
+  margin-top: 5px;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: var(--notif-text-muted);
+}
+
+.notif-card__handle {
+  color: var(--notif-blue);
+  font-weight: 600;
+}
+
+/* ---- Right-side dot + chevron ---- */
+.notif-card__side {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  align-self: center;
+}
+
+.notif-card__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.notif-card__dot--red { background: var(--notif-red); }
+.notif-card__dot--amber { background: var(--notif-amber); }
+.notif-card__dot--blue { background: var(--notif-blue); }
+.notif-card__dot--gray { background: var(--notif-gray); }
+
+.notif-card__chevron {
+  width: 18px;
+  height: 18px;
+  color: var(--notif-text-faint);
+}
+
+/* ============================================================
+   Notifications page — desktop styling (≥981px). The reference
+   design is mobile-only, so this keeps the same components but
+   gives them a calmer, slightly larger desktop reading width
+   instead of the mobile card density.
+   ============================================================ */
+@media (min-width: 981px) {
+  #view-notifications .notif-page {
+    max-width: 720px;
+    padding-top: 28px;
+  }
+
+  .notif-header__title {
+    font-size: 1.9rem;
+  }
+
+  .notif-header__subtitle {
+    font-size: 0.95rem;
+  }
+
+  .notif-card {
+    padding: 18px;
+  }
+
+  .notif-card__title {
+    font-size: 1rem;
+  }
+
+  .notif-card__text {
+    font-size: 0.86rem;
   }
 }
