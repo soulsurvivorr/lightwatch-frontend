@@ -1,0 +1,484 @@
+/* ---- Official News feed ---- */
+.news-feed {
+  display: flex;
+  flex-direction: column;
+}
+
+.news-item {
+  display: grid;
+  grid-template-columns: 104px 1fr;
+  column-gap: 12px;
+  row-gap: 6px;
+  align-items: stretch;
+  padding: 16px 4px;
+  border-top: 1px solid var(--border-soft);
+}
+
+/* Media sits alone in the first column and spans the full height of
+   the card (all the way from the first to the last content row),
+   instead of sitting inline above the text as a capped-height strip.
+   Everything else (source row, headline, preview, schedule, link,
+   details) is a direct child of .news-item too — this places all of
+   it in the second column regardless of nesting, so no markup change
+   in views/news.js is required for this layout to take effect. Items
+   with no image (news.js removes a broken <img> via onerror) simply
+   leave column 1 empty and the text column still renders normally. */
+.news-item__image,
+.news-item__media {
+  grid-column: 1;
+  grid-row: 1 / -1;
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  object-fit: cover;
+  border-radius: var(--radius-sm, 10px);
+  margin: 0;
+}
+
+.news-item__media {
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+  overflow: hidden;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--brand2) 18%, #0a1220), color-mix(in srgb, var(--brand) 18%, #070d16));
+  border: 1px solid var(--border-soft);
+}
+
+.news-item__media-fallback {
+  width: 100%;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: color-mix(in srgb, var(--text-bright) 84%, var(--brand2));
+  background: radial-gradient(circle at 24% 20%, rgba(255, 255, 255, 0.12) 0, transparent 42%), linear-gradient(145deg, rgba(255, 255, 255, 0.06), rgba(0, 0, 0, 0.2));
+}
+
+.news-item__media-fallback svg {
+  width: 28px;
+  height: 28px;
+  opacity: 0.82;
+}
+
+.news-item__media-fallback__glyph {
+  font-size: 1.05rem;
+  opacity: 0.82;
+}
+
+.news-item__media--placeholder {
+  border-style: dashed;
+}
+
+.news-item > *:not(.news-item__image):not(.news-item__media) {
+  grid-column: 2;
+}
+
+.news-item__body {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 100%;
+}
+
+.news-item:not(:has(.news-item__image)):not(:has(.news-item__media)) {
+  grid-template-columns: 1fr;
+}
+
+.news-item:first-child {
+  border-top: none;
+  padding-top: 4px;
+}
+
+.news-item__source {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.news-item__source-icon {
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.news-item__source-icon-img {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  object-fit: cover;
+  vertical-align: -3px;
+}
+
+.news-item__tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--amber-dim);
+  color: var(--amber);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.news-item__headline {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--text-bright);
+}
+
+/* Always-visible one-line teaser, shown whether the item is expanded
+   or not — gives the collapsed state some actual context instead of
+   just a bare headline + chevron. Sits between the headline row and
+   the schedule/details, so it reads naturally in both states. */
+.news-item__preview {
+  margin: 0;
+  font-size: 0.83rem;
+  line-height: 1.4;
+  color: var(--text-muted);
+  display: -webkit-box;
+  line-clamp: 2;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.news-item__schedule {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.news-item__schedule-day {
+  font-weight: 700;
+  color: var(--text-bright);
+}
+
+.news-item__link {
+  margin-top: 2px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--brand2);
+}
+
+.news-item__link:hover,
+.news-item__link:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Warning-flavored sibling of .news-item__tag--maintenance, for
+   unplanned/emergency items rather than scheduled ones. */
+.news-item__tag--warning {
+  background: rgba(230, 90, 60, 0.14);
+  color: #e65a3c;
+}
+
+/* Restoration-flavored sibling, for "power's back on" stories. */
+.news-item__tag--success {
+  background: rgba(61, 217, 194, 0.16);
+  color: #3dd9c2;
+}
+
+/* Fetched-article thumbnail sizing lives with the grid-based
+   .news-item layout near the top of this file (full-height left
+   column) — this used to be a second, capped-height (160px)
+   definition of the same selector that, being later in the file,
+   silently overrode that one on every screen size. */
+
+/* Relative "2h ago" timestamp, sits at the end of the source row. */
+.news-item__time {
+  margin-left: auto;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--text-faint);
+  text-align: right;
+}
+
+.news-category-tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px 0 10px;
+  scrollbar-width: none;
+}
+
+.news-category-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.news-category-tab {
+  border: 1px solid var(--border-soft);
+  background: var(--bg-panel);
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 8px 13px;
+  border-radius: 999px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.news-category-tab:hover {
+  border-color: var(--border-strong);
+  color: var(--text-bright);
+}
+
+.news-category-tab.is-active {
+  color: #fff;
+  border-color: color-mix(in srgb, var(--brand2) 60%, var(--border-soft));
+  background: linear-gradient(135deg, color-mix(in srgb, var(--brand2) 78%, #08131f), color-mix(in srgb, var(--brand) 62%, #061019));
+}
+
+.news-item__source-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+}
+
+.news-item__source-tag--official {
+  color: #ffcf63;
+  background: rgba(255, 190, 68, 0.14);
+  border-color: rgba(255, 190, 68, 0.35);
+}
+
+.news-item__source-tag--outage {
+  color: #f18a6d;
+  background: rgba(241, 138, 109, 0.12);
+  border-color: rgba(241, 138, 109, 0.32);
+}
+
+.news-item__source-tag--maintenance {
+  color: #9ac9ff;
+  background: rgba(111, 168, 241, 0.14);
+  border-color: rgba(111, 168, 241, 0.34);
+}
+
+.news-item__source-tag--restoration {
+  color: #6fd9bf;
+  background: rgba(84, 204, 172, 0.14);
+  border-color: rgba(84, 204, 172, 0.34);
+}
+
+.news-item__source-tag--media {
+  color: var(--text-muted);
+  background: var(--bg-panel-raised);
+  border-color: var(--border-soft);
+}
+
+.news-item__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.news-item__location {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.76rem;
+  color: var(--text-faint);
+}
+
+.news-item__location svg {
+  flex-shrink: 0;
+}
+
+.news-item__bookmark {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-panel-raised);
+  color: var(--text-faint);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.12s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.news-item__bookmark:hover {
+  border-color: color-mix(in srgb, var(--brand2) 45%, var(--border-soft));
+  color: var(--brand2);
+}
+
+.news-item__bookmark:active {
+  transform: scale(0.93);
+}
+
+.news-item__bookmark.is-active {
+  color: var(--brand2);
+  border-color: color-mix(in srgb, var(--brand2) 55%, var(--border-soft));
+}
+
+/* Loading placeholder rows while the first GET /news call is in
+   flight — same skeleton treatment reports.js already uses. */
+.news-item--skeleton {
+  border-top: 1px solid var(--border-soft);
+}
+
+.news-item--skeleton > div {
+  width: 100%;
+  border-radius: var(--radius-sm, 10px);
+  background: linear-gradient(90deg, var(--bg-panel-raised) 25%, var(--border-soft) 50%, var(--bg-panel-raised) 75%);
+  background-size: 200% 100%;
+  animation: newsSkeletonShimmer 1.4s ease infinite;
+}
+
+@keyframes newsSkeletonShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Headline + collapse toggle sit on one row so the chevron stays
+   pinned to the top-right of the item regardless of headline length. */
+.news-item__row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+}
+
+.news-item__row .news-item__headline {
+  flex: 1 1 auto;
+}
+
+.news-item__toggle {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin-top: -2px;
+  border: none;
+  border-radius: 50%;
+  background: var(--bg-panel-raised);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.news-item__toggle:hover {
+  color: var(--text-bright);
+}
+
+.news-item__toggle:focus-visible {
+  outline: 2px solid var(--brand2);
+  outline-offset: 2px;
+}
+
+.news-item__chevron {
+  transition: transform 0.2s ease;
+}
+
+.news-item__toggle[aria-expanded="true"] .news-item__chevron {
+  transform: rotate(180deg);
+}
+
+/* Collapsible detail panel — the "big panel" of extra context revealed
+   by the chevron. Uses the grid 0fr/1fr technique so the expand/
+   collapse animates smoothly without JS ever having to measure
+   scrollHeight. The inner .news-item__details is the actual grid row;
+   its own overflow:hidden is what lets grid-template-rows animate a
+   0fr row down to nothing instead of just clipping abruptly. */
+.news-item__details-wrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.25s ease;
+}
+
+.news-item.is-expanded .news-item__details-wrap {
+  grid-template-rows: 1fr;
+}
+
+.news-item__details {
+  overflow: hidden;
+  min-height: 0;
+}
+
+.news-item__details p {
+  margin: 0 0 10px;
+  font-size: 0.86rem;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+.news-item__details p:last-of-type {
+  margin-bottom: 12px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Full-bleed panel treatment for the Official News feed itself, so
+   it visually matches the app's other list-style panels (Reports,
+   Locations) rather than looking like a floating card. */
+#officialNewsFeed {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  padding: 4px 16px;
+}
+
+/* Small/narrow phones: trim padding and type a notch so headline +
+   schedule never feel cramped at 320-360px widths. */
+@media (max-width: 480px) {
+  #officialNewsFeed {
+    padding: 2px 14px;
+  }
+
+  .news-item {
+    padding: 14px 2px;
+    gap: 5px;
+  }
+
+  .news-item__headline {
+    font-size: 0.88rem;
+  }
+
+  .news-item__schedule,
+  .news-item__link {
+    font-size: 0.78rem;
+  }
+
+  .news-item__preview {
+    font-size: 0.8rem;
+  }
+}
+
+/* ============================================================

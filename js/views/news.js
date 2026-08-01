@@ -125,9 +125,10 @@
         const timeLabel = relativeLabel || (article.publishedAt ? new Date(article.publishedAt).toLocaleDateString() : '');
         const locationText = articleLocationText(article);
         const bookmarked = isBookmarked(article.id ?? index);
+        const fallbackMediaHtml = '<span class="news-item__media-fallback" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1-1.6h7l1 1.6h2A1.5 1.5 0 0 1 20 8.5v9A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5v-9Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.2" stroke="currentColor" stroke-width="1.6"/></svg><span class="news-item__media-fallback__glyph">' + sourceIconHtml + '</span></span>';
         const mediaHtml = article.image
-            ? `<img class="news-item__image" src="${escapeHtml(article.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.closest('.news-item__media')?.classList.add('news-item__media--placeholder'); this.remove()">`
-            : `<span class="news-item__media-fallback" aria-hidden="true">${sourceIconHtml}</span>`;
+            ? `<img class="news-item__image" src="${escapeHtml(article.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.closest('.news-item__media')?.classList.add('news-item__media--placeholder'); this.closest('.news-item__media').innerHTML='${fallbackMediaHtml.replace(/'/g, '&#39;')}';">`
+            : fallbackMediaHtml;
 
         // data-url carries the source article's real URL so the whole
         // card can act as a link (see bindCardInteractions below).

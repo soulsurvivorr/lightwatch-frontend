@@ -43,7 +43,26 @@ const communityFabBtn = document.getElementById('communityFabBtn');
 const communitySearchBtn = document.getElementById('communitySearchBtn');
 const communitySortBtn = document.getElementById('communitySortBtn');
 const communityNearbyBtn = document.getElementById('communityNearbyBtn');
+const viewChat = document.getElementById('view-chat');
+const reportPanelCommunityEl = document.querySelector('#view-chat .report-panel[data-panel="community"]');
+const communityBanner = reportPanelCommunityEl?.querySelector('.community-banner');
 let activePostSearchQuery = '';
+
+const pullRefreshEl = document.createElement('div');
+pullRefreshEl.className = 'community-pull-refresh';
+pullRefreshEl.setAttribute('aria-hidden', 'true');
+pullRefreshEl.innerHTML = '<div class="community-pull-refresh__orb"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.2-5.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M20 5v3.7h-3.7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>';
+if (communityBanner && communityBanner.parentElement) {
+    communityBanner.insertAdjacentElement('afterend', pullRefreshEl);
+}
+
+let pullStartY = 0;
+let pullDistance = 0;
+let pullActive = false;
+let pullLocked = false;
+let pullRefreshing = false;
+const PULL_REFRESH_TRIGGER = 80;
+const PULL_REFRESH_MAX = 116;
 
 // Keep Post inline with the textarea on Community Report (requested
 // mobile-native composer layout) even though the static markup places
@@ -56,6 +75,94 @@ if (communityComposerTop && chatSendBtn && chatSendBtn.parentElement !== communi
 const CHAT_SCOPE_KEY = 'lw_chat_scope_pref';
 const CHAT_SCOPE_LOCAL = 'local';
 const CHAT_SCOPE_GLOBAL = 'global';
+const MUTED_REPORT_HANDLES_KEY = 'lw_muted_report_handles';
+const MUTED_REPORT_POST_IDS_KEY = 'lw_muted_report_posts';
+const BOOKMARKED_REPORT_IDS_KEY = 'lw_bookmarked_report_posts';
+
+function readStoredList(key) {
+    try {
+        const raw = localStorage.getItem(key);
+        const parsed = raw ? JSON.parse(raw) : [];
+        return Array.isArray(parsed) ? parsed.map((v) => String(v)) : [];
+    } catch {
+        return [];
+    }
+}
+
+function writeStoredList(key, values) {
+    try {
+        localStorage.setItem(key, JSON.stringify([...new Set(values.map((v) => String(v)))]));
+    } catch {}
+}
+
+function getReportId(chat) {
+    return String(chat?._id || chat?.id || '');
+}
+
+function isHandleMuted(handle) {
+    if (!handle) return false;
+    return readStoredList(MUTED_REPORT_HANDLES_KEY).includes(String(handle));
+}
+
+function isReportMuted(chat) {
+    const id = getReportId(chat);
+    if (!id) return false;
+    return readStoredList(MUTED_REPORT_POST_IDS_KEY).includes(id);
+}
+
+function shouldHideReport(chat) {
+    return isHandleMuted(chat?.handle) || isReportMuted(chat);
+}
+
+function setHandleMuted(handle, muted) {
+    const key = String(handle || '').trim();
+    if (!key) return;
+    const list = readStoredList(MUTED_REPORT_HANDLES_KEY);
+    const next = muted ? [...list, key] : list.filter((item) => item !== key);
+    writeStoredList(MUTED_REPORT_HANDLES_KEY, next);
+}
+
+function setReportMuted(chatId, muted) {
+    const key = String(chatId || '').trim();
+    if (!key) return;
+    const list = readStoredList(MUTED_REPORT_POST_IDS_KEY);
+    const next = muted ? [...list, key] : list.filter((item) => item !== key);
+    writeStoredList(MUTED_REPORT_POST_IDS_KEY, next);
+}
+
+function isReportBookmarked(chatId) {
+    const key = String(chatId || '').trim();
+    if (!key) return false;
+    return readStoredList(BOOKMARKED_REPORT_IDS_KEY).includes(key);
+}
+
+function setReportBookmarked(chatId, bookmarked) {
+    const key = String(chatId || '').trim();
+    if (!key) return;
+    const list = readStoredList(BOOKMARKED_REPORT_IDS_KEY);
+    const next = bookmarked ? [...list, key] : list.filter((item) => item !== key);
+    writeStoredList(BOOKMARKED_REPORT_IDS_KEY, next);
+}
+
+function closeAllReportCardMenus(exceptWrap) {
+    document.querySelectorAll('#view-chat .report-card__menu-wrap.is-open').forEach((wrap) => {
+        if (exceptWrap && wrap === exceptWrap) return;
+        wrap.classList.remove('is-open');
+    });
+}
+
+document.addEventListener('click', (e) => {
+    const withinMenu = e.target && e.target.closest('#view-chat .report-card__menu-wrap');
+    if (!withinMenu) closeAllReportCardMenus(null);
+});
+
+function flashIconRing(btn) {
+    if (!btn) return;
+    btn.classList.remove('is-pressed');
+    void btn.offsetWidth;
+    btn.classList.add('is-pressed');
+    setTimeout(() => btn.classList.remove('is-pressed'), 220);
+}
 
 // ---- Light status quick-tag ----
 // There's no separate "status" field on a chat message server-side, so
@@ -207,7 +314,6 @@ let composerMediaDataUrl = null;
 const mediaPickerInput = document.createElement('input');
 mediaPickerInput.type = 'file';
 mediaPickerInput.accept = 'image/*';
-mediaPickerInput.setAttribute('capture', 'environment');
 mediaPickerInput.hidden = true;
 chatForm?.appendChild(mediaPickerInput);
 
@@ -257,8 +363,123 @@ function clearComposerMedia() {
 
 composerMediaRemove.addEventListener('click', clearComposerMedia);
 
-statusMediaBtn?.addEventListener('click', () => {
+function isCommunityPanelActive() {
+    return Boolean(viewChat && !viewChat.hidden && reportPanelCommunityEl && !reportPanelCommunityEl.hidden);
+}
+
+function isLikelyTouchPhone() {
+    const coarse = typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches;
+    const mobileUa = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '');
+    return coarse || mobileUa;
+}
+
+function openMediaPicker(mode) {
+    if (!mediaPickerInput) return;
+    mediaPickerInput.value = '';
+    if (mode === 'camera') {
+        mediaPickerInput.setAttribute('capture', 'environment');
+    } else {
+        mediaPickerInput.removeAttribute('capture');
+    }
     mediaPickerInput.click();
+}
+
+function resetPullRefreshVisual() {
+    pullDistance = 0;
+    pullActive = false;
+    if (!pullRefreshEl) return;
+    pullRefreshEl.classList.remove('is-pulling');
+    pullRefreshEl.style.setProperty('--pull-distance', '0px');
+}
+
+function setPullRefreshVisual(distance) {
+    if (!pullRefreshEl) return;
+    const clamped = Math.max(0, Math.min(PULL_REFRESH_MAX, distance));
+    const progress = Math.max(0, Math.min(1, clamped / PULL_REFRESH_TRIGGER));
+    pullRefreshEl.classList.add('is-pulling');
+    pullRefreshEl.style.setProperty('--pull-distance', `${clamped}px`);
+    pullRefreshEl.style.setProperty('--pull-progress', progress.toFixed(3));
+    pullRefreshEl.classList.toggle('is-ready', clamped >= PULL_REFRESH_TRIGGER);
+}
+
+function endPullRefreshVisual() {
+    if (!pullRefreshEl) return;
+    pullRefreshEl.classList.remove('is-pulling', 'is-ready');
+    pullRefreshEl.style.setProperty('--pull-distance', '0px');
+    pullRefreshEl.style.setProperty('--pull-progress', '0');
+}
+
+async function triggerManualRefresh() {
+    if (pullRefreshing) return;
+    pullRefreshing = true;
+    if (pullRefreshEl) pullRefreshEl.classList.add('is-refreshing');
+    try {
+        await Promise.resolve(loadChatHistory());
+        window.lwToast?.('Refreshing reports...');
+    } catch {}
+    finally {
+        setTimeout(() => {
+            if (pullRefreshEl) pullRefreshEl.classList.remove('is-refreshing');
+            pullRefreshing = false;
+        }, 220);
+    }
+}
+
+function shouldStartPullRefresh(target) {
+    if (!isCommunityPanelActive() || pullRefreshing) return false;
+    if ((window.scrollY || window.pageYOffset || 0) > 2) return false;
+    const t = target && target.nodeType === 1 ? target : null;
+    if (t && t.closest('textarea, input, button, a, [contenteditable="true"]')) return false;
+    return true;
+}
+
+window.addEventListener('touchstart', (e) => {
+    if (!e.touches || e.touches.length !== 1) return;
+    if (!shouldStartPullRefresh(e.target)) {
+        resetPullRefreshVisual();
+        return;
+    }
+    pullStartY = e.touches[0].clientY;
+    pullDistance = 0;
+    pullActive = true;
+    pullLocked = false;
+}, { passive: true });
+
+window.addEventListener('touchmove', (e) => {
+    if (!pullActive || !e.touches || e.touches.length !== 1) return;
+    const dy = e.touches[0].clientY - pullStartY;
+    if (dy <= 0) {
+        endPullRefreshVisual();
+        return;
+    }
+    pullDistance = dy;
+    if (dy > 8) pullLocked = true;
+    setPullRefreshVisual(dy);
+    if (pullLocked) e.preventDefault();
+}, { passive: false });
+
+window.addEventListener('touchend', async () => {
+    if (!pullActive) return;
+    const shouldRefresh = pullDistance >= PULL_REFRESH_TRIGGER;
+    endPullRefreshVisual();
+    pullActive = false;
+    pullLocked = false;
+    if (shouldRefresh) await triggerManualRefresh();
+});
+
+window.addEventListener('touchcancel', () => {
+    endPullRefreshVisual();
+    pullActive = false;
+    pullLocked = false;
+});
+
+statusMediaBtn?.addEventListener('click', () => {
+    if (isLikelyTouchPhone()) {
+        const useCamera = window.confirm('Use camera now? Tap Cancel to open gallery.');
+        openMediaPicker(useCamera ? 'camera' : 'gallery');
+        return;
+    }
+    openMediaPicker('gallery');
 });
 
 mediaPickerInput.addEventListener('change', async () => {
@@ -594,6 +815,7 @@ setInterval(refreshChatTimestamps, 30000);
 // BUILD A MESSAGE ELEMENT
 // -------------------------------------------------------
 function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOwn) {
+    if (shouldHideReport(chat)) return null;
     const hasReply = Boolean(replyCount);
     const el = document.createElement('div');
     el.className = isOwn ? "chat-message report-card chat-message--own" : "chat-message report-card";
@@ -676,12 +898,78 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
     // stat button below (see commentStat), which opens an inline box
     // right under this card instead of jumping up to the page's main
     // composer.
+    const menuWrap = document.createElement('div');
+    menuWrap.className = 'report-card__menu-wrap';
     const menuBtn = document.createElement('button');
     menuBtn.type = 'button';
     menuBtn.className = 'report-card__menu-btn';
     menuBtn.setAttribute('aria-label', 'More options');
     menuBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="5" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="19" r="1.6" fill="currentColor"/></svg>';
-    headActions.appendChild(menuBtn);
+    menuWrap.appendChild(menuBtn);
+
+    const menuPanel = document.createElement('div');
+    menuPanel.className = 'report-card__menu';
+    menuPanel.innerHTML = '<button type="button" class="report-card__menu-item" data-action="share">Share post link</button><button type="button" class="report-card__menu-item" data-action="mute-user">Mute this person</button><button type="button" class="report-card__menu-item" data-action="mute-post">Mute this post</button><button type="button" class="report-card__menu-item" data-action="bookmark">Save as bookmark</button>';
+    menuWrap.appendChild(menuPanel);
+    headActions.appendChild(menuWrap);
+
+    menuBtn.addEventListener('click', async (ev) => {
+        ev.stopPropagation();
+        const nextOpen = !menuWrap.classList.contains('is-open');
+        closeAllReportCardMenus(nextOpen ? menuWrap : null);
+        menuWrap.classList.toggle('is-open', nextOpen);
+        flashIconRing(menuBtn);
+    });
+
+    menuPanel.addEventListener('click', async (ev) => {
+        const btn = ev.target && ev.target.closest('.report-card__menu-item');
+        if (!btn) return;
+        const action = btn.getAttribute('data-action');
+        const reportId = getReportId(chat);
+
+        if (action === 'share') {
+            const base = new URL(window.location.href);
+            const shareUrl = new URL('/chat', base.origin || window.location.origin);
+            if (reportId) shareUrl.searchParams.set('chatId', reportId);
+            if (chat.scope) shareUrl.searchParams.set('chatScope', chat.scope);
+            if (chat.location && chat.scope !== 'global') shareUrl.searchParams.set('chatLocation', chat.location);
+            const urlText = shareUrl.toString();
+            try {
+                if (navigator.share) {
+                    await navigator.share({ title: 'LightWatch community report', text: (cleanText || '').slice(0, 120), url: urlText });
+                } else if (navigator.clipboard && navigator.clipboard.writeText) {
+                    await navigator.clipboard.writeText(urlText);
+                    window.lwToast?.('Post URL copied.');
+                }
+            } catch {}
+        }
+
+        if (action === 'mute-user') {
+            setHandleMuted(chat.handle || '', true);
+            window.lwToast?.(`Muted ${displayHandle || 'this user'}.`);
+            el.remove();
+        }
+
+        if (action === 'mute-post') {
+            setReportMuted(reportId, true);
+            window.lwToast?.('Post muted.');
+            el.remove();
+        }
+
+        if (action === 'bookmark') {
+            const next = !isReportBookmarked(reportId);
+            setReportBookmarked(reportId, next);
+            btn.textContent = next ? 'Saved as bookmark' : 'Save as bookmark';
+            window.lwToast?.(next ? 'Saved to bookmarks.' : 'Removed from bookmarks.');
+        }
+
+        menuWrap.classList.remove('is-open');
+    });
+
+    if (isReportBookmarked(getReportId(chat))) {
+        const bookmarkBtn = menuPanel.querySelector('[data-action="bookmark"]');
+        if (bookmarkBtn) bookmarkBtn.textContent = 'Saved as bookmark';
+    }
 
     head.appendChild(avatar);
     head.appendChild(who);
@@ -725,10 +1013,14 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
 
     // ---- Quoted preview, if this card quotes another report ----
     let quotedEl = null;
+    let quoteLeadEl = null;
     const quote = chat.quote && (chat.quote.handle || chat.quote.text) ? chat.quote : null;
     if (quote) {
         quotedEl = document.createElement('div');
         quotedEl.className = 'report-card__quoted';
+        quoteLeadEl = document.createElement('p');
+        quoteLeadEl.className = 'report-card__quote-lead';
+        quoteLeadEl.textContent = cleanText;
         const qHead = document.createElement('div');
         qHead.className = 'report-card__quoted-head';
         qHead.textContent = `Quoted from ${quote.handle || 'someone'}`;
@@ -765,17 +1057,7 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
     locTagLabel.textContent = locLabel;
     locTag.appendChild(locTagLabel);
 
-    // Area type isn't a real field on a chat message yet — every card
-    // shows the same "Residential Area" tag as a static label for now.
-    const areaTag = document.createElement('span');
-    areaTag.className = 'report-card__tag report-card__tag--area';
-    areaTag.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>';
-    const areaTagLabel = document.createElement('span');
-    areaTagLabel.textContent = 'Residential Area';
-    areaTag.appendChild(areaTagLabel);
-
     tags.appendChild(locTag);
-    tags.appendChild(areaTag);
 
     const stats = document.createElement('div');
     stats.className = 'report-card__stats';
@@ -784,11 +1066,11 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
     commentStat.type = 'button';
     commentStat.className = 'report-card__stat report-card__stat--comment';
     commentStat.setAttribute('aria-label', 'Reply');
-    commentStat.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9A1.5 1.5 0 0 1 18.5 16H9l-4 4v-4H5.5A1.5 1.5 0 0 1 4 14.5v-9Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg><span class="report-card__stat-count">' + (replyCount || 0) + '</span>';
+    commentStat.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4 6.5h16v10h-8l-4 3v-3H4v-10Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span class="report-card__stat-count">' + (replyCount || 0) + '</span>';
     // Reply now opens a small composer right under THIS card instead of
     // scrolling up to the page's main input (see toggleInlineReplyBox).
     commentStat.addEventListener('click', () => toggleInlineReplyBox(el, chat, cleanText, { mode: 'reply' }));
-    menuBtn.addEventListener('click', () => commentStat.click());
+    commentStat.addEventListener('click', () => flashIconRing(commentStat));
 
     // Repost — duplicates the original report as a new top-level post
     // credited to the current user, with a "reposted" strapline (see
@@ -797,7 +1079,7 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
     repostStat.type = 'button';
     repostStat.className = 'report-card__stat report-card__stat--repost';
     repostStat.setAttribute('aria-label', 'Repost');
-    repostStat.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M7 7h8a3 3 0 0 1 3 3v2M17 17H9a3 3 0 0 1-3-3v-2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="m5 9 2-2 2 2M19 15l-2 2-2-2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="report-card__stat-count">0</span>';
+    repostStat.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M5 8h11l-2.5-2.5M19 16H8l2.5 2.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 8v8M19 8v8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="report-card__stat-count">0</span>';
     repostStat.addEventListener('click', async () => {
         if (repostStat.classList.contains('is-reposted') || repostStat.disabled) return;
         repostStat.disabled = true;
@@ -811,9 +1093,12 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
         });
         repostStat.disabled = false;
         if (saved) {
+            flashIconRing(repostStat);
             repostStat.classList.add('is-reposted');
             const countEl = repostStat.querySelector('.report-card__stat-count');
             if (countEl) countEl.textContent = String(Number(countEl.textContent || 0) + 1);
+            const repostSnippet = (cleanText || '').trim();
+            window.lwToast?.(`${myHandle || 'A user'} reposted this: ${repostSnippet ? repostSnippet.slice(0, 80) : 'a community update'}`);
         }
     });
 
@@ -824,8 +1109,9 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
     quoteStat.type = 'button';
     quoteStat.className = 'report-card__stat report-card__stat--quote';
     quoteStat.setAttribute('aria-label', 'Quote');
-    quoteStat.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M7.5 6.5c-1.7 0-3 1.3-3 3v2.2c0 1.1.9 2 2 2h.5v2.8l3-2.8c1 0 1.5-.9 1.5-2v-2.2c0-1.7-1.3-3-3-3ZM16 6.5c-1.7 0-3 1.3-3 3v2.2c0 1.1.9 2 2 2h.5v2.8l3-2.8c1 0 1.5-.9 1.5-2v-2.2c0-1.7-1.3-3-3-3Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>';
+    quoteStat.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M6 7h6v5H8v5H5v-6l1-4Zm9 0h6v5h-4v5h-3v-6l1-4Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>';
     quoteStat.addEventListener('click', () => toggleInlineReplyBox(el, chat, cleanText, { mode: 'quote' }));
+    quoteStat.addEventListener('click', () => flashIconRing(quoteStat));
 
     // No backing "likes" counter on a chat message yet — visual only.
     const likeStat = document.createElement('button');
@@ -833,6 +1119,7 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
     likeStat.className = 'report-card__stat report-card__stat--like';
     likeStat.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 20s-7.5-4.6-9.7-9A5.4 5.4 0 0 1 12 6a5.4 5.4 0 0 1 9.7 5c-2.2 4.4-9.7 9-9.7 9Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg><span class="report-card__stat-count">0</span>';
     likeStat.addEventListener('click', () => {
+        flashIconRing(likeStat);
         const isLiked = likeStat.classList.toggle('is-liked');
         const countEl = likeStat.querySelector('.report-card__stat-count');
         if (countEl) countEl.textContent = String(Math.max(0, Number(countEl.textContent || 0) + (isLiked ? 1 : -1)));
@@ -891,7 +1178,8 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
     el.appendChild(head);
     if (repostTagEl) el.insertBefore(repostTagEl, head);
     if (replyEl) el.appendChild(replyEl);
-    if (cleanText) el.appendChild(body);
+    if (cleanText && !quote) el.appendChild(body);
+    if (quoteLeadEl) el.appendChild(quoteLeadEl);
     if (mediaEl) el.appendChild(mediaEl);
     if (quotedEl) el.appendChild(quotedEl);
     el.appendChild(footer);
@@ -931,6 +1219,10 @@ function createInlineComposerBox(parentChat, parentText, mode) {
     sendBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4 12 20 4l-6 16-3-7-7-1Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>';
 
     if (mode === 'quote') {
+        const quoteLead = document.createElement('div');
+        quoteLead.className = 'report-card__quote-lead report-card__quote-lead--composer';
+        quoteLead.textContent = 'Your quote will show above this original report.';
+
         const quotePreview = document.createElement('div');
         quotePreview.className = 'report-card__quoted report-card__quoted--composer';
 
@@ -957,6 +1249,7 @@ function createInlineComposerBox(parentChat, parentText, mode) {
             quotePreview.appendChild(quoteMediaWrap);
         }
 
+        box.appendChild(quoteLead);
         box.appendChild(quotePreview);
     }
 
@@ -1150,6 +1443,7 @@ function addToThread(chat, isOwn, scrollDown, animate, hasReply, isLatestOwn) {
     // slightly different feel so sent vs. received still reads distinctly.
     const enterAnimationClass = animate ? (isOwn ? 'chat-message--sent-in' : 'chat-message--received-in') : null;
     const el = buildMessageEl(chat, isOwn, enterAnimationClass, hasReply, isLatestOwn);
+    if (!el) return;
 
     // A reply nests under the card it replied to instead of taking its
     // own row in the main feed — see buildMessageEl's repliesContainer.
@@ -1200,12 +1494,12 @@ function loadChatHistory() {
         : (window.currentChatLocation || getCurrentChatLocation());
     if (!chatThread) {
         markChatReady();
-        return;
+        return Promise.resolve();
     }
 
     if (chatScope === CHAT_SCOPE_LOCAL && !loc) {
         markChatReady();
-        return;
+        return Promise.resolve();
     }
 
     chatLocation = loc; // kept for local-scope send calls
@@ -1216,16 +1510,17 @@ function loadChatHistory() {
     const url = buildChatsUrl();
     if (!url) {
         markChatReady();
-        return;
+        return Promise.resolve();
     }
 
-    fetch(url)
+    return fetch(url)
         .then(r => r.json())
         .then(chats => {
             const myId = getCurrentUserId();
             const repliedCounts = computeRepliedToIds(chats);
             const latestOwnId = getLatestOwnMessageId(chats, myId);
             ;[...chats].reverse().forEach(chat => {
+                if (shouldHideReport(chat)) return;
                 const id = chat._id || chat.id;
                 if (id) knownIds.add(id);
                 addToThread(chat, resolveUserId(chat) === myId, false, false, repliedCounts.get(id) || 0, String(id) === latestOwnId);
@@ -1277,6 +1572,10 @@ async function pollChatsOnce() {
             // instead of just one tick behind.
             try {
                 const id = chat._id || chat.id;
+                if (shouldHideReport(chat)) {
+                    if (id) knownIds.add(id);
+                    return;
+                }
                 if (!id || knownIds.has(id)) return; // skip already-shown messages
                 knownIds.add(id);
                 addToThread(chat, resolveUserId(chat) === myId, false, true, repliedCounts.get(id) || 0, String(id) === latestOwnId);
@@ -1692,8 +1991,8 @@ function applyIncomingChatDeepLink(search) {
 // panel" chat layout it used to toggle a class for has been retired
 // along with the popup-style CSS it depended on (chat.css), so
 // #view-chat now behaves like a normal page at all times.
-const reportPanelNews = document.getElementById('reportPanelNews');
-const reportPanelCommunity = document.getElementById('reportPanelCommunity');
+const reportPanelNews = document.querySelector('#view-chat .report-panel[data-panel="news"]');
+const reportPanelCommunity = document.querySelector('#view-chat .report-panel[data-panel="community"]');
 let currentReportPanel = 'news';
 
 function activateReportTab(tab) {
