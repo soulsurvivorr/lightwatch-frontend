@@ -1433,10 +1433,6 @@ body.lw-chat-community-mode #view-chat .community-banner {
   border-left: none;
 }
 
-#view-chat .chat-message.report-card.report-card--reposted {
-  border-left: 3px solid color-mix(in srgb, var(--status-green, #2fbf6e) 72%, #8ff4be);
-}
-
 #view-chat .chat-message.report-card.chat-message--admin {
   border-color: rgba(242, 179, 61, 0.55);
   background: rgba(242, 179, 61, 0.06);
@@ -1749,6 +1745,11 @@ body.lw-chat-community-mode #view-chat .community-banner {
   border-color: color-mix(in srgb, var(--brand2) 52%, var(--border-soft));
 }
 
+#view-chat .report-card__stat--like {
+  position: relative;
+  overflow: visible;
+}
+
 #view-chat .report-card__stat--like.is-liked {
   color: var(--red);
 }
@@ -1757,14 +1758,46 @@ body.lw-chat-community-mode #view-chat .community-banner {
   fill: var(--red);
 }
 
+/* Radiating ring that bursts outward from the heart on like — gives
+   the tap a bit more life than a plain scale pop. */
+#view-chat .report-card__stat--like::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--red) 55%, transparent) 0%, transparent 72%);
+  opacity: 0;
+  transform: scale(0.4);
+  pointer-events: none;
+}
+
+#view-chat .report-card__stat--like.is-liked-pop::before {
+  animation: report-card-like-burst 0.5s ease-out;
+}
+
+@keyframes report-card-like-burst {
+  0%   { opacity: 0.65; transform: scale(0.3); }
+  100% { opacity: 0; transform: scale(2); }
+}
+
 @keyframes report-card-like-pop {
   0% {
     transform: scale(1);
     filter: drop-shadow(0 0 0 rgba(239, 84, 84, 0));
   }
-  40% {
-    transform: scale(1.28);
-    filter: drop-shadow(0 0 7px rgba(239, 84, 84, 0.55));
+  30% {
+    transform: scale(0.82);
+    filter: drop-shadow(0 0 0 rgba(239, 84, 84, 0));
+  }
+  55% {
+    transform: scale(1.35);
+    filter: drop-shadow(0 0 8px rgba(239, 84, 84, 0.6));
+  }
+  78% {
+    transform: scale(0.94);
   }
   100% {
     transform: scale(1);
@@ -1773,10 +1806,28 @@ body.lw-chat-community-mode #view-chat .community-banner {
 }
 
 #view-chat .report-card__stat--like.is-liked-pop svg {
-  animation: report-card-like-pop 0.42s cubic-bezier(0.2, 0.9, 0.2, 1.2);
+  animation: report-card-like-pop 0.46s cubic-bezier(0.2, 0.9, 0.2, 1.2);
 }
 
 /* ---- Repost / Quote ---- */
+#view-chat .report-card__repost-wrap {
+  position: relative;
+  z-index: 2;
+}
+
+#view-chat .report-card__repost-wrap.is-open {
+  z-index: 40;
+}
+
+#view-chat .report-card__stat--repost {
+  width: auto;
+  padding: 0 10px 0 8px;
+}
+
+#view-chat .report-card__stat--repost .report-card__stat-count {
+  display: inline-block;
+}
+
 #view-chat .report-card__stat--repost:hover {
   color: var(--status-green, #2fbf6e);
 }
@@ -1796,8 +1847,34 @@ body.lw-chat-community-mode #view-chat .community-banner {
   animation: report-card-repost-pop 0.36s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-#view-chat .report-card__stat--quote:hover {
-  color: var(--brand2);
+/* The Repost/Quote picker — same visual language as .report-card__menu
+   (the "more options" dropdown) but anchored under the repost trigger
+   inside the footer stats row instead of the head row. */
+#view-chat .report-card__repost-menu {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  min-width: 150px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 7px;
+  border-radius: 12px;
+  border: 1px solid var(--border-soft);
+  background: color-mix(in srgb, var(--bg-panel) 95%, black 5%);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.23);
+  z-index: 50;
+  opacity: 0;
+  transform: translateY(6px) scale(0.96);
+  transform-origin: bottom right;
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+#view-chat .report-card__repost-wrap.is-open .report-card__repost-menu {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
 }
 
 @media (max-width: 520px) {
@@ -1876,7 +1953,7 @@ body.lw-chat-community-mode #view-chat .community-banner {
   gap: 6px;
   font-size: 0.74rem;
   font-weight: 700;
-  color: var(--brand2);
+  color: #fff;
 }
 
 #view-chat .report-card__quoted-text {

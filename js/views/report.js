@@ -154,6 +154,14 @@ function closeAllReportCardMenus(exceptWrap) {
     });
 }
 
+function closeAllRepostMenus(exceptWrap) {
+    document.querySelectorAll('#view-chat .report-card__repost-wrap.is-open').forEach((wrap) => {
+        if (exceptWrap && wrap === exceptWrap) return;
+        wrap.classList.remove('is-open');
+        wrap.querySelector('.report-card__stat--repost')?.setAttribute('aria-expanded', 'false');
+    });
+}
+
 function getRemainingEditWindowMs(chat) {
     const created = safeParseDate(chat?.createdAt);
     if (!created) return 0;
@@ -204,6 +212,8 @@ async function removeChatMessage(chatId) {
 document.addEventListener('click', (e) => {
     const withinMenu = e.target && e.target.closest('#view-chat .report-card__menu-wrap');
     if (!withinMenu) closeAllReportCardMenus(null);
+    const withinRepostMenu = e.target && e.target.closest('#view-chat .report-card__repost-wrap');
+    if (!withinRepostMenu) closeAllRepostMenus(null);
 });
 
 function flashIconRing(btn) {
@@ -1259,15 +1269,40 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
     commentStat.addEventListener('click', () => toggleInlineReplyBox(el, chat, cleanText, { mode: 'reply' }));
     commentStat.addEventListener('click', () => flashIconRing(commentStat));
 
-    // Repost — duplicates the original report as a new top-level post
-    // credited to the current user, with a "reposted" strapline (see
-    // repostTagEl above) pointing back at the original author.
+    // Repost — a single trigger that opens a small "Repost" / "Quote"
+    // menu (X/Twitter-style), instead of two separate stat buttons.
+    // Picking "Repost" duplicates the original report as a new
+    // top-level post credited to the current user, with a "reposted"
+    // strapline (see repostTagEl above) pointing back at the original
+    // author. Picking "Quote" opens the same inline composer as Reply,
+    // but the result posts as a new top-level report with the original
+    // embedded below the quoting user's own commentary. The old
+    // dedicated Quote button is gone — this trigger now uses that
+    // button's icon instead of the old repost swirl icon.
+    const myUserId = getCurrentUserId();
+    const reportId = getReportId(chat);
+
+    const initialRepostCount = Math.max(0, Number(chat.repostCount || 0));
+    const alreadyReposted = Boolean(myUserId) && Array.isArray(chat.repostedBy) &&
+        chat.repostedBy.some((id) => String(id) === String(myUserId));
+
+    const repostWrap = document.createElement('div');
+    repostWrap.className = 'report-card__repost-wrap';
+
     const repostStat = document.createElement('button');
     repostStat.type = 'button';
     repostStat.className = 'report-card__stat report-card__stat--repost';
-    repostStat.setAttribute('aria-label', 'Repost');
-    repostStat.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M8 8H18L15.5 5.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 16H6L8.5 18.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M18 8V12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M6 16V12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span class="report-card__stat-count">0</span>';
-    repostStat.addEventListener('click', async () => {
+    if (alreadyReposted) repostStat.classList.add('is-reposted');
+    repostStat.setAttribute('aria-label', 'Repost or quote');
+    repostStat.setAttribute('aria-haspopup', 'true');
+    repostStat.setAttribute('aria-expanded', 'false');
+    repostStat.innerHTML = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><polyline points="17 1 21 5 17 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 11V9a4 4 0 0 1 4-4h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="7 23 3 19 7 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 13v2a4 4 0 0 1-4 4H3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="report-card__stat-count">${initialRepostCount}</span>`;
+
+    const repostMenu = document.createElement('div');
+    repostMenu.className = 'report-card__repost-menu';
+    repostMenu.innerHTML = '<button type="button" class="report-card__menu-item" data-repost-action="repost">Repost</button><button type="button" class="report-card__menu-item" data-repost-action="quote">Quote</button>';
+
+    async function doRepost() {
         if (repostStat.classList.contains('is-reposted') || repostStat.disabled) return;
         repostStat.disabled = true;
         const saved = await postChat({
@@ -1282,43 +1317,97 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
         if (saved) {
             flashIconRing(repostStat);
             repostStat.classList.add('is-reposted');
+            // Optimistic bump — the server persists the real count (see
+            // POST /chats' repostCount/repostedBy update) so a refresh
+            // or another user's feed will show the true, shared total.
             const countEl = repostStat.querySelector('.report-card__stat-count');
             if (countEl) countEl.textContent = String(Number(countEl.textContent || 0) + 1);
         }
+    }
+
+    repostStat.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        const nextOpen = !repostWrap.classList.contains('is-open');
+        closeAllRepostMenus(nextOpen ? repostWrap : null);
+        repostWrap.classList.toggle('is-open', nextOpen);
+        repostStat.setAttribute('aria-expanded', String(nextOpen));
+        flashIconRing(repostStat);
     });
 
-    // Quote — opens the same inline composer as Reply, but the result
-    // posts as a new top-level report with the original embedded below
-    // the quoting user's own commentary (see the "quote" mode).
-    const quoteStat = document.createElement('button');
-    quoteStat.type = 'button';
-    quoteStat.className = 'report-card__stat report-card__stat--quote';
-    quoteStat.setAttribute('aria-label', 'Quote');
-    quoteStat.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><polyline points="17 1 21 5 17 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 11V9a4 4 0 0 1 4-4h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="7 23 3 19 7 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 13v2a4 4 0 0 1-4 4H3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-    quoteStat.addEventListener('click', () => toggleInlineReplyBox(el, chat, cleanText, { mode: 'quote' }));
-    quoteStat.addEventListener('click', () => flashIconRing(quoteStat));
+    repostMenu.addEventListener('click', (ev) => {
+        const btn = ev.target && ev.target.closest('[data-repost-action]');
+        if (!btn) return;
+        const action = btn.getAttribute('data-repost-action');
+        repostWrap.classList.remove('is-open');
+        repostStat.setAttribute('aria-expanded', 'false');
+        if (action === 'repost') doRepost();
+        if (action === 'quote') toggleInlineReplyBox(el, chat, cleanText, { mode: 'quote' });
+    });
 
-    // No backing "likes" counter on a chat message yet — visual only.
+    repostWrap.appendChild(repostStat);
+    repostWrap.appendChild(repostMenu);
+
+    // Likes are persisted server-side now (Chat.likeCount/likedBy — see
+    // POST /chats/:chatId/like), so every viewer sees the same count
+    // and a user's own like state survives a refresh or a different
+    // device, instead of resetting to 0 the moment the tab reloads.
+    const initialLikeCount = Math.max(0, Number(chat.likeCount || 0));
+    const alreadyLiked = Boolean(myUserId) && Array.isArray(chat.likedBy) &&
+        chat.likedBy.some((id) => String(id) === String(myUserId));
+
     const likeStat = document.createElement('button');
     likeStat.type = 'button';
     likeStat.className = 'report-card__stat report-card__stat--like';
-    likeStat.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 20.2s-7.6-4.7-9.9-9.3A5.7 5.7 0 0 1 12 5.6a5.7 5.7 0 0 1 9.9 5.3c-2.3 4.6-9.9 9.3-9.9 9.3Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span class="report-card__stat-count">0</span>';
-    likeStat.addEventListener('click', () => {
+    if (alreadyLiked) likeStat.classList.add('is-liked');
+    likeStat.innerHTML = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 20.2s-7.6-4.7-9.9-9.3A5.7 5.7 0 0 1 12 5.6a5.7 5.7 0 0 1 9.9 5.3c-2.3 4.6-9.9 9.3-9.9 9.3Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span class="report-card__stat-count">${initialLikeCount}</span>`;
+
+    let likeRequestInFlight = false;
+    likeStat.addEventListener('click', async () => {
+        if (likeRequestInFlight) return;
+        if (!myUserId || !reportId) {
+            window.lwToast?.('Sign in to like posts.');
+            return;
+        }
+
         flashIconRing(likeStat);
-        const isLiked = likeStat.classList.toggle('is-liked');
-        if (isLiked) {
+        const countEl = likeStat.querySelector('.report-card__stat-count');
+        const previousCount = Math.max(0, Number(countEl?.textContent || 0));
+        const wasLiked = likeStat.classList.contains('is-liked');
+        const nextLiked = !wasLiked;
+
+        // Optimistic UI so the tap feels instant; reconciled with the
+        // server's response (or rolled back on failure) below.
+        likeStat.classList.toggle('is-liked', nextLiked);
+        if (nextLiked) {
             likeStat.classList.remove('is-liked-pop');
             void likeStat.offsetWidth;
             likeStat.classList.add('is-liked-pop');
             setTimeout(() => likeStat.classList.remove('is-liked-pop'), 460);
         }
-        const countEl = likeStat.querySelector('.report-card__stat-count');
-        if (countEl) countEl.textContent = String(Math.max(0, Number(countEl.textContent || 0) + (isLiked ? 1 : -1)));
+        if (countEl) countEl.textContent = String(Math.max(0, previousCount + (nextLiked ? 1 : -1)));
+
+        likeRequestInFlight = true;
+        try {
+            const res = await fetch(`${API_URL}/chats/${encodeURIComponent(reportId)}/like`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: myUserId })
+            });
+            if (!res.ok) throw new Error('like-request-failed');
+            const data = await res.json();
+            likeStat.classList.toggle('is-liked', Boolean(data.liked));
+            if (countEl) countEl.textContent = String(Math.max(0, Number(data.likeCount || 0)));
+        } catch {
+            likeStat.classList.toggle('is-liked', wasLiked);
+            if (countEl) countEl.textContent = String(previousCount);
+            window.lwToast?.('Could not update like. Try again.');
+        } finally {
+            likeRequestInFlight = false;
+        }
     });
 
     stats.appendChild(commentStat);
-    stats.appendChild(repostStat);
-    stats.appendChild(quoteStat);
+    stats.appendChild(repostWrap);
     stats.appendChild(likeStat);
 
     footer.appendChild(tags);
