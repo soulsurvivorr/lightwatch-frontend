@@ -239,10 +239,8 @@
   box-shadow: none;
 }
 
-/* Subtle press feedback for touch/click so nav feels responsive
-   without the exaggerated pop/bounce effect. */
 .bottom-nav-link:active .bottom-nav-icon {
-  transform: scale(0.96);
+  transform: none;
 }
 
 .bottom-nav-link--active {

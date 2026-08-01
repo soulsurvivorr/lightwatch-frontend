@@ -952,7 +952,7 @@ html[data-theme="light"] .chat-message__text {
    rule further up this file) ---- */
 #view-chat .community-banner {
   color: white;
-  padding-top: max(env(safe-area-inset-top, 0px), 6px);
+  padding: max(env(safe-area-inset-top, 0px), 6px) max(24px, env(safe-area-inset-right, 24px)) 18px max(24px, env(safe-area-inset-left, 24px));
   background: linear-gradient(135deg, #06111c 0%, #0e203a 52%, #163654 100%);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: var(--radius-lg);

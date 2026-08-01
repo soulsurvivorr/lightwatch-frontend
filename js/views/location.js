@@ -1,96 +1,96 @@
 // ============================================================
 //  VIEWS/LOCATION.JS
-//  Map + "Nearby Locations" view of Kumasi neighborhoods and their
-//  current light status, with search, category filters, favorites,
-//  and a collapsible nearby-locations list.
+//  Mapbox GL JS "Locations" map: every monitored Ghanaian town/area
+//  plotted with custom lightning-bolt markers, client-side clustering,
+//  live status polling, search (backend + Mapbox geocoder), favorites,
+//  filters, and a collapsible nearby-locations list.
 //
-//  Changed vs. the previous list-only implementation:
-//   - Rendering now targets the new map (#locMapPins / #locMapUser)
-//     and the redesigned #locNearbyList row layout instead of the
-//     old #areaGrid liveboard.
-//   - Still wrapped into mount()/show()/hide() for the router. Polling
-//     (POLL_INTERVAL_STANDARD_MS, from utils/constants.js) starts in
-//     show() and stops in hide(), same as before.
-//   - The render-cache read/write still goes through services/cache.js
-//     (LWCache) — unchanged.
-//   - New: favorites persist in localStorage and drive the
-//     "Favorites" filter pill + each row's star toggle.
+//  Changed vs. the previous static-image implementation:
+//   - The old <img src="./images/map.png"> + percent-positioned
+//     <div> pins are gone. #locMapCanvas is now a real interactive
+//     Mapbox GL map — pan/zoom/rotate all work, and every monitored
+//     location in the database is plotted at a real (or best-effort
+//     approximate — see coordsApproximate below) coordinate instead of
+//     a hand-placed illustrative spot.
+//   - Pins are still custom SVG (same lightning-bolt glyph as before)
+//     but are now real mapboxgl.Marker DOM elements, positioned by
+//     Mapbox itself rather than left/top percentages.
+//   - Clustering is computed client-side with Supercluster and
+//     re-rendered as our own .loc-marker/.loc-cluster elements on every
+//     moveend/zoomend — Mapbox's built-in layer-based clustering can't
+//     drive custom HTML/SVG markers, so this view does that step
+//     itself (see renderVisibleMarkers()).
+//   - New: GET /locations/map (server.js) replaces the old
+//     GET /areas/known + N parallel GET /lightstatus calls — one
+//     request now returns every monitored area with status, stats,
+//     and resolved coordinates.
+//   - New: "Nearby" now sorts/filters by a real haversine distance from
+//     the user's GPS position instead of having no distance data at all.
+//   - Still wrapped into mount()/show()/hide() for the router, and
+//     polling (POLL_INTERVAL_STANDARD_MS) still starts in show() /
+//     stops in hide(), same contract as before.
+//   - Favorites still persist in localStorage under the same key.
 // ============================================================
 
 (function () {
-    // FIX: this used to be a fixed list of 9 Kumasi neighborhoods, so no
-    // matter what city/town a user actually signed up with, the "Nearby
-    // Locations" panel and the map pins always showed the same hardcoded
-    // set. KNOWN_AREAS_FALLBACK now only exists as a last resort if
-    // GET /areas/known can't be reached at all; real areas are fetched
-    // from the server (every city anyone signed up with, plus every
-    // location a light status has ever been reported for) in
-    // fetchKnownAreaNames() below.
-    //
-    // NOTE: distanceKm is intentionally left out. There's no backend
-    // support today for per-user or per-area coordinates (signup's
-    // reverse-geocode only turns lat/lng into a text address — it isn't
-    // persisted anywhere), so a real "distance from me" figure isn't
-    // available yet. nearbyRowTemplate already renders an empty distance
-    // string when distanceKm isn't a number, so this doesn't break
-    // display — but the "Nearby" filter's sort has nothing real to sort
-    // by until that data exists.
-    const KNOWN_AREAS_FALLBACK = [
-        'Asokwa', 'Adum', 'Suame', 'Ahodwo', 'Nhyiaeso',
-        'Tafo', 'KNUST', 'Ejisu', 'Kwadaso'
-    ];
+    // ── Mapbox setup ──────────────────────────────────────────
+    // REQUIRED: replace with a real Mapbox access token from
+    // https://account.mapbox.com/access-tokens/ before deploying —
+    // the map cannot load without one. Keeping it here (rather than
+    // js/config.js, which wasn't part of this change) so this file is
+    // self-contained; feel free to move it there instead.
+    const MAPBOX_ACCESS_TOKEN = 'YOUR_MAPBOX_ACCESS_TOKEN';
 
-    // Percent-based positions on the static map image, keyed by
-    // location name (case-insensitive). Purely presentational — this
-    // is an illustrative map, not a real geocoded one. Any area that
-    // isn't one of these hand-placed Kumasi spots (e.g. a newly added
-    // town from a real signup) falls back to fallbackPosition() below
-    // instead of every unknown area stacking on the exact same 50/50
-    // center point.
-    const MAP_POSITIONS = {
-        'bantama': { left: 20, top: 52 },
-        'asokwa': { left: 78, top: 40 },
-        'adum': { left: 60, top: 70 },
-        'suame': { left: 22, top: 24 },
-        'ahodwo': { left: 34, top: 82 },
-        'nhyiaeso': { left: 74, top: 78 },
-        'tafo': { left: 68, top: 20 },
-        'knust': { left: 46, top: 14 },
-        'ejisu': { left: 88, top: 58 },
-        'kwadaso': { left: 12, top: 78 }
-    };
+    const STYLE_STREET = 'mapbox://styles/mapbox/dark-v11';
+    const STYLE_SATELLITE = 'mapbox://styles/mapbox/satellite-streets-v12';
 
-    // Deterministic (same name -> same spot every render) stand-in
-    // position for any area with no hand-placed entry in MAP_POSITIONS,
-    // spread across a middle band of the map instead of all landing on
-    // one point.
-    function fallbackPosition(name) {
-        let hash = 0;
-        const str = String(name || '');
-        for (let i = 0; i < str.length; i++) {
-            hash = (hash * 31 + str.charCodeAt(i)) >>> 0;
-        }
-        return {
-            left: 15 + (hash % 70),
-            top: 20 + ((hash >> 8) % 60)
-        };
-    }
-
-    function normalizeAreaName(name) {
-        return String(name || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
-    }
+    // Kumasi — used only as the last-resort fallback center when
+    // geolocation is denied/unavailable AND no saved location exists.
+    const DEFAULT_CENTER = { lat: 6.6885, lng: -1.6244 };
+    const DEFAULT_ZOOM = 12;
+    const COUNTRY_ZOOM = 6.4;
 
     const LOCATION_CACHE_KEY = 'lw_cache_location_bantama';
     const LOCATION_LIST_CACHE_KEY = 'lw_cache_location_list';
     const FAVORITES_KEY = 'lw_location_favorites';
+    const NEARBY_RADIUS_KM = 60;
 
+    // Last-resort fallback if GET /locations/map can't be reached at
+    // all (e.g. offline) — mirrors the old KNOWN_AREAS_FALLBACK list,
+    // with the same hand-placed Kumasi-area coordinates server.js now
+    // also knows about.
+    const OFFLINE_FALLBACK_LOCATIONS = [
+        { name: 'Asokwa', locationKey: 'asokwa', lat: 6.6650, lng: -1.6100 },
+        { name: 'Adum', locationKey: 'adum', lat: 6.6926, lng: -1.6244 },
+        { name: 'Suame', locationKey: 'suame', lat: 6.7239, lng: -1.6367 },
+        { name: 'Ahodwo', locationKey: 'ahodwo', lat: 6.6650, lng: -1.6350 },
+        { name: 'Nhyiaeso', locationKey: 'nhyiaeso', lat: 6.6733, lng: -1.6067 },
+        { name: 'Tafo', locationKey: 'tafo', lat: 6.7264, lng: -1.5850 },
+        { name: 'KNUST', locationKey: 'knust', lat: 6.6745, lng: -1.5716 },
+        { name: 'Ejisu', locationKey: 'ejisu', lat: 6.7333, lng: -1.3667 },
+        { name: 'Kwadaso', locationKey: 'kwadaso', lat: 6.6975, lng: -1.6600 }
+    ].map(a => ({ ...a, status: 'unknown', minutesAgo: null, confirmations: null, confidence: null, coordsApproximate: true }));
+
+    // ── State ──────────────────────────────────────────────────
+    let map = null;
+    let mapReady = false;
+    let clusterIndex = null;
+    let markerEls = new Map();          // cluster/point id -> mapboxgl.Marker
+    let openPopup = null;
+    let openPopupKey = null;
+    let userCoords = null;              // { lat, lng } once we have a GPS fix
+    let latestLocations = [];           // raw dataset from the server
+    let previousStatusByKey = new Map(); // for flash-on-change diffing
     let locationPollTimer = null;
     let currentFilter = 'all';
     let currentSearch = '';
     let controlsBound = false;
-    let latestLocations = [];
+    let mapInitStarted = false;
     let nearbyCollapsed = false;
+    let currentMapStyle = 'street';
+    let geocoderDebounceTimer = null;
 
+    // ── Favorites (unchanged localStorage contract) ───────────
     function readFavorites() {
         try {
             const raw = localStorage.getItem(FAVORITES_KEY);
@@ -115,12 +115,9 @@
     function toggleFavorite(name) {
         const list = readFavorites();
         const idx = list.indexOf(name);
-        if (idx === -1) {
-            list.push(name);
-        } else {
-            list.splice(idx, 1);
-        }
+        if (idx === -1) list.push(name); else list.splice(idx, 1);
         writeFavorites(list);
+        return list.includes(name);
     }
 
     function statusMeta(status) {
@@ -130,7 +127,7 @@
             isOn,
             isUnknown,
             label: isUnknown ? 'Checking' : isOn ? 'Power is ON' : 'Power is OFF',
-            cls: isUnknown ? 'checking' : isOn ? 'on' : 'off'
+            cls: isUnknown ? 'unknown' : isOn ? 'on' : 'off'
         };
     }
 
@@ -145,42 +142,385 @@
 
     function getRegisteredLocationName() {
         const user = getCurrentUserData();
-        if (user.city && String(user.city).trim()) {
-            return String(user.city).trim();
-        }
+        if (user.city && String(user.city).trim()) return String(user.city).trim();
         return user.region ? String(user.region).trim() : null;
     }
 
-    // ---- Map pins ----
-
-    function pinTemplate(area) {
-        const normalized = normalizeAreaName(area.name);
-        const pos = MAP_POSITIONS[normalized] || fallbackPosition(normalized);
-        const meta = statusMeta(area.status);
-        const labelText = area.name || getRegisteredLocationName() || 'Location';
-        // FIX: the city/town label used to only render when the light was
-        // ON (`meta.isOn ? ... : ''`), so every OFF/unknown pin on the map
-        // was an unlabeled dot with no name — now every pin always carries
-        // its name.
-        return `
-      <div class="loc-map__pin loc-map__pin--${meta.cls}" style="left:${pos.left}%;top:${pos.top}%" data-area="${area.name}" title="${labelText} — ${meta.label}">
-        <span class="loc-map__pin__label">${labelText}</span>
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" fill="currentColor"/></svg>
-      </div>
-    `;
+    function normalizeAreaName(name) {
+        return String(name || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
     }
 
-    function renderMapPins(locations) {
-        const pinsEl = document.getElementById('locMapPins');
-        if (!pinsEl) return;
-        pinsEl.innerHTML = locations.map(pinTemplate).join('');
+    // ── Distance ───────────────────────────────────────────────
+    function haversineKm(a, b) {
+        if (!a || !b) return null;
+        const R = 6371;
+        const dLat = (b.lat - a.lat) * Math.PI / 180;
+        const dLng = (b.lng - a.lng) * Math.PI / 180;
+        const lat1 = a.lat * Math.PI / 180;
+        const lat2 = b.lat * Math.PI / 180;
+        const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+        return R * 2 * Math.asin(Math.sqrt(h));
     }
 
-    // ---- Nearby locations list ----
+    function withDistances(locations) {
+        if (!userCoords) return locations;
+        return locations.map(loc => ({
+            ...loc,
+            distanceKm: (typeof loc.lat === 'number' && typeof loc.lng === 'number')
+                ? haversineKm(userCoords, { lat: loc.lat, lng: loc.lng })
+                : null
+        }));
+    }
+
+    // ============================================================
+    //  Map bootstrap
+    // ============================================================
+
+    function initMap() {
+        if (mapInitStarted) return;
+        mapInitStarted = true;
+
+        const canvas = document.getElementById('locMapCanvas');
+        const loading = document.getElementById('locMapLoading');
+        if (!canvas) return;
+
+        if (!window.mapboxgl) {
+            if (loading) loading.innerHTML = '<span>Map failed to load. Check your connection.</span>';
+            console.error('Mapbox GL JS did not load.');
+            return;
+        }
+
+        if (!MAPBOX_ACCESS_TOKEN || MAPBOX_ACCESS_TOKEN === 'YOUR_MAPBOX_ACCESS_TOKEN') {
+            if (loading) loading.innerHTML = '<span>Map needs a Mapbox access token — see views/location.js.</span>';
+            console.error('LightWatch: set MAPBOX_ACCESS_TOKEN in views/location.js before the map can render.');
+            return;
+        }
+
+        mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;
+
+        map = new mapboxgl.Map({
+            container: canvas,
+            style: STYLE_STREET,
+            center: [DEFAULT_CENTER.lng, DEFAULT_CENTER.lat],
+            zoom: COUNTRY_ZOOM,
+            pitchWithRotate: false,
+            attributionControl: true
+        });
+
+        map.addControl(new mapboxgl.NavigationControl({ showCompass: true, visualizePitch: false }), 'top-right');
+
+        const geolocate = new mapboxgl.GeolocateControl({
+            positionOptions: { enableHighAccuracy: true },
+            trackUserLocation: true,
+            showAccuracyCircle: false,
+            fitBoundsOptions: { maxZoom: DEFAULT_ZOOM }
+        });
+        map.addControl(geolocate, 'top-right');
+
+        geolocate.on('geolocate', (pos) => {
+            userCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+            renderLocations(latestLocations);
+        });
+
+        map.on('load', () => {
+            mapReady = true;
+            applyBrandPalette();
+            if (loading) loading.setAttribute('hidden', '');
+            requestUserLocation(geolocate);
+            renderVisibleMarkers();
+        });
+
+        map.on('moveend', renderVisibleMarkers);
+        map.on('zoomend', renderVisibleMarkers);
+
+        map.on('style.load', () => {
+            // Re-applied every time setStyle() runs (Street/Satellite toggle) —
+            // markers themselves are DOM elements outside the style, so they
+            // survive a style swap untouched and don't need re-adding.
+            applyBrandPalette();
+        });
+    }
+
+    // Pulls LightWatch's own design tokens (variables.css) and pushes
+    // them onto the stock dark-v11 style's paint properties, so roads/
+    // water/land/labels/boundaries read as part of the app's palette
+    // instead of Mapbox's generic dark theme. Wrapped per-layer since
+    // exact layer ids can shift between style versions — a missing
+    // layer just gets skipped rather than breaking map load.
+    function applyBrandPalette() {
+        if (currentMapStyle !== 'street' || !map) return;
+        const css = getComputedStyle(document.documentElement);
+        const darkBg = css.getPropertyValue('--dark-bg').trim() || '#1C1F26';
+        const darkBgMid = css.getPropertyValue('--dark-bg-mid').trim() || '#2A2E38';
+        const teal = css.getPropertyValue('--teal').trim() || '#3DD9C2';
+        const border = css.getPropertyValue('--border-strong').trim() || '#3a3a44';
+
+        const safeSet = (layer, prop, value) => {
+            try {
+                if (map.getLayer(layer)) map.setPaintProperty(layer, prop, value);
+            } catch (err) { /* layer not present in this style version — skip */ }
+        };
+
+        safeSet('background', 'background-color', darkBg);
+        safeSet('land', 'background-color', darkBg);
+        safeSet('landuse', 'fill-color', darkBgMid);
+        safeSet('national-park', 'fill-color', darkBgMid);
+        safeSet('water', 'fill-color', color_mix(teal, darkBg, 0.12));
+        safeSet('waterway', 'line-color', color_mix(teal, darkBg, 0.12));
+        safeSet('road-primary', 'line-color', darkBgMid);
+        safeSet('road-secondary-tertiary', 'line-color', darkBgMid);
+        safeSet('road-street', 'line-color', darkBgMid);
+        safeSet('road-motorway-trunk', 'line-color', border);
+        safeSet('admin-0-boundary', 'line-color', border);
+        safeSet('admin-1-boundary', 'line-color', border);
+        safeSet('settlement-major-label', 'text-color', '#ffffff');
+        safeSet('settlement-minor-label', 'text-color', 'rgba(255,255,255,0.75)');
+        safeSet('poi-label', 'text-color', 'rgba(255,255,255,0.5)');
+        safeSet('road-label', 'text-color', 'rgba(255,255,255,0.45)');
+    }
+
+    // Cheap hex-ish blend so applyBrandPalette() doesn't need a full
+    // color library just to nudge water toward the brand teal.
+    function color_mix(hex, base, amount) {
+        const h = hex.replace('#', '');
+        const b = base.replace('#', '');
+        if (h.length !== 6 || b.length !== 6) return base;
+        const mix = (i) => {
+            const a = parseInt(h.substr(i, 2), 16);
+            const c = parseInt(b.substr(i, 2), 16);
+            return Math.round(c + (a - c) * amount).toString(16).padStart(2, '0');
+        };
+        return `#${mix(0)}${mix(2)}${mix(4)}`;
+    }
+
+    // ── Geolocation: center on the user if permitted, else fall back
+    //    to their saved/registered location, else Kumasi. ──────────
+    function requestUserLocation(geolocateControl) {
+        if (!navigator.geolocation) {
+            centerOnFallback();
+            return;
+        }
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                userCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                map.flyTo({ center: [userCoords.lng, userCoords.lat], zoom: DEFAULT_ZOOM, essential: true });
+                renderLocations(latestLocations);
+            },
+            () => centerOnFallback(),
+            { enableHighAccuracy: true, timeout: 8000, maximumAge: 300000 }
+        );
+    }
+
+    function centerOnFallback() {
+        // Prefer a cached last-known location, then the current user's
+        // registered city (once we know its coordinates from the loaded
+        // dataset), then Kumasi.
+        const cached = LWCache && LWCache.readStale(LOCATION_CACHE_KEY);
+        if (cached && typeof cached.lat === 'number' && typeof cached.lng === 'number') {
+            map.flyTo({ center: [cached.lng, cached.lat], zoom: DEFAULT_ZOOM, essential: true });
+            return;
+        }
+        const registeredName = normalizeAreaName(getRegisteredLocationName());
+        const match = latestLocations.find(l => normalizeAreaName(l.name) === registeredName);
+        if (match) {
+            map.flyTo({ center: [match.lng, match.lat], zoom: DEFAULT_ZOOM, essential: true });
+            return;
+        }
+        map.flyTo({ center: [DEFAULT_CENTER.lng, DEFAULT_CENTER.lat], zoom: DEFAULT_ZOOM, essential: true });
+    }
+
+    // ============================================================
+    //  Markers + clustering (Supercluster, re-rendered on every
+    //  moveend/zoomend so only what's in view gets built)
+    // ============================================================
+
+    function locationsToGeoJSON(locations) {
+        return {
+            type: 'FeatureCollection',
+            features: locations
+                .filter(l => typeof l.lat === 'number' && typeof l.lng === 'number')
+                .map(l => ({
+                    type: 'Feature',
+                    properties: { ...l },
+                    geometry: { type: 'Point', coordinates: [l.lng, l.lat] }
+                }))
+        };
+    }
+
+    function rebuildClusterIndex(locations) {
+        if (!window.Supercluster) {
+            clusterIndex = null;
+            return;
+        }
+        clusterIndex = new Supercluster({ radius: 50, maxZoom: 15 }).load(locationsToGeoJSON(locations).features);
+        renderVisibleMarkers();
+    }
+
+    function buildMarkerEl(feature) {
+        const isCluster = feature.properties.cluster;
+        const el = document.createElement('div');
+
+        if (isCluster) {
+            const count = feature.properties.point_count;
+            const size = Math.min(52, 28 + Math.log2(count + 1) * 6);
+            el.className = 'loc-cluster loc-marker--enter';
+            el.style.width = `${size}px`;
+            el.style.height = `${size}px`;
+            el.textContent = count > 99 ? '99+' : String(count);
+            el.setAttribute('role', 'button');
+            el.setAttribute('aria-label', `${count} locations — zoom in to see them`);
+            el.addEventListener('click', () => {
+                const expansionZoom = Math.min(
+                    clusterIndex.getClusterExpansionZoom(feature.properties.cluster_id),
+                    18
+                );
+                map.easeTo({ center: feature.geometry.coordinates, zoom: expansionZoom });
+            });
+            return el;
+        }
+
+        const meta = statusMeta(feature.properties.status);
+        el.className = `loc-marker loc-marker--${meta.cls} loc-marker--enter`;
+        el.dataset.locationKey = feature.properties.locationKey;
+        el.setAttribute('role', 'button');
+        el.setAttribute('aria-label', `${feature.properties.name} — ${meta.label}`);
+        el.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" fill="currentColor"/></svg>';
+
+        if (isFavorited(feature.properties.name)) {
+            const star = document.createElement('span');
+            star.className = 'loc-marker__favorite';
+            star.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="m12 3.5 2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 16.9l-5.2 2.8 1-5.9-4.3-4.1 5.9-.8L12 3.5Z"/></svg>';
+            el.appendChild(star);
+        }
+
+        el.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openLocationPopup(feature.properties, feature.geometry.coordinates);
+        });
+
+        return el;
+    }
+
+    // Diffs the previous marker set against the newly-clustered one so
+    // unchanged points are left alone (no re-render, no lost transition
+    // state) — only additions/removals touch the DOM. Also the "only
+    // render visible markers" performance requirement: clusterIndex is
+    // always queried against the current viewport bbox + zoom.
+    function renderVisibleMarkers() {
+        if (!map || !mapReady || !clusterIndex) return;
+
+        const bounds = map.getBounds();
+        const bbox = [bounds.getWest(), bounds.getSouth(), bounds.getEast(), bounds.getNorth()];
+        const zoom = Math.floor(map.getZoom());
+        const clusters = clusterIndex.getClusters(bbox, zoom);
+
+        const nextIds = new Set();
+        clusters.forEach(feature => {
+            const id = feature.properties.cluster
+                ? `cluster-${feature.properties.cluster_id}`
+                : `loc-${feature.properties.locationKey}`;
+            nextIds.add(id);
+
+            if (markerEls.has(id)) return; // unchanged — leave its DOM/transition state alone
+
+            const el = buildMarkerEl(feature);
+            const marker = new mapboxgl.Marker({ element: el, anchor: feature.properties.cluster ? 'center' : 'bottom' })
+                .setLngLat(feature.geometry.coordinates)
+                .addTo(map);
+            markerEls.set(id, marker);
+
+            setTimeout(() => el.classList.remove('loc-marker--enter'), 420);
+        });
+
+        // Remove markers that scrolled out of view / got absorbed into a
+        // cluster since the last render.
+        markerEls.forEach((marker, id) => {
+            if (!nextIds.has(id)) {
+                marker.remove();
+                markerEls.delete(id);
+            }
+        });
+    }
+
+    // Applies a fresh status to an already-rendered marker element in
+    // place (CSS transition handles the color change) and gives it a
+    // brief flash, instead of tearing the marker down and rebuilding it.
+    function updateMarkerStatus(locationKey, status) {
+        const id = `loc-${locationKey}`;
+        const marker = markerEls.get(id);
+        if (!marker) return;
+        const el = marker.getElement();
+        const meta = statusMeta(status);
+        el.className = el.className.replace(/loc-marker--(on|off|unknown)/, `loc-marker--${meta.cls}`);
+        el.classList.add('loc-marker--flash');
+        setTimeout(() => el.classList.remove('loc-marker--flash'), 1450);
+    }
+
+    // ============================================================
+    //  Info-card popup
+    // ============================================================
+
+    function openLocationPopup(props, coordinates) {
+        const template = document.getElementById('locPopupCardTemplate');
+        if (!template || !map) return;
+
+        const node = template.content.firstElementChild.cloneNode(true);
+        const meta = statusMeta(props.status);
+
+        node.querySelector('[data-field="name"]').textContent = props.name;
+        const statusEl = node.querySelector('[data-field="status"]');
+        statusEl.textContent = meta.label;
+        statusEl.className = `loc-popup__status loc-popup__status--${meta.cls}`;
+
+        node.querySelector('[data-field="updated"]').textContent = (window.LWHelpers && props.minutesAgo != null)
+            ? LWHelpers.formatRelativeTimeFromMinutes(props.minutesAgo)
+            : '—';
+        node.querySelector('[data-field="confidence"]').textContent = typeof props.confidence === 'number' ? `${props.confidence}%` : '—';
+        node.querySelector('[data-field="reports"]').textContent = props.confirmations != null ? String(props.confirmations) : '0';
+
+        const distance = userCoords && typeof props.lat === 'number'
+            ? haversineKm(userCoords, { lat: props.lat, lng: props.lng })
+            : null;
+        node.querySelector('[data-field="distance"]').textContent = typeof distance === 'number' ? `${distance.toFixed(1)} km` : '—';
+
+        const starBtn = node.querySelector('[data-action="popup-favorite"]');
+        const syncStar = () => starBtn.classList.toggle('is-active', isFavorited(props.name));
+        syncStar();
+        starBtn.addEventListener('click', () => {
+            toggleFavorite(props.name);
+            syncStar();
+            renderLocations(latestLocations); // refreshes the favorite badge on the marker + list
+        });
+
+        node.querySelector('[data-action="popup-report"]').addEventListener('click', () => {
+            if (window.LWRouter) window.LWRouter.navigate('report');
+        });
+        node.querySelector('[data-action="popup-news"]').addEventListener('click', () => {
+            if (window.LWRouter) window.LWRouter.navigate('news');
+        });
+        node.querySelector('[data-action="popup-directions"]').addEventListener('click', () => {
+            window.open(`https://www.google.com/maps/dir/?api=1&destination=${props.lat},${props.lng}`, '_blank', 'noopener');
+        });
+
+        if (openPopup) openPopup.remove();
+        openPopup = new mapboxgl.Popup({ closeButton: true, closeOnClick: false, offset: 18, maxWidth: 'none' })
+            .setLngLat(coordinates)
+            .setDOMContent(node)
+            .addTo(map);
+        openPopupKey = props.locationKey;
+        map.easeTo({ center: coordinates, essential: true });
+
+        openPopup.on('close', () => { openPopup = null; openPopupKey = null; });
+    }
+
+    // ============================================================
+    //  Nearby-locations list (unchanged row markup/behavior, now
+    //  fed by the same dataset the map uses)
+    // ============================================================
 
     function nearbyRowTemplate(area) {
         const meta = statusMeta(area.status);
-        const timeText = LWHelpers.formatRelativeTimeFromMinutes(area.minutesAgo);
+        const timeText = (window.LWHelpers && area.minutesAgo != null) ? LWHelpers.formatRelativeTimeFromMinutes(area.minutesAgo) : '—';
         const favorited = isFavorited(area.name);
         const distanceText = typeof area.distanceKm === 'number' ? `${area.distanceKm.toFixed(1)} km` : '';
 
@@ -208,18 +548,23 @@
     `;
     }
 
+    function matchesActiveFilter(area) {
+        if (currentFilter === 'favorites') return isFavorited(area.name);
+        if (currentFilter === 'myareas') return normalizeAreaName(area.name) === normalizeAreaName(getRegisteredLocationName());
+        if (currentFilter === 'poweron') return area.status === 'on';
+        if (currentFilter === 'poweroff') return area.status === 'off';
+        if (currentFilter === 'nearby') return typeof area.distanceKm === 'number' && area.distanceKm <= NEARBY_RADIUS_KM;
+        return true;
+    }
+
     function applyFilters() {
         const list = document.getElementById('locNearbyList');
         if (!list) return;
 
         let visibleCount = 0;
         list.querySelectorAll('.loc-row').forEach(row => {
-            let matchesFilter = true;
-            if (currentFilter === 'favorites') {
-                matchesFilter = row.dataset.favorite === '1';
-            } else if (currentFilter === 'myareas') {
-                matchesFilter = row.dataset.area === 'Bantama';
-            }
+            const area = latestLocations.find(a => a.name === row.dataset.area);
+            const matchesFilter = area ? matchesActiveFilter(area) : true;
             const matchesSearch = !currentSearch || row.dataset.name.includes(currentSearch);
             const show = matchesFilter && matchesSearch;
             row.style.display = show ? '' : 'none';
@@ -227,97 +572,40 @@
         });
 
         const emptyState = document.getElementById('locationEmptyState');
-        if (emptyState) {
-            emptyState.style.display = visibleCount === 0 ? 'flex' : 'none';
-        }
+        if (emptyState) emptyState.style.display = visibleCount === 0 ? 'flex' : 'none';
     }
 
     function renderLocations(locations) {
-        latestLocations = locations;
+        latestLocations = withDistances(locations);
 
         const list = document.getElementById('locNearbyList');
         if (list) {
-            // User's own (live) location always sits first; the rest keep
-            // their existing order. If "Nearby" is the active filter, sort
-            // everyone else by distance ascending.
-            const own = locations.filter(a => a.live);
-            let rest = locations.filter(a => !a.live);
+            const own = latestLocations.filter(a => a.live);
+            let rest = latestLocations.filter(a => !a.live);
             if (currentFilter === 'nearby') {
-                rest = rest.slice().sort((a, b) => (a.distanceKm || 0) - (b.distanceKm || 0));
+                rest = rest.slice().sort((a, b) => (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity));
             }
             list.innerHTML = own.concat(rest).map(nearbyRowTemplate).join('');
         }
 
-        renderMapPins(locations);
+        // Map: filter the working set to the active filter, feed it to
+        // Supercluster, and re-render whatever's currently in view.
+        const mapSet = currentFilter === 'all' ? latestLocations : latestLocations.filter(matchesActiveFilter);
+        rebuildClusterIndex(mapSet);
+
+        // If a popup is open for a location that just updated, refresh it.
+        if (openPopupKey) {
+            const fresh = latestLocations.find(a => a.locationKey === openPopupKey);
+            if (fresh && fresh.lat != null) openLocationPopup(fresh, [fresh.lng, fresh.lat]);
+        }
+
         applyFilters();
     }
 
-    // Shared by fetchLiveTowns() (the user's own registered location) and
-    // fetchKnownAreas() (every other neighborhood in KNOWN_AREAS) — both
-    // just hit GET /lightstatus for a given name and shape the response
-    // into the same row object nearbyRowTemplate/renderMapPins expect.
-    async function fetchAreaStatus(name, extra = {}) {
-        try {
-            const res = await fetch(`${LWHelpers.apiBase()}/lightstatus?location=${encodeURIComponent(name)}`);
-            if (!res.ok) throw new Error(`Bad response for ${name}`);
-            const data = await res.json();
-            const reportedAt = data.reportedAt ? new Date(data.reportedAt).getTime() : null;
-            const minutesAgo = reportedAt ? Math.max(0, Math.round((Date.now() - reportedAt) / 60000)) : null;
-            return {
-                name,
-                status: data.status || 'unknown',
-                minutesAgo,
-                confirmations: data.stats ? data.stats.uniqueContributors : null,
-                ...extra
-            };
-        } catch (err) {
-            console.error(`Failed to load live status for ${name}:`, err.message);
-            return { name, status: 'unknown', minutesAgo: null, confirmations: null, ...extra };
-        }
-    }
+    // ============================================================
+    //  Data loading (GET /locations/map) + live-update polling
+    // ============================================================
 
-    async function fetchLiveTowns() {
-        const registeredName = getRegisteredLocationName();
-        const name = registeredName || 'Bantama';
-        return fetchAreaStatus(name, { live: true });
-    }
-
-    // FIX: names used to always come from the hardcoded KNOWN_AREAS
-    // list, so a town someone actually signed up with never showed up
-    // here unless it happened to already be in that list. This now asks
-    // the server for every city anyone has registered with plus every
-    // location a light status has ever been reported for
-    // (GET /areas/known), falling back to the old hardcoded list only if
-    // that request fails (e.g. offline).
-    async function fetchKnownAreaNames() {
-        try {
-            const res = await fetch(`${LWHelpers.apiBase()}/areas/known`);
-            if (!res.ok) throw new Error('Bad response for /areas/known');
-            const data = await res.json();
-            if (Array.isArray(data.areas) && data.areas.length) return data.areas;
-            return KNOWN_AREAS_FALLBACK;
-        } catch (err) {
-            console.error('Failed to load known areas, using fallback list:', err.message);
-            return KNOWN_AREAS_FALLBACK;
-        }
-    }
-
-    // Fetches real status for every other known area in parallel
-    // (skipping whichever one is the user's own registered location, so
-    // it isn't shown twice — once as the live row, once again in the list).
-    async function fetchKnownAreas(ownName) {
-        const ownNormalized = normalizeAreaName(ownName);
-        const allNames = await fetchKnownAreaNames();
-        const names = allNames.filter(n => normalizeAreaName(n) !== ownNormalized);
-        return Promise.all(names.map(n => fetchAreaStatus(n)));
-    }
-
-    // Mirrors profile.js's hideProfileLoader() timing for Home: mark the
-    // skeleton as fading (location.css transitions its opacity to 0 while
-    // .app-loading — and therefore display:block — is still in effect),
-    // then once that's had a moment to actually paint, drop .app-loading
-    // (snapping the now-invisible skeleton to display:none) and let
-    // #locationRealContent play its entrance animation.
     function hideLocationSkeleton() {
         if (!document.body.classList.contains('app-loading')) return;
         const skeleton = document.getElementById('locationSkeleton');
@@ -329,31 +617,172 @@
         }, 180);
     }
 
+    async function fetchAllLocations() {
+        try {
+            const res = await fetch(`${LWHelpers.apiBase()}/locations/map`);
+            if (!res.ok) throw new Error('Bad response for /locations/map');
+            const data = await res.json();
+            if (!Array.isArray(data.locations)) throw new Error('Malformed /locations/map response');
+            const registeredName = normalizeAreaName(getRegisteredLocationName());
+            return data.locations.map(loc => ({ ...loc, live: normalizeAreaName(loc.name) === registeredName }));
+        } catch (err) {
+            console.error('Failed to load /locations/map, using offline fallback:', err.message);
+            return OFFLINE_FALLBACK_LOCATIONS;
+        }
+    }
+
+    // A report made anywhere else in the app (Home's primary card, the
+    // secondary-location panel, or a tap here) fires this — diff against
+    // what markers currently show so changed pins flash + transition
+    // instead of the whole map silently going stale between polls.
+    function applyLiveUpdate(locations) {
+        locations.forEach(loc => {
+            const prev = previousStatusByKey.get(loc.locationKey);
+            if (prev !== undefined && prev !== loc.status) {
+                updateMarkerStatus(loc.locationKey, loc.status);
+            }
+            previousStatusByKey.set(loc.locationKey, loc.status);
+        });
+    }
+
     async function loadLocations(isFirstLoad = false) {
         if (isFirstLoad) {
-            const cached = LWCache.read(LOCATION_LIST_CACHE_KEY, CACHE_MAX_AGE_MEDIUM_MS);
+            const cached = LWCache && LWCache.read(LOCATION_LIST_CACHE_KEY, CACHE_MAX_AGE_MEDIUM_MS);
             if (cached && Array.isArray(cached)) {
                 renderLocations(cached);
+                cached.forEach(l => previousStatusByKey.set(l.locationKey, l.status));
                 hideLocationSkeleton();
             }
         }
-        const liveOwn = await fetchLiveTowns();
-        const others = await fetchKnownAreas(liveOwn.name);
-        const locations = [liveOwn, ...others];
+
+        const locations = await fetchAllLocations();
         renderLocations(locations);
-        LWCache.write(LOCATION_LIST_CACHE_KEY, locations);
-        // Kept alongside the new list-level cache key for anything else in
-        // the codebase still reading LOCATION_CACHE_KEY for just the user's
-        // own location (e.g. Home's secondary-location panel).
-        LWCache.write(LOCATION_CACHE_KEY, liveOwn);
+        applyLiveUpdate(locations);
+
+        if (LWCache) {
+            LWCache.write(LOCATION_LIST_CACHE_KEY, locations);
+            const own = locations.find(l => l.live);
+            if (own) LWCache.write(LOCATION_CACHE_KEY, own);
+        }
         hideLocationSkeleton();
+    }
+
+    // ============================================================
+    //  Search — backend locations first, then the Mapbox geocoder
+    // ============================================================
+
+    function searchResultRow({ icon, iconCls, label, sub }) {
+        return `<button type="button" class="loc-search__result">
+      <span class="loc-search__result-icon loc-search__result-icon--${iconCls}">${icon}</span>
+      <span><span>${label}</span>${sub ? `<span class="loc-search__result-sub">${sub}</span>` : ''}</span>
+    </button>`;
+    }
+
+    const LIGHTNING_ICON = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" fill="currentColor"/></svg>';
+    const PIN_ICON = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 21s7-7.02 7-12a7 7 0 1 0-14 0c0 4.98 7 12 7 12Z" stroke="currentColor" stroke-width="1.8"/></svg>';
+
+    async function runSearch(query) {
+        const resultsEl = document.getElementById('locSearchResults');
+        if (!resultsEl) return;
+        if (!query) { resultsEl.setAttribute('hidden', ''); resultsEl.innerHTML = ''; return; }
+
+        const q = query.toLowerCase();
+        const backendMatches = latestLocations
+            .filter(a => a.name.toLowerCase().includes(q))
+            .slice(0, 6);
+
+        let geocoderMatches = [];
+        if (MAPBOX_ACCESS_TOKEN && MAPBOX_ACCESS_TOKEN !== 'YOUR_MAPBOX_ACCESS_TOKEN') {
+            try {
+                const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${MAPBOX_ACCESS_TOKEN}&country=GH&limit=5`;
+                const res = await fetch(url);
+                if (res.ok) {
+                    const data = await res.json();
+                    geocoderMatches = (data.features || []).slice(0, 5 - backendMatches.length);
+                }
+            } catch (err) {
+                console.error('Mapbox geocoder search failed:', err.message);
+            }
+        }
+
+        if (!backendMatches.length && !geocoderMatches.length) {
+            resultsEl.innerHTML = '<div class="loc-search__result" style="cursor:default">No matches found</div>';
+            resultsEl.removeAttribute('hidden');
+            return;
+        }
+
+        // Backend (monitored) locations always listed first, per spec.
+        resultsEl.innerHTML = backendMatches.map((a, i) => {
+            const meta = statusMeta(a.status);
+            return `<div data-kind="backend" data-index="${i}">${searchResultRow({ icon: LIGHTNING_ICON, iconCls: meta.cls, label: a.name, sub: meta.label })}</div>`;
+        }).join('') + geocoderMatches.map((f, i) => (
+            `<div data-kind="geocoder" data-index="${i}">${searchResultRow({ icon: PIN_ICON, iconCls: 'geocoder', label: f.text, sub: f.place_name })}</div>`
+        )).join('');
+
+        resultsEl.querySelectorAll('[data-kind]').forEach(wrap => {
+            wrap.querySelector('.loc-search__result').addEventListener('click', () => {
+                const kind = wrap.dataset.kind;
+                const idx = Number(wrap.dataset.index);
+                resultsEl.setAttribute('hidden', '');
+                if (kind === 'backend') {
+                    const area = backendMatches[idx];
+                    map && map.flyTo({ center: [area.lng, area.lat], zoom: DEFAULT_ZOOM, essential: true });
+                    if (area.lat != null) openLocationPopup(area, [area.lng, area.lat]);
+                } else {
+                    const feature = geocoderMatches[idx];
+                    map && map.flyTo({ center: feature.center, zoom: DEFAULT_ZOOM, essential: true });
+                }
+            });
+        });
+
+        resultsEl.removeAttribute('hidden');
+    }
+
+    // ============================================================
+    //  Controls
+    // ============================================================
+
+    let areaToggleInFlight = false;
+
+    async function toggleAreaStatus(row) {
+        if (!row || areaToggleInFlight || !window.LWLightStatus) return;
+        areaToggleInFlight = true;
+
+        const areaName = row.dataset.area;
+        const icon = row.querySelector('[data-action="toggle-area-status"]');
+        const statusEl = row.querySelector('.loc-row__status');
+        const currentlyOn = row.dataset.status === 'on';
+        const nextStatus = currentlyOn ? 'off' : 'on';
+
+        icon?.setAttribute('aria-busy', 'true');
+        window.LWLightStatus.animateIcon(icon, nextStatus);
+        if (statusEl) statusEl.textContent = 'Reporting…';
+
+        const userId = (typeof getSession === 'function' && getSession()?.user?.id)
+            || localStorage.getItem('currentUserId')
+            || getCurrentUserData().id
+            || null;
+
+        try {
+            const record = await window.LWLightStatus.report(areaName, nextStatus, userId);
+            const entry = latestLocations.find(a => a.name === areaName);
+            if (entry) {
+                entry.status = record.status;
+                entry.minutesAgo = 0;
+            }
+            renderLocations(latestLocations);
+        } catch (err) {
+            if (statusEl) statusEl.textContent = statusMeta(row.dataset.status).label;
+        } finally {
+            icon?.removeAttribute('aria-busy');
+            areaToggleInFlight = false;
+        }
     }
 
     function bindControls() {
         if (controlsBound) return;
         controlsBound = true;
 
-        // Category filter pills (All Locations / Favorites / Nearby / My Areas)
         document.querySelectorAll('#locFilters .loc-filter').forEach(pill => {
             pill.addEventListener('click', () => {
                 document.querySelectorAll('#locFilters .loc-filter').forEach(p => {
@@ -372,10 +801,14 @@
             searchInput.addEventListener('input', () => {
                 currentSearch = searchInput.value.trim().toLowerCase();
                 applyFilters();
+                clearTimeout(geocoderDebounceTimer);
+                geocoderDebounceTimer = setTimeout(() => runSearch(searchInput.value.trim()), 250);
+            });
+            searchInput.addEventListener('blur', () => {
+                setTimeout(() => document.getElementById('locSearchResults')?.setAttribute('hidden', ''), 150);
             });
         }
 
-        // Star / favorite toggle, and per-row tap-to-report status icon
         const list = document.getElementById('locNearbyList');
         if (list) {
             list.addEventListener('click', (event) => {
@@ -389,12 +822,20 @@
                     renderLocations(latestLocations);
                     return;
                 }
-
                 const icon = event.target.closest('[data-action="toggle-area-status"]');
                 if (icon) {
                     event.preventDefault();
                     event.stopPropagation();
                     toggleAreaStatus(icon.closest('.loc-row'));
+                    return;
+                }
+                const row = event.target.closest('.loc-row');
+                if (row && map) {
+                    const area = latestLocations.find(a => a.name === row.dataset.area);
+                    if (area && area.lat != null) {
+                        map.flyTo({ center: [area.lng, area.lat], zoom: DEFAULT_ZOOM, essential: true });
+                        openLocationPopup(area, [area.lng, area.lat]);
+                    }
                 }
             });
 
@@ -407,7 +848,6 @@
             });
         }
 
-        // Collapsible nearby-locations panel
         const handle = document.getElementById('locNearbyHandle');
         const nearby = document.getElementById('locNearby');
         if (handle && nearby) {
@@ -419,73 +859,28 @@
             });
         }
 
-        // Re-center / re-ping the user's pin
-        const locateBtn = document.getElementById('locMapLocateBtn');
-        const userMarker = document.getElementById('locMapUser');
-        if (locateBtn && userMarker) {
-            locateBtn.addEventListener('click', () => {
-                userMarker.classList.remove('loc-map__user--ping');
-                // Force reflow so the animation can restart on repeated clicks.
-                void userMarker.offsetWidth;
-                userMarker.classList.add('loc-map__user--ping');
+        // Street / Satellite toggle
+        const styleToggle = document.getElementById('locMapStyleToggle');
+        if (styleToggle) {
+            styleToggle.addEventListener('click', (event) => {
+                const btn = event.target.closest('.loc-map__style-btn');
+                if (!btn || !map) return;
+                const wantsSatellite = btn.dataset.style === 'satellite';
+                if ((wantsSatellite && currentMapStyle === 'satellite') || (!wantsSatellite && currentMapStyle === 'street')) return;
+                currentMapStyle = wantsSatellite ? 'satellite' : 'street';
+                map.setStyle(wantsSatellite ? STYLE_SATELLITE : STYLE_STREET);
+                styleToggle.querySelectorAll('.loc-map__style-btn').forEach(b => b.classList.toggle('is-active', b === btn));
             });
         }
     }
 
-    let areaToggleInFlight = false;
-
-    // Same POST /lightstatus contract as the primary status-hero__icon
-    // and the secondary-location panel (see window.LWLightStatus,
-    // exposed by lightstatus.js) — a tap on any row here shows up
-    // identically wherever else that area's status is read.
-    async function toggleAreaStatus(row) {
-        if (!row || areaToggleInFlight || !window.LWLightStatus) return;
-        areaToggleInFlight = true;
-
-        const areaName = row.dataset.area;
-        const icon = row.querySelector('[data-action="toggle-area-status"]');
-        const statusEl = row.querySelector('.loc-row__status');
-        const currentlyOn = row.dataset.status === 'on';
-        const nextStatus = currentlyOn ? 'off' : 'on';
-
-        icon?.setAttribute('aria-busy', 'true');
-        window.LWLightStatus.animateIcon(icon, nextStatus);
-        if (statusEl) statusEl.textContent = nextStatus === 'on' ? 'Reporting…' : 'Reporting…';
-
-        const userId = (typeof getSession === 'function' && getSession()?.user?.id)
-            || localStorage.getItem('currentUserId')
-            || getCurrentUserData().id
-            || null;
-
-        try {
-            const record = await window.LWLightStatus.report(areaName, nextStatus, userId);
-            const entry = latestLocations.find(a => a.name === areaName);
-            if (entry) {
-                entry.status = record.status;
-                entry.minutesAgo = 0;
-            }
-            renderLocations(latestLocations);
-        } catch (err) {
-            // Revert the label back to whatever the row's data-status
-            // already says rather than leave "Reporting…" stuck.
-            if (statusEl) statusEl.textContent = statusMeta(row.dataset.status).label;
-        } finally {
-            icon?.removeAttribute('aria-busy');
-            areaToggleInFlight = false;
-        }
-    }
-
-    // A report made anywhere else (Home's primary card or its secondary-
-    // location panel) fires this — refresh so this list doesn't sit on a
-    // status that just went stale.
     window.addEventListener('lw:lightstatus-changed', () => {
-        if (document.body.classList.contains('view-location-active')) {
-            loadLocations(false);
-        }
+        if (document.body.classList.contains('view-location-active')) loadLocations(false);
     });
 
     function mount() {
         bindControls();
+        initMap();
         loadLocations(true);
     }
 
@@ -493,6 +888,7 @@
         document.body.classList.add('view-location-active');
         clearInterval(locationPollTimer);
         locationPollTimer = setInterval(() => loadLocations(false), POLL_INTERVAL_STANDARD_MS);
+        if (map) setTimeout(() => map.resize(), 60); // view was hidden (display:none) — canvas needs a resize nudge
     }
 
     function hide() {

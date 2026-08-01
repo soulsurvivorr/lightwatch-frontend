@@ -180,12 +180,12 @@ function applyAvatarToTargets(user) {
 }
 
 function hydrateIdentityForm(user) {
-    const handleInput = el('profileHandleInput');
+    const handleInput = el('chatHandleEditInput');
     if (handleInput) {
         handleInput.value = String(user.chatHandle || '').replace(/^@+/, '');
     }
     pendingAvatarImageDataUrl = undefined;
-    const messageEl = el('profileIdentityMessage');
+    const messageEl = el('chatHandleEditMessage');
     if (messageEl) messageEl.textContent = '';
 }
 
@@ -194,25 +194,37 @@ function isValidHandleFormat(value) {
 }
 
 function initProfileIdentityForm() {
-    const form = el('profileIdentityForm');
+    const form = el('chatHandleEditForm');
     const avatarInput = el('profileAvatarInput');
-    const clearBtn = el('profileAvatarClearBtn');
+    const clearBtn = el('chatHandleClearAvatarBtn');
+    const avatarBtn = el('chatHandleEditAvatarBtn');
+    const cancelBtn = el('chatHandleEditCancelBtn');
     const editBtn = el('profileAvatarEditBtn');
 
-    // Pencil button on the avatar ring just opens the same hidden file
-    // input the "Chat identity" card already uses — no separate upload
-    // path to keep in sync.
+    if (avatarInput) {
+        avatarInput.removeAttribute('capture');
+        avatarInput.setAttribute('accept', 'image/*');
+    }
+
     editBtn?.addEventListener('click', () => avatarInput?.click());
+    avatarBtn?.addEventListener('click', () => avatarInput?.click());
+    cancelBtn?.addEventListener('click', () => {
+        const toggleBtn = el('chatHandleRowToggle');
+        const panel = el('chatHandleExpand');
+        if (toggleBtn) toggleBtn.setAttribute('aria-expanded', 'false');
+        if (panel) panel.hidden = true;
+        hydrateIdentityForm(getCurrentUserData());
+    });
 
     if (!form) return;
 
     avatarInput?.addEventListener('change', async () => {
-        const messageEl = el('profileIdentityMessage');
+        const messageEl = el('chatHandleEditMessage');
         const [file] = avatarInput.files || [];
         if (!file) return;
 
         if (!file.type.startsWith('image/')) {
-            if (messageEl) messageEl.textContent = 'Choose an image file (camera or gallery).';
+            if (messageEl) messageEl.textContent = 'Choose an image file (gallery or camera).';
             avatarInput.value = '';
             return;
         }
@@ -246,15 +258,15 @@ function initProfileIdentityForm() {
         if (avatarInput) avatarInput.value = '';
         const cached = getCurrentUserData();
         applyAvatarToTargets({ ...cached, avatarImage: null });
-        const messageEl = el('profileIdentityMessage');
+        const messageEl = el('chatHandleEditMessage');
         if (messageEl) messageEl.textContent = 'Profile picture will reset to generated SVG when you save.';
     });
 
     form.addEventListener('submit', async () => {
         const userId = getCurrentUserId();
-        const handleInput = el('profileHandleInput');
-        const messageEl = el('profileIdentityMessage');
-        const saveBtn = el('profileIdentitySaveBtn');
+        const handleInput = el('chatHandleEditInput');
+        const messageEl = el('chatHandleEditMessage');
+        const saveBtn = el('chatHandleEditSaveBtn');
         if (!userId || !handleInput) return;
 
         const nextHandle = String(handleInput.value || '').trim().toLowerCase().replace(/^@+/, '');
@@ -887,6 +899,147 @@ function paintAccountExtras(user) {
     if (el('acctPageGreeting')) el('acctPageGreeting').textContent = firstName;
 }
 
+const RECENT_CHAT_ARCHIVE_KEY = 'lw_recent_chat_archive';
+const RECENT_CHAT_HIDDEN_KEY = 'lw_recent_chat_hidden';
+
+function readArchivedChats() {
+    try {
+        const raw = localStorage.getItem(RECENT_CHAT_ARCHIVE_KEY);
+        const parsed = JSON.parse(raw || '[]');
+        return Array.isArray(parsed) ? parsed.map(String) : [];
+    } catch {
+        return [];
+    }
+}
+
+function writeArchivedChats(ids) {
+    localStorage.setItem(RECENT_CHAT_ARCHIVE_KEY, JSON.stringify(ids.map(String)));
+}
+
+function readHiddenChats() {
+    try {
+        const raw = localStorage.getItem(RECENT_CHAT_HIDDEN_KEY);
+        const parsed = JSON.parse(raw || '[]');
+        return Array.isArray(parsed) ? parsed.map(String) : [];
+    } catch {
+        return [];
+    }
+}
+
+function writeHiddenChats(ids) {
+    localStorage.setItem(RECENT_CHAT_HIDDEN_KEY, JSON.stringify(ids.map(String)));
+}
+
+function renderRecentChatActivity(chats, userId) {
+    const listEl = el('recentChatList');
+    if (!listEl) return;
+
+    const archived = readArchivedChats();
+    const hidden = readHiddenChats();
+    const visible = chats
+        .filter(chat => chat && String(chat._id || chat.id))
+        .filter(chat => !archived.includes(String(chat._id || chat.id)))
+        .filter(chat => !hidden.includes(String(chat._id || chat.id)));
+
+    if (visible.length === 0) {
+        listEl.innerHTML = `<div style="color:var(--text-faint);font-size:0.85rem;padding:8px 0;">No recent chat activity to show.</div>`;
+        return;
+    }
+
+    const slice = visible.slice(0, 20);
+    listEl.innerHTML = slice.map((chat) => {
+        const chatId = String(chat._id || chat.id || '');
+        const canDelete = chat.createdAt && (Date.now() - new Date(chat.createdAt).getTime()) <= 15 * 60 * 1000;
+        const createdAt = chat.createdAt
+            ? new Date(chat.createdAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })
+            : 'Unknown';
+        return `<div class="recent-chat-item" data-chat-id="${chatId}">
+            <div class="recent-chat-item__body">
+              <div class="recent-chat-item__text">${escapeHtml(chat.text) || '<span style="color:var(--text-faint);">(No text)</span>'}</div>
+              <div class="recent-chat-item__meta">${escapeHtml(chat.location || '')} · ${createdAt}</div>
+            </div>
+            <div class="recent-chat-item__actions">
+              <button type="button" class="btn btn--ghost btn--sm" data-action="hide" data-chat-id="${chatId}">Hide</button>
+              <button type="button" class="btn btn--ghost btn--sm" data-action="archive" data-chat-id="${chatId}">Archive</button>
+              <button type="button" class="btn btn--ghost btn--sm" data-action="delete" data-chat-id="${chatId}" ${canDelete ? '' : 'disabled title="Delete only allowed within 15 minutes of posting"'}>Delete</button>
+            </div>
+          </div>`;
+    }).join('');
+
+    if (visible.length > slice.length) {
+        listEl.insertAdjacentHTML('beforeend', `<div style="font-size:0.78rem;color:var(--text-faint);padding-top:8px;">Showing ${slice.length} of ${visible.length} recent posts.</div>`);
+    }
+}
+
+function archiveRecentChat(chatId) {
+    if (!chatId) return;
+    const archived = readArchivedChats();
+    if (!archived.includes(chatId)) {
+        writeArchivedChats([...archived, chatId]);
+    }
+    const item = document.querySelector(`.recent-chat-item[data-chat-id="${chatId}"]`);
+    if (item) item.remove();
+}
+
+function hideRecentChat(chatId) {
+    if (!chatId) return;
+    const hidden = readHiddenChats();
+    if (!hidden.includes(chatId)) {
+        writeHiddenChats([...hidden, chatId]);
+    }
+    const item = document.querySelector(`.recent-chat-item[data-chat-id="${chatId}"]`);
+    if (item) item.remove();
+}
+
+async function deleteRecentChat(chatId) {
+    const userId = getCurrentUserId();
+    if (!userId) return;
+
+    const res = await fetch(`${API_URL}/chats/${chatId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId })
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+        window.lwToast?.(data.error || 'Could not delete this post.');
+        return;
+    }
+
+    const item = document.querySelector(`.recent-chat-item[data-chat-id="${chatId}"]`);
+    if (item) item.remove();
+    window.lwToast?.('Post deleted.');
+}
+
+function initRecentChatActivity() {
+    const listEl = el('recentChatList');
+    if (!listEl || listEl.dataset.bound === '1') return;
+    listEl.dataset.bound = '1';
+    listEl.addEventListener('click', async (event) => {
+        const btn = event.target.closest('button[data-action]');
+        if (!btn || !btn.dataset.chatId) return;
+        const action = btn.dataset.action;
+        const chatId = btn.dataset.chatId;
+
+        if (action === 'hide') {
+            hideRecentChat(chatId);
+            window.lwToast?.('Post hidden.');
+            return;
+        }
+
+        if (action === 'archive') {
+            archiveRecentChat(chatId);
+            window.lwToast?.('Post archived from recent activity.');
+            return;
+        }
+
+        if (action === 'delete') {
+            await deleteRecentChat(chatId);
+        }
+    });
+}
+
 async function loadAccountExtras() {
     const userId = getCurrentUserId();
     if (!userId) {
@@ -933,18 +1086,8 @@ async function loadAccountExtras() {
             const res = await fetch(`${API_URL}/chats?location=${encodeURIComponent(loc)}`);
             if (res.ok) {
                 const chats = await res.json();
-                const mineAll = chats.filter(c => (c.userId?._id || c.userId) === userId);
-                const mine = mineAll.slice(0, 5);
-                const listEl = el('recentChatList');
-                if (listEl) {
-                    listEl.innerHTML = mine.length === 0
-                        ? `<div style="color:var(--text-faint);font-size:0.85rem;padding:8px 0;">No chat messages yet.</div>`
-                        : mine.map(c => `
-                            <div style="padding:10px 0;border-bottom:1px solid var(--border-soft);">
-                                <div style="font-size:0.84rem;color:var(--text-bright);">"${c.text}"</div>
-                                <div style="font-size:0.74rem;color:var(--text-faint);margin-top:3px;">${c.location} · ${new Date(c.createdAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</div>
-                            </div>`).join('') + (mineAll.length > 5 ? `<div style="font-size:0.78rem;color:var(--text-faint);padding-top:8px;">Showing 5 most recent</div>` : '');
-                }
+                const mineAll = chats.filter(c => String(c.userId?._id || c.userId) === String(userId));
+                renderRecentChatActivity(mineAll, userId);
             }
         }
     } catch (e) { /* silent */ }
@@ -1151,6 +1294,7 @@ function mount() {
     initNotificationPrefToggles();
     initSecondaryLocationForm();
     initProfileIdentityForm();
+    initRecentChatActivity();
     initAccordions();
     initCollapsibleCards();
     initDetailRowExpanders();

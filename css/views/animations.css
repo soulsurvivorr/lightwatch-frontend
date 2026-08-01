@@ -8,10 +8,6 @@
 	transform: none;
 }
 
-.nav__link:active {
-	transform: translateY(1px);
-}
-
 /* Bottom nav indicators */
 .bottom-nav-link {
 	transition: background-color 0.2s ease, color 0.2s ease;
@@ -19,10 +15,6 @@
 
 .bottom-nav-link--active {
 	transform: none;
-}
-
-.bottom-nav-link:active {
-	transform: translateY(1px);
 }
 
 /* Fallback visual when Web Animations not supported: fade-in */

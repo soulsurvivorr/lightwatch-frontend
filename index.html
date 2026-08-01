@@ -108,6 +108,11 @@
   <link rel="stylesheet" href="./css/views/home-reminder.css">
   <link rel="stylesheet" href="./css/views/dashboard.css">
   <link rel="stylesheet" href="./css/views/animations.css">
+
+  <!-- ==== Mapbox GL JS (Locations map) ====
+       Loaded here (not deferred) so mapboxgl is a defined global by the
+       time views/location.js runs at the bottom of the body. -->
+  <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/v3.9.0/mapbox-gl.css">
 </head>
 <body>
 
@@ -1327,9 +1332,10 @@
       </div>
 
       <!-- ==== Search ==== -->
-      <div class="loc-search">
+      <div class="loc-search" id="locSearchWrap">
         <svg class="loc-search__icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/><path d="m20 20-3.2-3.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
         <input type="text" id="locationSearchInput" placeholder="Search for a location..." autocomplete="off">
+        <div class="loc-search__results" id="locSearchResults" hidden></div>
       </div>
 
       <!-- ==== Filter pills ==== -->
@@ -1352,23 +1358,63 @@
         </button>
       </div>
 
-      <!-- ==== Map ==== -->
+      <!-- ==== Map ====
+           Mapbox GL renders into #locMapCanvas. Everything else here is
+           overlay chrome views/location.js positions on top of it —
+           the loading/permission states, and a template for the marker
+           info card (cloned per-marker, never shown directly). -->
       <div class="loc-map" id="locMap">
-        <img src="./images/map.png" alt="" class="loc-map__img" id="locMapImg" draggable="false">
-        <div class="loc-map__user" id="locMapUser" aria-hidden="true">
-          <span class="loc-map__user-pulse"></span>
-          <span class="loc-map__user-dot"></span>
+        <div class="loc-map__canvas" id="locMapCanvas" role="application" aria-label="Map of monitored locations"></div>
+
+        <div class="loc-map__loading" id="locMapLoading">
+          <span class="loc-map__spinner" aria-hidden="true"></span>
+          <span>Loading map…</span>
         </div>
-        <div class="loc-map__pins" id="locMapPins" aria-hidden="true"></div>
-        <div class="loc-map__controls">
-          <button type="button" class="loc-map__ctrl" id="locMapLocateBtn" aria-label="Center on my location">
-            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="6.5" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
-          </button>
-          <button type="button" class="loc-map__ctrl" id="locMapLayersBtn" aria-label="Toggle map layers">
-            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="m12 3 8.5 4.6L12 12.2 3.5 7.6 12 3Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="m3.5 12 8.5 4.6L20.5 12" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="m3.5 16.4 8.5 4.6 8.5-4.6" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
-          </button>
+
+        <div class="loc-map__style-toggle" id="locMapStyleToggle" role="group" aria-label="Map view">
+          <button type="button" class="loc-map__style-btn is-active" data-style="street">Street</button>
+          <button type="button" class="loc-map__style-btn" data-style="satellite">Satellite</button>
         </div>
       </div>
+
+      <!-- Info-card template for a clicked marker — cloned into a Mapbox
+           popup by views/location.js, never rendered on its own. -->
+      <template id="locPopupCardTemplate">
+        <div class="loc-popup">
+          <div class="loc-popup__head">
+            <div>
+              <p class="loc-popup__name" data-field="name"></p>
+              <p class="loc-popup__status" data-field="status"></p>
+            </div>
+            <button type="button" class="loc-popup__star" data-action="popup-favorite" aria-label="Toggle favorite">
+              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="m12 3.5 2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 16.9l-5.2 2.8 1-5.9-4.3-4.1 5.9-.8L12 3.5Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+          <div class="loc-popup__stats">
+            <div class="loc-popup__stat">
+              <span class="loc-popup__stat-label">Updated</span>
+              <span class="loc-popup__stat-value" data-field="updated"></span>
+            </div>
+            <div class="loc-popup__stat">
+              <span class="loc-popup__stat-label">Confidence</span>
+              <span class="loc-popup__stat-value" data-field="confidence"></span>
+            </div>
+            <div class="loc-popup__stat">
+              <span class="loc-popup__stat-label">Reports</span>
+              <span class="loc-popup__stat-value" data-field="reports"></span>
+            </div>
+            <div class="loc-popup__stat">
+              <span class="loc-popup__stat-label">Distance</span>
+              <span class="loc-popup__stat-value" data-field="distance"></span>
+            </div>
+          </div>
+          <div class="loc-popup__actions">
+            <button type="button" class="loc-popup__btn loc-popup__btn--primary" data-action="popup-report">Community Report</button>
+            <button type="button" class="loc-popup__btn" data-action="popup-news">Official News</button>
+            <button type="button" class="loc-popup__btn" data-action="popup-directions">Directions</button>
+          </div>
+        </div>
+      </template>
 
       <!-- ==== Nearby locations (collapsible) ==== -->
       <section class="loc-nearby card" aria-label="Nearby locations" id="locNearby">
@@ -1552,6 +1598,7 @@
                 <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M13.4 3.5 16.5 6.6 7 16.1H3.9v-3.1L13.4 3.5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
               </button>
             </div>
+            <input type="file" id="profileAvatarInput" accept="image/*" style="display:none;" />
             <div class="profile-hero__info">
               <div class="profile-hero__name" id="profileName">Not signed in</div>
               <div class="profile-hero__handle" id="profileHandle">—</div>
@@ -1623,11 +1670,24 @@
                 </div>
               </div>
 
-              <div class="detail-row">
+              <button type="button" class="detail-row detail-row--action" id="chatHandleRowToggle" aria-expanded="false" aria-controls="chatHandleExpand">
                 <span class="detail-row__icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 4.8h14a1 1 0 0 1 1 1V13a1 1 0 0 1-1 1H8.5L5 16.8V14H3a1 1 0 0 1-1-1V5.8a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg></span>
                 <span class="detail-row__label">Chat handle</span>
                 <span class="detail-row__value" id="profileChatHandle">—</span>
                 <span class="detail-row__chevron" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="m6 4 4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+              </button>
+              <div class="detail-expand" id="chatHandleExpand" hidden>
+                <p class="detail-expand__hint">Update the handle you post under in community report messages.</p>
+                <form id="chatHandleEditForm" class="detail-expand__form" action="javascript:void(0)">
+                  <input type="text" id="chatHandleEditInput" maxlength="24" placeholder="e.g. kofi-ripple" autocomplete="off" spellcheck="false" />
+                  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <button type="button" class="btn btn--ghost btn--sm" id="chatHandleEditAvatarBtn">Change picture</button>
+                    <button type="button" class="btn btn--ghost btn--sm" id="chatHandleClearAvatarBtn">Use generated SVG</button>
+                    <button type="submit" class="btn btn--primary btn--sm" id="chatHandleEditSaveBtn">Save handle</button>
+                    <button type="button" class="btn btn--ghost btn--sm" id="chatHandleEditCancelBtn">Cancel</button>
+                  </div>
+                  <p id="chatHandleEditMessage" class="detail-expand__message"></p>
+                </form>
               </div>
 
               <div class="detail-row detail-row--static">
@@ -1650,36 +1710,6 @@
 
       <!-- Right: settings & preferences -->
       <div style="display: flex; flex-direction: column; gap: 16px;">
-
-        <div class="card" id="profileIdentityCard">
-          <div class="card__head">
-            <span class="card__icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 10.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Z" stroke="currentColor" stroke-width="1.4"/><path d="M3.6 17c.9-2.9 3.1-4.7 6.4-4.7s5.5 1.8 6.4 4.7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span>
-            <span class="card__head-text">
-              <span class="card__title">Chat identity</span>
-              <span class="card__meta">Edit your handle and profile picture</span>
-            </span>
-            <button type="button" class="card__collapse-btn" id="profileIdentityCollapseBtn" aria-expanded="true" aria-controls="profileIdentityCollapseBody" aria-label="Collapse chat identity">
-              <svg class="card__collapse-chevron" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="m4 6 4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </button>
-          </div>
-          <div class="card__collapse-body" id="profileIdentityCollapseBody">
-            <form id="profileIdentityForm" action="javascript:void(0)" style="display:flex;flex-direction:column;gap:10px;">
-              <label class="form-field">
-                <span>Chat handle</span>
-                <input type="text" id="profileHandleInput" maxlength="24" placeholder="e.g. kofi-ripple" autocomplete="off" spellcheck="false" />
-              </label>
-              <label class="form-field">
-                <span>Profile picture</span>
-                <input type="file" id="profileAvatarInput" accept="image/*" capture="environment" />
-              </label>
-              <div style="display:flex;gap:8px;">
-                <button type="button" class="btn btn--ghost" id="profileAvatarClearBtn" style="flex:1;">Use generated SVG</button>
-                <button type="submit" class="btn btn--primary" id="profileIdentitySaveBtn" style="flex:1;">Save identity</button>
-              </div>
-              <p id="profileIdentityMessage" style="font-size:0.76rem;color:var(--text-faint);margin:0;"></p>
-            </form>
-          </div>
-        </div>
 
         <div class="card">
           <div class="card__head">
@@ -2073,6 +2103,14 @@
   <script src="./js/views/home.js"></script>
   <script src="./js/views/lightstatus.js"></script>
   <script src="./js/views/profile.js"></script>
+
+  <!-- Mapbox GL JS + Supercluster (client-side clustering for custom HTML
+       markers — see views/location.js for why: Mapbox's built-in
+       layer-based clustering can't drive our custom SVG lightning-bolt
+       DOM markers, so clustering is computed here instead and rendered
+       as our own marker elements). -->
+  <script src="https://api.mapbox.com/mapbox-gl-js/v3.9.0/mapbox-gl.js"></script>
+  <script src="https://unpkg.com/supercluster@8.0.1/dist/supercluster.min.js"></script>
   <script src="./js/views/location.js"></script>
   <script src="./js/views/notifications.js"></script>
   <script src="./js/views/account.js"></script>

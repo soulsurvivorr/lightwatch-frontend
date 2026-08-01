@@ -314,25 +314,20 @@ html[data-theme="light"] .topbar {
    js/components/nav-badges.js.
    ============================================================ */
 .bottom-nav-badge--mono {
-  background: linear-gradient(135deg, #2f86ff 0%, #1767d8 100%);
-  color: #ffffff;
-  border: 1.5px solid rgba(255, 255, 255, 0.95);
-  box-shadow: 0 0 0 2px var(--dark-bg), 0 4px 10px rgba(23, 103, 216, 0.24);
+  width: 10px;
+  height: 10px;
+  min-width: unset;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--brand2);
+  color: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 0 2px var(--bottom-nav-surface, var(--bg-panel));
   font-weight: 700;
 }
 
-/* Small pointer nub so the badge reads as a tooltip bubble
-   pointing back at the icon, not just a floating dot. */
 .bottom-nav-badge--mono::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  bottom: -4px;
-  width: 6px;
-  height: 6px;
-  transform: translateX(-50%) rotate(45deg);
-  background: linear-gradient(135deg, #2f86ff 0%, #1767d8 100%);
-  border-radius: 1px;
+  display: none;
 }
 
 /* ============================================================

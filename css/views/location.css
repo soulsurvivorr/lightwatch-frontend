@@ -989,161 +989,427 @@ html[data-theme="light"] .loc-header__title {
   background: var(--dark-bg, #1C1F26);
 }
 
+/* Map grows to fill available page height instead of the fixed 350px
+   card on larger viewports, per the "occupy available page height"
+   requirement — the nearby-list card still sits below it and scrolls
+   independently. */
+@media (min-width: 769px) {
+  .loc-map {
+    height: min(64vh, 620px);
+  }
+}
+
 @media (max-width: 768px) {
   .loc-header {
     padding: 8px;
   }
 
-  .loc-map__img {
-    height: calc(100% - 18px);
+  .loc-map {
+    height: 58vh;
+    min-height: 320px;
   }
 }
 
-.loc-map__img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  user-select: none;
-  -webkit-user-drag: none;
-}
-
-.loc-map__pins {
+.loc-map__canvas {
   position: absolute;
   inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Mapbox injects its own canvas/controls into #locMapCanvas — this just
+   keeps its default light attribution styling legible on our dark shell. */
+.loc-map__canvas .mapboxgl-ctrl-attrib,
+.loc-map__canvas .mapboxgl-ctrl-logo {
+  filter: brightness(0.9);
+}
+
+.loc-map__canvas .mapboxgl-popup-content {
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.loc-map__canvas .mapboxgl-popup-tip {
+  display: none;
+}
+
+/* Tint Mapbox's built-in GeolocateControl blue dot to match the brand's
+   secondary accent instead of its default blue, and give it the same
+   soft pulse the old static-map user marker had. */
+.loc-map__canvas .mapboxgl-user-location-dot,
+.loc-map__canvas .mapboxgl-user-location-dot::before {
+  background-color: var(--brand2, #4A90D9);
+}
+.loc-map__canvas .mapboxgl-user-location-dot {
+  box-shadow: 0 0 0 3px white, 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.loc-map__loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: var(--dark-bg, #1C1F26);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.82rem;
+  font-weight: 600;
+  z-index: 5;
+  transition: opacity 0.25s ease;
+}
+
+.loc-map__loading[hidden] {
+  display: none;
+}
+
+.loc-map__spinner {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  border-top-color: var(--teal, #3DD9C2);
+  animation: loc-spin 0.8s linear infinite;
+}
+
+@keyframes loc-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ---- Street / Satellite toggle ---- */
+
+.loc-map__style-toggle {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 4;
+  display: flex;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(17, 19, 25, 0.82);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(6px);
+}
+
+.loc-map__style-btn {
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.loc-map__style-btn.is-active {
+  background: var(--teal, #3DD9C2);
+  color: #0b1512;
+}
+
+/* ---- Custom markers (rendered as mapboxgl.Marker DOM elements by
+   views/location.js — clustering is computed client-side via
+   Supercluster and re-rendered as the same marker element, so cluster
+   bubbles and single-location pins share this file). ---- */
+
+.loc-marker {
+  width: 34px;
+  height: 34px;
+  border-radius: 50% 50% 50% 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  transform-origin: bottom center;
+  /* Status-change transitions smoothly; entrance animation below adds
+     the initial pop-in on top of this. */
+  transition: background-color 0.35s ease, border-color 0.35s ease,
+    transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.loc-marker:hover {
+  transform: scale(1.08);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.4);
+}
+
+.loc-marker svg {
+  width: 15px;
+  height: 15px;
+  color: white;
   pointer-events: none;
 }
 
-.loc-map__pin {
+.loc-marker--on { background: var(--teal, #3DD9C2); }
+.loc-marker--off { background: var(--red, #E5484D); }
+.loc-marker--unknown { background: var(--amber, #D6A24A); }
+
+/* Brief attention flash when a marker's status changes from a live poll
+   (views/location.js toggles this class on for ~1.4s then removes it). */
+.loc-marker--flash {
+  animation: loc-marker-flash 1.4s ease;
+}
+
+@keyframes loc-marker-flash {
+  0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7); }
+  60% { box-shadow: 0 0 0 14px rgba(255, 255, 255, 0); }
+  100% { box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35); }
+}
+
+/* Entrance pop-in — views/location.js adds this class right after
+   inserting a new marker element, then removes it once the animation
+   finishes so future status-transitions aren't re-triggering it. */
+.loc-marker--enter {
+  animation: loc-marker-enter 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes loc-marker-enter {
+  from { transform: scale(0.2); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.loc-marker__favorite {
   position: absolute;
-  width: 30px;
-  height: 30px;
-  transform: translate(-50%, -100%) rotate(-45deg);
-  border-radius: 50% 50% 50% 0;
+  top: -6px;
+  right: -6px;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: var(--brand, #D6A24A);
+  border: 2px solid var(--dark-bg, #1C1F26);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
+}
+
+.loc-marker__favorite svg {
+  width: 8px;
+  height: 8px;
+  color: #1C1F26;
+}
+
+/* ---- Cluster bubbles — same element type as .loc-marker, sized by
+   point count instead of showing a lightning icon. ---- */
+
+.loc-cluster {
+  border-radius: 50%;
   border: 2px solid rgba(255, 255, 255, 0.85);
-}
-
-.loc-map__pin svg {
-  width: 13px;
-  height: 13px;
-  color: white;
-  transform: rotate(45deg);
-}
-
-.loc-map__pin--on {
-  background: var(--teal, #3DD9C2);
-}
-
-.loc-map__pin--off {
-  background: var(--red, #E5484D);
-}
-
-.loc-map__pin--checking {
-  background: var(--amber, #D6A24A);
-}
-
-.loc-map__pin__label {
-  position: absolute;
-  left: 50%;
-  top: 100%;
-  transform: translate(-50%, 6px) rotate(45deg);
-  transform-origin: top center;
-  display: inline-block;
-  padding: 4px 8px;
-  border-radius: 999px;
-  font-size: 0.64rem;
-  font-weight: 700;
-  line-height: 1.1;
-  white-space: nowrap;
-  background: rgba(255, 255, 255, 0.95);
-  color: var(--text-dark, #101828);
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.18);
-}
-
-.loc-map__user {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 18px;
-  height: 18px;
-  transform: translate(-50%, -50%);
-}
-
-.loc-map__user-dot {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
   background: var(--brand2, #4A90D9);
-  border: 3px solid white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 0.78rem;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+  transition: transform 0.2s ease;
 }
 
-.loc-map__user-pulse {
-  position: absolute;
-  inset: -14px;
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--brand2, #4A90D9) 35%, transparent);
-  animation: loc-user-pulse 2.2s ease-out infinite;
-}
-
-.loc-map__user--ping .loc-map__user-pulse {
-  animation-duration: 0.9s;
-  animation-iteration-count: 2;
-}
-
-@keyframes loc-user-pulse {
-  0% {
-    transform: scale(0.4);
-    opacity: 0.85;
-  }
-  100% {
-    transform: scale(1.6);
-    opacity: 0;
-  }
+.loc-cluster:hover {
+  transform: scale(1.06);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .loc-map__user-pulse {
-    animation: none;
+  .loc-marker,
+  .loc-marker--enter,
+  .loc-marker--flash,
+  .loc-map__spinner {
+    animation: none !important;
+    transition: none !important;
   }
 }
 
-.loc-map__controls {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+/* ---- Marker info-card popup (Mapbox popup content, cloned from
+   #locPopupCardTemplate) ---- */
+
+.loc-popup {
+  width: 260px;
+  background: var(--bg-panel, #1C1F26);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  padding: 14px;
+  box-shadow: 0 20px 44px rgba(0, 0, 0, 0.35);
+  animation: lwFadeIn 0.18s ease both;
 }
 
-.loc-map__ctrl {
-  width: 38px;
-  height: 38px;
+.loc-popup__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.loc-popup__name {
+  font-size: 0.95rem;
+  font-weight: 800;
+  margin: 0;
+}
+
+.loc-popup__status {
+  margin: 2px 0 0;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.loc-popup__status--on { color: var(--teal, #3DD9C2); }
+.loc-popup__status--off { color: var(--red, #E5484D); }
+.loc-popup__status--unknown { color: var(--amber, #D6A24A); }
+
+.loc-popup__star {
   border: none;
-  background: rgba(17, 19, 25, 0.82);
-  color: white;
+  background: rgba(255, 255, 255, 0.06);
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+  color: var(--text-faint, rgba(255, 255, 255, 0.6));
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.loc-popup__star.is-active {
+  color: var(--brand, #D6A24A);
+}
+
+.loc-popup__star svg {
+  width: 15px;
+  height: 15px;
+}
+
+.loc-popup__stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.loc-popup__stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+}
+
+.loc-popup__stat-label {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-faint, rgba(255, 255, 255, 0.5));
+}
+
+.loc-popup__stat-value {
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.loc-popup__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.loc-popup__btn {
+  border: 1px solid var(--border-soft);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-bright, white);
+  border-radius: var(--radius-md);
+  padding: 8px 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
   cursor: pointer;
   transition: background 0.15s ease;
 }
 
-.loc-map__ctrl:hover {
-  background: rgba(17, 19, 25, 0.95);
+.loc-popup__btn:hover {
+  background: rgba(255, 255, 255, 0.09);
 }
 
-.loc-map__ctrl svg {
-  width: 18px;
-  height: 18px;
+.loc-popup__btn--primary {
+  background: var(--teal, #3DD9C2);
+  border-color: transparent;
+  color: #0b1512;
+}
+
+.loc-popup__btn--primary:hover {
+  background: color-mix(in srgb, var(--teal, #3DD9C2) 88%, white);
+}
+
+/* ---- Search dropdown (backend locations + Mapbox geocoder results,
+   backend results listed first) ---- */
+
+.loc-search {
+  position: relative;
+}
+
+.loc-search__results {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 20;
+  background: var(--bg-panel, #1C1F26);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.loc-search__results[hidden] {
+  display: none;
+}
+
+.loc-search__result {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--text-bright, white);
+  text-align: left;
+  padding: 10px 12px;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.loc-search__result:hover,
+.loc-search__result.is-active {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.loc-search__result-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.loc-search__result-icon svg {
+  width: 11px;
+  height: 11px;
+}
+
+.loc-search__result-icon--on { background: color-mix(in srgb, var(--teal, #3DD9C2) 30%, transparent); color: var(--teal, #3DD9C2); }
+.loc-search__result-icon--off { background: color-mix(in srgb, var(--red, #E5484D) 30%, transparent); color: var(--red, #E5484D); }
+.loc-search__result-icon--geocoder { color: var(--text-faint, rgba(255, 255, 255, 0.6)); }
+
+.loc-search__result-sub {
+  display: block;
+  font-size: 0.68rem;
+  color: var(--text-faint, rgba(255, 255, 255, 0.5));
 }
 
 /* ---- Nearby Locations (collapsible card) ---- */

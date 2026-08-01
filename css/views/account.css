@@ -212,7 +212,8 @@
     .detail-row__label {
       font-size: 0.82rem;
       color: var(--text-faint);
-      flex-shrink: 0;
+      flex: 1 1 0;
+      min-width: 0;
     }
 
     .detail-row__value {
@@ -220,6 +221,8 @@
       color: var(--text-bright);
       font-weight: 500;
       text-align: right;
+      flex-shrink: 0;
+      min-width: 0;
     }
 
     /* ---- Right-chevron on every detail row except "Member since" ---- */
@@ -872,23 +875,37 @@
 
     .secondary-location { margin-top: 12px; }
 
-    #profileIdentityCard input[type="file"] {
-      font-size: 0.8rem;
-      color: var(--text-faint);
+    .recent-chat-item {
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border-soft);
     }
 
-    #profileIdentityCard input[type="file"]::file-selector-button {
-      border: 1px solid var(--border-soft);
-      background: var(--bg-panel);
+    .recent-chat-item__body {
+      margin-bottom: 10px;
+    }
+
+    .recent-chat-item__text {
+      font-size: 0.92rem;
+      line-height: 1.4;
       color: var(--text-bright);
-      border-radius: 8px;
-      padding: 6px 10px;
-      margin-right: 10px;
-      cursor: pointer;
+      white-space: pre-wrap;
+      word-break: break-word;
     }
 
-    #profileIdentityCard input[type="file"]::file-selector-button:hover {
-      border-color: var(--border-strong);
+    .recent-chat-item__meta {
+      font-size: 0.76rem;
+      color: var(--text-faint);
+      margin-top: 4px;
+    }
+
+    .recent-chat-item__actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .recent-chat-item__actions button {
+      min-width: 72px;
     }
 
     .secondary-location__add {
