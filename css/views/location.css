@@ -926,17 +926,22 @@ html[data-theme="light"] .loc-header__title {
   scroll-behavior: smooth;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
+  box-sizing: border-box;
   padding-bottom: 2px;
-  /* Was padding-left: 6px, which nudged this row 6px further right
-     than .loc-search/.loc-header above it (neither has that extra
-     inset) — the row's left edge now lines up with the rest of the
-     page's own padding instead of its own separate margin. The
-     matching padding-right keeps the last pill from sitting flush
-     against the screen edge once scrolled all the way to the right. */
+  /* #locationRealContent (the shared parent — see ~line 814) already
+     applies the page's 16px left/right padding to every child,
+     .loc-search included. The old margin-left/right: 12px added a
+     SECOND inset on top of that (16 + 12 = 28px), pushing this row
+     further in than .loc-search sits above it and eating into its own
+     scrollable width. Zero margin here lets .loc-filters inherit that
+     same 16px page padding as everything else — same left edge as
+     .loc-search, and the row still can't overflow past it since
+     overflow-x: auto keeps any extra pill width scrolling inside the
+     box rather than pushing the box itself wider than the page. */
   padding-left: 0;
   padding-right: 0;
-  margin-left: 12px;
-  margin-right: 12px;
+  margin-left: 0;
+  margin-right: 0;
 }
 
 .loc-filters::-webkit-scrollbar {
@@ -1017,31 +1022,31 @@ html[data-theme="light"] .loc-header__title {
   height: 100%;
 }
 
-/* Mapbox injects its own canvas/controls into #locMapCanvas — this just
+/* MapLibre injects its own canvas/controls into #locMapCanvas — this just
    keeps its default light attribution styling legible on our dark shell. */
-.loc-map__canvas .mapboxgl-ctrl-attrib,
-.loc-map__canvas .mapboxgl-ctrl-logo {
+.loc-map__canvas .maplibregl-ctrl-attrib,
+.loc-map__canvas .maplibregl-ctrl-logo {
   filter: brightness(0.9);
 }
 
-.loc-map__canvas .mapboxgl-popup-content {
+.loc-map__canvas .maplibregl-popup-content {
   padding: 0;
   background: transparent;
   box-shadow: none;
 }
 
-.loc-map__canvas .mapboxgl-popup-tip {
+.loc-map__canvas .maplibregl-popup-tip {
   display: none;
 }
 
-/* Tint Mapbox's built-in GeolocateControl blue dot to match the brand's
+/* Tint MapLibre's built-in GeolocateControl blue dot to match the brand's
    secondary accent instead of its default blue, and give it the same
    soft pulse the old static-map user marker had. */
-.loc-map__canvas .mapboxgl-user-location-dot,
-.loc-map__canvas .mapboxgl-user-location-dot::before {
+.loc-map__canvas .maplibregl-user-location-dot,
+.loc-map__canvas .maplibregl-user-location-dot::before {
   background-color: var(--brand2, #4A90D9);
 }
-.loc-map__canvas .mapboxgl-user-location-dot {
+.loc-map__canvas .maplibregl-user-location-dot {
   box-shadow: 0 0 0 3px white, 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
@@ -1108,7 +1113,7 @@ html[data-theme="light"] .loc-header__title {
   color: #0b1512;
 }
 
-/* ---- Custom markers (rendered as mapboxgl.Marker DOM elements by
+/* ---- Custom markers (rendered as maplibregl.Marker DOM elements by
    views/location.js — clustering is computed client-side via
    Supercluster and re-rendered as the same marker element, so cluster
    bubbles and single-location pins share this file). ---- */
@@ -1222,7 +1227,7 @@ html[data-theme="light"] .loc-header__title {
   }
 }
 
-/* ---- Marker info-card popup (Mapbox popup content, cloned from
+/* ---- Marker info-card popup (MapLibre popup content, cloned from
    #locPopupCardTemplate) ---- */
 
 .loc-popup {
@@ -1341,7 +1346,7 @@ html[data-theme="light"] .loc-header__title {
   background: color-mix(in srgb, var(--teal, #3DD9C2) 88%, white);
 }
 
-/* ---- Search dropdown (backend locations + Mapbox geocoder results,
+/* ---- Search dropdown (backend locations + Nominatim geocoder results,
    backend results listed first) ---- */
 
 .loc-search {

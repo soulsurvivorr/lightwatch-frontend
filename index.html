@@ -109,10 +109,12 @@
   <link rel="stylesheet" href="./css/views/dashboard.css">
   <link rel="stylesheet" href="./css/views/animations.css">
 
-  <!-- ==== Mapbox GL JS (Locations map) ====
-       Loaded here (not deferred) so mapboxgl is a defined global by the
-       time views/location.js runs at the bottom of the body. -->
-  <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/v3.9.0/mapbox-gl.css">
+  <!-- ==== MapLibre GL JS (Locations map) ====
+       Open-source fork of Mapbox GL JS — same API, no account, no
+       token, no card. Loaded here (not deferred) so maplibregl is a
+       defined global by the time views/location.js runs at the bottom
+       of the body. -->
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
 </head>
 <body>
 
@@ -1359,7 +1361,7 @@
       </div>
 
       <!-- ==== Map ====
-           Mapbox GL renders into #locMapCanvas. Everything else here is
+           MapLibre GL renders into #locMapCanvas. Everything else here is
            overlay chrome views/location.js positions on top of it —
            the loading/permission states, and a template for the marker
            info card (cloned per-marker, never shown directly). -->
@@ -1377,7 +1379,7 @@
         </div>
       </div>
 
-      <!-- Info-card template for a clicked marker — cloned into a Mapbox
+      <!-- Info-card template for a clicked marker — cloned into a MapLibre
            popup by views/location.js, never rendered on its own. -->
       <template id="locPopupCardTemplate">
         <div class="loc-popup">
@@ -2104,12 +2106,12 @@
   <script src="./js/views/lightstatus.js"></script>
   <script src="./js/views/profile.js"></script>
 
-  <!-- Mapbox GL JS + Supercluster (client-side clustering for custom HTML
-       markers — see views/location.js for why: Mapbox's built-in
+  <!-- MapLibre GL JS + Supercluster (client-side clustering for custom
+       HTML markers — see views/location.js for why: MapLibre's built-in
        layer-based clustering can't drive our custom SVG lightning-bolt
        DOM markers, so clustering is computed here instead and rendered
        as our own marker elements). -->
-  <script src="https://api.mapbox.com/mapbox-gl-js/v3.9.0/mapbox-gl.js"></script>
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
   <script src="https://unpkg.com/supercluster@8.0.1/dist/supercluster.min.js"></script>
   <script src="./js/views/location.js"></script>
   <script src="./js/views/notifications.js"></script>

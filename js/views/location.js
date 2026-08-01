@@ -1,24 +1,24 @@
 // ============================================================
 //  VIEWS/LOCATION.JS
-//  Mapbox GL JS "Locations" map: every monitored Ghanaian town/area
+//  MapLibre GL JS "Locations" map: every monitored Ghanaian town/area
 //  plotted with custom lightning-bolt markers, client-side clustering,
-//  live status polling, search (backend + Mapbox geocoder), favorites,
-//  filters, and a collapsible nearby-locations list.
+//  live status polling, search (backend + Nominatim/OSM geocoder),
+//  favorites, filters, and a collapsible nearby-locations list.
 //
 //  Changed vs. the previous static-image implementation:
 //   - The old <img src="./images/map.png"> + percent-positioned
 //     <div> pins are gone. #locMapCanvas is now a real interactive
-//     Mapbox GL map — pan/zoom/rotate all work, and every monitored
+//     MapLibre GL map — pan/zoom/rotate all work, and every monitored
 //     location in the database is plotted at a real (or best-effort
 //     approximate — see coordsApproximate below) coordinate instead of
 //     a hand-placed illustrative spot.
 //   - Pins are still custom SVG (same lightning-bolt glyph as before)
-//     but are now real mapboxgl.Marker DOM elements, positioned by
-//     Mapbox itself rather than left/top percentages.
+//     but are now real maplibregl.Marker DOM elements, positioned by
+//     MapLibre itself rather than left/top percentages.
 //   - Clustering is computed client-side with Supercluster and
 //     re-rendered as our own .loc-marker/.loc-cluster elements on every
-//     moveend/zoomend — Mapbox's built-in layer-based clustering can't
-//     drive custom HTML/SVG markers, so this view does that step
+//     moveend/zoomend — MapLibre's built-in layer-based clustering
+//     can't drive custom HTML/SVG markers, so this view does that step
 //     itself (see renderVisibleMarkers()).
 //   - New: GET /locations/map (server.js) replaces the old
 //     GET /areas/known + N parallel GET /lightstatus calls — one
@@ -30,19 +30,39 @@
 //     polling (POLL_INTERVAL_STANDARD_MS) still starts in show() /
 //     stops in hide(), same contract as before.
 //   - Favorites still persist in localStorage under the same key.
+//
+//  Map provider: MapLibre GL JS (open-source Mapbox GL JS fork, same
+//  `maplibregl.Map`/`Marker`/`Popup`/`NavigationControl`/
+//  `GeolocateControl` API almost 1:1) + OpenFreeMap vector tiles —
+//  no account, no access token, no card required for either. Satellite
+//  view uses Esri World Imagery raster tiles, also free/keyless.
+//  Search uses OpenStreetMap's Nominatim geocoder instead of Mapbox's.
 // ============================================================
 
 (function () {
-    // ── Mapbox setup ──────────────────────────────────────────
-    // REQUIRED: replace with a real Mapbox access token from
-    // https://account.mapbox.com/access-tokens/ before deploying —
-    // the map cannot load without one. Keeping it here (rather than
-    // js/config.js, which wasn't part of this change) so this file is
-    // self-contained; feel free to move it there instead.
-    const MAPBOX_ACCESS_TOKEN = 'YOUR_MAPBOX_ACCESS_TOKEN';
-
-    const STYLE_STREET = 'mapbox://styles/mapbox/dark-v11';
-    const STYLE_SATELLITE = 'mapbox://styles/mapbox/satellite-streets-v12';
+    // ── Map provider setup ────────────────────────────────────
+    // No token needed — OpenFreeMap (https://openfreemap.org) serves
+    // its vector styles/tiles for free with no signup or key. Swap
+    // these URLs for a MapTiler style (https://api.maptiler.com/...
+    // ?key=YOUR_KEY, free tier, no card) if you outgrow OpenFreeMap's
+    // fair-use limits — the rest of this file doesn't change either way.
+    const STYLE_STREET = 'https://tiles.openfreemap.org/styles/dark';
+    const STYLE_SATELLITE = {
+        version: 8,
+        sources: {
+            'esri-satellite': {
+                type: 'raster',
+                tiles: [
+                    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+                ],
+                tileSize: 256,
+                attribution: 'Imagery &copy; Esri'
+            }
+        },
+        layers: [
+            { id: 'esri-satellite', type: 'raster', source: 'esri-satellite' }
+        ]
+    };
 
     // Kumasi — used only as the last-resort fallback center when
     // geolocation is denied/unavailable AND no saved location exists.
@@ -75,7 +95,7 @@
     let map = null;
     let mapReady = false;
     let clusterIndex = null;
-    let markerEls = new Map();          // cluster/point id -> mapboxgl.Marker
+    let markerEls = new Map();          // cluster/point id -> maplibregl.Marker
     let openPopup = null;
     let openPopupKey = null;
     let userCoords = null;              // { lat, lng } once we have a GPS fix
@@ -184,21 +204,13 @@
         const loading = document.getElementById('locMapLoading');
         if (!canvas) return;
 
-        if (!window.mapboxgl) {
+        if (!window.maplibregl) {
             if (loading) loading.innerHTML = '<span>Map failed to load. Check your connection.</span>';
-            console.error('Mapbox GL JS did not load.');
+            console.error('MapLibre GL JS did not load.');
             return;
         }
 
-        if (!MAPBOX_ACCESS_TOKEN || MAPBOX_ACCESS_TOKEN === 'YOUR_MAPBOX_ACCESS_TOKEN') {
-            if (loading) loading.innerHTML = '<span>Map needs a Mapbox access token — see views/location.js.</span>';
-            console.error('LightWatch: set MAPBOX_ACCESS_TOKEN in views/location.js before the map can render.');
-            return;
-        }
-
-        mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;
-
-        map = new mapboxgl.Map({
+        map = new maplibregl.Map({
             container: canvas,
             style: STYLE_STREET,
             center: [DEFAULT_CENTER.lng, DEFAULT_CENTER.lat],
@@ -207,9 +219,9 @@
             attributionControl: true
         });
 
-        map.addControl(new mapboxgl.NavigationControl({ showCompass: true, visualizePitch: false }), 'top-right');
+        map.addControl(new maplibregl.NavigationControl({ showCompass: true, visualizePitch: false }), 'top-right');
 
-        const geolocate = new mapboxgl.GeolocateControl({
+        const geolocate = new maplibregl.GeolocateControl({
             positionOptions: { enableHighAccuracy: true },
             trackUserLocation: true,
             showAccuracyCircle: false,
@@ -221,6 +233,8 @@
             userCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
             renderLocations(latestLocations);
         });
+
+        window.__locMap = map; // devtools helper — see applyBrandPalette() comment above
 
         map.on('load', () => {
             mapReady = true;
@@ -242,11 +256,16 @@
     }
 
     // Pulls LightWatch's own design tokens (variables.css) and pushes
-    // them onto the stock dark-v11 style's paint properties, so roads/
-    // water/land/labels/boundaries read as part of the app's palette
-    // instead of Mapbox's generic dark theme. Wrapped per-layer since
-    // exact layer ids can shift between style versions — a missing
-    // layer just gets skipped rather than breaking map load.
+    // them onto OpenFreeMap's "dark" style's paint properties, so
+    // roads/water/land/labels/boundaries read as part of the app's
+    // palette instead of the stock dark theme. OpenFreeMap's styles
+    // follow the OpenMapTiles layer-naming schema (different ids than
+    // Mapbox's own styles used) — layer ids below match that schema,
+    // but are still wrapped per-layer since exact ids can shift
+    // between style updates; a missing layer just gets skipped rather
+    // than breaking map load. If a layer doesn't take effect, open
+    // devtools and run `window.__locMap.getStyle().layers.map(l => l.id)`
+    // to get the current id list and adjust the safeSet() calls below.
     function applyBrandPalette() {
         if (currentMapStyle !== 'street' || !map) return;
         const css = getComputedStyle(document.documentElement);
@@ -262,21 +281,22 @@
         };
 
         safeSet('background', 'background-color', darkBg);
-        safeSet('land', 'background-color', darkBg);
+        safeSet('landcover', 'fill-color', darkBg);
         safeSet('landuse', 'fill-color', darkBgMid);
-        safeSet('national-park', 'fill-color', darkBgMid);
+        safeSet('park', 'fill-color', darkBgMid);
         safeSet('water', 'fill-color', color_mix(teal, darkBg, 0.12));
         safeSet('waterway', 'line-color', color_mix(teal, darkBg, 0.12));
-        safeSet('road-primary', 'line-color', darkBgMid);
-        safeSet('road-secondary-tertiary', 'line-color', darkBgMid);
-        safeSet('road-street', 'line-color', darkBgMid);
-        safeSet('road-motorway-trunk', 'line-color', border);
-        safeSet('admin-0-boundary', 'line-color', border);
-        safeSet('admin-1-boundary', 'line-color', border);
-        safeSet('settlement-major-label', 'text-color', '#ffffff');
-        safeSet('settlement-minor-label', 'text-color', 'rgba(255,255,255,0.75)');
-        safeSet('poi-label', 'text-color', 'rgba(255,255,255,0.5)');
-        safeSet('road-label', 'text-color', 'rgba(255,255,255,0.45)');
+        safeSet('road_secondary', 'line-color', darkBgMid);
+        safeSet('road_minor', 'line-color', darkBgMid);
+        safeSet('road_major', 'line-color', darkBgMid);
+        safeSet('road_motorway', 'line-color', border);
+        safeSet('boundary_state', 'line-color', border);
+        safeSet('boundary_country', 'line-color', border);
+        safeSet('place_city', 'text-color', '#ffffff');
+        safeSet('place_town', 'text-color', 'rgba(255,255,255,0.75)');
+        safeSet('place_village', 'text-color', 'rgba(255,255,255,0.75)');
+        safeSet('poi_label', 'text-color', 'rgba(255,255,255,0.5)');
+        safeSet('road_label', 'text-color', 'rgba(255,255,255,0.45)');
     }
 
     // Cheap hex-ish blend so applyBrandPalette() doesn't need a full
@@ -424,7 +444,7 @@
             if (markerEls.has(id)) return; // unchanged — leave its DOM/transition state alone
 
             const el = buildMarkerEl(feature);
-            const marker = new mapboxgl.Marker({ element: el, anchor: feature.properties.cluster ? 'center' : 'bottom' })
+            const marker = new maplibregl.Marker({ element: el, anchor: feature.properties.cluster ? 'center' : 'bottom' })
                 .setLngLat(feature.geometry.coordinates)
                 .addTo(map);
             markerEls.set(id, marker);
@@ -503,7 +523,7 @@
         });
 
         if (openPopup) openPopup.remove();
-        openPopup = new mapboxgl.Popup({ closeButton: true, closeOnClick: false, offset: 18, maxWidth: 'none' })
+        openPopup = new maplibregl.Popup({ closeButton: true, closeOnClick: false, offset: 18, maxWidth: 'none' })
             .setLngLat(coordinates)
             .setDOMContent(node)
             .addTo(map);
@@ -668,7 +688,12 @@
     }
 
     // ============================================================
-    //  Search — backend locations first, then the Mapbox geocoder
+    //  Search — backend locations first, then the Nominatim (OSM)
+    //  geocoder. Nominatim's usage policy caps this at ~1 request/sec
+    //  and asks for a distinguishing identifier, which the debounce
+    //  below and the app's own User-Agent/Referer already satisfy for
+    //  light client-side use; see https://operations.osmfoundation.org/policies/nominatim/
+    //  if this ever needs to scale beyond casual search-as-you-type.
     // ============================================================
 
     function searchResultRow({ icon, iconCls, label, sub }) {
@@ -691,18 +716,23 @@
             .filter(a => a.name.toLowerCase().includes(q))
             .slice(0, 6);
 
+        // Normalized to the same shape the old Mapbox geocoder features
+        // used ({ text, place_name, center: [lng, lat] }) so the render
+        // and click-through code below didn't need to change.
         let geocoderMatches = [];
-        if (MAPBOX_ACCESS_TOKEN && MAPBOX_ACCESS_TOKEN !== 'YOUR_MAPBOX_ACCESS_TOKEN') {
-            try {
-                const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${MAPBOX_ACCESS_TOKEN}&country=GH&limit=5`;
-                const res = await fetch(url);
-                if (res.ok) {
-                    const data = await res.json();
-                    geocoderMatches = (data.features || []).slice(0, 5 - backendMatches.length);
-                }
-            } catch (err) {
-                console.error('Mapbox geocoder search failed:', err.message);
+        try {
+            const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&countrycodes=gh&limit=${Math.max(0, 5 - backendMatches.length)}&q=${encodeURIComponent(query)}`;
+            const res = await fetch(url, { headers: { 'Accept-Language': 'en' } });
+            if (res.ok) {
+                const data = await res.json();
+                geocoderMatches = (Array.isArray(data) ? data : []).map(place => ({
+                    text: (place.display_name || '').split(',')[0].trim() || place.display_name,
+                    place_name: place.display_name,
+                    center: [parseFloat(place.lon), parseFloat(place.lat)]
+                }));
             }
+        } catch (err) {
+            console.error('Nominatim geocoder search failed:', err.message);
         }
 
         if (!backendMatches.length && !geocoderMatches.length) {
@@ -868,6 +898,9 @@
                 const wantsSatellite = btn.dataset.style === 'satellite';
                 if ((wantsSatellite && currentMapStyle === 'satellite') || (!wantsSatellite && currentMapStyle === 'street')) return;
                 currentMapStyle = wantsSatellite ? 'satellite' : 'street';
+                // STYLE_STREET is an OpenFreeMap style URL; STYLE_SATELLITE is
+                // an inline style object pointing at Esri's keyless raster
+                // tiles — setStyle() accepts either form.
                 map.setStyle(wantsSatellite ? STYLE_SATELLITE : STYLE_STREET);
                 styleToggle.querySelectorAll('.loc-map__style-btn').forEach(b => b.classList.toggle('is-active', b === btn));
             });
