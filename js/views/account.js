@@ -638,6 +638,7 @@ function initCityEditForm(user) {
 
     const input = el('cityEditInput');
     const toggleBtn = el('cityEditToggleBtn');
+    const locateBtn = el('cityEditLocateBtn');
     if (input) input.value = user?.city || '';
 
     // initCityEditForm() can now run again after an account switch (see
@@ -648,6 +649,18 @@ function initCityEditForm(user) {
     if (toggleBtn) toggleBtn.dataset.bound = '1';
     if (cityEditForm) cityEditForm.dataset.bound = '1';
 
+    // Same picker signup.js uses (search-as-you-type + "use my location"),
+    // so editing a city here works identically to setting it at signup.
+    // The account's region is fixed (not part of this form), so it's
+    // passed as a plain getter rather than a live <select>.
+    const locationPicker = window.LWLocationPicker?.attach({
+        input,
+        resultsEl: el('cityEditSearchResults'),
+        locateBtn,
+        hintEl: el('cityEditLocationHint'),
+        getRegion: () => user?.region || ''
+    }) || null;
+
     toggleBtn?.addEventListener('click', () => {
         if (!input || input.disabled === false) return;
         input.disabled = false;
@@ -655,6 +668,7 @@ function initCityEditForm(user) {
         input.select();
         const saveBtn = el('cityEditSaveBtn');
         if (saveBtn) saveBtn.disabled = false;
+        if (locateBtn) locateBtn.disabled = false;
         toggleBtn.textContent = 'Editing…';
         toggleBtn.disabled = true;
     });
@@ -673,10 +687,12 @@ function initCityEditForm(user) {
         if (messageEl) messageEl.textContent = 'Saving...';
 
         try {
+            const coords = locationPicker?.getCoords();
+            const payload = coords ? { city, lat: coords.lat, lng: coords.lng } : { city };
             const res = await fetch(`${API_URL}/user/${userId}/city`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ city })
+                body: JSON.stringify(payload)
             });
             const data = await res.json().catch(() => ({}));
             if (!res.ok) {

@@ -23,6 +23,7 @@
     let nameInput, emailPhoneInput, regionInput, cityInput,
         notifyUpdatesInput, form, errorEl, submitBtn;
     let isMounted = false;
+    let locationPicker = null; // set in bindLocationPicker() — .getCoords() feeds handleSignup()
 
     const EMOJI_RE = /[\u{1F1E6}-\u{1F1FF}\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{2190}-\u{21FF}\u{2B00}-\u{2BFF}\u{FE0F}\u{200D}]/gu;
 
@@ -59,6 +60,7 @@
     }
 
     async function handleSignup() {
+        const coords = locationPicker?.getCoords();
         const userData = {
             name: nameInput.value.trim(),
             emailPhone: emailPhoneInput.value.trim(),
@@ -66,6 +68,10 @@
             city: cityInput.value.trim(),
             wantsAlerts: Boolean(notifyUpdatesInput?.checked)
         };
+        if (coords) {
+            userData.lat = coords.lat;
+            userData.lng = coords.lng;
+        }
 
         errorEl.textContent = "";
 
@@ -136,93 +142,22 @@
         });
     }
 
-    // ---- City / Town: use device location, reverse-geocode, stay editable ----
-    function bindLocateButton() {
+    // ---- City / Town: search-as-you-type + "use my location", both via
+    // the shared picker (js/utils/location-picker.js) so this behaves
+    // identically to the account page's city editor. ----
+    function bindLocationPicker() {
         const locateBtn = document.getElementById('useLocationBtn');
         const hint = document.getElementById('cityLocationHint');
-        if (!locateBtn || !cityInput) return;
+        const resultsEl = document.getElementById('citySearchResults');
+        if (!cityInput) return;
 
-        const setHint = (text) => { if (hint) hint.textContent = text; };
-
-        const runGeolocation = () => {
-            locateBtn.classList.add('is-loading');
-            locateBtn.disabled = true;
-            setHint('Requesting location permission…');
-
-            navigator.geolocation.getCurrentPosition(
-                (pos) => {
-                    const { latitude: lat, longitude: lon } = pos.coords;
-                    setHint('Finding your city…');
-
-                    fetch(`${API_URL}/geocode/reverse?lat=${lat}&lng=${lon}`)
-                        .then((res) => res.json())
-                        .then((data) => {
-                            const place = data && data.city;
-                            if (place) {
-                                cityInput.value = place;
-                                setHint('Detected automatically — feel free to edit it if it is not quite right.');
-                            } else {
-                                setHint('Could not determine your city automatically — please type it in.');
-                            }
-                        })
-                        .catch(() => {
-                            setHint('Could not reach the location service — please type your city in.');
-                        })
-                        .finally(() => {
-                            locateBtn.classList.remove('is-loading');
-                            locateBtn.disabled = false;
-                            cityInput.focus();
-                        });
-                },
-                (err) => {
-                    locateBtn.classList.remove('is-loading');
-                    locateBtn.disabled = false;
-                    if (err && err.code === 1) {
-                        // PERMISSION_DENIED. Once an origin has been denied, browsers
-                        // won't show the OS/browser prompt again on subsequent calls —
-                        // they just fail instantly with this same code. If that's
-                        // happening on a *first* attempt, the prompt itself never had
-                        // a chance to fire, which almost always means one of:
-                        //  - the page isn't on HTTPS (or localhost) — geolocation only
-                        //    works in a secure context, and silently no-ops otherwise
-                        //  - this is loaded inside a WebView/app wrapper and the OS-level
-                        //    location permission was never granted to the app itself
-                        //  - a Permissions-Policy header/iframe "allow" attribute upstream
-                        //    is blocking geolocation for this origin
-                        setHint('Location permission was denied — you can still type your city manually.');
-                    } else if (err && err.code === 3) {
-                        setHint('Location request timed out — please type your city manually.');
-                    } else {
-                        setHint('Could not get your location — please type your city manually.');
-                    }
-                },
-                { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
-            );
-        };
-
-        locateBtn.addEventListener('click', () => {
-            if (!('geolocation' in navigator)) {
-                setHint('Location is not available on this device — please type your city.');
-                return;
-            }
-
-            // Check permission state first so a *previously* denied origin gets an
-            // accurate message (re-prompting won't happen) instead of implying the
-            // browser is about to ask again.
-            if (navigator.permissions?.query) {
-                navigator.permissions.query({ name: 'geolocation' })
-                    .then((status) => {
-                        if (status.state === 'denied') {
-                            setHint('Location is blocked for this site — enable it in your browser/site settings, or type your city manually.');
-                            return;
-                        }
-                        runGeolocation();
-                    })
-                    .catch(runGeolocation); // Permissions API not supported — fall back to asking directly.
-            } else {
-                runGeolocation();
-            }
-        });
+        locationPicker = window.LWLocationPicker?.attach({
+            input: cityInput,
+            resultsEl,
+            locateBtn,
+            hintEl: hint,
+            getRegion: () => regionInput?.value || ''
+        }) || null;
     }
 
     // ---- Back button + "Log in" link: both use data-route-custom, same
@@ -297,7 +232,7 @@
 
         prefillFromPriorAttempt();
         bindNameFormatting();
-        bindLocateButton();
+        bindLocationPicker();
         bindCustomRouteLinks();
         bindCityKeyboardShift();
 

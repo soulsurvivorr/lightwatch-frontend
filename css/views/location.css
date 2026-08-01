@@ -928,6 +928,21 @@ html[data-theme="light"] .loc-header__title {
   -webkit-overflow-scrolling: touch;
   box-sizing: border-box;
   padding-bottom: 2px;
+  /* FIX: the actual out-of-bounds blocker. .loc-page (this row's
+     parent, same element as #locationRealContent) is `display: flex;
+     flex-direction: column`. A flex item's default min-width is
+     `auto`, which resolves to its content's min-content size — and
+     since every .loc-filter pill below has flex-shrink: 0, that
+     min-content size is the full sum of all pill widths. That
+     automatic min-width overrides this row's own overflow-x: auto,
+     so instead of clipping/scrolling internally the row was forced
+     wider than .loc-page itself, blowing past the page's left/right
+     padding and no longer lining up with .loc-search or anything
+     else above it. min-width: 0 removes that auto floor so the row
+     respects the parent's width and scrolls its own content instead
+     of pushing the box wider. Same fix already applied above to
+     .location-main / .location-sidebar for the identical reason. */
+  min-width: 0;
   /* #locationRealContent (the shared parent — see ~line 814) already
      applies the page's 16px left/right padding to every child,
      .loc-search included. The old margin-left/right: 12px added a
