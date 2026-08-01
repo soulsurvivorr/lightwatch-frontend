@@ -5798,7 +5798,7 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
 
 html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link--active .bottom-nav-icon svg,
 html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page"] .bottom-nav-icon svg {
-  color: var(--brand2, #4A90D9);
+  color: #1c1f26;
 }
 
 html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link--active .bottom-nav-label,

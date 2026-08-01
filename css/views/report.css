@@ -205,6 +205,11 @@ body.lw-chat-community-mode #view-chat .community-banner {
   word-break: break-word;
 }
 
+html[data-theme="light"] #view-chat .chat-message__text,
+html[data-theme="light"] .chat-message__text {
+  color: #111318;
+}
+
 /* Everyone/global audience: bubbles themselves stay a neutral gray
    (same panel background/border every other message uses) so a busy
    multi-person feed doesn't turn into a wall of random colors. The
@@ -948,6 +953,10 @@ body.lw-chat-community-mode #view-chat .community-banner {
 #view-chat .community-banner {
   color: white;
   padding-top: max(env(safe-area-inset-top, 0px), 6px);
+  background: linear-gradient(135deg, #06111c 0%, #0e203a 52%, #163654 100%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.2);
 }
 
 #view-chat .community-banner__row {
@@ -1056,6 +1065,11 @@ body.lw-chat-community-mode #view-chat .community-banner {
   color: white;
   cursor: pointer;
   transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+}
+
+html[data-theme="light"] #view-chat .community-banner__icon-btn,
+html[data-theme="device"] #view-chat .community-banner__icon-btn {
+  color: white;
 }
 
 #view-chat .community-banner__icon-btn.is-active {

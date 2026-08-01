@@ -17,6 +17,6 @@ function initToastComponent() {
         el.textContent = msg;
         el.classList.add('show');
         clearTimeout(window.__lwToastTimer);
-        window.__lwToastTimer = setTimeout(() => el.classList.remove('show'), duration || 3500);
+        window.__lwToastTimer = setTimeout(() => el.classList.remove('show'), duration || 1800);
     };
 }

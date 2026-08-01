@@ -412,16 +412,7 @@
 .bottom-nav-link--active .bottom-nav-icon {
   background: transparent;
   transform: none;
-  animation: bottom-nav-active-fade 0.22s ease;
-}
-
-@keyframes bottom-nav-active-fade {
-  from {
-    background: color-mix(in srgb, var(--bottom-nav-icon-active-bg) 35%, transparent);
-  }
-  to {
-    background: var(--bottom-nav-icon-active-bg);
-  }
+  animation: none !important;
 }
 
 .bottom-nav-label {

@@ -1630,7 +1630,8 @@ function flushPendingRepliesForParent(parentId) {
     const queue = pendingRepliesByParent.get(String(parentId));
     if (!queue || queue.length === 0) return;
 
-    const parentEl = chatThread.querySelector(`[data-chat-id="${CSS.escape(String(parentId))}"]`);
+    const parentEl = [...chatThread.querySelectorAll('[data-chat-id]')]
+        .find((candidate) => candidate.dataset.chatId === String(parentId));
     if (!parentEl) return;
 
     queue.forEach((replyEl) => attachReplyToParent(parentEl, replyEl));
@@ -1765,7 +1766,10 @@ function addToThread(chat, isOwn, scrollDown, animate, hasReply, isLatestOwn) {
     // attach it once the target parent card lands in the DOM. That keeps
     // the reply hierarchy stable for comment-reply style flows.
     const parentId = chat.replyTo && chat.replyTo.chatId ? String(chat.replyTo.chatId) : null;
-    const parentEl = parentId ? chatThread.querySelector(`[data-chat-id="${CSS.escape(parentId)}"]`) : null;
+    const parentEl = parentId
+        ? [...chatThread.querySelectorAll('[data-chat-id]')]
+            .find((candidate) => candidate.dataset.chatId === parentId)
+        : null;
 
     if (parentEl && parentEl._repliesContainer) {
         attachReplyToParent(parentEl, el);

@@ -244,7 +244,7 @@ function bindTopbarHamburger() {
 const NAV_REPORTS_SEEN_KEY = 'lw_nav_reports_last_seen';
 const NAV_TOASTED_IDS_KEY = 'lw_nav_reports_toasted_ids';
 const MAX_TOASTED_IDS = 300; // cap so this never grows unbounded in localStorage
-const NAV_BADGE_POLL_MS = (typeof POLL_INTERVAL_FAST_MS !== 'undefined') ? POLL_INTERVAL_FAST_MS : 20000;
+const NAV_BADGE_POLL_MS = (typeof POLL_INTERVAL_FAST_MS !== 'undefined') ? POLL_INTERVAL_FAST_MS : 5000;
 const NAV_BADGE_TYPES = new Set(['chat', 'reply', 'success', 'warning']);
 
 let navReportsPollTimer = null;
