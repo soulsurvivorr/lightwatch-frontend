@@ -109,10 +109,6 @@ body.lw-chat-community-mode #view-chat .community-banner {
   transition: transform 0.12s ease;
 }
 
-#view-chat .chat-close-btn {
-  display: none;
-}
-
 /* Empty thread placeholder shown when there are no reports yet. */
 .chat-thread__empty {
   display: flex;
@@ -167,15 +163,6 @@ body.lw-chat-community-mode #view-chat .community-banner {
 
 .chat-scroll-bottom-btn:hover {
   background: var(--brand);
-}
-
-/* The floating "Report" toggle button and its popup are gone — chat is
-   inline on the page at every screen size now (see chat.js and
-   home.css's #view-home .chat-card rules). This selector is kept at
-   display:none in case the button markup is still present in some
-   page's HTML, so it can never render even if it exists in the DOM. */
-.mobile-chat-toggle {
-  display: none;
 }
 
 .chat-thread {

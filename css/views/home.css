@@ -1668,8 +1668,6 @@ body.lw-location-panel-open {
   overflow: hidden;
   overscroll-behavior: none;
 }
-/* .mobile-chat-toggle removed along with the chat popup — this rule
-   no longer has anything to target. */
 .location-expand-panel {
   width: 100%;
   /* This is a status card, not a document — cap it to a width that
@@ -2872,10 +2870,6 @@ body.lw-location-panel-open {
     gap: 12px;
   }
 
-  .chat-close-btn {
-    display: none;
-  }
-
   /* The standalone in-page profile card hides on mobile (it's redundant with
      the "You" sidebar panel reachable from the bottom nav). Scoped narrowly
      so it does NOT also hide .profile-card--sidebar, which shares the
@@ -2885,18 +2879,11 @@ body.lw-location-panel-open {
     display: none;
   }
 
-  /* .mobile-chat-toggle and the .mobile-chat-open scroll-lock are both
-     removed — chat has no popup/toggle anymore, it's always inline on
-     the page, so there's nothing left to dock a floating button under
-     or lock scroll for. See chat.js for the (now much smaller)
-     inline-scroll replacement. */
 }
 
 /* Desktop and Laptop viewports */
-/* Desktop and Laptop viewports */
 @media (min-width: 769px) {
-  #bottom_nav_wrapper,
-  .mobile-chat-toggle {
+  #bottom_nav_wrapper {
     display: none !important;
   }
 }
@@ -3842,12 +3829,8 @@ body.lw-location-panel-open {
   }
 }
 
-/* Popup-specific sizing (.chat-card--mobile-open height clamp, the
-   floating .mobile-chat-toggle button) removed at 390px along with
-   the rest of the popup mechanism — chat is inline now. */
-
 /* ------------------------------------------------------------
-   Chat popup — final, single source of truth for phone sizing.
+  Chat sizing — final, single source of truth for phone sizing.
    Earlier breakpoints (640/480/430/400/390) accumulated several
    overlapping, sometimes contradictory rules for the same chat
    elements, so devices that missed the narrowest bands (e.g.
@@ -3863,14 +3846,6 @@ body.lw-location-panel-open {
 @media (max-width: 480px) {
   .chat-card__head {
     gap: 10px;
-  }
-
-  .chat-close-btn {
-    width: 26px;
-    height: 26px;
-    font-size: 0.74rem;
-    border-radius: 9px;
-    flex-shrink: 0;
   }
 
   .chat-thread-wrap {
@@ -3923,31 +3898,6 @@ body.lw-location-panel-open {
   }
 }
 
-/* Chat close button only makes sense on the mobile popup — on
-   desktop/tablet the chat card is a permanent inline panel, so
-   an "✕ close" control has nothing to close and was just sitting
-   there unstyled/misplaced. Hide it once we're past the mobile
-   popup breakpoint. */
-/* Tablet and Desktop viewports */
-@media (min-width: 721px) {
-  .chat-close-btn {
-    display: none;
-  }
-}
-
-/* Between 481px and 720px (larger phones / small tablets that still
-   use the mobile popup layout but miss the ≤480 band above), the
-   close button was falling back to the older, bigger 34px base
-   style and looking oversized/misplaced next to the title. Bring it
-   down to the same compact size used everywhere else in the popup. */
-@media (min-width: 481px) and (max-width: 720px) {
-  .chat-close-btn {
-    width: 28px;
-    height: 28px;
-    font-size: 0.78rem;
-    border-radius: 9px;
-  }
-}
 /* ============================================================
    Home page redesign additions — confidence bar, community
    activity, hero mini-card, nearby areas, achievements card,
@@ -4736,8 +4686,8 @@ body:not(.page-data-loading) #view-home #realPageContent {
 }
 
 /* (Community-report/chat-message per-device sizing lives in
-   chat.css, appended at its end — chat.css loads after this file,
-   so a fix placed here would just get overridden by chat.css's
+  report.css, loaded after this file,
+  so a fix placed here would just get overridden by report.css's
    fixed sizes.) */
 
 /* ---- 1c) Safe-area top inset (status bar) ----

@@ -881,7 +881,7 @@
     /* Tablet and Desktop viewports */
     @media (min-width: 769px) {
       /* FIX: same root cause as Notifications (see views/notifications.css)
-         and Community Report (chat.css): an unseen base .page rule
+        and Community Report (report.css): an unseen base .page rule
          (not in this file set) defaults to display:flex with no
          direction set, so it renders as a ROW — page__header and
          .account-grid were sitting side by side instead of stacked,

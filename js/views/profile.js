@@ -279,49 +279,6 @@ function getTimeGreeting() {
     return "Good evening";
 }
 
-// FIX: this used to also repaint #statusBadge/#statusPulse/
-// #statusPillText/#statusIcon — the PRIMARY status-hero elements —
-// every time this ran (on load, and on this file's own 10s poll
-// below). Those are now lightstatus.js's exclusive responsibility: it
-// has its own poller, its own colored-SVG icon states, its own tap-
-// to-report animation, and its own focus/visibility-triggered
-// refresh. With both files writing to the same four elements on two
-// different timers, whichever one happened to run last won — which is
-// why the primary icon could revert to a raster <img> and a different
-// "unknown" message moments after lightstatus.js had just painted the
-// correct state. (Same class of bug as the fix already applied to the
-// secondary-location panel — see paintSecondaryLocationStatus's note
-// in home.js.) This function now only drives what it uniquely owns:
-// the hidden legacy #lightSwitch toggle.
-function setLightStatus(status) {
-    const lightSwitch = document.getElementById("lightSwitch");
-    const lightSwitchState = document.getElementById("lightSwitchState");
-
-    if (!lightSwitch || !lightSwitchState) {
-        return;
-    }
-
-    if (status === "on") {
-        lightSwitch.classList.add("light-switch--on");
-        lightSwitch.classList.remove("light-switch--off");
-        lightSwitchState.textContent = "ON";
-        lightSwitch.setAttribute("aria-checked", "true");
-    } else if (status === "off") {
-        lightSwitch.classList.remove("light-switch--on");
-        lightSwitch.classList.add("light-switch--off");
-        lightSwitchState.textContent = "OFF";
-        lightSwitch.setAttribute("aria-checked", "false");
-    } else {
-        // Covers both "loading" and genuinely-unknown — the switch
-        // itself only has three real states (on/off/unset), unlike the
-        // primary card's icon which distinguishes "checking" from
-        // "no reports yet."
-        lightSwitch.classList.remove("light-switch--on", "light-switch--off");
-        lightSwitchState.textContent = "CHECK";
-        lightSwitch.setAttribute("aria-checked", "false");
-    }
-}
-
 // Tracks the two intervals renderLocationPage() creates, so calling it
 // again (e.g. once with cached data, then again with fresh data) clears
 // the previous timers instead of stacking up duplicate pollers.
@@ -487,7 +444,6 @@ function renderLocationPage(user) {
         return fetch(`${API_URL}/lightstatus?location=${encodeURIComponent(location)}`)
             .then(r => r.json())
             .then(data => {
-                setLightStatus(data.status || 'unknown');
                 if (data.reportedAt) {
                     lastReportedAtMs = new Date(data.reportedAt).getTime();
                     refreshLastVerifiedLabel();
@@ -501,7 +457,6 @@ function renderLocationPage(user) {
                 // value is already on screen, a failed refresh shouldn't
                 // wipe out real (if slightly stale) data with a blank state.
                 if (!cachedLightStatus) {
-                    setLightStatus('unknown');
                     renderLightStats(null);
                 }
             });
@@ -513,14 +468,11 @@ function renderLocationPage(user) {
     // still runs and overwrites this with the live value.
     const cachedLightStatus = readLightStatusCache(location);
     if (cachedLightStatus) {
-        setLightStatus(cachedLightStatus.status);
         if (cachedLightStatus.reportedAt) {
             lastReportedAtMs = new Date(cachedLightStatus.reportedAt).getTime();
             refreshLastVerifiedLabel();
         }
         renderLightStats(cachedLightStatus.stats);
-    } else {
-        setLightStatus('loading');
     }
 
     const initialStatsLoad = loadLocationStats();
@@ -530,7 +482,6 @@ function renderLocationPage(user) {
         fetch(`${API_URL}/lightstatus?location=${encodeURIComponent(location)}`)
             .then(r => r.json())
             .then(data => {
-                setLightStatus(data.status || 'unknown');
                 if (data.reportedAt) {
                     lastReportedAtMs = new Date(data.reportedAt).getTime();
                     refreshLastVerifiedLabel();
@@ -541,33 +492,6 @@ function renderLocationPage(user) {
             .catch(() => {});
     }, 10000);
 
-    const lightSwitch = document.getElementById("lightSwitch");
-    if (lightSwitch) {
-        lightSwitch.addEventListener("click", () => {
-            const currentState = lightSwitch.getAttribute("aria-checked") === "true" ? "on" : "off";
-            const nextStatus = currentState === "on" ? "off" : "on";
-            showLightConfirmPopup(nextStatus, () => {
-                const userId = getSession()?.user?.id || localStorage.getItem("currentUserId");
-                // Save to backend so ALL users see the update
-                fetch(`${API_URL}/lightstatus`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ location, status: nextStatus, userId })
-                })
-                .then(r => r.json())
-                .then(() => {
-                    setLightStatus(nextStatus);
-                    lastReportedAtMs = Date.now();
-                    refreshLastVerifiedLabel();
-                    loadLocationStats();
-                })
-                .catch(() => {
-                    setLightStatus(nextStatus); // fallback local update
-                });
-            });
-        });
-    }
-
     // So the caller (loadCurrentUserProfile) can await this and only
     // hide the loading overlay once there's real data on screen. If we
     // had a cache to paint from, that already happened synchronously
@@ -576,71 +500,6 @@ function renderLocationPage(user) {
     // visible. Only a genuine first-ever load (no cache) still waits on
     // the real fetch, since there's nothing else to show yet.
     return cachedLightStatus ? Promise.resolve() : initialStatsLoad;
-}
-
-// -------------------------------------------------------
-// LIGHT STATUS CONFIRMATION POPUP
-// Shows an overlay asking the user to confirm accuracy
-// before their toggle is applied.
-// -------------------------------------------------------
-function showLightConfirmPopup(nextStatus, onConfirm) {
-    // Remove any existing popup first
-    const existing = document.getElementById("lw-confirm-overlay");
-    if (existing) existing.remove();
-
-    const isOn = nextStatus === "on";
-    const overlay = document.createElement("div");
-    overlay.id = "lw-confirm-overlay";
-    overlay.style.cssText = `
-        position: fixed; inset: 0; z-index: 9999;
-        background: rgba(0,0,0,0.25); backdrop-filter: blur(1px);
-        display: flex; align-items: center; justify-content: center;
-        padding: 24px; animation: lw-fade-in 0.15s ease;
-    `;
-
-    overlay.innerHTML = `
-        <style>
-            @keyframes lw-fade-in { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: scale(1); } }
-            #lw-confirm-card { background: #fff; border-radius: 16px; padding: 28px 24px; max-width: 340px; width: 100%; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.25); }
-            #lw-confirm-card .lw-icon { font-size: 2.4rem; margin-bottom: 12px; }
-            #lw-confirm-card .lw-icon svg { width: 1em; height: 1em; }
-            #lw-confirm-card h3 { font-family: var(--font-display); font-size: 1.1rem; margin: 0 0 8px; color: #111; }
-            #lw-confirm-card p { font-size: 0.88rem; color: #555; margin: 0 0 22px; line-height: 1.5; }
-            .lw-confirm-btns { display: flex; gap: 10px; }
-            .lw-confirm-btns button { flex: 1; padding: 12px; border-radius: 10px; border: none; font-size: 0.92rem; font-weight: 600; cursor: pointer; transition: opacity 0.15s; }
-            .lw-confirm-btns button:hover { opacity: 0.88; }
-            .lw-btn-confirm { background: ${isOn ? "#3DD9C2" : "#E5484D"}; color: ${isOn ? "#06241f" : "#fff"}; }
-            .lw-btn-cancel { background: #f0f0f4; color: #444; }
-        </style>
-        <div id="lw-confirm-card">
-            <div class="lw-icon">${isOn
-                ? "<svg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'><path d='M12 3a7 7 0 0 0-4 12.7c.6.44 1 1.16 1 1.95V19h6v-1.35c0-.79.4-1.51 1-1.95A7 7 0 0 0 12 3Z' stroke='#D6A24A' stroke-width='1.6' stroke-linejoin='round'/><path d='M10 21.5h4' stroke='#D6A24A' stroke-width='1.6' stroke-linecap='round'/></svg>"
-                : "<svg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'><path d='M20.5 14.5A8.5 8.5 0 1 1 9.5 3.5a7 7 0 0 0 11 11Z' fill='#5B6472' stroke='#5B6472' stroke-width='1.2' stroke-linejoin='round'/></svg>"
-            }</div>
-            <h3>${isOn ? "Reporting light ON?" : "Reporting light OFF?"}</h3>
-            <p>Please only confirm if you can <strong>actually see</strong> this area right now. Your report helps others in ${window.currentChatLocation || "this location"}.</p>
-            <div class="lw-confirm-btns">
-                <button class="lw-btn-cancel" id="lw-cancel-btn">Cancel</button>
-                <button class="lw-btn-confirm" id="lw-confirm-btn">Yes, I can confirm</button>
-            </div>
-        </div>
-    `;
-
-    document.body.appendChild(overlay);
-
-    document.getElementById("lw-confirm-btn").addEventListener("click", () => {
-        overlay.remove();
-        onConfirm();
-    });
-
-    document.getElementById("lw-cancel-btn").addEventListener("click", () => {
-        overlay.remove();
-    });
-
-    // Tap outside to cancel
-    overlay.addEventListener("click", (e) => {
-        if (e.target === overlay) overlay.remove();
-    });
 }
 
 function renderSignedOutEverywhere() {

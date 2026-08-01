@@ -337,9 +337,9 @@
 }
 
 /* Same fix as the 981px block above, at the earlier breakpoint where
-   desktop layout (and therefore the row/column bug) actually starts —
-   matches the min-width:721px breakpoint chat.css's Community Report
-   fix uses, so the 721-980px tablet range isn't left broken. */
+  desktop layout (and therefore the row/column bug) actually starts —
+  matches the min-width:721px breakpoint report.css's Community Report
+  fix uses, so the 721-980px tablet range isn't left broken. */
 @media (min-width: 721px) {
   /* FIX: an earlier pass here also forced width:100% !important;
      max-width:100% !important; margin:0 !important, intending to

@@ -1253,7 +1253,7 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
     commentStat.type = 'button';
     commentStat.className = 'report-card__stat report-card__stat--comment';
     commentStat.setAttribute('aria-label', 'Reply');
-    commentStat.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4.5 7.2a2.2 2.2 0 0 1 2.2-2.2h10.6a2.2 2.2 0 0 1 2.2 2.2v7.1a2.2 2.2 0 0 1-2.2 2.2H12l-4.4 3v-3H6.7a2.2 2.2 0 0 1-2.2-2.2V7.2Z" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></svg><span class="report-card__stat-count">' + (replyCount || 0) + '</span>';
+    commentStat.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M6 17L3.5 20V6a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 9H16M8 13H13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span class="report-card__stat-count">' + (replyCount || 0) + '</span>';
     // Reply now opens a small composer right under THIS card instead of
     // scrolling up to the page's main input (see toggleInlineReplyBox).
     commentStat.addEventListener('click', () => toggleInlineReplyBox(el, chat, cleanText, { mode: 'reply' }));
@@ -1266,7 +1266,7 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
     repostStat.type = 'button';
     repostStat.className = 'report-card__stat report-card__stat--repost';
     repostStat.setAttribute('aria-label', 'Repost');
-    repostStat.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M7 7.4h8.5a3 3 0 0 1 3 3v1.6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="m14.7 4.9 2.9 2.5-2.9 2.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M17 16.6H8.5a3 3 0 0 1-3-3V12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="m9.3 19.1-2.9-2.5 2.9-2.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="report-card__stat-count">0</span>';
+    repostStat.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M8 8H18L15.5 5.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 16H6L8.5 18.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M18 8V12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M6 16V12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span class="report-card__stat-count">0</span>';
     repostStat.addEventListener('click', async () => {
         if (repostStat.classList.contains('is-reposted') || repostStat.disabled) return;
         repostStat.disabled = true;
@@ -1294,7 +1294,7 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
     quoteStat.type = 'button';
     quoteStat.className = 'report-card__stat report-card__stat--quote';
     quoteStat.setAttribute('aria-label', 'Quote');
-    quoteStat.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M5.2 8.1c0-1.7 1.3-3 3-3h2.4v3.6H8.7v2.8h2.8v4.9H6.8c-.9 0-1.6-.7-1.6-1.6V8.1Zm8.8 0c0-1.7 1.3-3 3-3h2.4v3.6h-1.9v2.8h2.8v4.9h-4.7c-.9 0-1.6-.7-1.6-1.6V8.1Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>';
+    quoteStat.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><polyline points="17 1 21 5 17 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 11V9a4 4 0 0 1 4-4h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="7 23 3 19 7 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 13v2a4 4 0 0 1-4 4H3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     quoteStat.addEventListener('click', () => toggleInlineReplyBox(el, chat, cleanText, { mode: 'quote' }));
     quoteStat.addEventListener('click', () => flashIconRing(quoteStat));
 
