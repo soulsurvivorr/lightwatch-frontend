@@ -75,6 +75,7 @@ if (communityComposerTop && chatSendBtn && chatSendBtn.parentElement !== communi
 const CHAT_SCOPE_KEY = 'lw_chat_scope_pref';
 const CHAT_SCOPE_LOCAL = 'local';
 const CHAT_SCOPE_GLOBAL = 'global';
+const CHAT_EDIT_DELETE_WINDOW_MS = 15 * 60 * 1000;
 const MUTED_REPORT_HANDLES_KEY = 'lw_muted_report_handles';
 const MUTED_REPORT_POST_IDS_KEY = 'lw_muted_report_posts';
 const BOOKMARKED_REPORT_IDS_KEY = 'lw_bookmarked_report_posts';
@@ -148,7 +149,56 @@ function closeAllReportCardMenus(exceptWrap) {
     document.querySelectorAll('#view-chat .report-card__menu-wrap.is-open').forEach((wrap) => {
         if (exceptWrap && wrap === exceptWrap) return;
         wrap.classList.remove('is-open');
+        const card = wrap.closest('.chat-message.report-card');
+        if (card) card.classList.remove('report-card--menu-open');
     });
+}
+
+function getRemainingEditWindowMs(chat) {
+    const created = safeParseDate(chat?.createdAt);
+    if (!created) return 0;
+    const elapsed = Date.now() - created.getTime();
+    return Math.max(0, CHAT_EDIT_DELETE_WINDOW_MS - elapsed);
+}
+
+function canManageOwnPost(chat, isOwn) {
+    if (!isOwn || chat?.isAdmin) return false;
+    return getRemainingEditWindowMs(chat) > 0;
+}
+
+function formatWindowMinutesLeft(ms) {
+    const mins = Math.max(1, Math.ceil(ms / 60000));
+    return `${mins}m left`;
+}
+
+async function patchChatMessage(chatId, text) {
+    const userId = getCurrentUserId();
+    if (!userId || !chatId) return { ok: false };
+    const res = await fetch(`${API_URL}/chats/${encodeURIComponent(chatId)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, text })
+    });
+    if (!res.ok) {
+        const payload = await res.json().catch(() => ({}));
+        return { ok: false, error: payload?.error || 'Could not edit post.' };
+    }
+    return { ok: true, data: await res.json() };
+}
+
+async function removeChatMessage(chatId) {
+    const userId = getCurrentUserId();
+    if (!userId || !chatId) return { ok: false };
+    const res = await fetch(`${API_URL}/chats/${encodeURIComponent(chatId)}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId })
+    });
+    if (!res.ok) {
+        const payload = await res.json().catch(() => ({}));
+        return { ok: false, error: payload?.error || 'Could not delete post.' };
+    }
+    return { ok: true };
 }
 
 document.addEventListener('click', (e) => {
@@ -986,7 +1036,14 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
 
     const menuPanel = document.createElement('div');
     menuPanel.className = 'report-card__menu';
-    menuPanel.innerHTML = '<button type="button" class="report-card__menu-item" data-action="share">Share post link</button><button type="button" class="report-card__menu-item" data-action="mute-user">Mute this person</button><button type="button" class="report-card__menu-item" data-action="mute-post">Mute this post</button><button type="button" class="report-card__menu-item" data-action="bookmark">Save as bookmark</button>';
+    const canManage = canManageOwnPost(chat, isOwn);
+    const remainingMs = getRemainingEditWindowMs(chat);
+    const ownActions = isOwn
+        ? (canManage
+            ? `<button type="button" class="report-card__menu-item" data-action="edit">Edit post (${formatWindowMinutesLeft(remainingMs)})</button><button type="button" class="report-card__menu-item report-card__menu-item--danger" data-action="delete">Delete post</button>`
+            : '<button type="button" class="report-card__menu-item" disabled>Your edit/delete window has ended</button>')
+        : '';
+    menuPanel.innerHTML = `${ownActions}<button type="button" class="report-card__menu-item" data-action="share">Share post link</button><button type="button" class="report-card__menu-item" data-action="mute-user">Mute this person</button><button type="button" class="report-card__menu-item" data-action="mute-post">Mute this post</button><button type="button" class="report-card__menu-item" data-action="bookmark">Save as bookmark</button>`;
     menuWrap.appendChild(menuPanel);
     headActions.appendChild(menuWrap);
 
@@ -995,6 +1052,7 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
         const nextOpen = !menuWrap.classList.contains('is-open');
         closeAllReportCardMenus(nextOpen ? menuWrap : null);
         menuWrap.classList.toggle('is-open', nextOpen);
+        el.classList.toggle('report-card--menu-open', nextOpen);
         flashIconRing(menuBtn);
     });
 
@@ -1003,6 +1061,57 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
         if (!btn) return;
         const action = btn.getAttribute('data-action');
         const reportId = getReportId(chat);
+
+        if (action === 'edit') {
+            const latestRemainingMs = getRemainingEditWindowMs(chat);
+            if (latestRemainingMs <= 0) {
+                window.lwToast?.('Edit window expired (15 minutes).');
+                menuWrap.classList.remove('is-open');
+                el.classList.remove('report-card--menu-open');
+                return;
+            }
+
+            const parsed = parseLightStatus(chat.text || '');
+            const nextText = window.prompt('Edit your post', parsed.text || cleanText || '') ;
+            if (nextText === null) {
+                menuWrap.classList.remove('is-open');
+                el.classList.remove('report-card--menu-open');
+                return;
+            }
+            const normalized = String(nextText).trim();
+            const nextRawText = parsed.status ? `${LIGHT_STATUS_PREFIX[parsed.status] || ''}${normalized || '\u200B'}` : normalized;
+
+            const updated = await patchChatMessage(reportId, nextRawText);
+            if (!updated.ok) {
+                window.lwToast?.(updated.error || 'Could not edit post.');
+            } else {
+                window.lwToast?.('Post updated.');
+                await loadChatHistory();
+            }
+        }
+
+        if (action === 'delete') {
+            const latestRemainingMs = getRemainingEditWindowMs(chat);
+            if (latestRemainingMs <= 0) {
+                window.lwToast?.('Delete window expired (15 minutes).');
+                menuWrap.classList.remove('is-open');
+                el.classList.remove('report-card--menu-open');
+                return;
+            }
+            const confirmed = window.confirm('Delete this post? This cannot be undone.');
+            if (!confirmed) {
+                menuWrap.classList.remove('is-open');
+                el.classList.remove('report-card--menu-open');
+                return;
+            }
+            const deleted = await removeChatMessage(reportId);
+            if (!deleted.ok) {
+                window.lwToast?.(deleted.error || 'Could not delete post.');
+            } else {
+                window.lwToast?.('Post deleted.');
+                await loadChatHistory();
+            }
+        }
 
         if (action === 'share') {
             const base = new URL(window.location.href);
@@ -1041,6 +1150,7 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
         }
 
         menuWrap.classList.remove('is-open');
+        el.classList.remove('report-card--menu-open');
     });
 
     if (isReportBookmarked(getReportId(chat))) {

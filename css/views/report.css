@@ -1425,6 +1425,12 @@ body.lw-chat-community-mode #view-chat .community-banner {
   border: 1px solid var(--border-soft);
   box-shadow: none;
   position: relative;
+  overflow: visible;
+  z-index: 1;
+}
+
+#view-chat .chat-message.report-card.report-card--menu-open {
+  z-index: 32;
 }
 
 #view-chat .chat-message.report-card * {
@@ -1591,6 +1597,11 @@ body.lw-chat-community-mode #view-chat .community-banner {
 
 #view-chat .report-card__menu-wrap {
   position: relative;
+  z-index: 2;
+}
+
+#view-chat .report-card__menu-wrap.is-open {
+  z-index: 40;
 }
 
 #view-chat .report-card__menu {
@@ -1606,7 +1617,7 @@ body.lw-chat-community-mode #view-chat .community-banner {
   border: 1px solid var(--border-soft);
   background: color-mix(in srgb, var(--bg-panel) 95%, black 5%);
   box-shadow: 0 14px 30px rgba(0, 0, 0, 0.23);
-  z-index: 8;
+  z-index: 50;
   opacity: 0;
   transform: translateY(-6px) scale(0.96);
   transform-origin: top right;
@@ -1637,6 +1648,15 @@ body.lw-chat-community-mode #view-chat .community-banner {
 #view-chat .report-card__menu-item:focus-visible {
   background: color-mix(in srgb, var(--brand2) 10%, var(--bg-panel-raised));
   border-color: color-mix(in srgb, var(--brand2) 32%, var(--border-soft));
+}
+
+#view-chat .report-card__menu-item[disabled] {
+  opacity: 0.72;
+  cursor: default;
+}
+
+#view-chat .report-card__menu-item--danger {
+  color: var(--status-red, #f24f62);
 }
 
 #view-chat .report-card__text {
@@ -2037,6 +2057,7 @@ body.lw-chat-community-mode #view-chat .community-banner {
 #view-chat .chat-thread {
   gap: 12px;
   padding: 2px 2px 2px 0;
+  overflow: visible;
 }
 
 @media (min-width: 769px) {
