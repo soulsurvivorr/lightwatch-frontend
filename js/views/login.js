@@ -128,9 +128,6 @@
             return;
         }
 
-        const controller = new AbortController();
-        const timeoutId = window.setTimeout(() => controller.abort(), 10000);
-
         sendCodeBtn.disabled = true;
         sendCodeBtn.textContent = 'Sending…';
 
@@ -138,8 +135,7 @@
             const response = await fetch(`${API_URL}/signin`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ emailPhone: loginInput }),
-                signal: controller.signal
+                body: JSON.stringify({ emailPhone: loginInput })
             });
 
             let result = {};
@@ -172,12 +168,8 @@
 
         } catch (err) {
             console.error("Login fetch error:", err);
-            const isAbort = err?.name === 'AbortError';
-            errorMsg.textContent = isAbort
-                ? 'The request timed out. Please try again.'
-                : `Connection failed to ${API_URL}. Is the server running?`;
+            errorMsg.textContent = `Connection failed to ${API_URL}. Is the server running?`;
         } finally {
-            window.clearTimeout(timeoutId);
             sendCodeBtn.disabled = false;
             sendCodeBtn.textContent = 'Send code';
         }

@@ -91,6 +91,53 @@
         }
     }
 
+    async function requestNativePermissionsAfterOnboarding() {
+        const isNativeAndroid = Boolean(
+            window.Capacitor &&
+            typeof window.Capacitor.isNativePlatform === 'function' &&
+            window.Capacitor.isNativePlatform() &&
+            window.Capacitor.getPlatform &&
+            window.Capacitor.getPlatform() === 'android'
+        );
+
+        if (!isNativeAndroid) return;
+        if (localStorage.getItem('lw_post_onboarding_permissions_prompted') === '1') return;
+
+        try { localStorage.setItem('lw_post_onboarding_permissions_prompted', '1'); } catch {}
+
+        const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+        try {
+            const pushPlugin = window.Capacitor?.Plugins?.PushNotifications;
+            if (pushPlugin?.requestPermissions) {
+                await pushPlugin.requestPermissions();
+            } else if (typeof window.enableLightWatchPush === 'function') {
+                await window.enableLightWatchPush();
+            }
+        } catch {}
+
+        await wait(250);
+
+        if (navigator.geolocation?.getCurrentPosition) {
+            await new Promise(resolve => {
+                navigator.geolocation.getCurrentPosition(
+                    () => resolve(),
+                    () => resolve(),
+                    { enableHighAccuracy: true, timeout: 5000 }
+                );
+            });
+        }
+
+        await wait(250);
+
+        if (navigator.mediaDevices?.getUserMedia) {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+                stream.getTracks().forEach(track => track.stop());
+            } catch {}
+        }
+    }
+
     function closeOnboarding() {
         const overlay = document.getElementById('onboardingOverlay');
         if (!overlay) return;
@@ -100,7 +147,10 @@
         // remove page scroll lock when closing
         document.documentElement.classList.remove('lw-onboarding-open');
         document.body.classList.remove('lw-onboarding-open');
-        setTimeout(() => { overlay.hidden = true; }, 150);
+        setTimeout(() => {
+            overlay.hidden = true;
+            void requestNativePermissionsAfterOnboarding();
+        }, 150);
         window.dispatchEvent(new CustomEvent('lw-onboarding-closed'));
     }
 
