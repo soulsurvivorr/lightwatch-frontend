@@ -963,6 +963,7 @@ html[data-theme="light"] .chat-message__text {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  width: 100%;
   gap: 12px;
 }
 
@@ -1142,13 +1143,15 @@ html[data-theme="device"] #view-chat .community-banner__icon-btn {
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
+  justify-content: space-between;
+  width: 100%;
   min-height: 36px;
   gap: 6px;
 }
 
 #view-chat .community-composer__top > .community-composer__input {
-  align-self: flex-end;
-  margin-bottom: 1px;
+  align-self: center;
+  margin: -8px 0 0 0;
 }
 
 #view-chat .community-composer__top > .chat-reply-preview {
@@ -1228,9 +1231,10 @@ html[data-theme="device"] #view-chat .community-banner__icon-btn {
   border: none;
   border-radius: 0;
   background: transparent;
-  padding: 1px 0;
+  box-sizing: border-box;
+  padding: 15px 0 2px;
   min-height: 20px;
-  line-height: 1.4;
+  line-height: 1.2;
   color: var(--text-bright);
   font-size: 0.82rem;
 }
