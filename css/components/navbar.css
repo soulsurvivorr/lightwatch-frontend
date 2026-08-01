@@ -10,7 +10,7 @@
      --bottom-nav-surface (the bottom nav's lighter gray-blue "raised
      pill" token) instead, which is why the topbar visibly read as a
      different, lighter shade than the rest of the page on Home. */
-  background: linear-gradient(180deg, var(--dark-bg), var(--dark-bg-mid));
+  background: linear-gradient(145deg, color-mix(in srgb, var(--dark-bg) 86%, #0a1220), color-mix(in srgb, var(--dark-bg-mid) 88%, #15253b));
   backdrop-filter: blur(6px);
   width: 100%;
   position: sticky;
@@ -34,7 +34,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 24px 0;
+  padding: 14px 24px 6px;
   gap: 24px;
 }
 
@@ -85,21 +85,24 @@
 }
 
 .nav__link {
-  padding: 8px 14px;
-  border-radius: var(--radius-sm);
+  padding: 9px 14px;
+  border-radius: 999px;
+  border: 1px solid transparent;
   font-size: 0.92rem;
-  color: white;
-  transition: background 0.15s ease, color 0.15s ease;
+  color: rgba(255, 255, 255, 0.86);
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
 .nav__link:hover {
-  background: var(--bg-panel-raised);
+  background: color-mix(in srgb, var(--bg-panel-raised) 84%, transparent);
+  border-color: color-mix(in srgb, var(--brand2) 30%, var(--border-soft));
   color: var(--text-bright);
 }
 
 .nav__link--active {
-  color: var(--teal);
-  background: var(--teal-dim);
+  color: #f5fdff;
+  border-color: color-mix(in srgb, var(--brand2) 48%, var(--border-soft));
+  background: linear-gradient(135deg, color-mix(in srgb, var(--brand2) 52%, #0a1827), color-mix(in srgb, var(--teal) 44%, #0b1420));
 }
 
 .topbar__user {

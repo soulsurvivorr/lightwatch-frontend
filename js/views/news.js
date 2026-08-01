@@ -23,6 +23,109 @@
 // ============================================================
 
 (function () {
+    function ensurePullRefreshHelpers() {
+        if (window.LWPullRefresh && typeof window.LWPullRefresh.attach === 'function') {
+            return window.LWPullRefresh;
+        }
+
+        function attach(opts) {
+            const {
+                id,
+                container,
+                shouldStart,
+                onRefresh,
+                trigger = 80,
+                max = 116,
+                spinnerClass = 'community-pull-refresh'
+            } = opts || {};
+            if (!id || !container || typeof shouldStart !== 'function' || typeof onRefresh !== 'function') return null;
+
+            const refreshEl = document.createElement('div');
+            refreshEl.className = spinnerClass;
+            refreshEl.dataset.pullRefreshId = id;
+            refreshEl.setAttribute('aria-hidden', 'true');
+            refreshEl.innerHTML = '<div class="community-pull-refresh__orb"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.2-5.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M20 5v3.7h-3.7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>';
+            container.insertAdjacentElement('afterend', refreshEl);
+
+            let startY = 0;
+            let dist = 0;
+            let active = false;
+            let lock = false;
+            let refreshing = false;
+
+            function paint(distance) {
+                const clamped = Math.max(0, Math.min(max, distance));
+                const progress = Math.max(0, Math.min(1, clamped / trigger));
+                refreshEl.classList.add('is-pulling');
+                refreshEl.style.setProperty('--pull-distance', `${clamped}px`);
+                refreshEl.style.setProperty('--pull-progress', progress.toFixed(3));
+                refreshEl.classList.toggle('is-ready', clamped >= trigger);
+            }
+
+            function clear() {
+                refreshEl.classList.remove('is-pulling', 'is-ready');
+                refreshEl.style.setProperty('--pull-distance', '0px');
+                refreshEl.style.setProperty('--pull-progress', '0');
+            }
+
+            async function runRefresh() {
+                if (refreshing) return;
+                refreshing = true;
+                refreshEl.classList.add('is-refreshing');
+                try { await Promise.resolve(onRefresh()); } catch {}
+                setTimeout(() => {
+                    refreshEl.classList.remove('is-refreshing');
+                    refreshing = false;
+                }, 220);
+            }
+
+            window.addEventListener('touchstart', (e) => {
+                if (!e.touches || e.touches.length !== 1) return;
+                if (refreshing || !shouldStart(e.target)) {
+                    clear();
+                    return;
+                }
+                startY = e.touches[0].clientY;
+                dist = 0;
+                active = true;
+                lock = false;
+            }, { passive: true });
+
+            window.addEventListener('touchmove', (e) => {
+                if (!active || !e.touches || e.touches.length !== 1) return;
+                const dy = e.touches[0].clientY - startY;
+                if (dy <= 0) {
+                    clear();
+                    return;
+                }
+                dist = dy;
+                if (dy > 8) lock = true;
+                paint(dy);
+                if (lock) e.preventDefault();
+            }, { passive: false });
+
+            window.addEventListener('touchend', async () => {
+                if (!active) return;
+                const should = dist >= trigger;
+                clear();
+                active = false;
+                lock = false;
+                if (should) await runRefresh();
+            });
+
+            window.addEventListener('touchcancel', () => {
+                clear();
+                active = false;
+                lock = false;
+            });
+
+            return refreshEl;
+        }
+
+        window.LWPullRefresh = { attach };
+        return window.LWPullRefresh;
+    }
+
     const NEWS_CACHE_KEY = 'lw_cache_news_feed';
     const NEWS_CACHE_MAX_AGE_MS = 3 * 60 * 1000;   // 3 min — articles refresh server-side every 15-30 min anyway
     const NEWS_POLL_INTERVAL_MS = 5 * 60 * 1000;   // re-check while the tab is open
@@ -403,12 +506,62 @@
         else stopNewsPolling();
     }
 
+    function setupNewsPullRefresh() {
+        const panel = document.getElementById('reportPanelNews');
+        const header = panel?.querySelector('.news-page-header');
+        if (!panel || !header || document.querySelector('[data-pull-refresh-id="news"]')) return;
+
+        const pull = ensurePullRefreshHelpers();
+        pull.attach({
+            id: 'news',
+            container: header,
+            shouldStart: (target) => {
+                const view = document.getElementById('view-chat');
+                if (!view || view.hidden || panel.hidden) return false;
+                if ((window.scrollY || window.pageYOffset || 0) > 2) return false;
+                const t = target && target.nodeType === 1 ? target : null;
+                return !(t && t.closest('button,a,input,textarea,[contenteditable="true"]'));
+            },
+            onRefresh: async () => {
+                await Promise.resolve(loadNews(false));
+                window.lwToast?.('Refreshing news...');
+            }
+        });
+    }
+
+    function setupHomePullRefresh() {
+        const section = document.getElementById('view-home');
+        const header = section?.querySelector('.lw-home-header');
+        if (!section || !header || document.querySelector('[data-pull-refresh-id="home"]')) return;
+
+        const pull = ensurePullRefreshHelpers();
+        pull.attach({
+            id: 'home',
+            container: header,
+            shouldStart: (target) => {
+                if (section.hidden) return false;
+                if ((window.scrollY || window.pageYOffset || 0) > 2) return false;
+                const t = target && target.nodeType === 1 ? target : null;
+                return !(t && t.closest('button,a,input,textarea,[contenteditable="true"]'));
+            },
+            onRefresh: async () => {
+                if (window.LWLightStatus && typeof window.LWLightStatus.refreshNow === 'function') {
+                    await Promise.resolve(window.LWLightStatus.refreshNow());
+                }
+                await Promise.resolve(loadNews(false));
+                window.lwToast?.('Refreshing home updates...');
+            }
+        });
+    }
+
     window.addEventListener('lw:route-changed', syncPollingToVisibility);
 
     document.addEventListener('DOMContentLoaded', () => {
         bindCardInteractions();
         bindCategoryTabs();
         observeVisibility();
+        setupNewsPullRefresh();
+        setupHomePullRefresh();
         syncPollingToVisibility();
     });
 })();

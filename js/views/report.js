@@ -311,6 +311,9 @@ if (chatHandleDisplay) chatHandleDisplay.textContent = myHandle;
 let myAvatarImage = null;
 
 let composerMediaDataUrl = null;
+const COMPOSER_MEDIA_MAX_DATA_URL_LENGTH = 1_100_000;
+const COMPOSER_MEDIA_MAX_UPLOAD_BYTES = 8_000_000;
+const COMPOSER_MEDIA_MAX_DIMENSION = 1400;
 const mediaPickerInput = document.createElement('input');
 mediaPickerInput.type = 'file';
 mediaPickerInput.accept = 'image/*';
@@ -329,7 +332,11 @@ composerMediaRemove.className = 'community-composer__media-remove';
 composerMediaRemove.setAttribute('aria-label', 'Remove selected media');
 composerMediaRemove.textContent = 'Remove';
 composerMediaPreview.appendChild(composerMediaRemove);
-communityComposerTop?.appendChild(composerMediaPreview);
+if (communityComposerTop && communityComposerTop.parentElement) {
+    communityComposerTop.insertAdjacentElement('afterend', composerMediaPreview);
+} else {
+    chatForm?.appendChild(composerMediaPreview);
+}
 
 try {
     const rawCachedUser = localStorage.getItem('currentUserData') || sessionStorage.getItem('currentUserData');
@@ -382,6 +389,93 @@ function openMediaPicker(mode) {
         mediaPickerInput.removeAttribute('capture');
     }
     mediaPickerInput.click();
+}
+
+function readFileAsDataUrl(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ''));
+        reader.onerror = () => reject(new Error('read-failed'));
+        reader.readAsDataURL(file);
+    });
+}
+
+function loadImageFromDataUrl(dataUrl) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error('image-decode-failed'));
+        img.src = dataUrl;
+    });
+}
+
+function fitImageWithinBounds(width, height, maxDimension) {
+    if (!width || !height) return { width: maxDimension, height: maxDimension };
+    const scale = Math.min(1, maxDimension / Math.max(width, height));
+    return {
+        width: Math.max(1, Math.round(width * scale)),
+        height: Math.max(1, Math.round(height * scale))
+    };
+}
+
+async function prepareComposerImageDataUrl(file) {
+    if (!file || !file.type.startsWith('image/')) {
+        return { error: 'Please choose an image from camera or gallery.' };
+    }
+
+    if (file.size > COMPOSER_MEDIA_MAX_UPLOAD_BYTES) {
+        return { error: 'Image is too large. Choose one under 8MB.' };
+    }
+
+    const originalDataUrl = await readFileAsDataUrl(file).catch(() => '');
+    if (!originalDataUrl || !/^data:image\//i.test(originalDataUrl)) {
+        return { error: 'Could not read image. Try another one.' };
+    }
+
+    if (originalDataUrl.length <= COMPOSER_MEDIA_MAX_DATA_URL_LENGTH) {
+        return { dataUrl: originalDataUrl };
+    }
+
+    const image = await loadImageFromDataUrl(originalDataUrl).catch(() => null);
+    if (!image) {
+        return { error: 'Could not process image. Try another one.' };
+    }
+
+    const fitted = fitImageWithinBounds(image.naturalWidth, image.naturalHeight, COMPOSER_MEDIA_MAX_DIMENSION);
+    const canvas = document.createElement('canvas');
+    canvas.width = fitted.width;
+    canvas.height = fitted.height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+        return { error: 'Could not process image. Try another one.' };
+    }
+    ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+    let best = '';
+    for (const quality of [0.9, 0.82, 0.74, 0.66, 0.58]) {
+        const candidate = canvas.toDataURL('image/jpeg', quality);
+        if (!best || candidate.length < best.length) best = candidate;
+        if (candidate.length <= COMPOSER_MEDIA_MAX_DATA_URL_LENGTH) {
+            return { dataUrl: candidate };
+        }
+    }
+
+    // Last attempt: shrink dimensions further once if still above cap.
+    const shrinkCanvas = document.createElement('canvas');
+    shrinkCanvas.width = Math.max(1, Math.round(canvas.width * 0.8));
+    shrinkCanvas.height = Math.max(1, Math.round(canvas.height * 0.8));
+    const shrinkCtx = shrinkCanvas.getContext('2d');
+    if (shrinkCtx) {
+        shrinkCtx.drawImage(canvas, 0, 0, shrinkCanvas.width, shrinkCanvas.height);
+        const finalAttempt = shrinkCanvas.toDataURL('image/jpeg', 0.62);
+        if (!best || finalAttempt.length < best.length) best = finalAttempt;
+    }
+
+    if (best && best.length <= COMPOSER_MEDIA_MAX_DATA_URL_LENGTH) {
+        return { dataUrl: best };
+    }
+
+    return { error: 'Image is still too large after compression. Choose a smaller one.' };
 }
 
 function resetPullRefreshVisual() {
@@ -486,32 +580,14 @@ mediaPickerInput.addEventListener('change', async () => {
     const [file] = mediaPickerInput.files || [];
     if (!file) return;
 
-    if (!file.type.startsWith('image/')) {
-        window.lwToast?.('Please choose an image from camera or gallery.');
+    const prepared = await prepareComposerImageDataUrl(file);
+    if (!prepared.dataUrl) {
+        window.lwToast?.(prepared.error || 'Could not process image. Try another one.');
         clearComposerMedia();
         return;
     }
 
-    if (file.size > 900_000) {
-        window.lwToast?.('Image too large. Use one under 900KB.');
-        clearComposerMedia();
-        return;
-    }
-
-    const dataUrl = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result || ''));
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-    }).catch(() => null);
-
-    if (!dataUrl || !/^data:image\//i.test(String(dataUrl))) {
-        window.lwToast?.('Could not read image. Try another one.');
-        clearComposerMedia();
-        return;
-    }
-
-    composerMediaDataUrl = String(dataUrl);
+    composerMediaDataUrl = String(prepared.dataUrl);
     updateComposerMediaPreview();
 });
 
@@ -842,6 +918,7 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
     const repost = chat.repost && chat.repost.chatId ? chat.repost : null;
     let repostTagEl = null;
     if (repost) {
+        el.classList.add('report-card--reposted');
         repostTagEl = document.createElement('div');
         repostTagEl.className = 'report-card__repost-tag';
         repostTagEl.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M7 7h8a3 3 0 0 1 3 3v2M17 17H9a3 3 0 0 1-3-3v-2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="m5 9 2-2 2 2M19 15l-2 2-2-2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span></span>';
@@ -1097,8 +1174,6 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
             repostStat.classList.add('is-reposted');
             const countEl = repostStat.querySelector('.report-card__stat-count');
             if (countEl) countEl.textContent = String(Number(countEl.textContent || 0) + 1);
-            const repostSnippet = (cleanText || '').trim();
-            window.lwToast?.(`${myHandle || 'A user'} reposted this: ${repostSnippet ? repostSnippet.slice(0, 80) : 'a community update'}`);
         }
     });
 

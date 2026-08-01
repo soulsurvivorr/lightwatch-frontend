@@ -798,7 +798,13 @@ window.LWLightStatus = {
     },
     animateIcon: animateIconDecision,
     applyIconState: applyPrimaryStatusIconState,
-    formatRelativeTime
+    formatRelativeTime,
+    async refreshNow() {
+        if (currentLocation) {
+            await Promise.resolve(fetchPrimaryLightStatus());
+            await Promise.resolve(refreshLocationPanel());
+        }
+    }
 };
 
 window.addEventListener('lw:route-changed', (e) => {

@@ -1004,6 +1004,8 @@ body.lw-chat-community-mode #view-chat .community-banner {
   pointer-events: none;
   height: 0;
   margin-top: 0;
+  position: relative;
+  z-index: 14;
   transform: translateY(calc((var(--pull-distance) - 36px) * 0.42));
   opacity: 0;
   transition: opacity 0.16s ease, transform 0.16s ease;
@@ -1026,6 +1028,8 @@ body.lw-chat-community-mode #view-chat .community-banner {
   justify-content: center;
   color: color-mix(in srgb, var(--brand2) 78%, var(--text-bright));
   transform: scale(calc(0.78 + var(--pull-progress) * 0.22));
+  position: relative;
+  z-index: 2;
 }
 
 #view-chat .community-pull-refresh__orb svg {
@@ -1168,29 +1172,38 @@ body.lw-chat-community-mode #view-chat .community-banner {
 
 #view-chat .community-composer__media-preview {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-left: 2px;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  margin: 2px 0 0;
+  padding: 8px 9px;
+  border: 1px solid color-mix(in srgb, var(--brand2) 30%, var(--border-soft));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--brand2) 8%, var(--bg-panel));
 }
 
 #view-chat .community-composer__media-preview img {
-  width: 56px;
-  height: 56px;
+  width: auto;
+  max-width: min(68vw, 220px);
+  max-height: 150px;
   border-radius: 10px;
-  object-fit: cover;
+  object-fit: contain;
   border: 1px solid var(--border-soft);
   display: block;
+  background: color-mix(in srgb, black 24%, transparent);
 }
 
 #view-chat .community-composer__media-remove {
   border: 1px solid var(--border-soft);
-  background: var(--bg-panel-raised);
-  color: var(--text-faint);
+  background: color-mix(in srgb, var(--bg-panel-raised) 90%, black 10%);
+  color: var(--text-bright);
   border-radius: 999px;
-  padding: 5px 9px;
-  font-size: 0.7rem;
+  padding: 6px 10px;
+  font-size: 0.72rem;
   font-weight: 700;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 #view-chat .community-composer__media-remove:hover {
@@ -1424,7 +1437,11 @@ body.lw-chat-community-mode #view-chat .community-banner {
 }
 
 #view-chat .chat-message.report-card.chat-message--own {
-  border-left: 3px solid var(--teal);
+  border-left: none;
+}
+
+#view-chat .chat-message.report-card.report-card--reposted {
+  border-left: 3px solid color-mix(in srgb, var(--status-green, #2fbf6e) 72%, #8ff4be);
 }
 
 #view-chat .chat-message.report-card.chat-message--admin {

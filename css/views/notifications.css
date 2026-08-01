@@ -701,6 +701,19 @@
 .notif-card__icon--teal { background: color-mix(in srgb, var(--notif-teal) 18%, transparent); color: var(--notif-teal); }
 .notif-card__icon--purple { background: color-mix(in srgb, var(--notif-purple) 16%, transparent); color: var(--notif-purple); }
 
+.notif-card__icon--amber {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  padding: 2px;
+}
+
+.notif-card__icon--amber svg {
+  width: 30px;
+  height: 30px;
+  display: block;
+}
+
 /* ---- Mention avatar (initials, since notification authors don't
    carry a real profile-photo URL from the server) ---- */
 .notif-card__avatar {

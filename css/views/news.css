@@ -56,6 +56,28 @@
   background: radial-gradient(circle at 24% 20%, rgba(255, 255, 255, 0.12) 0, transparent 42%), linear-gradient(145deg, rgba(255, 255, 255, 0.06), rgba(0, 0, 0, 0.2));
 }
 
+.news-item__media-fallback::before,
+.news-item__media-fallback::after {
+  content: "";
+  position: absolute;
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+.news-item__media-fallback::before {
+  width: 72px;
+  height: 72px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.22), transparent 68%);
+  transform: translate(-26px, -18px);
+}
+
+.news-item__media-fallback::after {
+  width: 58px;
+  height: 58px;
+  border: 1px dashed rgba(255, 255, 255, 0.24);
+  transform: translate(24px, 16px);
+}
+
 .news-item__media-fallback svg {
   width: 28px;
   height: 28px;
@@ -244,6 +266,89 @@
   color: #fff;
   border-color: color-mix(in srgb, var(--brand2) 60%, var(--border-soft));
   background: linear-gradient(135deg, color-mix(in srgb, var(--brand2) 78%, #08131f), color-mix(in srgb, var(--brand) 62%, #061019));
+}
+
+.news-page-header {
+  background: linear-gradient(140deg, color-mix(in srgb, var(--brand2) 24%, #091423), color-mix(in srgb, var(--brand) 18%, #0b1420));
+  border: 1px solid color-mix(in srgb, var(--brand2) 34%, var(--border-soft));
+  border-radius: var(--radius-md);
+  padding: 14px 16px 12px;
+  margin-bottom: 10px;
+  box-shadow: 0 14px 28px rgba(4, 9, 20, 0.24);
+}
+
+.news-page-header__title {
+  margin: 0;
+  font-size: 1.18rem;
+  color: #f4fbff;
+  font-family: var(--font-display);
+}
+
+.news-page-header__sub {
+  margin: 5px 0 0;
+  font-size: 0.8rem;
+  color: rgba(235, 244, 255, 0.72);
+}
+
+#view-chat .community-pull-refresh[data-pull-refresh-id="news"],
+#view-home .community-pull-refresh[data-pull-refresh-id="home"] {
+  --pull-distance: 0px;
+  --pull-progress: 0;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  height: 0;
+  position: relative;
+  z-index: 14;
+  transform: translateY(calc((var(--pull-distance) - 36px) * 0.42));
+  opacity: 0;
+  transition: opacity 0.16s ease, transform 0.16s ease;
+}
+
+#view-chat .community-pull-refresh[data-pull-refresh-id="news"].is-pulling,
+#view-chat .community-pull-refresh[data-pull-refresh-id="news"].is-refreshing,
+#view-home .community-pull-refresh[data-pull-refresh-id="home"].is-pulling,
+#view-home .community-pull-refresh[data-pull-refresh-id="home"].is-refreshing {
+  opacity: 1;
+}
+
+#view-chat .community-pull-refresh[data-pull-refresh-id="news"] .community-pull-refresh__orb,
+#view-home .community-pull-refresh[data-pull-refresh-id="home"] .community-pull-refresh__orb {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--brand2) 48%, var(--border-soft));
+  background: color-mix(in srgb, var(--bg-panel) 88%, black 12%);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.16);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: color-mix(in srgb, var(--brand2) 78%, var(--text-bright));
+  transform: scale(calc(0.78 + var(--pull-progress) * 0.22));
+}
+
+#view-chat .community-pull-refresh[data-pull-refresh-id="news"] .community-pull-refresh__orb svg,
+#view-home .community-pull-refresh[data-pull-refresh-id="home"] .community-pull-refresh__orb svg {
+  width: 18px;
+  height: 18px;
+  transform: rotate(calc(var(--pull-progress) * 320deg));
+}
+
+#view-chat .community-pull-refresh[data-pull-refresh-id="news"].is-ready .community-pull-refresh__orb,
+#view-home .community-pull-refresh[data-pull-refresh-id="home"].is-ready .community-pull-refresh__orb {
+  border-color: color-mix(in srgb, var(--teal) 56%, var(--border-soft));
+  color: var(--teal);
+}
+
+#view-chat .community-pull-refresh[data-pull-refresh-id="news"].is-refreshing,
+#view-home .community-pull-refresh[data-pull-refresh-id="home"].is-refreshing {
+  transform: translateY(0);
+}
+
+#view-chat .community-pull-refresh[data-pull-refresh-id="news"].is-refreshing .community-pull-refresh__orb svg,
+#view-home .community-pull-refresh[data-pull-refresh-id="home"].is-refreshing .community-pull-refresh__orb svg {
+  animation: community-pull-refresh-spin 0.78s linear infinite;
+  transform: rotate(0deg);
 }
 
 .news-item__source-tag {
