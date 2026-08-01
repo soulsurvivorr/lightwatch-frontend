@@ -1,10 +1,29 @@
 /* Small helper styles for nav / view transition polish */
-.nav__link{transition:background-color .22s ease, transform .22s cubic-bezier(.2,.9,.3,1)}
-.nav__link--active{background:rgba(255,255,255,0.02);transform:translateY(-2px)}
+.nav__link {
+	transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.nav__link--active {
+	background: rgba(255, 255, 255, 0.02);
+	transform: none;
+}
+
+.nav__link:active {
+	transform: translateY(1px);
+}
 
 /* Bottom nav indicators */
-.bottom-nav-link{transition:transform .18s ease}
-.bottom-nav-link--active{transform:translateY(-4px)}
+.bottom-nav-link {
+	transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.bottom-nav-link--active {
+	transform: none;
+}
+
+.bottom-nav-link:active {
+	transform: translateY(1px);
+}
 
 /* Fallback visual when Web Animations not supported: fade-in */
 .view-fallback-fade{animation:lwFadeIn .26s ease both}

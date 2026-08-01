@@ -43,6 +43,14 @@ const communitySearchBtn = document.getElementById('communitySearchBtn');
 const communitySortBtn = document.getElementById('communitySortBtn');
 const communityNearbyBtn = document.getElementById('communityNearbyBtn');
 
+// Keep Post inline with the textarea on Community Report (requested
+// mobile-native composer layout) even though the static markup places
+// it in the lower row.
+const communityComposerTop = document.querySelector('#chatForm .community-composer__top');
+if (communityComposerTop && chatSendBtn && chatSendBtn.parentElement !== communityComposerTop) {
+    communityComposerTop.appendChild(chatSendBtn);
+}
+
 const CHAT_SCOPE_KEY = 'lw_chat_scope_pref';
 const CHAT_SCOPE_LOCAL = 'local';
 const CHAT_SCOPE_GLOBAL = 'global';
@@ -444,6 +452,20 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
     const { status: lightStatus, text: cleanText } = parseLightStatus(chat.text);
     if (lightStatus) el.classList.add(`report-card--${lightStatus}`);
 
+    // ---- Repost strapline, if this card is a repost of someone else's
+    // report. The card's main content (author/status/text below) still
+    // belongs to the ORIGINAL post — chat.repost.handle — while
+    // chat.handle is whoever reposted it, called out in the strapline.
+    const repost = chat.repost && chat.repost.chatId ? chat.repost : null;
+    let repostTagEl = null;
+    if (repost) {
+        repostTagEl = document.createElement('div');
+        repostTagEl.className = 'report-card__repost-tag';
+        repostTagEl.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M7 7h8a3 3 0 0 1 3 3v2M17 17H9a3 3 0 0 1-3-3v-2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="m5 9 2-2 2 2M19 15l-2 2-2-2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span></span>';
+        repostTagEl.querySelector('span').textContent = `${chat.handle || 'Someone'} reposted`;
+    }
+    const displayHandle = (repost && repost.handle) ? repost.handle : chat.handle;
+
     // ---- Head row: avatar, name + location/time, status badge, menu ----
     const head = document.createElement('div');
     head.className = 'report-card__head';
@@ -458,7 +480,7 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
 
     const author = document.createElement('span');
     author.className   = "report-card__name";
-    author.textContent = chat.isAdmin ? `📢 ${chat.handle}` : chat.handle;
+    author.textContent = chat.isAdmin ? `📢 ${displayHandle}` : displayHandle;
 
     const meta = document.createElement('span');
     meta.className = 'report-card__meta';
@@ -488,22 +510,15 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
         headActions.appendChild(badge);
     }
 
+    // "More options" only now — actually replying lives in the Reply
+    // stat button below (see commentStat), which opens an inline box
+    // right under this card instead of jumping up to the page's main
+    // composer.
     const menuBtn = document.createElement('button');
     menuBtn.type = 'button';
     menuBtn.className = 'report-card__menu-btn';
     menuBtn.setAttribute('aria-label', 'More options');
     menuBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="5" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="19" r="1.6" fill="currentColor"/></svg>';
-    menuBtn.addEventListener('click', () => {
-        replyTarget = {
-            chatId: chat._id || chat.id || '',
-            handle: chat.handle || 'someone',
-            text: cleanText || ''
-        };
-        if (chatReplyHandle) chatReplyHandle.textContent = replyTarget.handle;
-        if (chatReplyText) chatReplyText.textContent = replyTarget.text;
-        if (chatReplyPreview) chatReplyPreview.hidden = false;
-        chatInput?.focus();
-    });
     headActions.appendChild(menuBtn);
 
     head.appendChild(avatar);
@@ -532,6 +547,22 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
 
         replyEl.appendChild(replyHandleEl);
         replyEl.appendChild(replyTextEl);
+    }
+
+    // ---- Quoted preview, if this card quotes another report ----
+    let quotedEl = null;
+    const quote = chat.quote && (chat.quote.handle || chat.quote.text) ? chat.quote : null;
+    if (quote) {
+        quotedEl = document.createElement('div');
+        quotedEl.className = 'report-card__quoted';
+        const qHead = document.createElement('div');
+        qHead.className = 'report-card__quoted-head';
+        qHead.textContent = quote.handle || 'someone';
+        const qText = document.createElement('p');
+        qText.className = 'report-card__quoted-text';
+        qText.textContent = (quote.text || '').slice(0, 180);
+        quotedEl.appendChild(qHead);
+        quotedEl.appendChild(qText);
     }
 
     // ---- Footer row: location/area tags on the left, comment/like stats on the right ----
@@ -566,8 +597,49 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
     const commentStat = document.createElement('button');
     commentStat.type = 'button';
     commentStat.className = 'report-card__stat report-card__stat--comment';
+    commentStat.setAttribute('aria-label', 'Reply');
     commentStat.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9A1.5 1.5 0 0 1 18.5 16H9l-4 4v-4H5.5A1.5 1.5 0 0 1 4 14.5v-9Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg><span class="report-card__stat-count">' + (replyCount || 0) + '</span>';
-    commentStat.addEventListener('click', () => menuBtn.click());
+    // Reply now opens a small composer right under THIS card instead of
+    // scrolling up to the page's main input (see toggleInlineReplyBox).
+    commentStat.addEventListener('click', () => toggleInlineReplyBox(el, chat, cleanText, { mode: 'reply' }));
+    menuBtn.addEventListener('click', () => commentStat.click());
+
+    // Repost — duplicates the original report as a new top-level post
+    // credited to the current user, with a "reposted" strapline (see
+    // repostTagEl above) pointing back at the original author.
+    const repostStat = document.createElement('button');
+    repostStat.type = 'button';
+    repostStat.className = 'report-card__stat report-card__stat--repost';
+    repostStat.setAttribute('aria-label', 'Repost');
+    repostStat.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M7 7h8a3 3 0 0 1 3 3v2M17 17H9a3 3 0 0 1-3-3v-2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="m5 9 2-2 2 2M19 15l-2 2-2-2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="report-card__stat-count">0</span>';
+    repostStat.addEventListener('click', async () => {
+        if (repostStat.classList.contains('is-reposted') || repostStat.disabled) return;
+        repostStat.disabled = true;
+        const saved = await postChat({
+            text: chat.text || '', // original raw text (light-status prefix included), so the repost renders identically
+            repost: {
+                chatId: chat._id || chat.id || '',
+                handle: displayHandle || 'someone',
+                text: cleanText || ''
+            }
+        });
+        repostStat.disabled = false;
+        if (saved) {
+            repostStat.classList.add('is-reposted');
+            const countEl = repostStat.querySelector('.report-card__stat-count');
+            if (countEl) countEl.textContent = String(Number(countEl.textContent || 0) + 1);
+        }
+    });
+
+    // Quote — opens the same inline composer as Reply, but the result
+    // posts as a new top-level report with the original embedded below
+    // the quoting user's own commentary (see the "quote" mode).
+    const quoteStat = document.createElement('button');
+    quoteStat.type = 'button';
+    quoteStat.className = 'report-card__stat report-card__stat--quote';
+    quoteStat.setAttribute('aria-label', 'Quote');
+    quoteStat.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M7.5 6.5c-1.7 0-3 1.3-3 3v2.2c0 1.1.9 2 2 2h.5v2.8l3-2.8c1 0 1.5-.9 1.5-2v-2.2c0-1.7-1.3-3-3-3ZM16 6.5c-1.7 0-3 1.3-3 3v2.2c0 1.1.9 2 2 2h.5v2.8l3-2.8c1 0 1.5-.9 1.5-2v-2.2c0-1.7-1.3-3-3-3Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>';
+    quoteStat.addEventListener('click', () => toggleInlineReplyBox(el, chat, cleanText, { mode: 'quote' }));
 
     // No backing "likes" counter on a chat message yet — visual only.
     const likeStat = document.createElement('button');
@@ -581,6 +653,8 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
     });
 
     stats.appendChild(commentStat);
+    stats.appendChild(repostStat);
+    stats.appendChild(quoteStat);
     stats.appendChild(likeStat);
 
     footer.appendChild(tags);
@@ -600,12 +674,125 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
         seenEl.classList.toggle('is-visible', Boolean(isLatestOwn) && hasBeenSeen && !hasReply);
     }
 
+    // ---- Threaded replies ----
+    // Every reply to THIS card renders nested here (see addToThread)
+    // instead of appearing as its own row in the main feed. Replies
+    // (chat.replyTo set) don't get their own nested section — one
+    // level of nesting keeps the thread readable.
+    let repliesToggle = null;
+    let repliesContainer = null;
+    if (!reply) {
+        repliesToggle = document.createElement('button');
+        repliesToggle.type = 'button';
+        repliesToggle.className = 'report-card__replies-toggle';
+        repliesToggle.hidden = !hasReply;
+        repliesToggle.setAttribute('aria-expanded', 'false');
+        const initialCount = replyCount || 0;
+        repliesToggle.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span></span>';
+        repliesToggle.querySelector('span').textContent = `${initialCount} ${initialCount === 1 ? 'reply' : 'replies'}`;
+
+        repliesContainer = document.createElement('div');
+        repliesContainer.className = 'report-card__replies';
+        repliesContainer.hidden = true;
+
+        repliesToggle.addEventListener('click', () => {
+            const expanded = repliesToggle.getAttribute('aria-expanded') === 'true';
+            repliesToggle.setAttribute('aria-expanded', String(!expanded));
+            repliesContainer.hidden = expanded;
+        });
+    }
+
     el.appendChild(head);
+    if (repostTagEl) el.insertBefore(repostTagEl, head);
     if (replyEl) el.appendChild(replyEl);
     el.appendChild(body);
+    if (quotedEl) el.appendChild(quotedEl);
     el.appendChild(footer);
     if (seenEl) el.appendChild(seenEl);
+    if (repliesToggle) el.appendChild(repliesToggle);
+    if (repliesContainer) el.appendChild(repliesContainer);
+
+    // Stashed directly on the node (not dataset — these are live
+    // references, not strings) so addToThread can find where to nest
+    // an incoming reply without re-querying the DOM every time.
+    el._repliesContainer = repliesContainer;
+    el._repliesToggle = repliesToggle;
+
     return el;
+}
+
+// ---- Inline reply / quote composer ----
+// A small textarea + send button that opens directly under a report
+// card — used by both the "Reply" and "Quote" stat buttons above.
+// Only one can be open across the whole thread at a time, to keep
+// things tidy on a long feed.
+function createInlineComposerBox(parentChat, parentText, mode) {
+    const box = document.createElement('div');
+    box.className = 'report-card__reply-box';
+    box.dataset.mode = mode;
+
+    const ta = document.createElement('textarea');
+    ta.rows = 1;
+    ta.maxLength = 240;
+    ta.placeholder = mode === 'quote' ? 'Add a comment…' : `Reply to ${parentChat.handle || 'someone'}…`;
+
+    const sendBtn = document.createElement('button');
+    sendBtn.type = 'button';
+    sendBtn.className = 'report-card__reply-send';
+    sendBtn.disabled = true;
+    sendBtn.setAttribute('aria-label', mode === 'quote' ? 'Post quote' : 'Post reply');
+    sendBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4 12 20 4l-6 16-3-7-7-1Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>';
+
+    ta.addEventListener('input', () => {
+        sendBtn.disabled = !ta.value.trim();
+    });
+    ta.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            if (!sendBtn.disabled) sendBtn.click();
+        }
+    });
+
+    sendBtn.addEventListener('click', async () => {
+        const val = ta.value.trim();
+        if (!val) return;
+        sendBtn.disabled = true;
+        ta.disabled = true;
+        const parentRef = {
+            chatId: parentChat._id || parentChat.id || '',
+            handle: parentChat.handle || 'someone',
+            text: parentText || ''
+        };
+        const saved = await postChat(mode === 'quote'
+            ? { text: val, quote: parentRef }
+            : { text: val, replyTo: parentRef });
+        if (saved) {
+            box.remove();
+        } else {
+            sendBtn.disabled = false;
+            ta.disabled = false;
+        }
+    });
+
+    box.appendChild(ta);
+    box.appendChild(sendBtn);
+    return box;
+}
+
+function toggleInlineReplyBox(cardEl, parentChat, parentText, opts) {
+    const mode = (opts && opts.mode) === 'quote' ? 'quote' : 'reply';
+    const existing = cardEl.querySelector(':scope > .report-card__reply-box');
+    if (existing) {
+        const wasSameMode = existing.dataset.mode === mode;
+        existing.remove();
+        if (wasSameMode) return; // same button tapped again — just close it
+    } else {
+        // Only one inline composer open across the feed at a time.
+        document.querySelectorAll('#view-chat .report-card__reply-box').forEach((b) => b.remove());
+    }
+    const box = createInlineComposerBox(parentChat, parentText, mode);
+    cardEl.appendChild(box);
+    box.querySelector('textarea')?.focus();
 }
 
 chatReplyCancel?.addEventListener('click', () => {
@@ -743,6 +930,35 @@ function addToThread(chat, isOwn, scrollDown, animate, hasReply, isLatestOwn) {
     // slightly different feel so sent vs. received still reads distinctly.
     const enterAnimationClass = animate ? (isOwn ? 'chat-message--sent-in' : 'chat-message--received-in') : null;
     const el = buildMessageEl(chat, isOwn, enterAnimationClass, hasReply, isLatestOwn);
+
+    // A reply nests under the card it replied to instead of taking its
+    // own row in the main feed — see buildMessageEl's repliesContainer.
+    // Parents are always added before their replies (chats load/poll
+    // oldest-first), so the parent element should already be on screen
+    // by the time its reply arrives; if it somehow isn't (parent not
+    // yet loaded, or deleted), fall through to a normal top-level row
+    // rather than silently dropping the message.
+    const parentId = chat.replyTo && chat.replyTo.chatId ? String(chat.replyTo.chatId) : null;
+    const parentEl = parentId ? chatThread.querySelector(`[data-chat-id="${CSS.escape(parentId)}"]`) : null;
+
+    if (parentEl && parentEl._repliesContainer) {
+        parentEl._repliesContainer.appendChild(el);
+        if (parentEl._repliesToggle) {
+            const count = parentEl._repliesContainer.children.length;
+            parentEl._repliesToggle.hidden = false;
+            const countLabel = parentEl._repliesToggle.querySelector('span');
+            if (countLabel) countLabel.textContent = `${count} ${count === 1 ? 'reply' : 'replies'}`;
+            // A reply that just arrived live (animate=true) opens the
+            // thread automatically so it's visible right away; replies
+            // loaded from history stay collapsed behind the toggle.
+            if (animate) {
+                parentEl._repliesToggle.setAttribute('aria-expanded', 'true');
+                parentEl._repliesContainer.hidden = false;
+            }
+        }
+        return;
+    }
+
     chatThread.appendChild(el);
     if (scrollDown || isNearBottom) {
         chatThread.scrollTop = chatThread.scrollHeight;
@@ -1197,17 +1413,6 @@ chatInput?.addEventListener('focus', () => {
         // is already the shrunk value and there'd be nothing to diff
         // against.
         baselineInnerHeight = window.innerHeight;
-        // Purely visual: floats the chat-card up over the (now
-        // collapsed) page header while composing, so the thread and
-        // form get that space instead of sitting under a static
-        // header with the keyboard still eating the bottom. See the
-        // ".page.is-composing" rules in chat.css. Applied here for an
-        // immediate response on focus, before the keyboard has
-        // actually animated in and shrunk the viewport — 
-        // updateKeyboardOffset() above is what keeps this in sync
-        // with reality afterward (including clearing it again if the
-        // keyboard closes without a blur event).
-        document.querySelector('#view-chat .page')?.classList.add('is-composing');
         requestAnimationFrame(() => scrollChatToBottom(false));
     }
 });
@@ -1229,7 +1434,48 @@ if (window.visualViewport) {
 // No optimistic temp IDs. We POST to the server, get back
 // the real _id, add it to knownIds, then display it.
 // This way the poll can never show it again as "new".
+//
+// Shared by: the main composer submit handler below, each report
+// card's inline reply/quote box (see buildMessageEl), and the repost
+// action — all three just needed slightly different payload shapes
+// around the same POST + "show it now" behavior.
 // -------------------------------------------------------
+async function postChat({ text, replyTo, repost, quote }) {
+    const myId = getCurrentUserId();
+    const loc  = chatLocation || getCurrentChatLocation();
+    if (!myId) return null;
+    if (chatScope === CHAT_SCOPE_LOCAL && !loc) return null;
+
+    try {
+        const res = await fetch(`${API_URL}/chats`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                userId: myId,
+                handle: myHandle,
+                text,
+                scope: chatScope,
+                location: chatScope === CHAT_SCOPE_GLOBAL ? 'All locations' : loc,
+                replyTo: replyTo || undefined,
+                repost: repost || undefined,
+                quote: quote || undefined
+            })
+        });
+        if (!res.ok) return null;
+
+        const saved = await res.json();
+        const realId = saved._id || saved.id;
+        if (realId && !knownIds.has(realId)) {
+            knownIds.add(realId);           // tell poll: skip this one
+            addToThread(saved, true, true, true, false, true); // show it now, scroll to it, animate it in
+        }
+        return saved;
+    } catch (err) {
+        console.error("Failed to send:", err);
+        return null;
+    }
+}
+
 chatForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -1257,45 +1503,19 @@ chatForm?.addEventListener('submit', async (e) => {
         chatSendBtn.classList.add('is-sent-pulse');
     }
 
-    try {
-        const res = await fetch(`${API_URL}/chats`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                userId: myId,
-                handle: myHandle,
-                text,
-                scope: chatScope,
-                location: chatScope === CHAT_SCOPE_GLOBAL ? 'All locations' : loc,
-                replyTo: replyTarget || undefined
-            })
-        });
+    const saved = await postChat({ text, replyTo: replyTarget || undefined });
 
-        if (!res.ok) {
-            // Put text back so user can retry
-            chatInput.value = rawText;
-            updateSendButtonState();
-            autoGrowChatInput();
-            return;
-        }
-
-        const saved = await res.json();
-        const realId = saved._id || saved.id;
-
-        if (realId && !knownIds.has(realId)) {
-            knownIds.add(realId);           // tell poll: skip this one
-            addToThread(saved, true, true, true, false, true); // show it now, scroll to it, animate it in; it's the newest own message so far
-        }
-
-        replyTarget = null;
-        if (chatReplyPreview) chatReplyPreview.hidden = true;
-        setSelectedLightStatus(null);
-    } catch(err) {
-        console.error("Failed to send:", err);
-        chatInput.value = rawText; // restore on failure
+    if (!saved) {
+        // Put text back so user can retry
+        chatInput.value = rawText;
         updateSendButtonState();
         autoGrowChatInput();
+        return;
     }
+
+    replyTarget = null;
+    if (chatReplyPreview) chatReplyPreview.hidden = true;
+    setSelectedLightStatus(null);
 });
 window.setMobileChatOpen = setMobileChatOpen;
 
@@ -1330,17 +1550,15 @@ function applyIncomingChatDeepLink(search) {
 }
 
 // -------------------------------------------------------
-// REPORT PAGE TABS — Official News (default) / Community Report
+// REPORT PAGE PANELS — Official News / Community Report
 // -------------------------------------------------------
-// The Report page (#view-chat) now hosts two panels instead of the
-// chat-card alone. Switching just toggles which panel is visible and
-// which report-mode-* class sits on #view-chat itself — chat.css keys
-// its fixed-height "app panel" chat layout off that class, so
-// Official News never inherits the chat's internal-scroll treatment;
-// it behaves like a normal page instead.
-const reportViewEl = document.getElementById('view-chat');
-const reportTabButtons = Array.from(document.querySelectorAll('#view-chat .report-tab'));
-const reportStandalone = reportViewEl?.dataset?.standaloneSections === 'true';
+// News (bottom nav "News") and Report (elevated "Report" CTA) both
+// land on #view-chat but each wants only its own panel visible — no
+// in-page tab switcher anymore (see index.html). This just shows the
+// requested panel and hides the other; the old fixed-height "app
+// panel" chat layout it used to toggle a class for has been retired
+// along with the popup-style CSS it depended on (chat.css), so
+// #view-chat now behaves like a normal page at all times.
 const reportPanelNews = document.getElementById('reportPanelNews');
 const reportPanelCommunity = document.getElementById('reportPanelCommunity');
 let currentReportPanel = 'news';
@@ -1348,47 +1566,20 @@ let currentReportPanel = 'news';
 function activateReportTab(tab) {
     const nextTab = tab === 'community' ? 'community' : 'news';
     currentReportPanel = nextTab;
+
+    // If chat composer focus state leaked across navigation (e.g. back
+    // gesture while keyboard was open), clear it before switching panels
+    // so the Community banner is never hidden on first open.
+    document.querySelector('#view-chat .page')?.classList.remove('is-composing');
+    document.documentElement.style.setProperty(KB_OFFSET_VAR, '0px');
+    document.documentElement.style.removeProperty(PAGE_BOTTOM_PAD_VAR);
+
     if (typeof window.LWNav === 'object' && typeof window.LWNav.applyActiveNav === 'function') {
         window.LWNav.applyActiveNav(nextTab === 'news' ? 'news' : 'community');
     }
 
-    // If the report page is configured to show standalone sections,
-    // keep both panels visible and skip tab-switching behavior.
-    if (reportStandalone) {
-        if (reportPanelNews) reportPanelNews.hidden = false;
-        if (reportPanelCommunity) reportPanelCommunity.hidden = false;
-        reportViewEl?.classList.remove('report-mode-community');
-        reportViewEl?.classList.remove('report-mode-news');
-        document.documentElement.classList.add('lw-report-community-open');
-        document.body.classList.add('lw-report-community-open');
-        return;
-    }
-
-    reportTabButtons.forEach((btn) => {
-        const isActive = btn.dataset.tab === nextTab;
-        btn.classList.toggle('is-active', isActive);
-        btn.setAttribute('aria-selected', String(isActive));
-    });
-
     if (reportPanelNews) reportPanelNews.hidden = nextTab !== 'news';
     if (reportPanelCommunity) reportPanelCommunity.hidden = nextTab !== 'community';
-
-    reportViewEl?.classList.toggle('report-mode-community', nextTab === 'community');
-    reportViewEl?.classList.toggle('report-mode-news', nextTab === 'news');
-
-    // Belt-and-suspenders scroll lock: chat.css now locks html/body via
-    // :has(#view-chat:not([hidden])) for BOTH tabs (News scrolls inside
-    // .report-panel now too, same as Community), but :has() isn't
-    // universal across every mobile WebView this app runs in. This
-    // fallback class has to match that same both-tabs behavior — it's
-    // set whenever the Report page is showing at all, not just for
-    // Community, and only cleared on leaving /chat entirely (see the
-    // lw:route-changed listener below). Keeping it tab-conditional here
-    // would re-introduce exactly the "News behaves differently than
-    // Community" mismatch this file's chat.css counterpart just fixed,
-    // just scoped to :has()-unsupported browsers instead.
-    document.documentElement.classList.add('lw-report-community-open');
-    document.body.classList.add('lw-report-community-open');
 
     if (nextTab === 'community') {
         // The thread was unmeasurable (display:none via the panel's
@@ -1401,16 +1592,13 @@ function activateReportTab(tab) {
         pollChatsOnce();
     }
 
-    // Lets components/nav-badges.js know which Report sub-tab the user
-    // is actually looking at, so it can clear that tab's own unread
-    // count/dot without wiping out the other tab's — see that file for
-    // why arriving on /chat alone isn't enough to mark everything read.
+    // Lets components/nav-badges.js know which Report sub-page the
+    // user is actually looking at, so it can clear that page's own
+    // unread count/dot without wiping out the other one's — see that
+    // file for why arriving on /chat alone isn't enough to mark
+    // everything read.
     window.dispatchEvent(new CustomEvent('lw:report-tab-changed', { detail: { tab: nextTab } }));
 }
-
-reportTabButtons.forEach((btn) => {
-    btn.addEventListener('click', () => activateReportTab(btn.dataset.tab));
-});
 
 // -------------------------------------------------------
 // OFFICIAL NEWS — collapsible "read more" per article
@@ -1448,12 +1636,10 @@ window.addEventListener('lw:report-elevated-click', () => {
         setTimeout(() => {
             try {
                 activateReportTab('community');
-                document.getElementById('chatInput')?.focus();
             } catch (e) { /* ignore */ }
         }, 120);
     } else {
         activateReportTab('community');
-        document.getElementById('chatInput')?.focus();
     }
 });
 
@@ -1487,16 +1673,6 @@ window.addEventListener('lw:route-changed', (e) => {
         startTypingPoll();
     }
 
-    // The :has() CSS lock releases itself automatically once #view-chat
-    // is hidden, but the JS fallback class (see activateReportTab)
-    // won't unless we clear it here too — otherwise leaving the Report
-    // page while Community Report was the active tab would leave every
-    // other view permanently scroll-locked.
-    if (!isChatView) {
-        document.documentElement.classList.remove('lw-report-community-open');
-        document.body.classList.remove('lw-report-community-open');
-    }
-
     if (isChatView) {
         const hasDeepLinkedMessage = !!new URLSearchParams(e.detail.search || window.location.search).get('chatId');
         const pendingPanel = window.__lwPendingReportPanel;
@@ -1505,7 +1681,7 @@ window.addEventListener('lw:route-changed', (e) => {
             activateReportTab(pendingPanel);
             window.__lwPendingReportPanel = null;
         } else if (isFreshEntry) {
-            const defaultPanel = hasDeepLinkedMessage ? 'community' : 'news';
+            const defaultPanel = 'community';
             console.debug('[chat] default report panel:', defaultPanel, 'freshEntry=', isFreshEntry, 'hasDeepLinkedMessage=', hasDeepLinkedMessage);
             activateReportTab(defaultPanel);
         } else if (hasDeepLinkedMessage) {

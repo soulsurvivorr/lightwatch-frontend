@@ -8,6 +8,11 @@
 
 
 .onboarding-overlay {
+  --onb-amber: #f2b33d;
+  --onb-amber-dim: rgba(242, 179, 61, 0.2);
+  --onb-teal: #3dd9c2;
+  --onb-teal-dim: rgba(61, 217, 194, 0.2);
+  --onb-dot-muted: rgba(226, 236, 248, 0.38);
   font-family: var(--font-body);
   font-synthesis: none;
   position: fixed;
@@ -117,8 +122,8 @@ body.lw-onboarding-open {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--amber-dim);
-  color: var(--brand);
+  background: var(--amber-dim, var(--onb-amber-dim));
+  color: var(--brand, var(--onb-amber));
   margin-bottom: 4px;
 }
 
@@ -134,8 +139,8 @@ body.lw-onboarding-open {
 }
 
 .onboarding-slide--location .onboarding-slide__icon {
-  background: var(--teal-dim);
-  color: var(--teal);
+  background: var(--teal-dim, var(--onb-teal-dim));
+  color: var(--teal, var(--onb-teal));
 }
 
 .onboarding-slide h2 {
@@ -222,7 +227,7 @@ body.lw-onboarding-open {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--border-strong);
+  background: var(--border-strong, var(--onb-dot-muted));
   opacity: 0.5;
   transition: opacity 0.2s ease, width 0.2s ease, background 0.2s ease;
 }
@@ -231,7 +236,7 @@ body.lw-onboarding-open {
   opacity: 1;
   width: 18px;
   border-radius: 999px;
-  background: var(--brand);
+  background: var(--brand, var(--onb-amber));
 }
 
 .onboarding-dots__dot,
@@ -240,14 +245,14 @@ body.lw-onboarding-open {
   -webkit-touch-callout: none;
 }
 
-.onboarding-next {
+.onboarding-next.btn.btn--primary {
   min-width: 108px;
   background: linear-gradient(180deg, #f2b33d 0%, #dc9a2e 100%);
   color: #241a06;
   border-color: transparent;
 }
 
-.onboarding-next:hover {
+.onboarding-next.btn.btn--primary:hover {
   background: linear-gradient(180deg, #f7bf58 0%, #e3a439 100%);
   color: #241a06;
   opacity: 1;

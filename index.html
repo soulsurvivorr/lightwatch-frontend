@@ -794,6 +794,7 @@
           <div class="status-hero">
             <div class="status-hero__text">
               <div class="status-hero__title" id="statusPillText" data-skel="line">Checking status…</div>
+              <p class="card__meta status-hero__location" id="locationMeta" data-skel="line">Your chosen location</p>
               <div class="status-hero__sub">
                 Since <strong id="lastVerified" data-skel="line">—</strong>
                 <span class="pulse pulse--low" id="statusPulse" style="display:inline-block;width:6px;height:6px;vertical-align:middle;margin-left:8px;"></span>
@@ -1119,22 +1120,16 @@
     <!-- ==== Report page section ==== -->
     <section id="view-chat" data-view="chat" hidden>
       <main class="page">
-        <!-- Report page tabs: Official News (default) / Community Report.
-             Panel visibility + #view-chat's report-mode-* class are both
-             driven by js/views/chat.js (activateReportTab). The class on
-             the section is what chat.css keys off to decide whether the
-             fixed-height "app panel" chat layout applies (Community only)
-             or the page behaves like a normal scrolling view (News).
-
-             The hero-style report-banner used to sit here, shared above
-             both tabs — it now lives inside #reportPanelCommunity only,
-             see below. -->
+        <!-- News and Community Report are two separate routes that both
+             land on this section (bottom nav "News" / the elevated
+             "Report" CTA) — no in-page tab switcher between them
+             anymore. js/views/chat.js (activateReportTab) just shows
+             whichever panel matches the route and hides the other.
+             #view-chat behaves like every other page: normal document
+             flow, full width/height, no fixed-position "app panel"
+             layout. -->
         <!-- ==== Official News panel (default) ==== -->
         <div class="report-panel" id="reportPanelNews" data-panel="news" role="region" aria-labelledby="reportTabNewsBtn">
-          <div class="report-tabs" role="tablist" aria-label="Report page section">
-            <button type="button" class="report-tab is-active" data-tab="news" role="tab" aria-selected="true" aria-controls="reportPanelNews">Official News</button>
-            <button type="button" class="report-tab" data-tab="community" role="tab" aria-selected="false" aria-controls="reportPanelCommunity">Community Report</button>
-          </div>
           <div class="news-page-header">
             <h1 class="news-page-header__title" id="reportTabNewsBtn">Power News</h1>
             <p class="news-page-header__sub">Latest updates from ECG and media outlets.</p>
@@ -1189,13 +1184,9 @@
                 </a>
               </div>
             </div>
-            <div class="report-tabs" role="tablist" aria-label="Report page section">
-              <button type="button" class="report-tab" data-tab="news" role="tab" aria-selected="false" aria-controls="reportPanelNews">Official News</button>
-              <button type="button" class="report-tab is-active" data-tab="community" role="tab" aria-selected="true" aria-controls="reportPanelCommunity">Community Report</button>
-            </div>
           </div>
 
-          <div class="card chat-card">
+          <div class="chat-card">
             <div class="chat-scope-row" aria-label="Chat visibility scope">
               <span class="chat-scope-label">Audience</span>
               <div class="chat-scope-options" role="tablist" aria-label="Chat audience">
@@ -1232,9 +1223,9 @@
                     <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
                     Light is OFF
                   </button>
-                  <button type="button" class="community-status-btn community-status-btn--media" id="statusMediaBtn" aria-label="Add photo">
+                  <button type="button" class="community-status-btn community-status-btn--media" id="statusMediaBtn" aria-label="Add media">
                     <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1-1.6h7l1 1.6h2A1.5 1.5 0 0 1 20 8.5v9A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5v-9Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.2" stroke="currentColor" stroke-width="1.6"/></svg>
-                    <span class="community-status-btn__label-full">Add Photo</span>
+                    <span class="community-status-btn__label-full">Add Media</span>
                   </button>
                 </div>
                 <button type="submit" class="btn btn--primary community-post-btn" id="chatSendBtn" disabled>
@@ -1960,16 +1951,10 @@
       </a>
 
        <!-- Account/Profile — moved down here from the topbar's top-right
-         corner (see .topbar__actions, now a Favorites shortcut instead).
-         FIX: this used to render the user's avatar circle (a bare "?"
-         placeholder, since nothing ever populated it here) — swapped for
-         a plain user-outline SVG matching the other nav icons' style so
-         it's never blank/unstyled, per request. The personalized,
-         per-user avatar (see account.js) still shows on the Account page
-         itself. -->
+         corner (see .topbar__actions, now a Favorites shortcut instead). -->
        <a href="#" class="bottom-nav-link" data-nav="account" data-route="account" aria-label="Profile">
         <span class="bottom-nav-icon bottom-nav-icon--user">
-          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="8" r="3.4" stroke="currentColor" stroke-width="1.8"/><path d="M4.5 20c1.4-3.6 4.6-5.6 7.5-5.6s6.1 2 7.5 5.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 12.5a4.3 4.3 0 1 0 0-8.6 4.3 4.3 0 0 0 0 8.6Z" stroke="currentColor" stroke-width="1.7"/><path d="M4.2 20c1.1-3.6 3.9-5.8 7.8-5.8s6.7 2.2 7.8 5.8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
         </span>
         <span class="bottom-nav-label">Profile</span>
       </a>

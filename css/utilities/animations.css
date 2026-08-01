@@ -239,12 +239,10 @@
   box-shadow: none;
 }
 
-/* Quick, subtle press feedback — scales the whole tab down a touch on
-   tap so the bar feels responsive to touch, not just to the route
-   change that follows. Kept small (0.94) and fast (0.1s) so it reads
-   as tactile rather than bouncy. */
+/* Subtle press feedback for touch/click so nav feels responsive
+   without the exaggerated pop/bounce effect. */
 .bottom-nav-link:active .bottom-nav-icon {
-  transform: scale(0.88);
+  transform: scale(0.96);
 }
 
 .bottom-nav-link--active {
@@ -413,7 +411,17 @@
 
 .bottom-nav-link--active .bottom-nav-icon {
   background: var(--bottom-nav-icon-active-bg);
-  transform: scale(1.08);
+  transform: none;
+  animation: bottom-nav-active-fade 0.22s ease;
+}
+
+@keyframes bottom-nav-active-fade {
+  from {
+    background: color-mix(in srgb, var(--bottom-nav-icon-active-bg) 35%, transparent);
+  }
+  to {
+    background: var(--bottom-nav-icon-active-bg);
+  }
 }
 
 .bottom-nav-label {
