@@ -1496,13 +1496,17 @@ body.lw-chat-community-mode #view-chat .community-banner {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 0.72rem;
+  font-size: 0.82rem;
   color: var(--text-faint);
 }
 
 #view-chat .report-card__meta-location {
   color: var(--brand2);
   font-weight: 600;
+}
+
+#view-chat .report-card__meta-time {
+  font-size: 0.82rem;
 }
 
 #view-chat .report-card__meta-time::before {
@@ -1909,6 +1913,11 @@ body.lw-chat-community-mode #view-chat .community-banner {
   height: 13px;
 }
 
+#view-chat .report-card--quote-highlight {
+  outline: 2px solid color-mix(in srgb, var(--brand2) 54%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand2) 22%, transparent);
+}
+
 /* A quoted card embedded inside a quote-post — a smaller, nested
    preview of the original report, sitting below the quoting user's
    own text. */
@@ -2133,11 +2142,9 @@ body.lw-chat-community-mode #view-chat .community-banner {
 
 /* ---- Floating "+" quick-report button ---- */
 #view-chat .community-fab {
-  position: sticky;
-  float: right;
-  bottom: 20px;
-  margin-top: -64px;
-  margin-right: 4px;
+  position: fixed;
+  right: 16px;
+  bottom: calc(18px + 56px + env(safe-area-inset-bottom));
   width: 52px;
   height: 52px;
   border-radius: 50%;
@@ -2149,7 +2156,7 @@ body.lw-chat-community-mode #view-chat .community-banner {
   justify-content: center;
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
   cursor: pointer;
-  z-index: 4;
+  z-index: 80;
 }
 
 #view-chat .community-fab svg {

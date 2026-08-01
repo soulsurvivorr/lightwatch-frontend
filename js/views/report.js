@@ -1189,30 +1189,16 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
         mediaEl.appendChild(mediaImg);
     }
 
-    // ---- Reply-to preview, if any ----
-    let replyEl = null;
     const reply = chat.replyTo;
-    if (reply && (reply.handle || reply.text)) {
-        replyEl = document.createElement('div');
-        replyEl.className = 'chat-message__reply';
-
-        const replyHandleEl = document.createElement('span');
-        replyHandleEl.className = 'chat-message__reply-handle';
-        replyHandleEl.textContent = `Reply to ${reply.handle || 'someone'}`;
-
-        const replyTextEl = document.createElement('span');
-        replyTextEl.className = 'chat-message__reply-text';
-        replyTextEl.textContent = (reply.text || '').slice(0, 120);
-
-        replyEl.appendChild(replyHandleEl);
-        replyEl.appendChild(replyTextEl);
-    }
 
     // ---- Quoted preview, if this card quotes another report ----
     let quotedEl = null;
     let quoteLeadEl = null;
     const quote = chat.quote && (chat.quote.handle || chat.quote.text) ? chat.quote : null;
     if (quote) {
+        if (quote.chatId) {
+            el.dataset.quoteSourceId = String(quote.chatId);
+        }
         quotedEl = document.createElement('div');
         quotedEl.className = 'report-card__quoted';
         quoteLeadEl = document.createElement('p');
@@ -1282,7 +1268,7 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
     const myUserId = getCurrentUserId();
     const reportId = getReportId(chat);
 
-    const initialRepostCount = Math.max(0, Number(chat.repostCount || 0));
+    const initialRepostCount = Math.max(0, Number(chat.repostCount || 0) + Number(chat.quoteCount || 0));
     const alreadyReposted = Boolean(myUserId) && Array.isArray(chat.repostedBy) &&
         chat.repostedBy.some((id) => String(id) === String(myUserId));
 
@@ -1300,7 +1286,7 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
 
     const repostMenu = document.createElement('div');
     repostMenu.className = 'report-card__repost-menu';
-    repostMenu.innerHTML = '<button type="button" class="report-card__menu-item" data-repost-action="repost">Repost</button><button type="button" class="report-card__menu-item" data-repost-action="quote">Quote</button>';
+    repostMenu.innerHTML = '<button type="button" class="report-card__menu-item" data-repost-action="repost">Repost</button><button type="button" class="report-card__menu-item" data-repost-action="quote">Quote</button><button type="button" class="report-card__menu-item" data-repost-action="view-quotes">View quotes</button>';
 
     async function doRepost() {
         if (repostStat.classList.contains('is-reposted') || repostStat.disabled) return;
@@ -1342,6 +1328,22 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
         repostStat.setAttribute('aria-expanded', 'false');
         if (action === 'repost') doRepost();
         if (action === 'quote') toggleInlineReplyBox(el, chat, cleanText, { mode: 'quote' });
+        if (action === 'view-quotes') {
+            const sourceId = String(chat._id || chat.id || '');
+            const quoteMatches = sourceId
+                ? [...chatThread.querySelectorAll(`.report-card[data-quote-source-id="${sourceId}"]`)]
+                : [];
+            if (quoteMatches.length === 0) {
+                window.lwToast?.('No quoted replies for this report yet.');
+                return;
+            }
+            quoteMatches[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+            quoteMatches.forEach((match, idx) => {
+                match.classList.add('report-card--quote-highlight');
+                setTimeout(() => match.classList.remove('report-card--quote-highlight'), 2200 + idx * 120);
+            });
+            window.lwToast?.(`Found ${quoteMatches.length} quoted ${quoteMatches.length === 1 ? 'reply' : 'replies'}.`);
+        }
     });
 
     repostWrap.appendChild(repostStat);
@@ -1457,7 +1459,6 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
 
     el.appendChild(head);
     if (repostTagEl) el.insertBefore(repostTagEl, head);
-    if (replyEl) el.appendChild(replyEl);
     if (cleanText && !quote) el.appendChild(body);
     if (quoteLeadEl) el.appendChild(quoteLeadEl);
     if (mediaEl) el.appendChild(mediaEl);
