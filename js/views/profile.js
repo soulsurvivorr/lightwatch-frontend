@@ -181,9 +181,17 @@ function renderUserEverywhere(user) {
     // actual identity (id or name present).
     const hasIdentity = Boolean(user.id || user.name);
     const avatarMarkup = hasIdentity ? getAvatarSVG(user.id || user.name) : getGuestAvatarSVG();
+    const uploadedAvatar = typeof user.avatarImage === 'string' && /^data:image\//i.test(user.avatarImage)
+        ? user.avatarImage
+        : null;
 
     function setAvatar(el) {
         if (!el) return;
+        if (uploadedAvatar) {
+            el.setAttribute("aria-label", hasIdentity ? `Avatar for ${initials}` : "Guest avatar");
+            el.innerHTML = `<img src="${uploadedAvatar}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block;"/>`;
+            return;
+        }
         el.setAttribute("aria-label", hasIdentity ? `Avatar for ${initials}` : "Guest avatar");
         el.innerHTML = avatarMarkup;
     }

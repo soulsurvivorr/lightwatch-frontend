@@ -80,6 +80,15 @@ function applyActiveNav(section) {
             link.removeAttribute('aria-current');
         }
     });
+    document.querySelectorAll('.lw-icon-btn[data-nav], .community-banner__icon-btn[data-nav], .lw-header-avatar-btn[data-nav]').forEach(link => {
+        const isActive = link.dataset.nav === section;
+        link.classList.toggle('is-active', isActive);
+        if (isActive) {
+            link.setAttribute('aria-current', 'page');
+        } else {
+            link.removeAttribute('aria-current');
+        }
+    });
 }
 
 // ── Report page panel switching (News / Community) ──────────────
@@ -112,7 +121,7 @@ function bindRouteLinks() {
     // either — that's the actual reason tapping them didn't open
     // Notifications/Account, not their tag name. Added below.
     document.querySelectorAll(
-        '.bottom-nav-link[data-nav], #primaryNav .nav__link[data-nav], .lw-icon-btn[data-nav], .lw-header-avatar-btn[data-nav], .lw-section__viewall[data-route]'
+        '.bottom-nav-link[data-nav], #primaryNav .nav__link[data-nav], .lw-icon-btn[data-nav], .community-banner__icon-btn[data-nav], .lw-header-avatar-btn[data-nav], .lw-section__viewall[data-route]'
     ).forEach(link => {
         if (link.dataset.navBound === '1') return;
         link.dataset.navBound = '1';

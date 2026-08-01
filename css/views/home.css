@@ -4988,8 +4988,13 @@ body:not(.page-data-loading) #view-home #realPageContent {
 }
 
 .lw-icon-btn svg {
-  width: 26px;
-  height: 26px;
+  width: 22px;
+  height: 22px;
+}
+
+.lw-icon-btn.is-active svg,
+.lw-icon-btn[aria-current="page"] svg {
+  color: #ffffff;
 }
 
 .lw-icon-btn__badge {
@@ -5987,11 +5992,11 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
 
 .bottom-nav-link--active .bottom-nav-icon,
 .bottom-nav-link[aria-current="page"] .bottom-nav-icon {
-  background: color-mix(in srgb, var(--brand2-dim, #3574B0) 88%, #ffffff 12%);
+  background: transparent;
   border-radius: 50%;
-  width: 32px;
-  height: 32px;
-  box-shadow: 0 2px 8px rgba(53, 116, 176, 0.28);
+  width: 34px;
+  height: 34px;
+  box-shadow: none;
   transition: background-color 0.2s ease, box-shadow 0.2s ease;
 }
 

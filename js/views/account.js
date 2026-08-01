@@ -38,8 +38,8 @@ const el = (id) => document.getElementById(id);
 (function () {
     // Hue families spread around the wheel so colors read as distinct
     // from each other rather than clustering in one range.
-    const HUES = [4, 24, 44, 96, 152, 178, 200, 222, 258, 284, 318, 340];
-    const SHAPES = ['star', 'spark', 'diamond', 'burst'];
+    const HUES = [18, 32, 46, 88, 112, 156, 192, 208, 224, 242, 268, 296];
+    const SHAPES = ['spark', 'diamond', 'burst', 'shield'];
 
     function seedHash(seed) {
         let hash = 0;
@@ -94,6 +94,9 @@ const el = (id) => document.getElementById(id);
         let glyph;
         if (shape === 'diamond') {
             glyph = `<rect x="18" y="18" width="28" height="28" rx="6" transform="rotate(${(rotation * 180 / Math.PI).toFixed(0)} 32 32)" fill="hsl(${hue1},85%,68%)"/>`;
+        } else if (shape === 'shield') {
+            glyph = `<path d="M32 12 47 17.5V29c0 9.4-6.2 17-15 20-8.8-3-15-10.6-15-20V17.5L32 12Z" fill="hsl(${hue1},86%,68%)"/>`;
+            glyph += `<path d="M32 20v19" stroke="hsl(${hue2},82%,86%)" stroke-width="2.2" stroke-linecap="round" opacity="0.85"/>`;
         } else if (shape === 'burst') {
             glyph = `<path d="${starPoints(32, 32, points, 22, 8, rotation)}" fill="hsl(${hue1},90%,70%)"/>
       <circle cx="32" cy="32" r="6" fill="hsl(${hue2},90%,82%)"/>`;
@@ -150,6 +153,156 @@ function getCurrentUserData() {
     } catch {
         return {};
     }
+}
+
+let pendingAvatarImageDataUrl = undefined;
+
+function applyAvatarToTargets(user) {
+    const avatarSeed = user._id || user.id || user.chatHandle || localStorage.getItem('chatHandle');
+    const avatarImage = user.avatarImage || null;
+    const targets = [el('profileAvatar'), el('sidebarAvatar'), el('navAccountAvatar')].filter(Boolean);
+
+    targets.forEach((target) => {
+        if (avatarImage && /^data:image\//i.test(avatarImage)) {
+            target.innerHTML = '';
+            const img = document.createElement('img');
+            img.src = avatarImage;
+            img.alt = '';
+            img.loading = 'lazy';
+            target.appendChild(img);
+            target.classList.add('avatar--generated');
+            return;
+        }
+        if (window.LWAvatar && avatarSeed) {
+            window.LWAvatar.renderInto(target, avatarSeed);
+        }
+    });
+}
+
+function hydrateIdentityForm(user) {
+    const handleInput = el('profileHandleInput');
+    if (handleInput) {
+        handleInput.value = String(user.chatHandle || '').replace(/^@+/, '');
+    }
+    pendingAvatarImageDataUrl = undefined;
+    const messageEl = el('profileIdentityMessage');
+    if (messageEl) messageEl.textContent = '';
+}
+
+function isValidHandleFormat(value) {
+    return /^[a-z0-9](?:[a-z0-9_-]{1,22}[a-z0-9])$/.test(value);
+}
+
+function initProfileIdentityForm() {
+    const form = el('profileIdentityForm');
+    const avatarInput = el('profileAvatarInput');
+    const clearBtn = el('profileAvatarClearBtn');
+
+    if (!form) return;
+
+    avatarInput?.addEventListener('change', async () => {
+        const messageEl = el('profileIdentityMessage');
+        const [file] = avatarInput.files || [];
+        if (!file) return;
+
+        if (!file.type.startsWith('image/')) {
+            if (messageEl) messageEl.textContent = 'Choose an image file (camera or gallery).';
+            avatarInput.value = '';
+            return;
+        }
+        if (file.size > 1_500_000) {
+            if (messageEl) messageEl.textContent = 'Image is too large. Use one under 1.5MB.';
+            avatarInput.value = '';
+            return;
+        }
+
+        const dataUrl = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(String(reader.result || ''));
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        }).catch(() => null);
+
+        if (!dataUrl || !/^data:image\//i.test(String(dataUrl))) {
+            if (messageEl) messageEl.textContent = 'Could not read image. Try another one.';
+            avatarInput.value = '';
+            return;
+        }
+
+        pendingAvatarImageDataUrl = String(dataUrl);
+        const cached = getCurrentUserData();
+        applyAvatarToTargets({ ...cached, avatarImage: pendingAvatarImageDataUrl });
+        if (messageEl) messageEl.textContent = 'New profile picture selected. Save to apply everywhere.';
+    });
+
+    clearBtn?.addEventListener('click', () => {
+        pendingAvatarImageDataUrl = null;
+        if (avatarInput) avatarInput.value = '';
+        const cached = getCurrentUserData();
+        applyAvatarToTargets({ ...cached, avatarImage: null });
+        const messageEl = el('profileIdentityMessage');
+        if (messageEl) messageEl.textContent = 'Profile picture will reset to generated SVG when you save.';
+    });
+
+    form.addEventListener('submit', async () => {
+        const userId = getCurrentUserId();
+        const handleInput = el('profileHandleInput');
+        const messageEl = el('profileIdentityMessage');
+        const saveBtn = el('profileIdentitySaveBtn');
+        if (!userId || !handleInput) return;
+
+        const nextHandle = String(handleInput.value || '').trim().toLowerCase().replace(/^@+/, '');
+        if (!isValidHandleFormat(nextHandle)) {
+            if (messageEl) messageEl.textContent = 'Use 3-24 chars: letters, numbers, - or _ (no symbols/spaces).';
+            return;
+        }
+
+        const body = { chatHandle: nextHandle };
+        if (pendingAvatarImageDataUrl !== undefined) {
+            body.avatarImage = pendingAvatarImageDataUrl;
+        }
+
+        saveBtn.disabled = true;
+        if (messageEl) messageEl.textContent = 'Saving identity...';
+
+        try {
+            const res = await fetch(`${API_URL}/user/${userId}/profile`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            const data = await res.json().catch(() => ({}));
+
+            if (!res.ok) {
+                if (messageEl) messageEl.textContent = data.error || 'Could not save identity right now.';
+                saveBtn.disabled = false;
+                return;
+            }
+
+            const cached = getCurrentUserData();
+            const merged = {
+                ...cached,
+                chatHandle: data.user?.chatHandle || nextHandle,
+                avatarImage: Object.prototype.hasOwnProperty.call(data.user || {}, 'avatarImage')
+                    ? data.user.avatarImage
+                    : cached.avatarImage
+            };
+            localStorage.setItem('currentUserData', JSON.stringify(merged));
+            sessionStorage.setItem('currentUserData', JSON.stringify(merged));
+            localStorage.setItem('chatHandle', merged.chatHandle || nextHandle);
+            sessionStorage.setItem('chatHandle', merged.chatHandle || nextHandle);
+
+            hydrateIdentityForm(merged);
+            paintAccountExtras(merged);
+            window.dispatchEvent(new CustomEvent('lw-session-changed'));
+            window.lwToast?.('Identity updated.');
+            if (messageEl) messageEl.textContent = 'Saved.';
+        } catch {
+            if (messageEl) messageEl.textContent = 'Could not reach server. Try again.';
+        } finally {
+            saveBtn.disabled = false;
+        }
+    });
 }
 
 // ------------------------------------------------------------
@@ -684,14 +837,8 @@ function paintAccountExtras(user) {
     if (el('profileCity')) el('profileCity').textContent = user.city || '—';
     if (el('acctProfileRegion')) el('acctProfileRegion').textContent = user.region || '—';
 
-    // Unique per-user colored SVG avatar — replaces the old bare "?"
-    // placeholder. Seeded on the user's id so it's stable across visits;
-    // falls back to their chat handle if id isn't available yet.
-    const avatarSeed = user._id || user.id || user.chatHandle || localStorage.getItem('chatHandle');
-    if (window.LWAvatar && avatarSeed) {
-        window.LWAvatar.renderInto(el('profileAvatar'), avatarSeed);
-        window.LWAvatar.renderInto(el('sidebarAvatar'), avatarSeed);
-    }
+    // Prefer user's saved profile picture; fall back to generated SVG.
+    applyAvatarToTargets(user);
 
     // The badge used to say "Active contributor" for everyone, whether
     // or not they'd ever done anything — swap it for something true:
@@ -704,6 +851,8 @@ function paintAccountExtras(user) {
     const chatHandleValue = user.chatHandle || localStorage.getItem('chatHandle') || '—';
     if (el('profileChatHandle')) el('profileChatHandle').textContent = chatHandleValue;
     if (el('profileHandle')) el('profileHandle').textContent = user.chatHandle || localStorage.getItem('chatHandle') || '';
+
+    hydrateIdentityForm(user);
 
     if (user.createdAt && el('acctProfileLastLogin')) {
         el('acctProfileLastLogin').textContent = new Date(user.createdAt).toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric' });
@@ -877,6 +1026,7 @@ function mount() {
     initChatPreviewPopup();
     initNotificationPrefToggles();
     initSecondaryLocationForm();
+    initProfileIdentityForm();
     initAccordions();
     initCollapsibleCards();
     loadAccountExtras();

@@ -917,6 +917,8 @@
   align-items: center;
   gap: 8px;
   overflow-x: auto;
+  overflow-y: hidden;
+  scroll-behavior: smooth;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
   padding-bottom: 2px;
@@ -927,7 +929,7 @@
      matching padding-right keeps the last pill from sitting flush
      against the screen edge once scrolled all the way to the right. */
   padding-left: 0;
-  padding-right: 16px;
+  padding-right: 0;
 }
 
 .loc-filters::-webkit-scrollbar {

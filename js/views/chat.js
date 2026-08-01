@@ -38,10 +38,12 @@ const chatScopeLocalBtn = document.getElementById('chatScopeLocalBtn');
 const chatScopeGlobalBtn = document.getElementById('chatScopeGlobalBtn');
 const statusOnBtn = document.getElementById('statusOnBtn');
 const statusOffBtn = document.getElementById('statusOffBtn');
+const statusMediaBtn = document.getElementById('statusMediaBtn');
 const communityFabBtn = document.getElementById('communityFabBtn');
 const communitySearchBtn = document.getElementById('communitySearchBtn');
 const communitySortBtn = document.getElementById('communitySortBtn');
 const communityNearbyBtn = document.getElementById('communityNearbyBtn');
+let activePostSearchQuery = '';
 
 // Keep Post inline with the textarea on Community Report (requested
 // mobile-native composer layout) even though the static markup places
@@ -93,8 +95,42 @@ communityFabBtn?.addEventListener('click', () => {
     chatInput?.focus();
 });
 
+function applyPostSearchFilter(rawQuery) {
+    activePostSearchQuery = String(rawQuery || '').trim().toLowerCase();
+    if (!chatThread) return;
+
+    const cards = [...chatThread.querySelectorAll(':scope > .chat-message.report-card')];
+    let visibleCount = 0;
+
+    cards.forEach((card) => {
+        if (!activePostSearchQuery) {
+            card.hidden = false;
+            visibleCount += 1;
+            return;
+        }
+        const haystack = [
+            card.querySelector('.report-card__name')?.textContent || '',
+            card.querySelector('.report-card__meta-location')?.textContent || '',
+            card.querySelector('.report-card__text')?.textContent || '',
+            card.querySelector('.report-card__quoted-text')?.textContent || ''
+        ].join(' ').toLowerCase();
+        const isMatch = haystack.includes(activePostSearchQuery);
+        card.hidden = !isMatch;
+        if (isMatch) visibleCount += 1;
+    });
+
+    if (activePostSearchQuery) {
+        window.lwToast?.(`Found ${visibleCount} matching report${visibleCount === 1 ? '' : 's'}.`);
+    }
+}
+
 communitySearchBtn?.addEventListener('click', () => {
-    chatInput?.focus();
+    const next = window.prompt('Search reports by handle, location, or message text', activePostSearchQuery);
+    if (next === null) return;
+    applyPostSearchFilter(next);
+    const isActive = next.trim().length > 0;
+    communitySearchBtn.classList.toggle('is-active', isActive);
+    communitySearchBtn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
 });
 
 communitySortBtn?.addEventListener('click', () => {
@@ -143,8 +179,120 @@ function getOrCreateHandle() {
     return handle;
 }
 
+function renderAvatarIntoEl(targetEl, seed, avatarImage) {
+    if (!targetEl) return;
+    if (avatarImage && /^data:image\//i.test(avatarImage)) {
+        targetEl.innerHTML = '';
+        const img = document.createElement('img');
+        img.src = avatarImage;
+        img.alt = '';
+        img.loading = 'lazy';
+        targetEl.appendChild(img);
+        targetEl.classList.add('report-card__avatar--image');
+        return;
+    }
+    targetEl.classList.remove('report-card__avatar--image');
+    if (window.LWAvatar && seed) {
+        window.LWAvatar.renderInto(targetEl, seed);
+        return;
+    }
+    targetEl.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 12.5a4.3 4.3 0 1 0 0-8.6 4.3 4.3 0 0 0 0 8.6Z" stroke="currentColor" stroke-width="1.6"/><path d="M4.2 20c1.1-3.6 3.9-5.8 7.8-5.8s6.7 2.2 7.8 5.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+}
+
 let myHandle = getOrCreateHandle();
 if (chatHandleDisplay) chatHandleDisplay.textContent = myHandle;
+let myAvatarImage = null;
+
+let composerMediaDataUrl = null;
+const mediaPickerInput = document.createElement('input');
+mediaPickerInput.type = 'file';
+mediaPickerInput.accept = 'image/*';
+mediaPickerInput.setAttribute('capture', 'environment');
+mediaPickerInput.hidden = true;
+chatForm?.appendChild(mediaPickerInput);
+
+const composerMediaPreview = document.createElement('div');
+composerMediaPreview.className = 'community-composer__media-preview';
+composerMediaPreview.hidden = true;
+const composerMediaImage = document.createElement('img');
+composerMediaImage.alt = 'Selected media preview';
+composerMediaPreview.appendChild(composerMediaImage);
+const composerMediaRemove = document.createElement('button');
+composerMediaRemove.type = 'button';
+composerMediaRemove.className = 'community-composer__media-remove';
+composerMediaRemove.setAttribute('aria-label', 'Remove selected media');
+composerMediaRemove.textContent = 'Remove';
+composerMediaPreview.appendChild(composerMediaRemove);
+communityComposerTop?.appendChild(composerMediaPreview);
+
+try {
+    const rawCachedUser = localStorage.getItem('currentUserData') || sessionStorage.getItem('currentUserData');
+    const cachedUser = rawCachedUser ? JSON.parse(rawCachedUser) : null;
+    if (cachedUser) {
+        myAvatarImage = cachedUser.avatarImage || null;
+        const avatarEl = document.querySelector('#chatForm .community-composer__avatar');
+        const avatarSeed = cachedUser._id || cachedUser.id || cachedUser.chatHandle || myHandle;
+        renderAvatarIntoEl(avatarEl, avatarSeed, myAvatarImage);
+    }
+} catch {}
+
+function updateComposerMediaPreview() {
+    if (!composerMediaPreview || !composerMediaImage || !statusMediaBtn) return;
+    const hasMedia = Boolean(composerMediaDataUrl);
+    composerMediaPreview.hidden = !hasMedia;
+    if (hasMedia) {
+        composerMediaImage.src = composerMediaDataUrl;
+    } else {
+        composerMediaImage.removeAttribute('src');
+    }
+    statusMediaBtn.classList.toggle('is-active', hasMedia);
+    updateSendButtonState();
+}
+
+function clearComposerMedia() {
+    composerMediaDataUrl = null;
+    mediaPickerInput.value = '';
+    updateComposerMediaPreview();
+}
+
+composerMediaRemove.addEventListener('click', clearComposerMedia);
+
+statusMediaBtn?.addEventListener('click', () => {
+    mediaPickerInput.click();
+});
+
+mediaPickerInput.addEventListener('change', async () => {
+    const [file] = mediaPickerInput.files || [];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+        window.lwToast?.('Please choose an image from camera or gallery.');
+        clearComposerMedia();
+        return;
+    }
+
+    if (file.size > 900_000) {
+        window.lwToast?.('Image too large. Use one under 900KB.');
+        clearComposerMedia();
+        return;
+    }
+
+    const dataUrl = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ''));
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    }).catch(() => null);
+
+    if (!dataUrl || !/^data:image\//i.test(String(dataUrl))) {
+        window.lwToast?.('Could not read image. Try another one.');
+        clearComposerMedia();
+        return;
+    }
+
+    composerMediaDataUrl = String(dataUrl);
+    updateComposerMediaPreview();
+});
 
 let chatScope = (() => {
     if (targetChatIdFromNotification) {
@@ -189,11 +337,24 @@ async function loadUserChatHandle() {
         if (user.chatHandle) {
             myHandle = user.chatHandle;
             localStorage.setItem('chatHandle', myHandle);
+            sessionStorage.setItem('chatHandle', myHandle);
             if (chatHandleDisplay) chatHandleDisplay.textContent = myHandle;
         }
+        myAvatarImage = user.avatarImage || null;
+        try {
+            const rawCached = localStorage.getItem('currentUserData') || sessionStorage.getItem('currentUserData');
+            const cached = rawCached ? JSON.parse(rawCached) : {};
+            const merged = { ...cached, chatHandle: myHandle, avatarImage: myAvatarImage };
+            localStorage.setItem('currentUserData', JSON.stringify(merged));
+            sessionStorage.setItem('currentUserData', JSON.stringify(merged));
+        } catch {}
+        const avatarEl = document.querySelector('#chatForm .community-composer__avatar');
+        const avatarSeed = user._id || user.id || user.chatHandle || myHandle;
+        renderAvatarIntoEl(avatarEl, avatarSeed, myAvatarImage);
     } catch(e) {}
 }
 loadUserChatHandle();
+window.addEventListener('lw-session-changed', loadUserChatHandle);
 
 // -------------------------------------------------------
 // HELPERS
@@ -443,9 +604,9 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
     // Both audiences (Local and Global) mix multiple people in one feed,
     // so give each handle its own consistent card color to tell authors
     // apart at a glance. Own messages keep the existing teal styling.
+    el.style.setProperty('--msg-accent', handleAccentColor(chat.handle || 'user'));
     if (!isOwn) {
         el.classList.add('chat-message--tinted');
-        el.style.setProperty('--msg-accent', handleAccentColor(chat.handle));
     }
     if (chat.isAdmin) el.classList.add('chat-message--admin');
 
@@ -473,7 +634,8 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
     const avatar = document.createElement('span');
     avatar.className = 'report-card__avatar';
     avatar.setAttribute('aria-hidden', 'true');
-    avatar.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 12.5a4.3 4.3 0 1 0 0-8.6 4.3 4.3 0 0 0 0 8.6Z" stroke="currentColor" stroke-width="1.6"/><path d="M4.2 20c1.1-3.6 3.9-5.8 7.8-5.8s6.7 2.2 7.8 5.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+    const avatarSeed = resolveUserId(chat) || displayHandle || chat.handle;
+    renderAvatarIntoEl(avatar, avatarSeed, chat.avatarImage || null);
 
     const who = document.createElement('div');
     who.className = 'report-card__who';
@@ -530,6 +692,18 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
     body.className   = "chat-message__text report-card__text";
     body.textContent = cleanText;
 
+    let mediaEl = null;
+    const media = chat.media && chat.media.kind === 'image' && chat.media.url ? chat.media : null;
+    if (media) {
+        mediaEl = document.createElement('figure');
+        mediaEl.className = 'report-card__media';
+        const mediaImg = document.createElement('img');
+        mediaImg.src = media.url;
+        mediaImg.alt = `Image shared by ${displayHandle || 'community member'}`;
+        mediaImg.loading = 'lazy';
+        mediaEl.appendChild(mediaImg);
+    }
+
     // ---- Reply-to preview, if any ----
     let replyEl = null;
     const reply = chat.replyTo;
@@ -557,12 +731,24 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
         quotedEl.className = 'report-card__quoted';
         const qHead = document.createElement('div');
         qHead.className = 'report-card__quoted-head';
-        qHead.textContent = quote.handle || 'someone';
+        qHead.textContent = `Quoted from ${quote.handle || 'someone'}`;
         const qText = document.createElement('p');
         qText.className = 'report-card__quoted-text';
         qText.textContent = (quote.text || '').slice(0, 180);
         quotedEl.appendChild(qHead);
         quotedEl.appendChild(qText);
+
+        const quoteMedia = quote.media && quote.media.kind === 'image' && quote.media.url ? quote.media : null;
+        if (quoteMedia) {
+            const qMedia = document.createElement('figure');
+            qMedia.className = 'report-card__media report-card__media--quoted';
+            const qImg = document.createElement('img');
+            qImg.src = quoteMedia.url;
+            qImg.alt = `Quoted image from ${quote.handle || 'community member'}`;
+            qImg.loading = 'lazy';
+            qMedia.appendChild(qImg);
+            quotedEl.appendChild(qMedia);
+        }
     }
 
     // ---- Footer row: location/area tags on the left, comment/like stats on the right ----
@@ -705,7 +891,8 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
     el.appendChild(head);
     if (repostTagEl) el.insertBefore(repostTagEl, head);
     if (replyEl) el.appendChild(replyEl);
-    el.appendChild(body);
+    if (cleanText) el.appendChild(body);
+    if (mediaEl) el.appendChild(mediaEl);
     if (quotedEl) el.appendChild(quotedEl);
     el.appendChild(footer);
     if (seenEl) el.appendChild(seenEl);
@@ -734,7 +921,7 @@ function createInlineComposerBox(parentChat, parentText, mode) {
     const ta = document.createElement('textarea');
     ta.rows = 1;
     ta.maxLength = 240;
-    ta.placeholder = mode === 'quote' ? 'Add a comment…' : `Reply to ${parentChat.handle || 'someone'}…`;
+    ta.placeholder = mode === 'quote' ? 'Add your take on this report…' : `Reply to ${parentChat.handle || 'someone'}…`;
 
     const sendBtn = document.createElement('button');
     sendBtn.type = 'button';
@@ -742,6 +929,36 @@ function createInlineComposerBox(parentChat, parentText, mode) {
     sendBtn.disabled = true;
     sendBtn.setAttribute('aria-label', mode === 'quote' ? 'Post quote' : 'Post reply');
     sendBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4 12 20 4l-6 16-3-7-7-1Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>';
+
+    if (mode === 'quote') {
+        const quotePreview = document.createElement('div');
+        quotePreview.className = 'report-card__quoted report-card__quoted--composer';
+
+        const quoteHead = document.createElement('div');
+        quoteHead.className = 'report-card__quoted-head';
+        quoteHead.textContent = `Quoted from ${parentChat.handle || 'someone'}`;
+
+        const quoteText = document.createElement('p');
+        quoteText.className = 'report-card__quoted-text';
+        quoteText.textContent = (parentText || '').slice(0, 180);
+
+        quotePreview.appendChild(quoteHead);
+        quotePreview.appendChild(quoteText);
+
+        const quoteMedia = parentChat.media && parentChat.media.kind === 'image' && parentChat.media.url ? parentChat.media : null;
+        if (quoteMedia) {
+            const quoteMediaWrap = document.createElement('figure');
+            quoteMediaWrap.className = 'report-card__media report-card__media--quoted';
+            const quoteMediaImg = document.createElement('img');
+            quoteMediaImg.src = quoteMedia.url;
+            quoteMediaImg.alt = `Quoted image from ${parentChat.handle || 'community member'}`;
+            quoteMediaImg.loading = 'lazy';
+            quoteMediaWrap.appendChild(quoteMediaImg);
+            quotePreview.appendChild(quoteMediaWrap);
+        }
+
+        box.appendChild(quotePreview);
+    }
 
     ta.addEventListener('input', () => {
         sendBtn.disabled = !ta.value.trim();
@@ -763,6 +980,9 @@ function createInlineComposerBox(parentChat, parentText, mode) {
             handle: parentChat.handle || 'someone',
             text: parentText || ''
         };
+        if (mode === 'quote' && parentChat.media && parentChat.media.kind === 'image' && parentChat.media.url) {
+            parentRef.media = { kind: 'image', url: parentChat.media.url };
+        }
         const saved = await postChat(mode === 'quote'
             ? { text: val, quote: parentRef }
             : { text: val, replyTo: parentRef });
@@ -831,7 +1051,7 @@ function updateChatPlaceholder() {
 // to send, instead of vanishing or looking broken when the chat is empty.
 function updateSendButtonState() {
     if (!chatSendBtn || !chatInput) return;
-    chatSendBtn.disabled = chatInput.value.trim().length === 0;
+    chatSendBtn.disabled = chatInput.value.trim().length === 0 && !composerMediaDataUrl;
 }
 
 chatInput?.addEventListener('input', updateSendButtonState);
@@ -911,13 +1131,13 @@ updateScopeButtons();
 
 chatThread?.addEventListener('scroll', () => {
     if (!chatThread) return;
-    isNearBottom = (chatThread.scrollHeight - chatThread.scrollTop - chatThread.clientHeight) < 80;
+    isNearBottom = chatThread.scrollTop < 80;
     chatScrollBottomBtn?.classList.toggle('is-visible', !isNearBottom);
 });
 
 function scrollChatToBottom(smooth) {
     if (!chatThread) return;
-    chatThread.scrollTo({ top: chatThread.scrollHeight, behavior: smooth ? 'smooth' : 'auto' });
+    chatThread.scrollTo({ top: 0, behavior: smooth ? 'smooth' : 'auto' });
     isNearBottom = true;
     chatScrollBottomBtn?.classList.remove('is-visible');
 }
@@ -959,9 +1179,10 @@ function addToThread(chat, isOwn, scrollDown, animate, hasReply, isLatestOwn) {
         return;
     }
 
-    chatThread.appendChild(el);
+    chatThread.insertBefore(el, chatThread.firstChild);
+    applyPostSearchFilter(activePostSearchQuery);
     if (scrollDown || isNearBottom) {
-        chatThread.scrollTop = chatThread.scrollHeight;
+        chatThread.scrollTop = 0;
     } else {
         // A message arrived while the user has scrolled up to read
         // history — surface the jump-to-bottom button instead of
@@ -1004,13 +1225,12 @@ function loadChatHistory() {
             const myId = getCurrentUserId();
             const repliedCounts = computeRepliedToIds(chats);
             const latestOwnId = getLatestOwnMessageId(chats, myId);
-            // Reverse: API returns newest-first, we want oldest-first
             ;[...chats].reverse().forEach(chat => {
                 const id = chat._id || chat.id;
                 if (id) knownIds.add(id);
                 addToThread(chat, resolveUserId(chat) === myId, false, false, repliedCounts.get(id) || 0, String(id) === latestOwnId);
             });
-            chatThread.scrollTop = chatThread.scrollHeight;
+            chatThread.scrollTop = 0;
             focusTargetMessageIfPresent();
             markChatReady();
             markVisibleMessagesSeen(chats);
@@ -1333,101 +1553,9 @@ function setMobileChatOpen(open) {
     }
 }
 
-// index.html's viewport meta stays on interactive-widget=resizes-
-// content globally (login/signup are tuned against it, so it can't
-// change) — meaning window.innerHeight reliably shrinks when the
-// on-screen keyboard opens. CSS's dvh unit is *supposed* to track
-// that same shrink, but doesn't reliably on every mobile browser/
-// WebView; on ones where it doesn't, #view-chat .page's height never
-// changed and nothing in the chat card floated up at all. So instead
-// of trusting dvh, this measures window.innerHeight directly and
-// publishes it as --lw-vh, which chat.css uses for #view-chat .page's
-// height — the same reliable measurement the nav-offset fix below
-// already uses.
-const KB_OFFSET_VAR = '--lw-kb-offset';
-const PAGE_VH_VAR = '--lw-vh';
-const PAGE_BOTTOM_PAD_VAR = '--lw-page-bottom-pad';
-const MOBILE_CHAT_BREAKPOINT = 720;
-// How much window.innerHeight has to have shrunk from baseline before
-// we'll believe the on-screen keyboard is actually open. Needs to be
-// comfortably bigger than browser-chrome show/hide jitter (a few tens
-// of px) and comfortably smaller than a real keyboard (150px+), so a
-// good chunk of the gap between those two is fair game.
-const KEYBOARD_OPEN_THRESHOLD = 100;
-let baselineInnerHeight = window.innerHeight;
-
-function updateKeyboardOffset() {
-    document.documentElement.style.setProperty(PAGE_VH_VAR, `${window.innerHeight}px`);
-
-    const isMobile = window.innerWidth <= MOBILE_CHAT_BREAKPOINT;
-    const shrink = baselineInnerHeight - window.innerHeight;
-
-    // Whether the keyboard is actually open right now, judged by how
-    // much the viewport has shrunk from baseline — not by focus state.
-    // Pressing Android's back button dismisses the keyboard without
-    // firing blur on the still-focused textarea, so activeElement alone
-    // can't tell open from closed; a measured shrink can, since the
-    // browser reliably resizes window.innerHeight back up once the
-    // keyboard is actually gone, focus or no focus.
-    const isKeyboardOpen = isMobile && shrink > KEYBOARD_OPEN_THRESHOLD;
-    const pageEl = document.querySelector('#view-chat .page');
-
-    if (!isKeyboardOpen) {
-        if (shrink <= 0) {
-            // Genuinely back at (or above) baseline height: safe to
-            // resync the baseline here too (covers rotation /
-            // browser-chrome show-hide, and a keyboard dismissed via
-            // the back button while the textarea stayed focused).
-            baselineInnerHeight = window.innerHeight;
-        }
-        document.documentElement.style.setProperty(KB_OFFSET_VAR, '0px');
-        document.documentElement.style.removeProperty(PAGE_BOTTOM_PAD_VAR);
-        // Same back-button case that motivated the KB_OFFSET_VAR reset
-        // above: the textarea can still be focused with the keyboard
-        // actually gone, so this has to key off the measured shrink
-        // (not blur) or the card is left floated with nothing to
-        // bring it back down.
-        pageEl?.classList.remove('is-composing');
-        return;
-    }
-
-    // #bottom_nav_wrapper's containing block shrinks right along with
-    // window.innerHeight under resizes-content, which is what makes
-    // it ride up with the keyboard; nudging it back down by exactly
-    // that shrink cancels the ride-up.
-    document.documentElement.style.setProperty(KB_OFFSET_VAR, `${shrink}px`);
-
-    // The nav is covered by the keyboard while it's open (see the
-    // transform above), so #view-chat .page doesn't need its full
-    // footprint reserved below the composer anymore — just a small
-    // flat gap, so the shrunk keyboard-open height goes to the thread
-    // and composer instead of an empty reservation nothing needs.
-    document.documentElement.style.setProperty(PAGE_BOTTOM_PAD_VAR, '12px');
-    pageEl?.classList.add('is-composing');
-}
-
 chatInput?.addEventListener('focus', () => {
-    if (window.innerWidth <= MOBILE_CHAT_BREAKPOINT) {
-        // Capture the baseline right before the keyboard starts
-        // animating in, not after — once it's open window.innerHeight
-        // is already the shrunk value and there'd be nothing to diff
-        // against.
-        baselineInnerHeight = window.innerHeight;
-        requestAnimationFrame(() => scrollChatToBottom(false));
-    }
+    requestAnimationFrame(() => scrollChatToBottom(false));
 });
-
-chatInput?.addEventListener('blur', () => {
-    document.documentElement.style.setProperty(KB_OFFSET_VAR, '0px');
-    document.documentElement.style.removeProperty(PAGE_BOTTOM_PAD_VAR);
-    document.querySelector('#view-chat .page')?.classList.remove('is-composing');
-});
-
-updateKeyboardOffset();
-window.addEventListener('resize', updateKeyboardOffset);
-if (window.visualViewport) {
-    window.visualViewport.addEventListener('resize', updateKeyboardOffset);
-}
 
 // -------------------------------------------------------
 // SEND A MESSAGE
@@ -1440,7 +1568,7 @@ if (window.visualViewport) {
 // action — all three just needed slightly different payload shapes
 // around the same POST + "show it now" behavior.
 // -------------------------------------------------------
-async function postChat({ text, replyTo, repost, quote }) {
+async function postChat({ text, replyTo, repost, quote, media }) {
     const myId = getCurrentUserId();
     const loc  = chatLocation || getCurrentChatLocation();
     if (!myId) return null;
@@ -1458,7 +1586,8 @@ async function postChat({ text, replyTo, repost, quote }) {
                 location: chatScope === CHAT_SCOPE_GLOBAL ? 'All locations' : loc,
                 replyTo: replyTo || undefined,
                 repost: repost || undefined,
-                quote: quote || undefined
+                quote: quote || undefined,
+                media: media ? { kind: 'image', url: media } : undefined
             })
         });
         if (!res.ok) return null;
@@ -1480,7 +1609,7 @@ chatForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
 
     const rawText = chatInput.value.trim();
-    if (!rawText) return;
+    if (!rawText && !composerMediaDataUrl) return;
     const text = selectedLightStatus ? `${LIGHT_STATUS_PREFIX[selectedLightStatus]}${rawText}` : rawText;
 
     const myId = getCurrentUserId();
@@ -1493,6 +1622,8 @@ chatForm?.addEventListener('submit', async (e) => {
     chatInput.focus();
     updateSendButtonState();
     resetChatInputHeight();
+    const submittedMedia = composerMediaDataUrl;
+    clearComposerMedia();
     stopTyping(); // setting .value doesn't fire 'input', so this won't happen on its own
 
     // Quick tactile pop on the button itself the instant Send is hit.
@@ -1503,11 +1634,13 @@ chatForm?.addEventListener('submit', async (e) => {
         chatSendBtn.classList.add('is-sent-pulse');
     }
 
-    const saved = await postChat({ text, replyTo: replyTarget || undefined });
+    const saved = await postChat({ text, replyTo: replyTarget || undefined, media: submittedMedia || undefined });
 
     if (!saved) {
         // Put text back so user can retry
         chatInput.value = rawText;
+        composerMediaDataUrl = submittedMedia;
+        updateComposerMediaPreview();
         updateSendButtonState();
         autoGrowChatInput();
         return;
@@ -1566,13 +1699,10 @@ let currentReportPanel = 'news';
 function activateReportTab(tab) {
     const nextTab = tab === 'community' ? 'community' : 'news';
     currentReportPanel = nextTab;
-
-    // If chat composer focus state leaked across navigation (e.g. back
-    // gesture while keyboard was open), clear it before switching panels
-    // so the Community banner is never hidden on first open.
-    document.querySelector('#view-chat .page')?.classList.remove('is-composing');
-    document.documentElement.style.setProperty(KB_OFFSET_VAR, '0px');
-    document.documentElement.style.removeProperty(PAGE_BOTTOM_PAD_VAR);
+    const viewChat = document.getElementById('view-chat');
+    viewChat?.classList.toggle('report-mode-community', nextTab === 'community');
+    viewChat?.classList.toggle('report-mode-news', nextTab !== 'community');
+    document.body.classList.toggle('lw-chat-community-mode', nextTab === 'community');
 
     if (typeof window.LWNav === 'object' && typeof window.LWNav.applyActiveNav === 'function') {
         window.LWNav.applyActiveNav(nextTab === 'news' ? 'news' : 'community');
@@ -1660,6 +1790,12 @@ let lastRouteView = null;
 window.addEventListener('lw:route-changed', (e) => {
     const isChatView = e.detail.view === 'chat';
     const isFreshEntry = isChatView && lastRouteView !== 'chat';
+    if (!isChatView) {
+        document.body.classList.remove('lw-chat-community-mode');
+        const viewChat = document.getElementById('view-chat');
+        viewChat?.classList.remove('report-mode-community');
+        viewChat?.classList.remove('report-mode-news');
+    }
     lastRouteView = e.detail.view;
     if (isChatView && typeof window.LWNav === 'object' && typeof window.LWNav.applyActiveNav === 'function') {
         window.LWNav.applyActiveNav(currentReportPanel === 'news' ? 'news' : 'community');

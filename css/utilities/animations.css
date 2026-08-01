@@ -247,7 +247,7 @@
 
 .bottom-nav-link--active {
   color: var(--bottom-nav-label-active);
-  background: var(--bottom-nav-active-bg);
+  background: transparent;
   box-shadow: none;
 }
 
@@ -410,7 +410,7 @@
 }
 
 .bottom-nav-link--active .bottom-nav-icon {
-  background: var(--bottom-nav-icon-active-bg);
+  background: transparent;
   transform: none;
   animation: bottom-nav-active-fade 0.22s ease;
 }

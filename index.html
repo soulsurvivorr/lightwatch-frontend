@@ -1175,12 +1175,13 @@
                    stands in for it there. Hidden again on desktop where
                    the real topbar is visible. -->
               <div class="community-banner__actions">
-                <button type="button" class="community-banner__icon-btn" id="communitySearchBtn" aria-label="Search reports">
+                <button type="button" class="community-banner__icon-btn" id="communitySearchBtn" aria-label="Search reports" aria-pressed="false">
                   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/><path d="m20 20-3.2-3.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
                 </button>
-                <a href="#" class="community-banner__icon-btn" data-nav="notifications" data-route="notifications" aria-label="Notifications">
+                <a href="#" class="community-banner__icon-btn lw-icon-btn" data-nav="notifications" data-route="notifications" aria-label="Notifications">
                   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 3.5c-3.2 0-5.6 2.5-5.6 5.8v3.1c0 .6-.2 1.2-.6 1.7l-1 1.3c-.6.8 0 2 1 2h12.4c1 0 1.6-1.2 1-2l-1-1.3c-.4-.5-.6-1.1-.6-1.7V9.3c0-3.3-2.4-5.8-5.6-5.8Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9.7 19.5a2.4 2.4 0 0 0 4.6 0" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
                   <span class="lw-icon-btn__badge bottom-nav-badge bottom-nav-badge--mono" data-nav-badge="notifications" hidden aria-hidden="true"></span>
+                  <span class="lw-icon-btn__dot bottom-nav-dot" data-nav-dot="notifications" hidden aria-hidden="true"></span>
                 </a>
               </div>
             </div>
@@ -1540,6 +1541,36 @@
 
       <!-- Right: settings & preferences -->
       <div style="display: flex; flex-direction: column; gap: 16px;">
+
+        <div class="card" id="profileIdentityCard">
+          <div class="card__head">
+            <span class="card__icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 10.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Z" stroke="currentColor" stroke-width="1.4"/><path d="M3.6 17c.9-2.9 3.1-4.7 6.4-4.7s5.5 1.8 6.4 4.7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span>
+            <span class="card__head-text">
+              <span class="card__title">Chat identity</span>
+              <span class="card__meta">Edit your handle and profile picture</span>
+            </span>
+            <button type="button" class="card__collapse-btn" id="profileIdentityCollapseBtn" aria-expanded="true" aria-controls="profileIdentityCollapseBody" aria-label="Collapse chat identity">
+              <svg class="card__collapse-chevron" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="m4 6 4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+          <div class="card__collapse-body" id="profileIdentityCollapseBody">
+            <form id="profileIdentityForm" action="javascript:void(0)" style="display:flex;flex-direction:column;gap:10px;">
+              <label class="form-field">
+                <span>Chat handle</span>
+                <input type="text" id="profileHandleInput" maxlength="24" placeholder="e.g. kofi-ripple" autocomplete="off" spellcheck="false" />
+              </label>
+              <label class="form-field">
+                <span>Profile picture</span>
+                <input type="file" id="profileAvatarInput" accept="image/*" capture="environment" />
+              </label>
+              <div style="display:flex;gap:8px;">
+                <button type="button" class="btn btn--ghost" id="profileAvatarClearBtn" style="flex:1;">Use generated SVG</button>
+                <button type="submit" class="btn btn--primary" id="profileIdentitySaveBtn" style="flex:1;">Save identity</button>
+              </div>
+              <p id="profileIdentityMessage" style="font-size:0.76rem;color:var(--text-faint);margin:0;"></p>
+            </form>
+          </div>
+        </div>
 
         <div class="card">
           <div class="card__head">
