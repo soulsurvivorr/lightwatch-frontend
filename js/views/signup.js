@@ -27,6 +27,14 @@
 
     const EMOJI_RE = /[\u{1F1E6}-\u{1F1FF}\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{2190}-\u{21FF}\u{2B00}-\u{2BFF}\u{FE0F}\u{200D}]/gu;
 
+    function isNativeApp() {
+        return Boolean(
+            window.Capacitor &&
+            typeof window.Capacitor.isNativePlatform === 'function' &&
+            window.Capacitor.isNativePlatform()
+        );
+    }
+
     function prefillFromPriorAttempt() {
         try {
             const saved = JSON.parse(localStorage.getItem('signupUser') || 'null');
@@ -174,47 +182,72 @@
         });
     }
 
-    // ---- City field only: when it's focused and the on-screen keyboard is
-    // up (mobile), nudge just this field's own row up enough to clear the
-    // keyboard. Applied as an inline style directly on this one field-group
-    // instance (not through the shared .field-group class), so nothing else
-    // on the form is touched. margin-top, not transform: the entrance
-    // animation on .field-group already owns transform with fill:both, so a
-    // transform here would just be silently overridden by its frozen end
-    // state. Clamped so it can never overshoot into the fields above it. ----
+    // ---- City field: native app only. When it's focused and the
+    // on-screen keyboard is up, nudge the whole .signup-wrap up just
+    // enough to keep the city field clear of the keyboard, then ease it
+    // back down on blur. Same transform + CSS-var approach as the login
+    // box (see login.js/login.css --login-keyboard-shift), rather than
+    // margin-top on the single field-group: shifting the whole wrap
+    // keeps the field's position relative to the rest of the card
+    // consistent instead of just that one row jumping around on its
+    // own. Skipped entirely outside the native app — a regular mobile
+    // browser already scrolls the focused field into view itself. ----
     function bindCityKeyboardShift() {
-        if (!cityInput) return;
-        const fieldGroup = cityInput.closest('.field-group');
-        if (!fieldGroup) return;
+        if (!cityInput || !isNativeApp() || !window.visualViewport) return;
+        const wrap = document.querySelector('.signup-wrap');
+        if (!wrap) return;
 
-        const MAX_SHIFT = 140; // px — a sane ceiling regardless of viewport math
+        const KEYBOARD_BOTTOM_GAP = 20; // px of breathing room below the field
         let isFocused = false;
-
-        fieldGroup.style.transition = 'margin-top .2s ease';
 
         const updateShift = () => {
             if (!isFocused) return;
-            const viewportBottom = (window.visualViewport?.height || window.innerHeight) - 18;
-            const fieldBottom = fieldGroup.getBoundingClientRect().bottom;
-            const shift = Math.max(-MAX_SHIFT, Math.min(0, viewportBottom - fieldBottom));
-            fieldGroup.style.marginTop = `${shift}px`;
+
+            // Measure the wrap's natural (unshifted) position first, same
+            // reasoning as login's updateKeyboardShift: getBoundingClientRect()
+            // reflects any transform already applied, so zero it out before
+            // measuring or repeated 'resize' events during the keyboard's
+            // open animation would compound the offset instead of shifting
+            // from the true resting position each time.
+            wrap.style.setProperty('--signup-keyboard-shift', '0px');
+            const fieldBottom = cityInput.getBoundingClientRect().bottom;
+
+            const viewportBottom = window.visualViewport.height - KEYBOARD_BOTTOM_GAP;
+            const shift = Math.min(0, viewportBottom - fieldBottom);
+
+            if (shift < 0) {
+                wrap.style.setProperty('--signup-keyboard-shift', `${shift}px`);
+            } else {
+                wrap.style.removeProperty('--signup-keyboard-shift');
+            }
         };
         const clearShift = () => {
-            fieldGroup.style.marginTop = '';
+            wrap.style.removeProperty('--signup-keyboard-shift');
+        };
+
+        const handleNativeKeyboardState = () => {
+            if (!isFocused) return;
+            updateShift();
+            requestAnimationFrame(updateShift);
+            setTimeout(updateShift, 180);
+            setTimeout(updateShift, 400);
         };
 
         cityInput.addEventListener('focus', () => {
             isFocused = true;
+            updateShift();
             requestAnimationFrame(updateShift);
-            setTimeout(updateShift, 180); // keyboard animates in — recheck once it's settled
+            setTimeout(updateShift, 180);
+            setTimeout(updateShift, 400);
         });
         cityInput.addEventListener('blur', () => {
             isFocused = false;
             clearShift();
         });
-        window.visualViewport?.addEventListener('resize', () => {
-            if (isFocused) requestAnimationFrame(updateShift);
-        });
+        window.visualViewport.addEventListener('resize', updateShift);
+        window.visualViewport.addEventListener('scroll', updateShift);
+        window.addEventListener('lw-keyboard-show', handleNativeKeyboardState);
+        window.addEventListener('lw-keyboard-hide', clearShift);
     }
 
     function mount() {

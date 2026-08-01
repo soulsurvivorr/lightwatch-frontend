@@ -202,7 +202,12 @@
             showFooter();
         });
 
-        if (window.visualViewport && userInput) {
+        // Native app only — in a regular mobile browser the page already
+        // reflows/scrolls the focused field into view on its own, and
+        // stacking this manual shift on top of that just double-moves
+        // the box. Capacitor's webview doesn't get that for free, so
+        // this stays scoped to isNative.
+        if (isNative && window.visualViewport && userInput) {
             // Gap kept between the bottom of the field and the top of the
             // keyboard once the box has been pulled up — a little more
             // than the old 16px so the input clears the keyboard with
@@ -251,26 +256,28 @@
 
             const handleUserInputFocus = () => {
                 updateKeyboardShift();
-                // Safety net: on some Android WebViews / older Safari, the
-                // visualViewport 'resize' event lags behind the keyboard's
-                // open animation, so the first calculation above (run before
-                // the viewport has actually shrunk) comes out as a no-op
-                // shift. Re-check a couple more times as the keyboard
-                // settles rather than relying solely on 'resize' to catch up.
                 requestAnimationFrame(updateKeyboardShift);
                 setTimeout(updateKeyboardShift, 180);
                 setTimeout(updateKeyboardShift, 400);
+            };
+
+            const handleNativeKeyboardState = () => {
+                handleUserInputFocus();
             };
 
             userInput.addEventListener('focus', handleUserInputFocus);
             userInput.addEventListener('blur', clearKeyboardShift);
             window.visualViewport.addEventListener('resize', updateKeyboardShift);
             window.visualViewport.addEventListener('scroll', updateKeyboardShift);
+            window.addEventListener('lw-keyboard-show', handleNativeKeyboardState);
+            window.addEventListener('lw-keyboard-hide', clearKeyboardShift);
             keyboardViewportCleanup = () => {
                 userInput.removeEventListener('focus', handleUserInputFocus);
                 userInput.removeEventListener('blur', clearKeyboardShift);
                 window.visualViewport.removeEventListener('resize', updateKeyboardShift);
                 window.visualViewport.removeEventListener('scroll', updateKeyboardShift);
+                window.removeEventListener('lw-keyboard-show', handleNativeKeyboardState);
+                window.removeEventListener('lw-keyboard-hide', clearKeyboardShift);
                 clearKeyboardShift();
             };
         }

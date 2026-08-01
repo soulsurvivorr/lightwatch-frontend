@@ -274,6 +274,12 @@ body:has(#view-signup:not([hidden])) #view-signup {
     display: flex;
     flex-direction: column;
     align-items: center;
+    /* Set by signup.js (native app only, while the City field is
+       focused) to keep the field clear of the on-screen keyboard.
+       0px the rest of the time, making this a no-op everywhere else —
+       same pattern as .login-box's --login-keyboard-shift. */
+    transform: translateY(var(--signup-keyboard-shift, 0px));
+    transition: transform 0.2s ease-out;
 }
 
 /* ===== Left: marketing panel ===== */

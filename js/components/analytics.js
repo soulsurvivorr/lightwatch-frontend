@@ -35,6 +35,7 @@ function initAppBoot() {
     initServiceWorker();
     initViewportHeightFix();
     initBackButton();
+    initKeyboardPlugin();
     initFirstLaunchNotificationPrompt();
 }
 
@@ -163,6 +164,31 @@ function initViewportHeightFix() {
     window.addEventListener('orientationchange', () => {
         setTimeout(setAppVh, 200);
     });
+}
+
+// ---- Capacitor keyboard support for native app inputs ----
+let keyboardPluginInitialized = false;
+
+async function initKeyboardPlugin() {
+    if (keyboardPluginInitialized || !window.Capacitor?.isNativePlatform?.()) return;
+
+    try {
+        const { Keyboard } = window.Capacitor.Plugins || {};
+        if (!Keyboard?.addListener) return;
+
+        await Keyboard.setAccessoryBarVisible({ isVisible: false });
+        Keyboard.addListener('keyboardWillShow', () => {
+            document.documentElement.classList.add('lw-keyboard-visible');
+            window.dispatchEvent(new Event('lw-keyboard-show'));
+        });
+        Keyboard.addListener('keyboardWillHide', () => {
+            document.documentElement.classList.remove('lw-keyboard-visible');
+            window.dispatchEvent(new Event('lw-keyboard-hide'));
+        });
+        keyboardPluginInitialized = true;
+    } catch (err) {
+        console.warn('[app boot] keyboard plugin init failed', err);
+    }
 }
 
 // ---- Hardware / gesture back button (Android) ----
