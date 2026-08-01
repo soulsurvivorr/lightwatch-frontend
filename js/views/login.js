@@ -128,6 +128,9 @@
             return;
         }
 
+        const controller = new AbortController();
+        const timeoutId = window.setTimeout(() => controller.abort(), 10000);
+
         sendCodeBtn.disabled = true;
         sendCodeBtn.textContent = 'Sending…';
 
@@ -135,10 +138,16 @@
             const response = await fetch(`${API_URL}/signin`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ emailPhone: loginInput })
+                body: JSON.stringify({ emailPhone: loginInput }),
+                signal: controller.signal
             });
 
-            const result = await response.json();
+            let result = {};
+            try {
+                result = await response.json();
+            } catch {
+                result = {};
+            }
 
             if (!response.ok) {
                 errorMsg.textContent = result.error || 'No account found';
@@ -163,8 +172,12 @@
 
         } catch (err) {
             console.error("Login fetch error:", err);
-            errorMsg.textContent = `Connection failed to ${API_URL}. Is the server running?`;
+            const isAbort = err?.name === 'AbortError';
+            errorMsg.textContent = isAbort
+                ? 'The request timed out. Please try again.'
+                : `Connection failed to ${API_URL}. Is the server running?`;
         } finally {
+            window.clearTimeout(timeoutId);
             sendCodeBtn.disabled = false;
             sendCodeBtn.textContent = 'Send code';
         }
