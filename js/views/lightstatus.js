@@ -820,6 +820,18 @@ window.addEventListener('focus', () => {
     if (currentLocation) fetchPrimaryLightStatus();
 });
 
+// Any component that reports light status (modal, secondary location,
+// future quick actions) broadcasts this event. Refresh immediately so
+// the primary hero does not sit on stale/unknown text until the poll.
+window.addEventListener('lw:light-status-reported', (e) => {
+    const reportedLocation = slugify(e?.detail?.location || '');
+    if (!currentLocationKey || !reportedLocation) return;
+    if (reportedLocation === currentLocationKey) {
+        fetchPrimaryLightStatus();
+        refreshLocationPanel();
+    }
+});
+
 loadAchievements();
 // -----------------------------------------------------
 // PUBLIC API — lets other views drive the exact same report

@@ -93,86 +93,11 @@
         window.addEventListener('lw:route-changed', close);
     }
 
-    // ------------------------------------------------------------
-    // Status-hero icon (Home page) — tap to report light on/off
-    // directly from the icon, without opening the modal. Posts to
-    // the same /lightstatus endpoint as the modal's On/Off buttons
-    // above, and plays a quick "pop" (see .status-hero__icon--pop
-    // in animations.css) so the tap feels immediate.
-    // ------------------------------------------------------------
-    function initStatusHeroToggle() {
-        const icon = document.getElementById('statusIcon');
-        if (!icon) return;
-
-        const statusPillText = document.getElementById('statusPillText');
-
-        function currentStatus() {
-            if (icon.classList.contains('status-hero__icon--on')) return 'on';
-            if (icon.classList.contains('status-hero__icon--off')) return 'off';
-            return null; // unknown state — first tap reports "on"
-        }
-
-        function applyIconState(status) {
-            icon.classList.remove('status-hero__icon--on', 'status-hero__icon--off', 'status-hero__icon--unknown');
-            icon.classList.add(status === 'on' ? 'status-hero__icon--on' : 'status-hero__icon--off');
-            if (statusPillText) {
-                statusPillText.textContent = status === 'on' ? 'Light is on' : 'Light is off';
-            }
-        }
-
-        function playPop() {
-            icon.classList.remove('status-hero__icon--pop');
-            // Force reflow so back-to-back taps still restart the animation.
-            void icon.offsetWidth;
-            icon.classList.add('status-hero__icon--pop');
-        }
-
-        function handleActivate() {
-            const location = getCurrentLocation();
-            if (!location) {
-                toast('Add your location in Account first so reports know where to go.');
-                return;
-            }
-
-            const next = currentStatus() === 'on' ? 'off' : 'on';
-            playPop();
-            applyIconState(next);
-
-            const userId = getCurrentUserId();
-            if (typeof API_URL === 'undefined') return;
-
-            fetch(`${API_URL}/lightstatus`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ location, status: next, userId })
-            })
-                .then(r => r.json())
-                .then(() => {
-                    toast(`Thanks — reported light ${next.toUpperCase()} in ${location.split(',')[0]}.`);
-                    window.dispatchEvent(new CustomEvent('lw:light-status-reported', { detail: { location, status: next } }));
-                })
-                .catch(() => toast(`Saved locally — couldn't reach the server just now.`));
-        }
-
-        icon.setAttribute('role', 'button');
-        icon.setAttribute('tabindex', '0');
-        icon.setAttribute('aria-label', 'Report light status');
-        icon.addEventListener('click', handleActivate);
-        icon.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                handleActivate();
-            }
-        });
-    }
-
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
             initReportModal();
-            initStatusHeroToggle();
         });
     } else {
         initReportModal();
-        initStatusHeroToggle();
     }
 })();
