@@ -2,6 +2,30 @@
    Login page
    ============================================================ */
 
+/* Auth is intentionally always dark. The saved app theme remains
+  available for the authenticated shell, but it must not recolor the
+  login, signup, or verification flow. This boundary is declared here
+  after the theme token files load and covers all three auth views. */
+:root:has(#view-login:not([hidden])),
+:root:has(#view-signup:not([hidden])),
+:root:has(#view-verification:not([hidden])) {
+  --bg-deep: #0a0f1a;
+  --bg-panel: #0f1724;
+  --bg-panel-raised: #161f2d;
+  --border-soft: rgba(255, 255, 255, 0.12);
+  --border-strong: rgba(255, 255, 255, 0.22);
+  --dark-bg: #0a0f1a;
+  --dark-bg-mid: #111c2b;
+  --text-bright: #eef3fb;
+  --text-muted: #bdc8da;
+  --text-faint: #90a0b8;
+  --app-bg-gradient: linear-gradient(160deg, #0a0f1a, #111c2b 140%);
+  --app-bg-solid: #0a0f1a;
+  --meta-theme-color: #0a0f1a;
+  color-scheme: dark !important;
+  background: #0a0f1a !important;
+}
+
 /*
   HTML -> CSS order guide (index.html)
   1) .login-shell

@@ -5828,6 +5828,33 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
   border-color: var(--brand2, #4A90D9);
 }
 
+/* Final nav state: light mode keeps the selected glyph black, and
+   selecting Report does not replay a press/fade animation. */
+html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link--active .bottom-nav-icon svg,
+html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page"] .bottom-nav-icon svg {
+  color: #111318 !important;
+}
+
+#bottom_nav_wrapper .bottom-nav-link--active,
+#bottom_nav_wrapper .bottom-nav-link[aria-current="page"],
+#bottom_nav_wrapper .bottom-nav-link--active::before,
+#bottom_nav_wrapper .bottom-nav-link[aria-current="page"]::before,
+#bottom_nav_wrapper .bottom-nav-link--active .bottom-nav-icon,
+#bottom_nav_wrapper .bottom-nav-link[aria-current="page"] .bottom-nav-icon,
+#bottom_nav_wrapper .bottom-nav-link:active .bottom-nav-icon {
+  animation: none !important;
+  transition: none !important;
+  transform: none !important;
+}
+
+#bottom_nav_wrapper .bottom-nav-link--active .bottom-nav-label,
+#bottom_nav_wrapper .bottom-nav-link[aria-current="page"] .bottom-nav-label,
+#bottom_nav_wrapper .bottom-nav-link[data-nav="chat"] .bottom-nav-label {
+  animation: none !important;
+  transition: none !important;
+  transform: none !important;
+}
+
 /* ============================================================
    BOTTOM NAV PILL — strip border-radius / border-color / blur
    Removes the rounded pill edge, the border line, and the glass

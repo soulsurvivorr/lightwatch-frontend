@@ -1142,7 +1142,17 @@ html[data-theme="device"] #view-chat .community-banner__icon-btn {
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
+  min-height: 36px;
   gap: 6px;
+}
+
+#view-chat .community-composer__top > .community-composer__input {
+  align-self: flex-end;
+  margin-bottom: 1px;
+}
+
+#view-chat .community-composer__top > .chat-reply-preview {
+  align-self: center;
 }
 
 #view-chat .community-composer__avatar {
@@ -1363,7 +1373,7 @@ html[data-theme="device"] #view-chat .community-banner__icon-btn {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  margin-top: 18px;
+  margin-top: 0;
   flex-wrap: wrap;
 }
 
@@ -2156,21 +2166,37 @@ html[data-theme="device"] #view-chat .community-banner__icon-btn {
 
 /* ---- Floating "+" quick-report button ---- */
 #view-chat .community-fab {
-  position: fixed;
+  position: fixed !important;
   right: 16px;
-  bottom: calc(18px + 72px + env(safe-area-inset-bottom));
+  bottom: calc(76px + env(safe-area-inset-bottom)) !important;
+  top: auto !important;
   width: 52px;
   height: 52px;
   border-radius: 50%;
   border: none;
   background: var(--brand);
   color: white;
-  display: flex;
+  display: flex !important;
   align-items: center;
   justify-content: center;
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
   cursor: pointer;
-  z-index: 80;
+  z-index: 160;
+  pointer-events: auto;
+}
+
+/* Keep the quick-report control in the first viewport, floating above
+   the Profile/bottom navigation instead of joining the report feed's
+   normal document flow. */
+body.lw-chat-community-mode #view-chat .community-fab {
+  position: fixed !important;
+  bottom: calc(76px + env(safe-area-inset-bottom)) !important;
+}
+
+@media (min-width: 769px) {
+  body.lw-chat-community-mode #view-chat .community-fab {
+    bottom: 24px !important;
+  }
 }
 
 #view-chat .community-fab svg {

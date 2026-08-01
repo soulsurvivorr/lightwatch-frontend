@@ -24,6 +24,11 @@
   transition: transform 0.3s ease;
 }
 
+html[data-theme="light"] .topbar {
+  background: #ffffff;
+  border-bottom-color: var(--border-soft);
+}
+
 .topbar__inner {
   max-width: var(--max-width);
   margin: 0 auto;
