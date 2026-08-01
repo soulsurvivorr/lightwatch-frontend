@@ -2099,14 +2099,39 @@
   document.getElementById("analyticsRange")?.addEventListener("change", loadAnalytics);
 
   // ===== HEALTH PANEL =====
-  async function updateHealthPanel() {
+  let healthPanelRefreshTimer = null;
+  let healthPanelRequestInFlight = false;
+  let healthPanelAbortController = null;
+  let lastDisplayedLatencyMs = null;
+
+  async function updateHealthPanel({ force = false } = {}) {
     const status = document.getElementById("healthStatus");
-    if (status) status.textContent = "Checking…";
-    const start = Date.now();
+    if (status && (!healthPanelRequestInFlight || force)) {
+      status.textContent = "Checking…";
+    }
+
+    if (healthPanelRequestInFlight && !force) return;
+
+    if (healthPanelAbortController) {
+      healthPanelAbortController.abort();
+    }
+
+    const controller = new AbortController();
+    healthPanelAbortController = controller;
+    healthPanelRequestInFlight = true;
+
+    const start = performance.now();
     try {
-      const healthRes = await fetch(`${API}/`);
+      const healthRes = await fetch(`${API}/`, {
+        cache: "no-store",
+        signal: controller.signal
+      });
+      const rawLatency = Math.round(performance.now() - start);
+      const latency = lastDisplayedLatencyMs == null
+        ? rawLatency
+        : Math.round(lastDisplayedLatencyMs * 0.65 + rawLatency * 0.35);
+      lastDisplayedLatencyMs = latency;
       const health = await healthRes.json().catch(() => ({}));
-      const latency = Date.now() - start;
       const hApiLatency = document.getElementById("hApiLatency");
       const hApiIndicator = document.getElementById("hApiIndicator");
       if (hApiLatency) hApiLatency.textContent = latency + "ms";
@@ -2122,13 +2147,19 @@
         const dbState = String(health.mongodb || "").toLowerCase();
         hDbIndicator.className = "health-card__indicator " + (dbState === "connected" ? "health-card__indicator--ok" : dbState === "connecting" ? "health-card__indicator--warn" : "health-card__indicator--err");
       }
-    } catch(e) {
+    } catch (e) {
+      if (e?.name === "AbortError") return;
       const hApiIndicator = document.getElementById("hApiIndicator");
       if (hApiIndicator) hApiIndicator.className = "health-card__indicator health-card__indicator--err";
       const hDbStatus = document.getElementById("hDbStatus");
       const hDbIndicator = document.getElementById("hDbIndicator");
       if (hDbStatus) hDbStatus.textContent = "Unavailable";
       if (hDbIndicator) hDbIndicator.className = "health-card__indicator health-card__indicator--err";
+    } finally {
+      if (healthPanelAbortController === controller) {
+        healthPanelAbortController = null;
+      }
+      healthPanelRequestInFlight = false;
     }
 
     const hPushSubs = document.getElementById("hPushSubs");
@@ -2145,6 +2176,17 @@
     renderSystemLog();
   }
 
+  function startHealthPanelAutoRefresh() {
+    if (healthPanelRefreshTimer) {
+      clearInterval(healthPanelRefreshTimer);
+    }
+
+    updateHealthPanel();
+    healthPanelRefreshTimer = setInterval(() => {
+      updateHealthPanel();
+    }, 15000);
+  }
+
   setInterval(() => {
     if (sessionStartTime) {
       const elapsed = Date.now() - sessionStartTime;
@@ -2155,7 +2197,8 @@
     }
   }, 5000);
 
-  document.getElementById("refreshHealth")?.addEventListener("click", updateHealthPanel);
+  document.getElementById("refreshHealth")?.addEventListener("click", () => updateHealthPanel({ force: true }));
+  startHealthPanelAutoRefresh();
 
   // ===== SEARCHES =====
   document.getElementById("userSearch")?.addEventListener("input", e => {
