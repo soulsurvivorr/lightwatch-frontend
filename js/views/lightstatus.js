@@ -173,6 +173,16 @@ let currentUserId = (typeof getSession === 'function' && getSession()?.user?.id)
 let locationReports = []; // reports scoped to the current location, newest first
 let reportsPollInterval = null;
 
+function isValidObjectId(value) {
+    return typeof value === 'string' && /^[0-9a-fA-F]{24}$/.test(value.trim());
+}
+
+function getReporterId() {
+    const sessionId = (typeof getSession === 'function' && getSession()?.user?.id) || null;
+    const candidate = sessionId || currentUserId;
+    return isValidObjectId(candidate) ? candidate.trim() : undefined;
+}
+
 
 // -----------------------------------------------------
 // LIGHT TOGGLE — status-hero__icon as a tap-to-report control.
@@ -295,6 +305,7 @@ async function toggleLightStatus() {
 
     const previousStatus = currentReportedStatus;
     const nextStatus = previousStatus === 'on' ? 'off' : 'on';
+    const reporterId = getReporterId();
 
     animateIconDecision(statusIconEl, nextStatus);
     statusIconEl?.setAttribute('aria-busy', 'true');
@@ -310,7 +321,7 @@ async function toggleLightStatus() {
         const res = await fetch(`${API_BASE}/lightstatus`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ location: currentLocation, status: nextStatus, userId: currentUserId || undefined })
+            body: JSON.stringify({ location: currentLocation, status: nextStatus, userId: reporterId })
         });
         if (!res.ok) throw new Error('report failed');
         const record = await res.json();
@@ -325,9 +336,15 @@ async function toggleLightStatus() {
 
         refreshLocationPanel();
     } catch (err) {
-        // Revert to the last confirmed state rather than leave the
-        // optimistic "Reporting…" label stuck on screen.
-        paintPrimaryStatus({ status: previousStatus, reportedAt: null });
+        // If submit fails, immediately refetch canonical status before
+        // falling back so a transient/local submit issue doesn't show
+        // the misleading "No reports yet" state.
+        try {
+            await fetchPrimaryLightStatus();
+        } catch (_) {
+            paintPrimaryStatus({ status: previousStatus, reportedAt: null });
+        }
+        window.lwToast?.('Could not submit your check-in. Please try again.');
     } finally {
         statusIconEl?.removeAttribute('aria-busy');
         lightToggleInFlight = false;
@@ -812,10 +829,11 @@ window.LWLightStatus = {
     // POSTs a report for any location (not just the primary one) and
     // returns the updated { status, reportedAt, ... } record.
     async report(location, status, userId) {
+        const reporterId = isValidObjectId(userId) ? userId.trim() : undefined;
         const res = await fetch(`${API_BASE}/lightstatus`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ location, status, userId: userId || undefined })
+            body: JSON.stringify({ location, status, userId: reporterId })
         });
         if (!res.ok) throw new Error('report failed');
         const record = await res.json();
