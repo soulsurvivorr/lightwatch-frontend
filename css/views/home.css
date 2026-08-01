@@ -5060,7 +5060,7 @@ body:not(.page-data-loading) #view-home #realPageContent {
 
 .lw-home-header__sub {
   margin-top: 4px;
-  font-size: 0.72rem;
+  font-size: 0.66rem;
   color: var(--lw-text-muted);
   line-height: 1.4;
 }
@@ -5125,7 +5125,7 @@ body:not(.page-data-loading) #view-home #realPageContent {
   display: flex;
   justify-content: flex-start;
   align-items: center;
-  gap: 2px;
+  gap: 8px;
   padding: 8px 20px 20px;
   /* Reserve room on the right so the text column doesn't run under the
      absolutely-positioned icon below. */
@@ -5136,34 +5136,12 @@ body:not(.page-data-loading) #view-home #realPageContent {
    the card since the location line under it was removed, and it read
    too large next to the "Since ..." line. */
 #view-home .lw-status-hero .status-hero__title {
-  font-size: 1.1rem;
+  font-size: 1.02rem;
   font-weight: 800;
   color: #fff;
-}
-
-/* Location line — small green dot + location name, sitting between
-   the big status title and the "Since ..." line, matching the
-   reference image. Uses ::before (rather than a nested span) so it
-   survives any script that sets #locationMeta's textContent directly.
-   NOTE: the #locationMeta element itself was removed from the markup
-   per request; this rule is now unreachable and kept only as a no-op
-   in case something re-adds a `.status-hero__location` element later. */
-#view-home .lw-status-hero .status-hero__location {
-  margin-top: 4px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--lw-green);
-}
-
-#view-home .lw-status-hero .status-hero__location::before {
-  content: "";
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  margin-right: 6px;
-  border-radius: 50%;
-  background: var(--lw-green);
-  vertical-align: middle;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 #view-home .lw-status-hero .status-hero__sub {
@@ -5201,6 +5179,8 @@ body:not(.page-data-loading) #view-home #realPageContent {
   display: flex;
   align-items: center;
   justify-content: center;
+  z-index: 3;
+  pointer-events: auto;
 }
 
 #view-home .lw-status-hero .status-hero__icon svg {
@@ -5344,12 +5324,7 @@ body:not(.page-data-loading) #view-home #realPageContent {
 }
 
 .lw-stat-card__sub {
-  display: block;
-  margin-top: 2px;
-  font-size: 0.62rem;
-  font-weight: 400;
-  line-height: 1.2;
-  color: var(--lw-text-faint);
+  display: none;
 }
 
 /* Optional trend/delta line (e.g. "\u2193 30% vs yesterday") — only
@@ -5360,6 +5335,32 @@ body:not(.page-data-loading) #view-home #realPageContent {
    colored arrow line from the reference design. */
 .lw-stat-card__sub:empty {
   display: none;
+}
+
+#view-home .status-hero__title-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+#view-home .status-hero__title-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+#view-home .status-hero__title-icon--on {
+  color: var(--status-green, #2fbf6e);
+}
+
+#view-home .status-hero__title-icon--off {
+  color: var(--status-orange, #f2874d);
+}
+
+#view-home .status-hero__title-icon--unknown {
+  color: var(--amber, #d6a24a);
 }
 
 .lw-stat-card__delta {

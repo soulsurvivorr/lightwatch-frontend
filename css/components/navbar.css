@@ -113,6 +113,97 @@
   color: var(--text-muted);
 }
 
+.topbar__actions {
+  position: relative;
+}
+
+.topbar__hamburger {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 4px;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--brand2) 32%, var(--border-soft));
+  background: color-mix(in srgb, var(--bg-panel-raised) 86%, transparent);
+  color: #f3f9ff;
+  cursor: pointer;
+}
+
+.topbar__hamburger-bar {
+  width: 18px;
+  height: 2px;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.topbar__hamburger-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 224px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--brand2) 32%, var(--border-soft));
+  background: linear-gradient(165deg, color-mix(in srgb, var(--dark-bg-mid) 92%, #0a1220), color-mix(in srgb, var(--dark-bg) 90%, #081220));
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.34);
+  z-index: 30;
+}
+
+.topbar__hamburger-menu[hidden] {
+  display: none;
+}
+
+.topbar__hamburger-link {
+  display: flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 0 10px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  color: rgba(244, 250, 255, 0.88);
+  font-size: 0.84rem;
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.topbar__hamburger-link:hover,
+.topbar__hamburger-link:focus-visible {
+  border-color: color-mix(in srgb, var(--brand2) 32%, var(--border-soft));
+  background: color-mix(in srgb, var(--brand2) 12%, var(--bg-panel-raised));
+  color: #ffffff;
+}
+
+.topbar__hamburger-link.is-active {
+  border-color: color-mix(in srgb, var(--brand2) 44%, var(--border-soft));
+  background: linear-gradient(135deg, color-mix(in srgb, var(--brand2) 50%, #101d2f), color-mix(in srgb, var(--teal) 42%, #0d1726));
+  color: #ffffff;
+}
+
+@media (min-width: 541px) and (max-width: 1023px) {
+  #primaryNav,
+  .topbar__actions .lw-icon-btn {
+    display: none !important;
+  }
+
+  .topbar__hamburger {
+    display: inline-flex;
+  }
+
+  #bottom_nav_wrapper {
+    display: none !important;
+  }
+
+  body:has(#appShell:not([hidden])) {
+    padding-bottom: 0;
+  }
+}
+
 .avatar {
   width: 32px;
   height: 32px;

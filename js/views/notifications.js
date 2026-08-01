@@ -261,7 +261,7 @@
             case 'community':
                 return '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4.5 6.8c0-1.3 1-2.3 2.3-2.3h10.4c1.3 0 2.3 1 2.3 2.3v6.6c0 1.3-1 2.3-2.3 2.3H9.8L6 19v-3.3H6.8c-1.3 0-2.3-1-2.3-2.3V6.8Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M8 8.6h8M8 11.4h5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>';
             case 'news':
-                return '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M5 4h11a2 2 0 0 1 2 2v13a1 1 0 0 1-1.5.87L15 18.7l-1.5 1.17a1 1 0 0 1-1.2 0L11 18.7l-1.5 1.17a1 1 0 0 1-1.5-.87V6a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M8 8h6M8 11h6M8 14h3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>';
+                return '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M6 5h10.8A2.2 2.2 0 0 1 19 7.2V17a2 2 0 0 1-2 2H8.8A2.8 2.8 0 0 1 6 16.2V5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M6 16a1.8 1.8 0 1 0 3.6 0V8.4h7.7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.4 10h4.8M11.4 12.8h4.8M11.4 15.6H15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
             case 'report_update':
                 return '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M7.5 4.2h9a1 1 0 0 1 1 1v14.3l-5.5-3.6-5.5 3.6V5.2a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>';
             case 'system':

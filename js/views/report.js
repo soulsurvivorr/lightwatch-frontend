@@ -180,10 +180,10 @@ function parseLightStatus(rawText) {
     for (const key of ['on', 'off']) {
         const prefix = LIGHT_STATUS_PREFIX[key];
         if (text.startsWith(prefix)) {
-            return { status: key, text: text.slice(prefix.length) };
+            return { status: key, text: text.slice(prefix.length).replace(/\u200B/g, '') };
         }
     }
-    return { status: null, text };
+    return { status: null, text: text.replace(/\u200B/g, '') };
 }
 
 function setSelectedLightStatus(next) {
@@ -432,7 +432,11 @@ async function prepareComposerImageDataUrl(file) {
         return { error: 'Could not read image. Try another one.' };
     }
 
-    if (originalDataUrl.length <= COMPOSER_MEDIA_MAX_DATA_URL_LENGTH) {
+    const originalMime = (originalDataUrl.match(/^data:([^;]+);/i)?.[1] || '').toLowerCase();
+    const backendSafeMime = /^image\/(png|jpe?g|webp|heic|heif)$/i.test(originalMime);
+    const shouldNormalizeToJpeg = !backendSafeMime;
+
+    if (!shouldNormalizeToJpeg && originalDataUrl.length <= COMPOSER_MEDIA_MAX_DATA_URL_LENGTH) {
         return { dataUrl: originalDataUrl };
     }
 
@@ -568,11 +572,7 @@ window.addEventListener('touchcancel', () => {
 });
 
 statusMediaBtn?.addEventListener('click', () => {
-    if (isLikelyTouchPhone()) {
-        const useCamera = window.confirm('Use camera now? Tap Cancel to open gallery.');
-        openMediaPicker(useCamera ? 'camera' : 'gallery');
-        return;
-    }
+    // Open the user's photos directly; no camera/gallery confirm step.
     openMediaPicker('gallery');
 });
 
@@ -1143,7 +1143,7 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
     commentStat.type = 'button';
     commentStat.className = 'report-card__stat report-card__stat--comment';
     commentStat.setAttribute('aria-label', 'Reply');
-    commentStat.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4 6.5h16v10h-8l-4 3v-3H4v-10Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span class="report-card__stat-count">' + (replyCount || 0) + '</span>';
+    commentStat.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4.5 7.2a2.2 2.2 0 0 1 2.2-2.2h10.6a2.2 2.2 0 0 1 2.2 2.2v7.1a2.2 2.2 0 0 1-2.2 2.2H12l-4.4 3v-3H6.7a2.2 2.2 0 0 1-2.2-2.2V7.2Z" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></svg><span class="report-card__stat-count">' + (replyCount || 0) + '</span>';
     // Reply now opens a small composer right under THIS card instead of
     // scrolling up to the page's main input (see toggleInlineReplyBox).
     commentStat.addEventListener('click', () => toggleInlineReplyBox(el, chat, cleanText, { mode: 'reply' }));
@@ -1156,7 +1156,7 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
     repostStat.type = 'button';
     repostStat.className = 'report-card__stat report-card__stat--repost';
     repostStat.setAttribute('aria-label', 'Repost');
-    repostStat.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M5 8h11l-2.5-2.5M19 16H8l2.5 2.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 8v8M19 8v8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="report-card__stat-count">0</span>';
+    repostStat.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M7 7.4h8.5a3 3 0 0 1 3 3v1.6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="m14.7 4.9 2.9 2.5-2.9 2.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M17 16.6H8.5a3 3 0 0 1-3-3V12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="m9.3 19.1-2.9-2.5 2.9-2.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="report-card__stat-count">0</span>';
     repostStat.addEventListener('click', async () => {
         if (repostStat.classList.contains('is-reposted') || repostStat.disabled) return;
         repostStat.disabled = true;
@@ -1184,7 +1184,7 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
     quoteStat.type = 'button';
     quoteStat.className = 'report-card__stat report-card__stat--quote';
     quoteStat.setAttribute('aria-label', 'Quote');
-    quoteStat.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M6 7h6v5H8v5H5v-6l1-4Zm9 0h6v5h-4v5h-3v-6l1-4Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>';
+    quoteStat.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M5.2 8.1c0-1.7 1.3-3 3-3h2.4v3.6H8.7v2.8h2.8v4.9H6.8c-.9 0-1.6-.7-1.6-1.6V8.1Zm8.8 0c0-1.7 1.3-3 3-3h2.4v3.6h-1.9v2.8h2.8v4.9h-4.7c-.9 0-1.6-.7-1.6-1.6V8.1Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>';
     quoteStat.addEventListener('click', () => toggleInlineReplyBox(el, chat, cleanText, { mode: 'quote' }));
     quoteStat.addEventListener('click', () => flashIconRing(quoteStat));
 
@@ -1192,10 +1192,16 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
     const likeStat = document.createElement('button');
     likeStat.type = 'button';
     likeStat.className = 'report-card__stat report-card__stat--like';
-    likeStat.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 20s-7.5-4.6-9.7-9A5.4 5.4 0 0 1 12 6a5.4 5.4 0 0 1 9.7 5c-2.2 4.4-9.7 9-9.7 9Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg><span class="report-card__stat-count">0</span>';
+    likeStat.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 20.2s-7.6-4.7-9.9-9.3A5.7 5.7 0 0 1 12 5.6a5.7 5.7 0 0 1 9.9 5.3c-2.3 4.6-9.9 9.3-9.9 9.3Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span class="report-card__stat-count">0</span>';
     likeStat.addEventListener('click', () => {
         flashIconRing(likeStat);
         const isLiked = likeStat.classList.toggle('is-liked');
+        if (isLiked) {
+            likeStat.classList.remove('is-liked-pop');
+            void likeStat.offsetWidth;
+            likeStat.classList.add('is-liked-pop');
+            setTimeout(() => likeStat.classList.remove('is-liked-pop'), 460);
+        }
         const countEl = likeStat.querySelector('.report-card__stat-count');
         if (countEl) countEl.textContent = String(Math.max(0, Number(countEl.textContent || 0) + (isLiked ? 1 : -1)));
     });
@@ -1984,7 +1990,8 @@ chatForm?.addEventListener('submit', async (e) => {
 
     const rawText = chatInput.value.trim();
     if (!rawText && !composerMediaDataUrl) return;
-    const text = selectedLightStatus ? `${LIGHT_STATUS_PREFIX[selectedLightStatus]}${rawText}` : rawText;
+    const baseText = rawText || (composerMediaDataUrl ? '\u200B' : '');
+    const text = selectedLightStatus ? `${LIGHT_STATUS_PREFIX[selectedLightStatus]}${baseText}` : baseText;
 
     const myId = getCurrentUserId();
     const loc  = chatLocation || getCurrentChatLocation();

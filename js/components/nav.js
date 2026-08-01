@@ -44,7 +44,35 @@
 //     applyActiveNav/bindRouteLinks' own logic above.
 // ============================================================
 
-const MOBILE_BREAKPOINT = 720;
+const PHONE_NAV_MAX_WIDTH = 540;
+const HAMBURGER_NAV_MAX_WIDTH = 1023;
+const MOBILE_BREAKPOINT = PHONE_NAV_MAX_WIDTH;
+let hamburgerMenuBound = false;
+
+function isHamburgerViewport() {
+    const width = window.innerWidth || 0;
+    return width > PHONE_NAV_MAX_WIDTH && width <= HAMBURGER_NAV_MAX_WIDTH;
+}
+
+function closeTopbarHamburgerMenu() {
+    const menu = document.getElementById('topbarHamburgerMenu');
+    const btn = document.getElementById('topbarHamburgerBtn');
+    if (!menu || !btn) return;
+    menu.hidden = true;
+    btn.setAttribute('aria-expanded', 'false');
+}
+
+function toggleTopbarHamburgerMenu() {
+    const menu = document.getElementById('topbarHamburgerMenu');
+    const btn = document.getElementById('topbarHamburgerBtn');
+    if (!menu || !btn || !isHamburgerViewport()) {
+        closeTopbarHamburgerMenu();
+        return;
+    }
+    const nextOpen = menu.hidden;
+    menu.hidden = !nextOpen;
+    btn.setAttribute('aria-expanded', nextOpen ? 'true' : 'false');
+}
 
 function applyNavVisibility() {
     const isMobile = window.innerWidth <= MOBILE_BREAKPOINT;
@@ -89,6 +117,15 @@ function applyActiveNav(section) {
             link.removeAttribute('aria-current');
         }
     });
+    document.querySelectorAll('.topbar__hamburger-link[data-nav]').forEach(link => {
+        const isActive = link.dataset.nav === section;
+        link.classList.toggle('is-active', isActive);
+        if (isActive) {
+            link.setAttribute('aria-current', 'page');
+        } else {
+            link.removeAttribute('aria-current');
+        }
+    });
 }
 
 // ── Report page panel switching (News / Community) ──────────────
@@ -121,7 +158,7 @@ function bindRouteLinks() {
     // either — that's the actual reason tapping them didn't open
     // Notifications/Account, not their tag name. Added below.
     document.querySelectorAll(
-        '.bottom-nav-link[data-nav], #primaryNav .nav__link[data-nav], .lw-icon-btn[data-nav], .community-banner__icon-btn[data-nav], .lw-header-avatar-btn[data-nav], .lw-section__viewall[data-route]'
+        '.bottom-nav-link[data-nav], #primaryNav .nav__link[data-nav], .lw-icon-btn[data-nav], .community-banner__icon-btn[data-nav], .lw-header-avatar-btn[data-nav], .lw-section__viewall[data-route], .topbar__hamburger-link[data-route], .topbar__hamburger-link[data-action]'
     ).forEach(link => {
         if (link.dataset.navBound === '1') return;
         link.dataset.navBound = '1';
@@ -161,7 +198,45 @@ function bindRouteLinks() {
                 e.preventDefault();
                 window.dispatchEvent(new CustomEvent('lw:report-elevated-click'));
             }
+
+            closeTopbarHamburgerMenu();
         });
+    });
+}
+
+function bindTopbarHamburger() {
+    if (hamburgerMenuBound) return;
+    const btn = document.getElementById('topbarHamburgerBtn');
+    const menu = document.getElementById('topbarHamburgerMenu');
+    if (!btn || !menu) return;
+
+    hamburgerMenuBound = true;
+
+    btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleTopbarHamburgerMenu();
+    });
+
+    menu.addEventListener('click', (e) => {
+        if (e.target && e.target.closest('.topbar__hamburger-link')) {
+            closeTopbarHamburgerMenu();
+        }
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!menu || menu.hidden) return;
+        const inMenu = e.target && e.target.closest('#topbarHamburgerMenu');
+        const inButton = e.target && e.target.closest('#topbarHamburgerBtn');
+        if (!inMenu && !inButton) closeTopbarHamburgerMenu();
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeTopbarHamburgerMenu();
+    });
+
+    window.addEventListener('resize', () => {
+        if (!isHamburgerViewport()) closeTopbarHamburgerMenu();
     });
 }
 
@@ -370,11 +445,13 @@ window.addEventListener('resize', updateTopbarVisibility);
 function initNav() {
     applyNavVisibility();
     bindRouteLinks();
+    bindTopbarHamburger();
     window.addEventListener('resize', applyNavVisibility);
     window.addEventListener('lw:route-changed', (e) => {
         applyActiveNav(e.detail.view);
         bindRouteLinks(); // covers any nav links a newly-mounted view added
         if (e.detail.view === 'reports') markReportsSeen();
+        closeTopbarHamburgerMenu();
     });
     window.addEventListener('lw:push-state-changed', refreshPushPromptDot);
     window.addEventListener('lw-session-changed', syncNavBadgesToSession);

@@ -193,6 +193,7 @@ let reportsPollInterval = null;
 // -----------------------------------------------------
 let currentReportedStatus = 'unknown';
 let lightToggleInFlight = false;
+let lastStatusIconTriggerAt = 0;
 
 // One glyph per state — a filled/glowing bulb for ON (green via the
 // --on class's color), an outlined/crossed bulb for OFF (red via the
@@ -221,9 +222,17 @@ function paintPrimaryStatus(data) {
     applyPrimaryStatusIconState(currentReportedStatus);
 
     if (statusPillTextEl) {
-        statusPillTextEl.textContent = currentReportedStatus === 'on' ? 'Light is on now'
-            : currentReportedStatus === 'off' ? 'Light is off now'
-            : 'No reports yet — tap to check in';
+        const titleIconClass = currentReportedStatus === 'on'
+            ? 'status-hero__title-icon status-hero__title-icon--on'
+            : currentReportedStatus === 'off'
+                ? 'status-hero__title-icon status-hero__title-icon--off'
+                : 'status-hero__title-icon status-hero__title-icon--unknown';
+        const titleText = currentReportedStatus === 'on'
+            ? 'Light is on now'
+            : currentReportedStatus === 'off'
+                ? 'Light is off now'
+                : 'No reports yet — tap to check in';
+        statusPillTextEl.innerHTML = `<span class="${titleIconClass}" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" fill="currentColor"/></svg></span><span>${titleText}</span>`;
     }
 
     if (statusBadgeEl) {
@@ -277,7 +286,11 @@ function animateIconDecision(iconEl, nextStatus) {
 }
 
 async function toggleLightStatus() {
-    if (lightToggleInFlight || !currentLocation) return;
+    if (lightToggleInFlight) return;
+    if (!currentLocation) {
+        window.lwToast?.('Location is still loading. Try again in a moment.');
+        return;
+    }
     lightToggleInFlight = true;
 
     const previousStatus = currentReportedStatus;
@@ -286,7 +299,11 @@ async function toggleLightStatus() {
     animateIconDecision(statusIconEl, nextStatus);
     statusIconEl?.setAttribute('aria-busy', 'true');
     if (statusPillTextEl) {
-        statusPillTextEl.textContent = nextStatus === 'on' ? 'Reporting light on…' : 'Reporting light off…';
+        const pendingIconClass = nextStatus === 'on'
+            ? 'status-hero__title-icon status-hero__title-icon--on'
+            : 'status-hero__title-icon status-hero__title-icon--off';
+        const pendingText = nextStatus === 'on' ? 'Reporting light on…' : 'Reporting light off…';
+        statusPillTextEl.innerHTML = `<span class="${pendingIconClass}" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" fill="currentColor"/></svg></span><span>${pendingText}</span>`;
     }
 
     try {
@@ -318,14 +335,25 @@ async function toggleLightStatus() {
 }
 
 if (statusIconEl) {
+    const triggerStatusIconToggle = () => {
+        const now = Date.now();
+        if (now - lastStatusIconTriggerAt < 320) return;
+        lastStatusIconTriggerAt = now;
+        toggleLightStatus();
+    };
+
     statusIconEl.setAttribute('role', 'button');
     statusIconEl.setAttribute('tabindex', '0');
     statusIconEl.setAttribute('aria-label', 'Tap to report the current light status');
-    statusIconEl.addEventListener('click', toggleLightStatus);
+    statusIconEl.addEventListener('click', triggerStatusIconToggle);
+    statusIconEl.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        triggerStatusIconToggle();
+    }, { passive: false });
     statusIconEl.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
-            toggleLightStatus();
+            triggerStatusIconToggle();
         }
     });
 }
