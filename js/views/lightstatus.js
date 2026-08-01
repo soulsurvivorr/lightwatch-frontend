@@ -204,6 +204,7 @@ function getReporterId() {
 let currentReportedStatus = 'unknown';
 let lightToggleInFlight = false;
 let lastStatusIconTriggerAt = 0;
+let lastPrimaryReportedAt = null;
 
 // One glyph per state — a filled/glowing bulb for ON (green via the
 // --on class's color), an outlined/crossed bulb for OFF (red via the
@@ -229,6 +230,7 @@ function applyPrimaryStatusIconState(status) {
 // and the record POST /lightstatus returns use.
 function paintPrimaryStatus(data) {
     currentReportedStatus = data.status || 'unknown';
+    if (data.reportedAt) lastPrimaryReportedAt = data.reportedAt;
     applyPrimaryStatusIconState(currentReportedStatus);
 
     if (statusPillTextEl) {
@@ -271,14 +273,16 @@ function paintPrimaryStatus(data) {
 }
 
 async function fetchPrimaryLightStatus() {
-    if (!currentLocation) return;
+    if (!currentLocation) return false;
     try {
         const res = await fetch(`${API_BASE}/lightstatus?location=${encodeURIComponent(currentLocation)}`);
         if (!res.ok) throw new Error('bad response');
         const data = await res.json();
         paintPrimaryStatus(data);
+        return true;
     } catch (err) {
         // Leave whatever was last painted on screen rather than blank it.
+        return false;
     }
 }
 
@@ -304,6 +308,7 @@ async function toggleLightStatus() {
     lightToggleInFlight = true;
 
     const previousStatus = currentReportedStatus;
+    const previousReportedAt = lastPrimaryReportedAt;
     const nextStatus = previousStatus === 'on' ? 'off' : 'on';
     const reporterId = getReporterId();
 
@@ -336,15 +341,12 @@ async function toggleLightStatus() {
 
         refreshLocationPanel();
     } catch (err) {
-        // If submit fails, immediately refetch canonical status before
-        // falling back so a transient/local submit issue doesn't show
-        // the misleading "No reports yet" state.
-        try {
-            await fetchPrimaryLightStatus();
-        } catch (_) {
-            paintPrimaryStatus({ status: previousStatus, reportedAt: null });
-        }
-        window.lwToast?.('Could not submit your check-in. Please try again.');
+        // Always restore the last confirmed state immediately so the
+        // hero never gets stuck on "Reporting..." after a failed submit.
+        paintPrimaryStatus({ status: previousStatus, reportedAt: previousReportedAt });
+        // Then try a non-blocking sync in case another device/admin
+        // updated status concurrently.
+        fetchPrimaryLightStatus();
     } finally {
         statusIconEl?.removeAttribute('aria-busy');
         lightToggleInFlight = false;
