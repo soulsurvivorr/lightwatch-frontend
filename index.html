@@ -1535,9 +1535,9 @@
   <main class="page" id="accountRealContent">
 
     <div class="hero-banner account-banner">
-      <p class="hero-banner__eyebrow">Your account</p>
-      <h1 class="hero-banner__greeting" id="acctPageGreeting">Account</h1>
-      <p class="hero-banner__sub">Manage your profile, preferences, and locations.</p>
+      <p class="hero-banner__eyebrow" id="acctPageEyebrow">Good morning</p>
+      <h1 class="hero-banner__greeting"><span id="acctPageGreeting">Account</span> <span class="account-banner__wave" aria-hidden="true">👋</span></h1>
+      <p class="hero-banner__sub">Manage your profile, preferences<br>and locations.</p>
     </div>
 
     <div class="account-grid">
@@ -1548,39 +1548,89 @@
           <div class="profile-hero">
             <div class="profile-hero__ring">
               <div class="profile-hero__avatar" id="profileAvatar">?</div>
+              <button type="button" class="profile-hero__edit-btn" id="profileAvatarEditBtn" aria-label="Change profile picture">
+                <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M13.4 3.5 16.5 6.6 7 16.1H3.9v-3.1L13.4 3.5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+              </button>
             </div>
-            <div class="profile-hero__name" id="profileName">Not signed in</div>
-            <div class="profile-hero__handle" id="profileHandle">—</div>
-            <span class="profile-hero__badge" id="profileBadge">
-              <span class="pulse pulse--on" style="width:8px;height:8px;"></span>
-              <span id="profileBadgeText">Community member</span>
-            </span>
+            <div class="profile-hero__info">
+              <div class="profile-hero__name" id="profileName">Not signed in</div>
+              <div class="profile-hero__handle" id="profileHandle">—</div>
+              <span class="profile-hero__badge" id="profileBadge">
+                <span class="pulse pulse--on" style="width:8px;height:8px;"></span>
+                <span id="profileBadgeText">Community member</span>
+              </span>
+            </div>
           </div>
 
           <div style="padding: 0 18px 16px;">
             <div class="section-label">Account details</div>
             <div class="detail-list">
-              <div class="detail-row">
+              <button type="button" class="detail-row detail-row--action" id="contactRowToggle" aria-expanded="false" aria-controls="contactExpand">
                 <span class="detail-row__icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2.5" y="4.5" width="15" height="11" rx="1.8" stroke="currentColor" stroke-width="1.4"/><path d="m3.2 5.4 6.8 5.4 6.8-5.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
                 <span class="detail-row__label">Contact</span>
                 <span class="detail-row__value" id="profileContact">—</span>
+                <span class="detail-row__chevron" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="m6 4 4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+              </button>
+              <div class="detail-expand" id="contactExpand" hidden>
+                <p class="detail-expand__hint">Add another email or phone number people can use to reach you.</p>
+                <form id="addContactForm" class="detail-expand__form" action="javascript:void(0)">
+                  <input type="text" id="addContactInput" placeholder="Email or phone number" maxlength="80" />
+                  <button type="submit" class="btn btn--primary btn--sm">Add</button>
+                </form>
+                <p id="addContactMessage" class="detail-expand__message"></p>
+                <ul id="secondaryContactList" class="detail-expand__list"></ul>
               </div>
+
               <div class="detail-row">
                 <span class="detail-row__icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 3.5 2.7 5v11.5L7 15m0-11.5 6 2m-6-2v11.5m6-9.5 4.3-1.5v11.5L13 17m0-11.5-6 2m6-2v11.5m-6-9.5v9.5" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg></span>
                 <span class="detail-row__label">Region</span>
                 <span class="detail-row__value" id="acctProfileRegion">—</span>
+                <span class="detail-row__chevron" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="m6 4 4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
               </div>
-              <div class="detail-row">
+
+              <button type="button" class="detail-row detail-row--action" id="cityRowToggle" aria-expanded="false" aria-controls="cityEditCard">
                 <span class="detail-row__icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.5 17V6.2L9 3v14M9 17V8.5l7.5 3V17" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M6 8h.01M6 11h.01M6 14h.01" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><rect x="3.5" y="17" width="13" height="0.01" stroke="currentColor"/></svg></span>
                 <span class="detail-row__label">City</span>
                 <span class="detail-row__value" id="profileCity">—</span>
+                <span class="detail-row__chevron" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="m6 4 4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+              </button>
+              <div class="detail-expand" id="cityEditCard" hidden>
+                <!-- Shown once the one-time edit has been used: a plain, clearly
+                     non-editable summary instead of a disabled-looking form. -->
+                <div id="cityEditLockedView" class="locked-field" hidden>
+                  <span class="locked-field__icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="4.5" y="9" width="11" height="8" rx="1.6" stroke="currentColor" stroke-width="1.4"/><path d="M6.8 9V6.5a3.2 3.2 0 0 1 6.4 0V9" stroke="currentColor" stroke-width="1.4"/><circle cx="10" cy="12.8" r="1.1" fill="currentColor"/></svg></span>
+                  <div>
+                    <div class="locked-field__value" id="cityEditLockedValue">—</div>
+                    <div class="locked-field__sub">City/town is locked and can't be changed again.</div>
+                  </div>
+                </div>
+
+                <div id="cityEditFormWrap">
+                  <p class="detail-expand__hint">
+                    Disclaimer: You can change your city/town only once. After saving, it cannot be changed again.
+                  </p>
+                  <form id="cityEditForm" action="javascript:void(0)">
+                    <label class="form-field" style="margin-bottom:10px;">
+                      <span>City / Town</span>
+                      <div style="display:flex;gap:8px;align-items:stretch;">
+                        <input type="text" id="cityEditInput" placeholder="Enter your correct city or town" maxlength="60" disabled style="flex:1;" />
+                        <button type="button" class="btn btn--ghost" id="cityEditToggleBtn" style="flex-shrink:0;white-space:nowrap;">Edit</button>
+                      </div>
+                    </label>
+                    <button type="submit" class="btn btn--primary btn--block" id="cityEditSaveBtn" disabled>Save city/town</button>
+                    <p id="cityEditMessage" style="margin-top:8px;font-size:0.76rem;color:var(--text-faint);"></p>
+                  </form>
+                </div>
               </div>
+
               <div class="detail-row">
                 <span class="detail-row__icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 4.8h14a1 1 0 0 1 1 1V13a1 1 0 0 1-1 1H8.5L5 16.8V14H3a1 1 0 0 1-1-1V5.8a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg></span>
                 <span class="detail-row__label">Chat handle</span>
                 <span class="detail-row__value" id="profileChatHandle">—</span>
+                <span class="detail-row__chevron" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="m6 4 4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
               </div>
-              <div class="detail-row">
+
+              <div class="detail-row detail-row--static">
                 <span class="detail-row__icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="4.2" width="14" height="12.3" rx="1.6" stroke="currentColor" stroke-width="1.4"/><path d="M3 7.8h14M6.4 2.8v3M13.6 2.8v3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span>
                 <span class="detail-row__label">Member since</span>
                 <span class="detail-row__value" id="acctProfileLastLogin">—</span>
@@ -1697,106 +1747,6 @@
 
         <div class="card">
           <div class="card__head">
-            <span class="card__icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 2.5A4.2 4.2 0 0 0 5.8 6.7v2.2c0 .9-.35 1.77-.98 2.42L4 12.2V13h12v-.8l-.82-.86a3.42 3.42 0 0 1-.98-2.42V6.7A4.2 4.2 0 0 0 10 2.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M8.2 15.6a1.9 1.9 0 0 0 3.6 0" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span>
-            <span class="card__head-text">
-              <span class="card__title">Notifications</span>
-              <span class="card__meta">What to alert you about</span>
-            </span>
-            <button type="button" class="card__collapse-btn" id="notificationsCollapseBtn" aria-expanded="false" aria-controls="notificationsCollapseBody" aria-label="Expand notifications">
-              <svg class="card__collapse-chevron" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="m4 6 4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </button>
-          </div>
-          <div class="card__collapse-body" id="notificationsCollapseBody">
-            <button type="button" data-enable-push-btn onclick="enableLightWatchPush()" class="btn btn--ghost btn--block" style="margin-bottom: 12px; border-color: var(--brand); color: var(--brand);">
-              Enable notifications
-            </button>
-            <div class="pref-row">
-              <div class="pref-row__info">
-                <div class="pref-row__title">Outage alerts in my area</div>
-                <div class="pref-row__sub">Get notified when light goes off at your location</div>
-              </div>
-              <label class="toggle">
-                <input type="checkbox" checked id="prefOutageAlerts">
-                <span class="toggle__track"></span>
-              </label>
-            </div>
-            <div class="pref-row">
-              <div class="pref-row__info">
-                <div class="pref-row__title">Power restored alerts</div>
-                <div class="pref-row__sub">Know the moment power comes back on</div>
-              </div>
-              <label class="toggle">
-                <input type="checkbox" checked id="prefRestoredAlerts">
-                <span class="toggle__track"></span>
-              </label>
-            </div>
-            <div class="pref-row">
-              <div class="pref-row__info">
-                <div class="pref-row__title">Community reports mentions</div>
-                <div class="pref-row__sub">When someone replies to a message in your location</div>
-              </div>
-              <label class="toggle">
-                <input type="checkbox" id="prefChatMentions">
-                <span class="toggle__track"></span>
-              </label>
-            </div>
-            <div class="pref-row">
-              <div class="pref-row__info">
-                <div class="pref-row__title">Mute everyone-audience chat alerts</div>
-                <div class="pref-row__sub">Stops push notifications from messages sent to Everyone audience</div>
-              </div>
-              <label class="toggle">
-                <input type="checkbox" id="prefMuteGlobalChat">
-                <span class="toggle__track"></span>
-              </label>
-            </div>
-          </div>
-        </div>
-
-        <div class="card" id="cityEditCard">
-          <div class="card__head">
-            <span class="card__icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M13.4 3.5 16.5 6.6 7 16.1H3.9v-3.1L13.4 3.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg></span>
-            <span class="card__head-text">
-              <span class="card__title">Edit city/town</span>
-              <span class="card__meta" id="cityEditCardMeta">One-time correction only</span>
-            </span>
-            <button type="button" class="card__collapse-btn" id="cityEditCollapseBtn" aria-expanded="true" aria-controls="cityEditCollapseBody" aria-label="Collapse edit city/town">
-              <svg class="card__collapse-chevron" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="m4 6 4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </button>
-          </div>
-
-          <div class="card__collapse-body" id="cityEditCollapseBody">
-          <!-- Shown once the one-time edit has been used: a plain, clearly
-               non-editable summary instead of a disabled-looking form. -->
-          <div id="cityEditLockedView" class="locked-field" hidden>
-            <span class="locked-field__icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="4.5" y="9" width="11" height="8" rx="1.6" stroke="currentColor" stroke-width="1.4"/><path d="M6.8 9V6.5a3.2 3.2 0 0 1 6.4 0V9" stroke="currentColor" stroke-width="1.4"/><circle cx="10" cy="12.8" r="1.1" fill="currentColor"/></svg></span>
-            <div>
-              <div class="locked-field__value" id="cityEditLockedValue">—</div>
-              <div class="locked-field__sub">City/town is locked and can't be changed again.</div>
-            </div>
-          </div>
-
-          <div id="cityEditFormWrap">
-            <p style="font-size:0.8rem;color:var(--text-faint);margin-bottom:10px;line-height:1.45;">
-              Disclaimer: You can change your city/town only once. After saving, it cannot be changed again.
-            </p>
-            <form id="cityEditForm" action="javascript:void(0)">
-              <label class="form-field" style="margin-bottom:10px;">
-                <span>City / Town</span>
-                <div style="display:flex;gap:8px;align-items:stretch;">
-                  <input type="text" id="cityEditInput" placeholder="Enter your correct city or town" maxlength="60" disabled style="flex:1;" />
-                  <button type="button" class="btn btn--ghost" id="cityEditToggleBtn" style="flex-shrink:0;white-space:nowrap;">Edit</button>
-                </div>
-              </label>
-              <button type="submit" class="btn btn--primary btn--block" id="cityEditSaveBtn" disabled>Save city/town</button>
-              <p id="cityEditMessage" style="margin-top:8px;font-size:0.76rem;color:var(--text-faint);"></p>
-            </form>
-          </div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card__head">
             <span class="card__icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 17a7 7 0 1 1 0-14c3.5 0 6.5 2.4 6.5 5.4 0 1.9-1.4 3-3 3h-1.4c-.9 0-1.4.9-.9 1.6.6.8.2 2-.9 2.3-.1 0-.2.1-.3.1Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><circle cx="7" cy="8.2" r="1" fill="currentColor"/><circle cx="10" cy="6.2" r="1" fill="currentColor"/><circle cx="13" cy="8.2" r="1" fill="currentColor"/><circle cx="7.5" cy="11.5" r="1" fill="currentColor"/></svg></span>
             <span class="card__head-text">
               <span class="card__title">Display</span>
@@ -1879,6 +1829,64 @@
               </div>
             </div>
           </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card__head">
+            <span class="card__icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 2.5A4.2 4.2 0 0 0 5.8 6.7v2.2c0 .9-.35 1.77-.98 2.42L4 12.2V13h12v-.8l-.82-.86a3.42 3.42 0 0 1-.98-2.42V6.7A4.2 4.2 0 0 0 10 2.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M8.2 15.6a1.9 1.9 0 0 0 3.6 0" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span>
+            <span class="card__head-text">
+              <span class="card__title">Notifications</span>
+              <span class="card__meta">What to alert you about</span>
+            </span>
+            <button type="button" class="card__collapse-btn" id="notificationsCollapseBtn" aria-expanded="false" aria-controls="notificationsCollapseBody" aria-label="Expand notifications">
+              <svg class="card__collapse-chevron" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="m4 6 4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+          <div class="card__collapse-body" id="notificationsCollapseBody">
+            <button type="button" data-enable-push-btn onclick="enableLightWatchPush()" class="btn btn--ghost btn--block" style="margin-bottom: 12px; border-color: var(--brand); color: var(--brand);">
+              Enable notifications
+            </button>
+            <div class="pref-row">
+              <div class="pref-row__info">
+                <div class="pref-row__title">Outage alerts in my area</div>
+                <div class="pref-row__sub">Get notified when light goes off at your location</div>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" checked id="prefOutageAlerts">
+                <span class="toggle__track"></span>
+              </label>
+            </div>
+            <div class="pref-row">
+              <div class="pref-row__info">
+                <div class="pref-row__title">Power restored alerts</div>
+                <div class="pref-row__sub">Know the moment power comes back on</div>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" checked id="prefRestoredAlerts">
+                <span class="toggle__track"></span>
+              </label>
+            </div>
+            <div class="pref-row">
+              <div class="pref-row__info">
+                <div class="pref-row__title">Community reports mentions</div>
+                <div class="pref-row__sub">When someone replies to a message in your location</div>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" id="prefChatMentions">
+                <span class="toggle__track"></span>
+              </label>
+            </div>
+            <div class="pref-row">
+              <div class="pref-row__info">
+                <div class="pref-row__title">Mute everyone-audience chat alerts</div>
+                <div class="pref-row__sub">Stops push notifications from messages sent to Everyone audience</div>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" id="prefMuteGlobalChat">
+                <span class="toggle__track"></span>
+              </label>
+            </div>
           </div>
         </div>
 

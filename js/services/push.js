@@ -146,6 +146,7 @@ function triggerForegroundSignal(tone) {
 //   ⚡ Power ON:  low pulse → bright chime      "doom … ting"
 //   🌑 Power OFF: same low pulse → dull low tone "doom … dum"
 //   💬 Chat:      single soft glass "plink"
+//   📰 News:      short, informative chime      "ting … ding"
 //
 // playDewDropsTone() is kept as the fallback for any push that
 // arrives without a recognized `tone` (e.g. an older cached
@@ -155,6 +156,7 @@ function playToneForType(tone) {
         case 'power-on':  playPowerOnTone();  break;
         case 'power-off': playPowerOffTone(); break;
         case 'chat':      playChatPlinkTone(); break;
+        case 'news':      playNewsTone(); break;
         default:          playDewDropsTone();
     }
 }
@@ -222,6 +224,16 @@ function playChatPlinkTone() {
 
     playNote(ctx, { freq: 987.77, start: now, duration: 0.16, type: 'sine', peakGain: 0.30, attack: 0.004 });
     playNote(ctx, { freq: 1975.5, start: now, duration: 0.10, type: 'sine', peakGain: 0.09, attack: 0.004 }); // glassy overtone
+}
+
+// 📰 News — a gentle two-step chime that feels informative rather than chatty.
+function playNewsTone() {
+    const ctx = ensureAudioContext();
+    if (!canPlayTone(ctx)) return;
+    const now = ctx.currentTime;
+
+    playNote(ctx, { freq: 659.25, start: now, duration: 0.18, type: 'sine', peakGain: 0.24, attack: 0.006 });
+    playNote(ctx, { freq: 783.99, start: now + 0.12, duration: 0.22, type: 'sine', peakGain: 0.26, attack: 0.006 });
 }
 
 // Legacy/unrecognized-tone fallback — the original three-note run-up.

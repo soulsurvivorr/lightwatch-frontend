@@ -73,10 +73,16 @@
       pointer-events: none;
     }
 
-    /* ---- Profile card ---- */
+    /* ---- Profile card ----
+       Left-aligned row: avatar (with edit-pencil overlay) on the left,
+       name/handle/badge stacked immediately to its right — matches the
+       reference design instead of the old centered/stacked layout. */
     .profile-hero {
-      text-align: center;
+      text-align: left;
       padding: 20px 20px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
 
     .profile-hero__avatar {
@@ -92,7 +98,7 @@
       font-size: 1.2rem;
       color: white;
       font-weight: 700;
-      margin: 0 auto 14px;
+      margin: 0;
       border: 3px solid var(--border-soft);
     }
 
@@ -110,6 +116,52 @@
       border-radius: inherit;
       object-fit: cover;
       display: block;
+    }
+
+    /* Ring becomes the positioning context for the edit-pencil button. */
+    .profile-hero__ring {
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .profile-hero__edit-btn {
+      position: absolute;
+      right: -2px;
+      bottom: -2px;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--teal);
+      color: white;
+      border: 2px solid var(--bg-panel);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+      transition: background 0.15s ease, transform 0.1s ease;
+    }
+
+    .profile-hero__edit-btn svg {
+      width: 12px;
+      height: 12px;
+    }
+
+    .profile-hero__edit-btn:hover {
+      background: var(--brand);
+    }
+
+    .profile-hero__edit-btn:active {
+      transform: scale(0.94);
+    }
+
+    .profile-hero__info {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      min-width: 0;
+      text-align: left;
     }
 
     .profile-hero__name {
@@ -169,6 +221,136 @@
       font-weight: 500;
       text-align: right;
     }
+
+    /* ---- Right-chevron on every detail row except "Member since" ---- */
+    .detail-row__chevron {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+      color: var(--text-faint);
+    }
+
+    .detail-row__chevron svg { width: 100%; height: 100%; }
+
+    /* Rows that are real buttons (Contact, City) get a plain reset so
+       they still look/lay out exactly like the static rows around them. */
+    .detail-row.detail-row--action {
+      width: 100%;
+      background: none;
+      border: none;
+      font: inherit;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      border-radius: 6px;
+      transition: background 0.15s ease;
+    }
+
+    .detail-row.detail-row--action:hover,
+    .detail-row.detail-row--action:focus-visible {
+      background: var(--bg-panel-raised, var(--bg-panel));
+      outline: none;
+    }
+
+    .detail-row--action .detail-row__chevron svg {
+      transition: transform 0.2s ease;
+    }
+
+    .detail-row--action[aria-expanded="true"] .detail-row__chevron svg {
+      transform: rotate(90deg);
+    }
+
+    /* "Member since" is informational only — no chevron/arrow. */
+    .detail-row--static .detail-row__chevron { display: none; }
+
+    /* Once a one-time city change has been used, the row can no longer
+       be opened — dim it and drop the arrow instead of leaving a dead
+       control that looks clickable. */
+    .detail-row--action.detail-row--locked {
+      cursor: default;
+      opacity: 0.55;
+      pointer-events: none;
+    }
+
+    /* ---- Inline expand panels (Contact / City), nested inside the
+       account-details list rather than their own separate cards ---- */
+    .detail-expand {
+      padding: 12px 10px 14px;
+      margin: 2px 0 4px;
+      border-radius: var(--radius-md);
+      background: var(--bg-panel-raised, var(--bg-panel));
+      border: 1px solid var(--border-soft);
+    }
+
+    .detail-expand__hint {
+      font-size: 0.78rem;
+      color: var(--text-faint);
+      margin: 0 0 10px;
+      line-height: 1.45;
+    }
+
+    .detail-expand__form {
+      display: flex;
+      gap: 8px;
+    }
+
+    .detail-expand__form input[type="text"] {
+      flex: 1;
+      min-width: 0;
+      background: var(--bg-panel);
+      border: 1px solid var(--border-soft);
+      color: var(--text-bright);
+      border-radius: var(--radius-md);
+      padding: 9px 12px;
+      font-size: 0.86rem;
+    }
+
+    .btn--sm {
+      padding: 8px 14px;
+      font-size: 0.82rem;
+      flex-shrink: 0;
+    }
+
+    .detail-expand__message {
+      font-size: 0.76rem;
+      color: var(--text-faint);
+      margin: 8px 0 0;
+    }
+
+    .detail-expand__list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin: 10px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .detail-expand__list li {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 0.82rem;
+      color: var(--text-bright);
+      background: var(--bg-panel);
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius-sm);
+      padding: 7px 10px;
+    }
+
+    .detail-expand__list li button {
+      background: none;
+      border: none;
+      color: var(--text-faint);
+      cursor: pointer;
+      font-size: 0.78rem;
+      padding: 0;
+    }
+
+    .detail-expand__list li button:hover { color: var(--red); }
 
     /* ---- Stats row ---- */
     .account-stats {
@@ -378,13 +560,13 @@
     .profile-hero {
       position: relative;
       background:
-        radial-gradient(120% 140% at 50% -10%, color-mix(in srgb, var(--teal) 22%, transparent), transparent 60%);
+        radial-gradient(120% 140% at 0% -10%, color-mix(in srgb, var(--teal) 22%, transparent), transparent 60%);
     }
 
     .profile-hero__ring {
       width: 68px;
       height: 68px;
-      margin: 0 auto 10px;
+      margin: 0;
       border-radius: 50%;
       display: flex;
       align-items: center;
@@ -828,11 +1010,12 @@
 @media (max-width: 380px) {
       .profile-hero {
         padding: 14px 14px 12px;
+        gap: 8px;
       }
       .profile-hero__ring {
         width: 54px;
         height: 54px;
-        margin: 0 auto 8px;
+        margin: 0;
       }
       .profile-hero__avatar {
         font-size: 0.95rem;
@@ -931,25 +1114,50 @@
         display: block;
       }
     }
-/* Account page hero banner — same dark-gradient card as Home,
-   Notifications, and Report; just the eyebrow/title/sub, no stats
-   or filter row. */
+/* Account page hero banner — city/pylons photo behind the greeting,
+   same pattern as Home's status-hero (birds-city.png): a left-to-right
+   dark gradient keeps the text readable while the skyline still reads
+   clearly on the right-hand side of the card. */
 .account-banner {
   margin-bottom: 6px;
-  background: var(--bg-panel);
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-height: 132px;
+  background-image:
+    linear-gradient(100deg, rgba(8, 13, 24, 0.92) 0%, rgba(8, 13, 24, 0.72) 42%, rgba(8, 13, 24, 0.15) 100%),
+    url("../../images/admin-city.png");
+  background-size: cover, cover;
+  background-position: center, right center;
+  background-repeat: no-repeat;
   border: 1px solid var(--border-soft);
-  border-radius: var(--radius-lg);
-  box-shadow: none;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
 }
 
 .account-banner .hero-banner__eyebrow {
-  color: var(--text-faint);
+  color: var(--teal);
 }
 
 .account-banner .hero-banner__greeting {
-  color: var(--text-bright);
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.account-banner__wave {
+  display: inline-block;
 }
 
 .account-banner .hero-banner__sub {
-  color: var(--text-muted);
+  color: rgba(255, 255, 255, 0.72);
+}
+
+/* ---- Full-height page: content should never be clipped, the page
+   just grows to fit whatever's actually in it. ---- */
+#view-account,
+#view-account #accountRealContent,
+#view-account .account-grid {
+  height: auto;
+  min-height: 100%;
 }

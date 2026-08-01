@@ -651,7 +651,16 @@ async function loadCurrentUserProfile() {
     // ── Get user ID from the active session (set by auth.js) ──
     const session = getSession(); // defined in auth.js
     const userId = session?.user?.id || localStorage.getItem("currentUserId");
-    const fallbackUser = session?.user || JSON.parse(localStorage.getItem("currentUserData") || localStorage.getItem("signupUser") || "null");
+
+    // currentUserData is kept fresh on every profile save (see account.js's
+    // identity/city-edit handlers); session.user is a snapshot taken at
+    // login that nothing else updates. Merge with currentUserData winning
+    // so a just-saved chat handle/avatar can't be overwritten by a stale
+    // session copy the moment this repaints.
+    const cachedUserData = JSON.parse(localStorage.getItem("currentUserData") || sessionStorage.getItem("currentUserData") || localStorage.getItem("signupUser") || "null");
+    const fallbackUser = session?.user
+        ? { ...session.user, ...(cachedUserData || {}) }
+        : cachedUserData;
     const isLocalOnlySession =
         (session?.user?.role === 'admin') ||
         (session?.user?.email === 'sarkdev@yahoo.com') ||

@@ -197,6 +197,12 @@ function initProfileIdentityForm() {
     const form = el('profileIdentityForm');
     const avatarInput = el('profileAvatarInput');
     const clearBtn = el('profileAvatarClearBtn');
+    const editBtn = el('profileAvatarEditBtn');
+
+    // Pencil button on the avatar ring just opens the same hidden file
+    // input the "Chat identity" card already uses — no separate upload
+    // path to keep in sync.
+    editBtn?.addEventListener('click', () => avatarInput?.click());
 
     if (!form) return;
 
@@ -590,9 +596,17 @@ function initNotificationPrefToggles() {
 // ------------------------------------------------------------
 function showCityLockedView(city, region, animate = true) {
     // The one-time edit has been used — there's nothing left for the user
-    // to do here, so the whole card collapses out of the page rather than
-    // sticking around in a disabled/locked state.
+    // to do here, so the whole panel collapses out of the page rather than
+    // sticking around in a disabled/locked state. The City row itself also
+    // loses its arrow/click affordance so it can't be tapped open onto an
+    // empty panel afterward.
     const card = el('cityEditCard');
+    const rowToggle = el('cityRowToggle');
+    if (rowToggle) {
+        rowToggle.classList.add('detail-row--locked');
+        rowToggle.setAttribute('aria-expanded', 'false');
+        rowToggle.setAttribute('aria-disabled', 'true');
+    }
     if (!card) return;
 
     if (!animate) {
@@ -869,7 +883,8 @@ function paintAccountExtras(user) {
     const hour = new Date().getHours();
     const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
     const firstName = (user.name || '').trim().split(/\s+/)[0] || 'there';
-    if (el('acctPageGreeting')) el('acctPageGreeting').textContent = `${greeting}, ${firstName}`;
+    if (el('acctPageEyebrow')) el('acctPageEyebrow').textContent = greeting;
+    if (el('acctPageGreeting')) el('acctPageGreeting').textContent = firstName;
 }
 
 async function loadAccountExtras() {
@@ -1027,6 +1042,107 @@ function initCollapsibleCards() {
 }
 
 // ------------------------------------------------------------
+// ACCOUNT DETAILS — row expanders (Contact / City).
+// A plain show/hide toggle, distinct from the animated
+// card__collapse-btn pattern above since these panels live inline
+// inside the details list rather than as their own cards.
+// ------------------------------------------------------------
+function initDetailRowExpanders() {
+    document.querySelectorAll('.detail-row--action[aria-controls]').forEach((btn) => {
+        const panel = document.getElementById(btn.getAttribute('aria-controls'));
+        if (!panel || btn.dataset.expanderBound === '1') return;
+        btn.dataset.expanderBound = '1';
+
+        btn.addEventListener('click', () => {
+            if (btn.getAttribute('aria-disabled') === 'true') return;
+            const isOpen = btn.getAttribute('aria-expanded') === 'true';
+            btn.setAttribute('aria-expanded', String(!isOpen));
+            panel.hidden = isOpen;
+        });
+    });
+}
+
+// ------------------------------------------------------------
+// SECONDARY CONTACT — lets someone note an extra email/phone people
+// can reach them on. There's no backend field for this yet, so it's
+// kept as a locally-stored list tied to this browser/device rather
+// than synced to the account.
+// ------------------------------------------------------------
+const SECONDARY_CONTACT_KEY = 'lw_secondary_contacts';
+
+function readSecondaryContacts() {
+    try {
+        const raw = localStorage.getItem(SECONDARY_CONTACT_KEY);
+        const parsed = JSON.parse(raw || '[]');
+        return Array.isArray(parsed) ? parsed : [];
+    } catch {
+        return [];
+    }
+}
+
+function writeSecondaryContacts(list) {
+    localStorage.setItem(SECONDARY_CONTACT_KEY, JSON.stringify(list));
+}
+
+function renderSecondaryContacts() {
+    const listEl = el('secondaryContactList');
+    if (!listEl) return;
+    const contacts = readSecondaryContacts();
+
+    listEl.innerHTML = '';
+    contacts.forEach((value, index) => {
+        const li = document.createElement('li');
+        const span = document.createElement('span');
+        span.textContent = value;
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.textContent = 'Remove';
+        removeBtn.addEventListener('click', () => {
+            const next = readSecondaryContacts();
+            next.splice(index, 1);
+            writeSecondaryContacts(next);
+            renderSecondaryContacts();
+        });
+        li.appendChild(span);
+        li.appendChild(removeBtn);
+        listEl.appendChild(li);
+    });
+}
+
+function initAddContactForm() {
+    const form = el('addContactForm');
+    const input = el('addContactInput');
+    const messageEl = el('addContactMessage');
+    if (!form || form.dataset.bound === '1') return;
+    form.dataset.bound = '1';
+
+    renderSecondaryContacts();
+
+    form.addEventListener('submit', () => {
+        const value = String(input?.value || '').trim();
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const phoneRegex = /^[+0-9][0-9\s-]{6,}$/;
+
+        if (!value || (!emailRegex.test(value) && !phoneRegex.test(value))) {
+            if (messageEl) messageEl.textContent = 'Enter a valid email or phone number.';
+            return;
+        }
+
+        const contacts = readSecondaryContacts();
+        if (contacts.includes(value)) {
+            if (messageEl) messageEl.textContent = 'That contact is already saved.';
+            return;
+        }
+
+        contacts.push(value);
+        writeSecondaryContacts(contacts);
+        renderSecondaryContacts();
+        if (input) input.value = '';
+        if (messageEl) messageEl.textContent = 'Saved on this device.';
+    });
+}
+
+// ------------------------------------------------------------
 // INIT — called once by the router on first visit to this view.
 // ------------------------------------------------------------
 function mount() {
@@ -1037,6 +1153,8 @@ function mount() {
     initProfileIdentityForm();
     initAccordions();
     initCollapsibleCards();
+    initDetailRowExpanders();
+    initAddContactForm();
     loadAccountExtras();
 
     // mount() only runs once per page-load (see app.js's router), but a

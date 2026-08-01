@@ -343,12 +343,21 @@
         });
     }
 
+    function syncNavBadgeCountWithReadState() {
+        if (!latestMergedNotifications.length) return;
+        const unreadCount = latestMergedNotifications.filter(n => !getReadIds().has(n.id)).length;
+        if (window.LWNavBadges?.setCount) {
+            window.LWNavBadges.setCount('notifications', unreadCount);
+        }
+    }
+
     const FILTER_TITLES = { priority: 'Priority', mentions: 'Mentions', system: 'System' };
 
     function render() {
         const classified = latestMergedNotifications;
         const readIds = getReadIds();
         updateTabBadges(classified, readIds);
+        syncNavBadgeCountWithReadState();
 
         const prioritySection = document.getElementById('notifPrioritySection');
         const earlierSection = document.getElementById('notifEarlierSection');
@@ -430,6 +439,7 @@
                 window.LWRouter?.navigate('chat', { search: `?${params.toString()}` });
             }
             updateTabBadges(latestMergedNotifications, getReadIds());
+            syncNavBadgeCountWithReadState();
         };
 
         page.addEventListener('click', (e) => {

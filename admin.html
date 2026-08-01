@@ -723,7 +723,7 @@
         <div class="s-card__top">
          <div>
           <div class="s-card__label" data-template-id="sc-label-chats">
-           Chat Messages
+           Admin Posts
           </div>
          </div>
          <div class="s-card__icon s-card__icon--blue">
@@ -939,24 +939,24 @@
       <div class="panel" id="chatsPanel">
        <div class="page-head">
         <div class="page-head__left">
-         <h2 data-template-id="chats-title" class="canva-text">Chat Messages</h2>
+         <h2 data-template-id="chats-title" class="canva-text">Admin Posts</h2>
         </div>
        </div>
        <div class="broadcast-card">
-        <div class="broadcast-card__head"><span class="broadcast-card__title" data-template-id="broadcast-title">📢 Push a Message to Everyone</span> <span class="broadcast-card__hint" data-template-id="broadcast-hint">Sends a push notification to every device with notifications enabled</span>
+        <div class="broadcast-card__head"><span class="broadcast-card__title" data-template-id="broadcast-title">📢 Publish an Admin Post</span> <span class="broadcast-card__hint" data-template-id="broadcast-hint">Publishes an official post to the community feed and notifies devices that have notifications enabled.</span>
         </div>
-        <div class="broadcast-row"><input type="text" id="broadcastTitleInput" placeholder="Title (optional — defaults to &quot;LightWatch Admin&quot;)" maxlength="60">
+        <div class="broadcast-row"><input type="text" id="broadcastTitleInput" placeholder="Post title (optional — defaults to &quot;LightWatch Admin&quot;)" maxlength="60">
          <select id="broadcastLocationSelect">
           <option value="">📍 Everyone (all locations)</option>
          </select>
         </div>
-        <div class="broadcast-row"><textarea id="broadcastBodyInput" placeholder="Write your message…" maxlength="220" rows="2"></textarea> <button id="broadcastSendBtn" type="button">Send</button>
+        <div class="broadcast-row"><textarea id="broadcastBodyInput" placeholder="Write your post…" maxlength="220" rows="2"></textarea> <button id="broadcastSendBtn" type="button">Publish</button>
         </div>
         <div id="broadcastStatus" class="broadcast-status"></div>
        </div>
        <div class="toolbar">
         <div class="toolbar__left"><span class="status-msg" id="chatsStatus">Loading…</span> <button class="btn-ghost" id="deleteChatsBtn" type="button" disabled>Delete selected</button>
-        </div><input class="search-input" type="text" id="chatSearch" placeholder="Search messages or location…">
+        </div><input class="search-input" type="text" id="chatSearch" placeholder="Search posts or location…">
        </div>
        <table id="chatsTable" style="display:none;">
         <thead>
@@ -973,8 +973,8 @@
        </table>
        <div id="chatsEmpty" class="empty-state" style="display:none;">
         <div class="empty-state__icon">
-         💬
-        </div>No chat messages yet.
+         �
+        </div>No admin posts yet.
        </div>
       </div><!-- Official News panel -->
       <div class="panel" id="newsPanel">
@@ -1400,7 +1400,7 @@
   // ===== TAB SWITCHING =====
   const TAB_LABELS = {
     activity: "Live Activity", analytics: "Analytics", locations: "Locations",
-    reports: "Reports", users: "Users", chats: "Chat Messages", news: "Official News", health: "System Health"
+    reports: "Reports", users: "Users", chats: "Admin Posts", news: "Official News", health: "System Health"
   };
 
   function switchTab(tab) {
@@ -1845,7 +1845,7 @@
       ? (broadcastLocationSelect.options[broadcastLocationSelect.selectedIndex]?.textContent || location)
       : "everyone";
     statusEl.className = "broadcast-status";
-    if (!body) { statusEl.textContent = "Write a message first."; statusEl.classList.add("broadcast-status--err"); return; }
+    if (!body) { statusEl.textContent = "Write a post first."; statusEl.classList.add("broadcast-status--err"); return; }
     const confirmed = await showConfirm({
       icon: "📢", title: "Send Broadcast",
       desc: `Send this message to <strong>${esc(audienceLabel)}</strong>: "<strong>${esc(body.slice(0, 80))}${body.length > 80 ? "…" : ""}</strong>"<br><br>This also posts it to the Community chat and Reports feed for that audience.`,

@@ -228,7 +228,7 @@ html[data-theme="light"] .chat-message__text {
   color: color-mix(in srgb, var(--msg-accent) 70%, var(--text-bright));
 }
 
-/* An admin broadcast (chat.isAdmin) — set apart from regular per-handle
+/* An official admin post (chat.isAdmin) — set apart from regular per-handle
    tinted messages with a consistent brand-gold treatment regardless of
    handle color, so it reads as "official" wherever it appears. */
 .chat-message--admin {

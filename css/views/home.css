@@ -5901,21 +5901,22 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
   position: absolute;
   top: -5px;
   right: -9px;
-  min-width: 16px;
-  height: 16px;
-  padding: 0 4px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  background: var(--brand2, #4A90D9);
+  background: linear-gradient(135deg, #2f86ff 0%, #1767d8 100%);
   color: #fff;
   font-size: 0.62rem;
   font-weight: 700;
   line-height: 1;
   font-variant-numeric: tabular-nums;
-  border: 2px solid var(--lw-bg, #0a0f1a);
+  border: 2px solid rgba(255, 255, 255, 0.96);
   box-sizing: content-box;
+  box-shadow: 0 4px 10px rgba(23, 103, 216, 0.24);
 }
 /* ============================================================
    BOTTOM NAV — theme-following background + active "deep blue"

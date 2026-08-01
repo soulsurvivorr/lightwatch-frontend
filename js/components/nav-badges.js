@@ -236,7 +236,6 @@
     function onRouteChanged() {
         const activeSection = document.querySelector('[data-view]:not([hidden])');
         currentRoute = activeSection ? activeSection.dataset.view : null;
-        if (currentRoute === 'notifications') clear('notifications');
         if (currentRoute === 'chat') {
             currentReportTab = getActiveReportTabFromDom();
             clear(currentReportTab);
