@@ -4842,34 +4842,6 @@ body:not(.page-data-loading) #view-home #realPageContent {
   --lw-blue: #7c4dff;
 }
 
-/* theme.js's getResolvedTheme() hard-returns 'light' for any viewport
-   ≤1023px regardless of system preference or a stored choice — its
-   dark-mode toggle button is itself hidden below 1024px (see
-   global.css's .lw-theme-toggle media query), so phones can never
-   actually be in data-theme="dark". Without this override, Home
-   (whose reference design IS a dark phone screenshot) would silently
-   render in light colors on every phone. Re-lock the dark palette at
-   phone widths only; ≥1024px keeps following the real toggle above. */
-@media (max-width: 1023px) {
-  #view-home,
-  .topbar,
-  #bottom_nav_wrapper {
-    --lw-bg: #0a0f1a;
-    --lw-bg-raised: #121a2b;
-    --lw-panel: #141c2e;
-    --lw-panel-2: #182238;
-    --lw-border: rgba(255, 255, 255, 0.08);
-    --lw-border-soft: rgba(255, 255, 255, 0.06);
-    --lw-text: #f3f6fc;
-    --lw-text-muted: #a7b1c4;
-    --lw-text-faint: #6f7a90;
-    --lw-teal: #3b82f6;
-    --lw-red: #f2555c;
-    --lw-amber: #d6a24a;
-    --lw-blue: #7c4dff;
-    --lw-green: #0b6b3a;
-  }
-}
 
 #view-home {
   background: var(--lw-bg);
@@ -4885,10 +4857,10 @@ body:not(.page-data-loading) #view-home #realPageContent {
   margin: 0 auto;
 }
 
-/* Match the location page background token so Home follows the
-   same dark theme baseline as the Location view. */
+/* Home now follows the active app theme tokens instead of forcing
+   a dark baseline in the redesign layer. */
 #view-home {
-  background: var(--dark-bg);
+  background: var(--lw-bg, var(--bg-deep));
 }
 
 /* ============================================================
@@ -4933,7 +4905,7 @@ body:not(.page-data-loading) #view-home #realPageContent {
   border-radius: 50%;
   border: none;
   background: transparent;
-  color: #fff;
+  color: var(--lw-text, var(--text-bright));
   cursor: pointer;
 }
 
@@ -4944,7 +4916,7 @@ body:not(.page-data-loading) #view-home #realPageContent {
 
 .lw-icon-btn.is-active svg,
 .lw-icon-btn[aria-current="page"] svg {
-  color: #ffffff;
+  color: var(--lw-text, var(--text-bright));
 }
 
 .lw-icon-btn__badge {
@@ -4998,13 +4970,7 @@ body:not(.page-data-loading) #view-home #realPageContent {
 .lw-home-header__greeting {
   font-size: calc(1.08rem - 1px);
   font-weight: 300;
-  /* Was --lw-text-faint (the dimmest text tier, #6f7a90 on mobile —
-     barely readable against the near-black page background). Bumped
-     one tier up to --lw-text-muted (#a7b1c4 on mobile) so the
-     greeting reads clearly without going all the way to full
-     --lw-text brightness, which is reserved for the actual page
-     title below it. */
-  color: whitesmoke;
+  color: var(--lw-text, var(--text-bright));
   line-height: 1.3;
 }
 
@@ -5033,7 +4999,7 @@ body:not(.page-data-loading) #view-home #realPageContent {
   padding: 0;
   border-radius: var(--radius-lg, 16px);
   border: 1px solid var(--lw-border);
-  background-color: #0e1626;
+  background-color: var(--lw-panel, var(--bg-panel));
   /* Lighter overlay than before — just enough at the bottom for text
      contrast — so the skyline/birds photo actually reads clearly
      instead of being mostly hidden under a near-opaque scrim. */
@@ -5360,7 +5326,7 @@ body:not(.page-data-loading) #view-home #realPageContent {
 .lw-section__viewall {
   font-size: 0.82rem;
   font-weight: 600;
-  color: white;
+  color: var(--lw-text-muted, var(--text-muted));
 }
 
 .lw-section__viewall:hover { text-decoration: underline; }
@@ -5824,8 +5790,19 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-icon svg {
   color: #1c1f26;
 }
 
+html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link--active .bottom-nav-icon,
+html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page"] .bottom-nav-icon {
+  background: color-mix(in srgb, var(--brand2, #4A90D9) 16%, var(--bg-panel));
+  border-radius: 10px;
+}
+
 html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link--active .bottom-nav-icon svg,
 html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page"] .bottom-nav-icon svg {
+  color: var(--brand2, #4A90D9);
+}
+
+html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link--active .bottom-nav-label,
+html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page"] .bottom-nav-label {
   color: var(--brand2, #4A90D9);
 }
 

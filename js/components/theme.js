@@ -16,15 +16,15 @@
 
     function getStoredTheme() {
         const value = localStorage.getItem(THEME_KEY);
-        return value === 'light' || value === 'dark' ? value : null;
+        return value === 'light' || value === 'dark' || value === 'device' ? value : 'device';
     }
 
     function getResolvedTheme() {
         const stored = getStoredTheme();
-        // Default to dark when the user has not chosen a theme.
-        // This makes the app default to the login/signup dark styling
-        // as the app's baseline look, across native and web.
-        return stored || 'dark';
+        if (stored === 'light' || stored === 'dark') {
+            return stored;
+        }
+        return darkMedia.matches ? 'dark' : 'light';
     }
 
     function setMetaThemeColor(theme) {
@@ -87,20 +87,26 @@
         ensureToggleButton();
     }
 
+    function handleThemePreferenceChange() {
+        applyTheme(getResolvedTheme());
+        ensureToggleButton();
+    }
+
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', initTheme);
     } else {
         initTheme();
     }
 
+    window.addEventListener('lw-display-prefs-changed', handleThemePreferenceChange);
+
     darkMedia.addEventListener('change', () => {
-        // Keep following device theme only if user has not explicitly chosen one.
-        if (!getStoredTheme() && !phoneMedia.matches) {
+        if (getStoredTheme() === 'device') {
             applyTheme(getResolvedTheme());
         }
     });
 
     laptopMedia.addEventListener('change', ensureToggleButton);
-    laptopMedia.addEventListener('change', () => applyTheme(getResolvedTheme()));
-    phoneMedia.addEventListener('change', () => applyTheme(getResolvedTheme()));
+    laptopMedia.addEventListener('change', handleThemePreferenceChange);
+    phoneMedia.addEventListener('change', handleThemePreferenceChange);
 })();

@@ -1604,6 +1604,38 @@ let pollInterval  = null;
 let chatLocation  = null; // set once on load, reused by poll
 let isNearBottom  = true;
 let replyTarget = null;
+const pendingRepliesByParent = new Map();
+
+function attachReplyToParent(parentEl, replyEl) {
+    if (!parentEl || !replyEl) return;
+
+    const repliesContainer = parentEl._repliesContainer || parentEl.querySelector(':scope > .report-card__replies');
+    const repliesToggle = parentEl._repliesToggle || parentEl.querySelector(':scope > .report-card__replies-toggle');
+
+    if (!repliesContainer) return;
+
+    replyEl.classList.add('report-card--nested-reply');
+    repliesContainer.appendChild(replyEl);
+
+    if (repliesToggle) {
+        repliesToggle.hidden = false;
+        repliesToggle.setAttribute('aria-expanded', 'true');
+    }
+
+    repliesContainer.hidden = false;
+}
+
+function flushPendingRepliesForParent(parentId) {
+    if (!parentId || !chatThread) return;
+    const queue = pendingRepliesByParent.get(String(parentId));
+    if (!queue || queue.length === 0) return;
+
+    const parentEl = chatThread.querySelector(`[data-chat-id="${CSS.escape(String(parentId))}"]`);
+    if (!parentEl) return;
+
+    queue.forEach((replyEl) => attachReplyToParent(parentEl, replyEl));
+    pendingRepliesByParent.delete(String(parentId));
+}
 
 // Typing indicator state — see the TYPING INDICATOR section further
 // down for the actual ping/poll/render logic.
@@ -1728,29 +1760,27 @@ function addToThread(chat, isOwn, scrollDown, animate, hasReply, isLatestOwn) {
 
     // A reply nests under the card it replied to instead of taking its
     // own row in the main feed — see buildMessageEl's repliesContainer.
-    // Parents are always added before their replies (chats load/poll
-    // oldest-first), so the parent element should already be on screen
-    // by the time its reply arrives; if it somehow isn't (parent not
-    // yet loaded, or deleted), fall through to a normal top-level row
-    // rather than silently dropping the message.
+    // When the parent card is not on screen yet (history order or a
+    // just-arrived reply on a newly-loaded parent), queue this reply and
+    // attach it once the target parent card lands in the DOM. That keeps
+    // the reply hierarchy stable for comment-reply style flows.
     const parentId = chat.replyTo && chat.replyTo.chatId ? String(chat.replyTo.chatId) : null;
     const parentEl = parentId ? chatThread.querySelector(`[data-chat-id="${CSS.escape(parentId)}"]`) : null;
 
     if (parentEl && parentEl._repliesContainer) {
-        parentEl._repliesContainer.appendChild(el);
-        if (parentEl._repliesToggle) {
-            const count = parentEl._repliesContainer.children.length;
-            parentEl._repliesToggle.hidden = false;
-            const countLabel = parentEl._repliesToggle.querySelector('span');
-            if (countLabel) countLabel.textContent = `${count} ${count === 1 ? 'reply' : 'replies'}`;
-            // A reply that just arrived live (animate=true) opens the
-            // thread automatically so it's visible right away; replies
-            // loaded from history stay collapsed behind the toggle.
-            if (animate) {
-                parentEl._repliesToggle.setAttribute('aria-expanded', 'true');
-                parentEl._repliesContainer.hidden = false;
-            }
+        attachReplyToParent(parentEl, el);
+        if (animate) {
+            parentEl._repliesToggle?.setAttribute('aria-expanded', 'true');
+            parentEl._repliesContainer.hidden = false;
         }
+        return;
+    }
+
+    if (parentId) {
+        if (!pendingRepliesByParent.has(parentId)) {
+            pendingRepliesByParent.set(parentId, []);
+        }
+        pendingRepliesByParent.get(parentId).push(el);
         return;
     }
 
@@ -1763,6 +1793,10 @@ function addToThread(chat, isOwn, scrollDown, animate, hasReply, isLatestOwn) {
         // history — surface the jump-to-bottom button instead of
         // silently moving their view.
         chatScrollBottomBtn?.classList.add('is-visible');
+    }
+    const chatId = getReportId(chat);
+    if (chatId) {
+        flushPendingRepliesForParent(chatId);
     }
 }
 
@@ -1785,6 +1819,7 @@ function loadChatHistory() {
 
     chatLocation = loc; // kept for local-scope send calls
     chatThread.innerHTML = "";
+    pendingRepliesByParent.clear();
     knownIds.clear();
     typingIndicatorEl = null; // the node above was just wiped out with the thread
 

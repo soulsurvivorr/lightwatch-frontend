@@ -6,8 +6,8 @@
   --bg-panel-raised: rgb(233, 231, 226);
   --border-soft: rgb(227, 225, 235);
   --border-strong: rgb(58, 58, 68);
-  --dark-bg: #1C1F26;
-  --dark-bg-mid: #2A2E38;
+  --dark-bg: rgb(238, 237, 241);
+  --dark-bg-mid: rgb(244, 243, 247);
   --text-bright: #121318;
   --text-muted: #2d3342;
   --text-faint: #4f576b;

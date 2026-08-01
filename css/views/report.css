@@ -2144,7 +2144,7 @@ body.lw-chat-community-mode #view-chat .community-banner {
 #view-chat .community-fab {
   position: fixed;
   right: 16px;
-  bottom: calc(18px + 56px + env(safe-area-inset-bottom));
+  bottom: calc(18px + 72px + env(safe-area-inset-bottom));
   width: 52px;
   height: 52px;
   border-radius: 50%;

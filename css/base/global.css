@@ -21,7 +21,7 @@
    view ever renders content directly inside its <section> without
    going through .page. */
 #appShell section[data-view] {
-  background: var(--dark-bg);
+  background: var(--app-bg-solid, var(--bg-deep));
   padding-left: 2px;
   padding-right: 2px;
   box-sizing: border-box;

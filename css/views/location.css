@@ -493,7 +493,7 @@
   overflow: hidden;
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-lg);
-  background: var(--app-bg-gradient);
+  background: var(--bg-panel);
 }
 
 #view-location .hero-banner__eyebrow {
@@ -509,21 +509,21 @@
   font-family: var(--font-display);
   font-size: 1.1rem;
   font-weight: 700;
-  color: white;
+  color: var(--text-bright);
   line-height: 1.2;
   margin: 4px 0 3px;
 }
 
 #view-location .hero-banner__sub {
   font-size: 0.74rem;
-  color: rgba(255, 255, 255, 0.65);
+  color: var(--text-muted);
   max-width: 580px;
   margin-bottom: 0;
 }
 
 #view-location .location-banner__note {
   font-size: 0.68rem;
-  color: rgba(255, 255, 255, 0.45);
+  color: var(--text-faint);
   margin: 3px 0 0;
 }
 
@@ -534,12 +534,12 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--bg-panel-raised);
+  border: 1px solid var(--border-soft);
   border-radius: 999px;
   padding: 4px 10px;
   font-size: 0.68rem;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--text-bright);
   max-width: 46%;
   min-width: 0;
 }
@@ -553,20 +553,20 @@
 }
 
 #view-location .location-filter-tab {
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.72);
+  border: 1px solid var(--border-soft);
+  background: var(--bg-panel-raised);
+  color: var(--text-muted);
 }
 
 #view-location .location-filter-tab:hover {
-  border-color: rgba(255, 255, 255, 0.3);
-  color: white;
+  border-color: color-mix(in srgb, var(--brand2) 42%, var(--border-soft));
+  color: var(--text-bright);
 }
 
 #view-location .location-filter-tab.is-active {
-  background: var(--teal);
-  border-color: var(--teal);
-  color: var(--teal-dim);
+  background: color-mix(in srgb, var(--teal) 18%, var(--bg-panel-raised));
+  border-color: color-mix(in srgb, var(--teal) 50%, var(--border-soft));
+  color: var(--teal);
 }
 
 #view-location .hero-banner__location span:last-child {

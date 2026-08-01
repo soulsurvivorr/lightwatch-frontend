@@ -3,14 +3,10 @@
    ============================================================ */
 
 .topbar {
-  /* Matches #view-home's actual page background (var(--dark-bg), see
-     home.css) and location.css's var(--dark-bg) panel background —
-     confirmed by a pre-existing comment further down in home.css that
-     already documented this as the intended value. Previously used
-     --bottom-nav-surface (the bottom nav's lighter gray-blue "raised
-     pill" token) instead, which is why the topbar visibly read as a
-     different, lighter shade than the rest of the page on Home. */
-  background: linear-gradient(145deg, color-mix(in srgb, var(--dark-bg) 86%, #0a1220), color-mix(in srgb, var(--dark-bg-mid) 88%, #15253b));
+  /* Use the real app theme tokens instead of a permanently dark
+     gradient so the shared header follows light/dark mode cleanly. */
+  background: linear-gradient(180deg, color-mix(in srgb, var(--bg-panel) 96%, transparent), color-mix(in srgb, var(--bg-panel-raised) 88%, transparent));
+  border-bottom: 1px solid color-mix(in srgb, var(--border-soft) 86%, transparent);
   backdrop-filter: blur(6px);
   width: 100%;
   position: sticky;
@@ -48,7 +44,7 @@
 .topbar__brand p {
   font-size: 1rem;
   font-weight: 600;
-  color: white;
+  color: var(--text-bright);
   margin: 0;
 }
 
@@ -75,7 +71,7 @@
 }
 
 .brand span {
-  color: white;
+  color: var(--text-bright);
 }
 
 .nav {
@@ -89,7 +85,7 @@
   border-radius: 999px;
   border: 1px solid transparent;
   font-size: 0.92rem;
-  color: rgba(255, 255, 255, 0.86);
+  color: var(--text-muted);
   transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
@@ -100,9 +96,11 @@
 }
 
 .nav__link--active {
-  color: #f5fdff;
+  color: var(--text-bright);
+  font-weight: 700;
   border-color: color-mix(in srgb, var(--brand2) 48%, var(--border-soft));
-  background: linear-gradient(135deg, color-mix(in srgb, var(--brand2) 52%, #0a1827), color-mix(in srgb, var(--teal) 44%, #0b1420));
+  background: linear-gradient(135deg, color-mix(in srgb, var(--brand2) 26%, var(--bg-panel-raised)), color-mix(in srgb, var(--teal) 22%, var(--bg-panel)));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand2) 28%, transparent);
 }
 
 .topbar__user {
@@ -128,7 +126,7 @@
   border-radius: 12px;
   border: 1px solid color-mix(in srgb, var(--brand2) 32%, var(--border-soft));
   background: color-mix(in srgb, var(--bg-panel-raised) 86%, transparent);
-  color: #f3f9ff;
+  color: var(--text-bright);
   cursor: pointer;
 }
 
@@ -150,8 +148,8 @@
   padding: 8px;
   border-radius: 14px;
   border: 1px solid color-mix(in srgb, var(--brand2) 32%, var(--border-soft));
-  background: linear-gradient(165deg, color-mix(in srgb, var(--dark-bg-mid) 92%, #0a1220), color-mix(in srgb, var(--dark-bg) 90%, #081220));
-  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.34);
+  background: linear-gradient(165deg, color-mix(in srgb, var(--bg-panel) 96%, transparent), color-mix(in srgb, var(--bg-panel-raised) 92%, transparent));
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.12);
   z-index: 30;
 }
 
@@ -166,7 +164,7 @@
   padding: 0 10px;
   border-radius: 10px;
   border: 1px solid transparent;
-  color: rgba(244, 250, 255, 0.88);
+  color: var(--text-muted);
   font-size: 0.84rem;
   font-weight: 650;
   text-decoration: none;
@@ -176,13 +174,13 @@
 .topbar__hamburger-link:focus-visible {
   border-color: color-mix(in srgb, var(--brand2) 32%, var(--border-soft));
   background: color-mix(in srgb, var(--brand2) 12%, var(--bg-panel-raised));
-  color: #ffffff;
+  color: var(--text-bright);
 }
 
 .topbar__hamburger-link.is-active {
   border-color: color-mix(in srgb, var(--brand2) 44%, var(--border-soft));
-  background: linear-gradient(135deg, color-mix(in srgb, var(--brand2) 50%, #101d2f), color-mix(in srgb, var(--teal) 42%, #0d1726));
-  color: #ffffff;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--brand2) 18%, var(--bg-panel-raised)), color-mix(in srgb, var(--teal) 18%, var(--bg-panel)));
+  color: var(--text-bright);
 }
 
 @media (min-width: 541px) and (max-width: 1023px) {
@@ -227,7 +225,7 @@
 }
 
 .avatar-name {
-  color: white;
+  color: var(--text-bright);
 }
 
 /* Mobile nav toggle (CSS-only, no JS: hidden checkbox technique) */
@@ -242,7 +240,7 @@
   padding: 8px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-soft);
-  color: white;
+  color: var(--text-bright);
 }
 
 .nav-toggle-label .bar {

@@ -936,4 +936,20 @@
    or filter row. */
 .account-banner {
   margin-bottom: 6px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  box-shadow: none;
+}
+
+.account-banner .hero-banner__eyebrow {
+  color: var(--text-faint);
+}
+
+.account-banner .hero-banner__greeting {
+  color: var(--text-bright);
+}
+
+.account-banner .hero-banner__sub {
+  color: var(--text-muted);
 }

@@ -316,7 +316,8 @@ const DISPLAY_PREF_KEYS = {
     reduceMotion:  'lw_pref_reduce_motion',
     largeChatText: 'lw_pref_large_chat_text',
     density:       'lw_pref_density',   // 'comfortable' | 'compact'
-    accent:        'lw_pref_accent'     // 'teal' | 'amber' | 'violet'
+    accent:        'lw_pref_accent',    // 'teal' | 'amber' | 'violet'
+    theme:         'lw_theme_pref'      // 'device' | 'light' | 'dark'
 };
 
 function readDisplayPrefs() {
@@ -325,7 +326,8 @@ function readDisplayPrefs() {
         reduceMotion:  localStorage.getItem(DISPLAY_PREF_KEYS.reduceMotion) === '1',
         largeChatText: localStorage.getItem(DISPLAY_PREF_KEYS.largeChatText) === '1',
         density:       localStorage.getItem(DISPLAY_PREF_KEYS.density) || 'comfortable',
-        accent:        localStorage.getItem(DISPLAY_PREF_KEYS.accent) || 'teal'
+        accent:        localStorage.getItem(DISPLAY_PREF_KEYS.accent) || 'teal',
+        theme:         localStorage.getItem(DISPLAY_PREF_KEYS.theme) || 'device'
     };
 }
 
@@ -359,12 +361,14 @@ function initDisplayPrefsUI() {
     const reduceMotionToggle = el('prefReduceMotion');
     const largeTextToggle = el('prefLargeChatText');
     const densitySelect = el('prefDensity');
+    const themeSelect = el('prefTheme');
     const swatches = document.querySelectorAll('#accentSwatchRow .swatch');
 
     if (compactToggle) compactToggle.checked = prefs.compactChat;
     if (reduceMotionToggle) reduceMotionToggle.checked = prefs.reduceMotion;
     if (largeTextToggle) largeTextToggle.checked = prefs.largeChatText;
     if (densitySelect) densitySelect.value = prefs.density;
+    if (themeSelect) themeSelect.value = prefs.theme;
     swatches.forEach(btn => btn.setAttribute('aria-pressed', btn.dataset.accent === prefs.accent ? 'true' : 'false'));
 
     compactToggle?.addEventListener('change', () => {
@@ -383,6 +387,10 @@ function initDisplayPrefsUI() {
 
     densitySelect?.addEventListener('change', () => {
         setDisplayPref('density', densitySelect.value);
+    });
+
+    themeSelect?.addEventListener('change', () => {
+        setDisplayPref('theme', themeSelect.value);
     });
 
     swatches.forEach(btn => {
