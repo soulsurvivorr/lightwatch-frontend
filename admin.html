@@ -1143,7 +1143,10 @@
   function setVh() { document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`); }
   setVh(); window.addEventListener('resize', setVh);
 
-  const API = "https://lightwatch-backend.onrender.com";
+  const API = (typeof window.API_URL === "string" && window.API_URL)
+    || ((location.protocol === "file:" || location.hostname === "localhost" || location.hostname === "127.0.0.1")
+      ? "http://localhost:3000"
+      : "https://lightwatch-backend.onrender.com");
   const TK = "lw_admin_tk";
   function getToken() { return sessionStorage.getItem(TK); }
   function setToken(t) { sessionStorage.setItem(TK, t); }
@@ -2101,7 +2104,8 @@
     if (status) status.textContent = "Checking…";
     const start = Date.now();
     try {
-      await apiFetch("/admin/summary");
+      const healthRes = await fetch(`${API}/`);
+      const health = await healthRes.json().catch(() => ({}));
       const latency = Date.now() - start;
       const hApiLatency = document.getElementById("hApiLatency");
       const hApiIndicator = document.getElementById("hApiIndicator");
@@ -2110,15 +2114,22 @@
         hApiIndicator.className = "health-card__indicator " + (latency < 400 ? "health-card__indicator--ok" : latency < 1200 ? "health-card__indicator--warn" : "health-card__indicator--err");
       }
       if (status) status.textContent = `API: ${latency}ms`;
+
+      const hDbStatus = document.getElementById("hDbStatus");
+      const hDbIndicator = document.getElementById("hDbIndicator");
+      if (hDbStatus) hDbStatus.textContent = health.mongodb || "Unknown";
+      if (hDbIndicator) {
+        const dbState = String(health.mongodb || "").toLowerCase();
+        hDbIndicator.className = "health-card__indicator " + (dbState === "connected" ? "health-card__indicator--ok" : dbState === "connecting" ? "health-card__indicator--warn" : "health-card__indicator--err");
+      }
     } catch(e) {
       const hApiIndicator = document.getElementById("hApiIndicator");
       if (hApiIndicator) hApiIndicator.className = "health-card__indicator health-card__indicator--err";
+      const hDbStatus = document.getElementById("hDbStatus");
+      const hDbIndicator = document.getElementById("hDbIndicator");
+      if (hDbStatus) hDbStatus.textContent = "Unavailable";
+      if (hDbIndicator) hDbIndicator.className = "health-card__indicator health-card__indicator--err";
     }
-
-    const hDbStatus = document.getElementById("hDbStatus");
-    const hDbIndicator = document.getElementById("hDbIndicator");
-    if (hDbStatus) hDbStatus.textContent = "Connected";
-    if (hDbIndicator) hDbIndicator.className = "health-card__indicator health-card__indicator--ok";
 
     const hPushSubs = document.getElementById("hPushSubs");
     if (hPushSubs) hPushSubs.textContent = "Active";
