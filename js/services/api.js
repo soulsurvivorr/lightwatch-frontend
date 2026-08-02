@@ -8,7 +8,7 @@
 //  view you migrate onto a shared client later.
 // ============================================================
 
-const BACKEND_TIMEOUT_MS = 15000;
+const BACKEND_TIMEOUT_MS = 45000;
 
 function buildBackendError(message) {
   const err = new Error(message);
@@ -20,7 +20,7 @@ function getBackendErrorMessage(error) {
   if (!error) return 'Could not reach the backend. Is the backend still running?';
   const text = String(error.message || error || '');
   if (/timed out/i.test(text) || error.name === 'AbortError') {
-    return `Backend request timed out after ${BACKEND_TIMEOUT_MS / 1000} seconds. Is the backend still running?`;
+    return `The backend took too long to respond. Please try again; if it keeps happening, the backend or email provider may be slow.`;
   }
   if (/Failed to fetch|NetworkError|Network request failed/i.test(text)) {
     return 'Could not reach the backend. Is the backend still running?';
