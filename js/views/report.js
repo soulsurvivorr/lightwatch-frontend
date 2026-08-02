@@ -1573,6 +1573,10 @@ chatReplyCancel?.addEventListener('click', () => {
 // Only real server IDs go in here — never temp IDs.
 // This is the single source of truth for deduplication.
 const knownIds  = new Set();
+// Newest createdAt we've fetched so far — sent as ?since= on every poll
+// after the first, so a tick with nothing new costs almost nothing
+// instead of re-downloading the full (image-heavy) message list.
+let lastPolledAt = null;
 let pollInterval  = null;
 let chatLocation  = null; // set once on load, reused by poll
 let isNearBottom  = true;
@@ -1699,15 +1703,37 @@ function focusTargetMessageIfPresent() {
     pendingFocusChatId = '';
 }
 
-function buildChatsUrl() {
+// `sinceIso`, when given, is appended as ?since=... so the server only
+// returns messages newer than that cursor (see GET /chats' `since`
+// handling in server.js) instead of the full up-to-500-message list —
+// used by the poll loop below once the initial full load has happened.
+function buildChatsUrl(sinceIso) {
+    const sinceParam = sinceIso ? `&since=${encodeURIComponent(sinceIso)}` : '';
     if (chatScope === CHAT_SCOPE_GLOBAL) {
-        return `${API_URL}/chats?scope=global`;
+        return `${API_URL}/chats?scope=global${sinceParam}`;
     }
     const loc = (targetChatLocation && pendingFocusChatId)
         ? targetChatLocation
         : (window.currentChatLocation || getCurrentChatLocation());
     if (!loc) return null;
-    return `${API_URL}/chats?scope=local&location=${encodeURIComponent(loc)}`;
+    return `${API_URL}/chats?scope=local&location=${encodeURIComponent(loc)}${sinceParam}`;
+}
+
+// Companion to buildChatsUrl() that hits GET /chats/counts instead of
+// GET /chats — same scope/location filter, but the response has no
+// avatarImage/media at all (see server.js), just the like/reply-count
+// fields syncLiveStatCounts() actually reads. This is what makes it
+// safe to refresh every already-rendered bubble's counts on every poll
+// tick without re-downloading images for up to 500 messages each time.
+function buildChatsCountsUrl() {
+    if (chatScope === CHAT_SCOPE_GLOBAL) {
+        return `${API_URL}/chats/counts?scope=global`;
+    }
+    const loc = (targetChatLocation && pendingFocusChatId)
+        ? targetChatLocation
+        : (window.currentChatLocation || getCurrentChatLocation());
+    if (!loc) return null;
+    return `${API_URL}/chats/counts?scope=local&location=${encodeURIComponent(loc)}`;
 }
 
 updateChatPlaceholder();
@@ -1803,6 +1829,7 @@ function loadChatHistory() {
     chatThread.innerHTML = "";
     pendingRepliesByParent.clear();
     knownIds.clear();
+    lastPolledAt = null;
 
     const url = buildChatsUrl();
     if (!url) {
@@ -1822,6 +1849,12 @@ function loadChatHistory() {
                 if (id) knownIds.add(id);
                 addToThread(chat, resolveUserId(chat) === myId, false, false, repliedCounts.get(id) || 0, String(id) === latestOwnId);
             });
+            // Every message this load just fetched is now "known" — start
+            // the poll loop's delta cursor from the newest one of those
+            // (chats is newest-first from the server), so the very first
+            // poll tick already asks for just what's new since this load
+            // rather than re-fetching everything again 1.5s later.
+            if (chats.length > 0 && chats[0].createdAt) lastPolledAt = chats[0].createdAt;
             chatThread.scrollTop = 0;
             focusTargetMessageIfPresent();
             markChatReady();
@@ -1848,11 +1881,39 @@ function loadChatHistory() {
 // -------------------------------------------------------
 async function pollChatsOnce() {
     try {
-        const url = buildChatsUrl();
-        if (!url) return;
-        const res = await fetch(url);
-        if (!res.ok) return;
-        const chats = await res.json();
+        // Two lightweight requests instead of one heavy one:
+        //  - deltaUrl (?since=lastPolledAt) → only messages posted since
+        //    the last tick, full fidelity (avatarImage/media included)
+        //    since these are genuinely new bubbles that need to render.
+        //    Almost always empty or near-empty on any given tick.
+        //  - countsUrl → GET /chats/counts: like/reply counts for every
+        //    message currently in the feed's window, with NO image data
+        //    at all — this is what keeps already-rendered bubbles' stats
+        //    current without re-downloading anything visual.
+        // See server.js's GET /chats and GET /chats/counts for why this
+        // split exists: re-fetching the full media-heavy list every
+        // 1.5 seconds (the old behavior) is what was starving the
+        // whole backend a few minutes into every deploy.
+        const deltaUrl = buildChatsUrl(lastPolledAt);
+        const countsUrl = buildChatsCountsUrl();
+        if (!deltaUrl || !countsUrl) return;
+
+        const [deltaRes, countsRes] = await Promise.all([fetch(deltaUrl), fetch(countsUrl)]);
+
+        if (countsRes.ok) {
+            try {
+                const counts = await countsRes.json();
+                syncLiveStatCounts(counts);
+            } catch (e) {
+                // silent — retries next tick
+            }
+        }
+
+        if (!deltaRes.ok) return;
+        const chats = await deltaRes.json();
+        if (chats.length > 0 && chats[0].createdAt) lastPolledAt = chats[0].createdAt;
+        if (chats.length === 0) return; // nothing new to render this tick
+
         const myId  = getCurrentUserId();
         const repliedCounts = computeRepliedToIds(chats);
         const latestOwnId = getLatestOwnMessageId(chats, myId);
@@ -1878,12 +1939,6 @@ async function pollChatsOnce() {
                 // silent — this message gets another shot next tick
             }
         });
-
-        // Existing bubbles can still change: a reply or a like might land
-        // on an older message — keep every card's comment/like counts
-        // current, not just newly-added ones. Always runs, independent
-        // of the per-message loop above.
-        syncLiveStatCounts(chats);
     } catch (e) {
         // silent — retries next tick
     }
