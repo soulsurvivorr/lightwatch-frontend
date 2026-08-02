@@ -8,10 +8,10 @@
 //  for instance). Everything else runs exactly as before — it
 //  already had its own pause/resume logic for tab visibility
 //  (search "Pause poll when tab is hidden" below), so this just
-//  hooks the SAME pollInterval/typingPollInterval pause/resume into
-//  the router's view-changed event too, so the 1.5s/800ms polling
-//  loops stop while some other view (Areas, Reports, Account) is on
-//  screen instead of Home.
+//  hooks the SAME pollInterval pause/resume into the router's
+//  view-changed event too, so the 1.5s polling loop stops while
+//  some other view (Areas, Reports, Account) is on screen instead
+//  of Home.
 //
 //  Deep links (chatId/chatScope/chatLocation) are read from the URL
 //  twice: once at script load for a cold launch straight into
@@ -789,111 +789,35 @@ function getLatestOwnMessageId(chats, myId) {
     return String(latest._id || latest.id || '');
 }
 
-// Read-receipt bookkeeping: which message ids we've already told the
-// server we've seen, so polling every 5s doesn't re-POST the same ids
-// forever.
-const markedSeenIds = new Set();
-
-// A message being *loaded* (fetched into memory so the thread is ready)
-// is not the same as a message being *seen* (actually on the user's
-// screen). Chat is inline on the page on every screen size now, so
-// "on the page" isn't "on screen" — it can be below the fold, or the
-// window itself might not even have focus. Just loading the home page
-// must not count as seeing it.
-let chatCardIntersecting = false;
-let chatVisibilityObserver = null;
-function setupChatVisibilityObserver() {
-    const card = getVisibleChatCard();
-    if (!card || !('IntersectionObserver' in window)) return;
-    if (chatVisibilityObserver) chatVisibilityObserver.disconnect();
-    chatVisibilityObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            const wasIntersecting = chatCardIntersecting;
-            chatCardIntersecting = entry.isIntersecting;
-            if (chatCardIntersecting && !wasIntersecting) pollChatsOnce();
-        });
-    }, { threshold: 0.4 });
-    chatVisibilityObserver.observe(card);
-}
-
-function isChatVisibleToUser() {
-    if (document.hidden) return false;
-    // NOTE: previously also required document.hasFocus(), but that API is
-    // unreliable in installed/standalone contexts (this app is a PWA —
-    // see manifest.json / apple-mobile-web-app-capable) where some Android
-    // WebViews never report window focus at all. That silently made this
-    // function return false permanently, so read receipts (seenBy) never
-    // got sent for anyone, on any device. document.hidden + the
-    // IntersectionObserver check below are enough on their own to know
-    // the thread is actually on screen.
-    // A second, separate bug also kept the "seen" eye from ever showing:
-    // getVisibleChatCard() was targeting a stale selector that resolved
-    // to the Home page's loading-skeleton placeholder instead of the
-    // real #view-chat card, so the observer below was watching an
-    // element that could never intersect — see getVisibleChatCard().
-    const card = getVisibleChatCard();
-    if (!card) return false;
-    // Chat is always inline on the page now (no separate mobile popup
-    // state to check), so "visible" means the same thing on every
-    // screen size: actually scrolled into view, on a focused/visible
-    // tab. Falls back to the old "on-page" assumption on browsers with
-    // no IntersectionObserver support rather than never marking
-    // anything seen.
-    if (!('IntersectionObserver' in window)) return true;
-    return chatCardIntersecting;
-}
-
-function markVisibleMessagesSeen(chats) {
-    if (!isChatVisibleToUser()) return;
-    const myId = getCurrentUserId();
-    if (!myId) return;
-    const toMark = chats
-        .filter(c => resolveUserId(c) !== myId)
-        .map(c => c._id || c.id)
-        .filter(id => id && !markedSeenIds.has(id));
-    if (!toMark.length) return;
-    toMark.forEach(id => markedSeenIds.add(id));
-    fetch(`${API_URL}/chats/seen`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: myId, chatIds: toMark })
-    }).catch(() => {}); // best-effort — a missed read receipt isn't worth retry noise
-}
-
-// Updates the little "seen" eye on every own-message bubble currently in
-// the thread, based on the latest fetch. Needed on every poll (not just
-// when a message is first added) because seenBy/replies both change on
-// messages that are already rendered.
-function syncSeenIndicators(chats) {
+// Updates the comment (reply) AND like counts on every card currently
+// in the thread, based on the latest poll. Needed on every tick (not
+// just when a message is first added) because both can change on
+// messages that are already rendered — someone else replying to or
+// liking a post you're currently looking at should update live,
+// exactly the same way your own click already does optimistically.
+function syncLiveStatCounts(chats) {
     const repliedCounts = computeRepliedToIds(chats);
-    const myId = getCurrentUserId();
-    const latestOwnId = getLatestOwnMessageId(chats, myId);
     const byId = new Map(chats.map(c => [String(c._id || c.id || ''), c]));
 
     chatThread?.querySelectorAll('.chat-message').forEach(el => {
         const id = el.dataset.chatId;
         if (!id) return;
+
         const commentCountEl = el.querySelector('.report-card__stat--comment .report-card__stat-count');
         if (commentCountEl) commentCountEl.textContent = String(repliedCounts.get(id) || 0);
-    });
 
-    chatThread?.querySelectorAll('.chat-message--own').forEach(el => {
-        try {
-            const id = el.dataset.chatId;
-            if (!id) return;
-            const seenEl = el.querySelector('.chat-message__seen');
-            if (!seenEl) return;
-            seenEl.classList.remove('is-visible');
-
-            const chat = byId.get(id);
-            const seenByIds = normalizeSeenByIds(chat);
-            const hasBeenSeen = seenByIds.some(seenById => seenById && seenById !== myId);
-            const hasReply = (repliedCounts.get(id) || 0) > 0;
-            const isLatestOwn = id === latestOwnId;
-            seenEl.classList.toggle('is-visible', isLatestOwn && hasBeenSeen && !hasReply);
-        } catch (syncErr) {
-            // Don't let one malformed bubble stop the rest of the thread
-            // from getting its eye state updated on this tick.
+        const chat = byId.get(id);
+        if (!chat) return;
+        const likeStatEl = el.querySelector('.report-card__stat--like');
+        const likeCountEl = likeStatEl?.querySelector('.report-card__stat-count');
+        if (likeCountEl) {
+            likeCountEl.textContent = String(Math.max(0, Number(chat.likeCount || 0)));
+        }
+        if (likeStatEl) {
+            const myUserId = getCurrentUserId();
+            const isLiked = Boolean(myUserId) && Array.isArray(chat.likedBy) &&
+                chat.likedBy.some((likedId) => String(likedId) === String(myUserId));
+            likeStatEl.classList.toggle('is-liked', isLiked);
         }
     });
 }
@@ -904,16 +828,6 @@ function resolveUserId(chat) {
     if (!chat.userId) return null;
     if (typeof chat.userId === 'object') return String(chat.userId._id || chat.userId);
     return String(chat.userId);
-}
-
-function normalizeSeenByIds(chat) {
-    const seenBy = Array.isArray(chat?.seenBy) ? chat.seenBy : [];
-    return seenBy
-        .map(entry => {
-            if (entry && typeof entry === 'object') return String(entry._id || entry.id || '');
-            return String(entry || '');
-        })
-        .filter(Boolean);
 }
 
 // iOS Safari's Date parser is much stricter than Chrome's: a timestamp
@@ -1423,20 +1337,6 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
     footer.appendChild(tags);
     footer.appendChild(stats);
 
-    // "Seen" eye — own messages only, overhanging the card corner. See
-    // syncSeenIndicators for how this stays in sync after the initial
-    // render (new replies/seenBy arriving via polling).
-    let seenEl = null;
-    if (isOwn) {
-        seenEl = document.createElement('span');
-        seenEl.className = 'chat-message__seen';
-        seenEl.title = 'Seen';
-        seenEl.setAttribute('aria-hidden', 'true');
-        seenEl.textContent = '👀';
-        const hasBeenSeen = Boolean(chat.seenBy && chat.seenBy.length > 0);
-        seenEl.classList.toggle('is-visible', Boolean(isLatestOwn) && hasBeenSeen && !hasReply);
-    }
-
     // ---- Threaded replies ----
     // Every reply to THIS card renders nested here (see addToThread)
     // instead of appearing as its own row in the main feed. Replies
@@ -1472,7 +1372,6 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
     if (mediaEl) el.appendChild(mediaEl);
     if (quotedEl) el.appendChild(quotedEl);
     el.appendChild(footer);
-    if (seenEl) el.appendChild(seenEl);
     if (repliesToggle) el.appendChild(repliesToggle);
     if (repliesContainer) el.appendChild(repliesContainer);
 
@@ -1680,7 +1579,17 @@ let isNearBottom  = true;
 let replyTarget = null;
 const pendingRepliesByParent = new Map();
 
-function attachReplyToParent(parentEl, replyEl) {
+// Nests a reply under its parent card. Replies default to CLOSED —
+// this only reveals the "N replies" toggle button (via repliesToggle
+// .hidden) so the count is visible, it does NOT expand the container.
+// That used to happen unconditionally here, which meant every card
+// with any replies re-opened itself on every poll tick and even on
+// the very first page load — "default closed" never actually held.
+// Pass expandParent: true only when the reply being attached is one
+// the current user just personally posted (see the addToThread call
+// site below) — that's the one case where auto-opening the thread so
+// they can see what they just sent is actually wanted.
+function attachReplyToParent(parentEl, replyEl, expandParent = false) {
     if (!parentEl || !replyEl) return;
 
     const repliesContainer = parentEl._repliesContainer || parentEl.querySelector(':scope > .report-card__replies');
@@ -1693,10 +1602,12 @@ function attachReplyToParent(parentEl, replyEl) {
 
     if (repliesToggle) {
         repliesToggle.hidden = false;
-        repliesToggle.setAttribute('aria-expanded', 'true');
     }
 
-    repliesContainer.hidden = false;
+    if (expandParent) {
+        repliesToggle?.setAttribute('aria-expanded', 'true');
+        repliesContainer.hidden = false;
+    }
 }
 
 function flushPendingRepliesForParent(parentId) {
@@ -1711,14 +1622,6 @@ function flushPendingRepliesForParent(parentId) {
     queue.forEach((replyEl) => attachReplyToParent(parentEl, replyEl));
     pendingRepliesByParent.delete(String(parentId));
 }
-
-// Typing indicator state — see the TYPING INDICATOR section further
-// down for the actual ping/poll/render logic.
-let typingPollInterval = null;
-let typingStopTimer    = null;
-let lastTypingPingAt   = 0;
-let isSelfTyping       = false;
-let typingIndicatorEl  = null;
 
 function updateChatPlaceholder() {
     if (!chatInput) return;
@@ -1825,7 +1728,7 @@ function scrollChatToBottom(smooth) {
 
 chatScrollBottomBtn?.addEventListener('click', () => scrollChatToBottom(true));
 
-function addToThread(chat, isOwn, scrollDown, animate, hasReply, isLatestOwn) {
+function addToThread(chat, isOwn, scrollDown, animate, hasReply, isLatestOwn, expandParent = false) {
     // "Rise" for a message you just sent, "arrive" for one that just
     // came in from someone else — same idea (flows in from the bottom),
     // slightly different feel so sent vs. received still reads distinctly.
@@ -1846,11 +1749,12 @@ function addToThread(chat, isOwn, scrollDown, animate, hasReply, isLatestOwn) {
         : null;
 
     if (parentEl && parentEl._repliesContainer) {
-        attachReplyToParent(parentEl, el);
-        if (animate) {
-            parentEl._repliesToggle?.setAttribute('aria-expanded', 'true');
-            parentEl._repliesContainer.hidden = false;
-        }
+        // Replies default to closed. Only expand the parent's thread when
+        // the caller explicitly says this reply is one the current user
+        // just personally posted (see the addToThread('saved', …) call
+        // below) — NOT for every reply that happens to arrive via poll,
+        // and not on the initial history load either.
+        attachReplyToParent(parentEl, el, expandParent);
         return;
     }
 
@@ -1899,7 +1803,6 @@ function loadChatHistory() {
     chatThread.innerHTML = "";
     pendingRepliesByParent.clear();
     knownIds.clear();
-    typingIndicatorEl = null; // the node above was just wiped out with the thread
 
     const url = buildChatsUrl();
     if (!url) {
@@ -1922,9 +1825,7 @@ function loadChatHistory() {
             chatThread.scrollTop = 0;
             focusTargetMessageIfPresent();
             markChatReady();
-            markVisibleMessagesSeen(chats);
             startPolling();
-            startTypingPoll();
         })
         .catch(err => {
             console.error("Could not load chat history:", err);
@@ -1935,16 +1836,15 @@ function loadChatHistory() {
 // -------------------------------------------------------
 // POLLING — fetches all chats for this location and displays
 // any IDs we haven't seen yet, plus keeps every existing
-// bubble's "seen" eye current (a reply or a new seenBy entry
-// can land on a message that's already on screen).
+// card's comment/like counts current (a reply or a like from
+// someone else can land on a message that's already on screen).
 //
-// Runs on a fast interval so seen/reply state basically never
-// looks stale, AND fires immediately whenever the tab regains
-// focus/visibility — mobile browsers throttle background
-// setInterval timers hard (sometimes to once a minute), so
-// without this a phone that was locked or tab-switched could
-// sit showing an out-of-date eye for a long time even though
-// the interval "should" have ticked.
+// Runs on a fast interval, AND fires immediately whenever the tab
+// regains focus/visibility — mobile browsers throttle background
+// setInterval timers hard (sometimes to once a minute), so without
+// this a phone that was locked or tab-switched could sit showing
+// stale counts for a long time even though the interval "should"
+// have ticked.
 // -------------------------------------------------------
 async function pollChatsOnce() {
     try {
@@ -1959,11 +1859,11 @@ async function pollChatsOnce() {
 
         ;[...chats].reverse().forEach(chat => {
             // Isolated per-message: if rendering one new bubble throws for
-            // any reason, it must not take down syncSeenIndicators/
-            // markVisibleMessagesSeen below with it — those are what
-            // actually clear a stale eye, and skipping them silently every
-            // tick is exactly how an eye ends up looking permanently stuck
-            // instead of just one tick behind.
+            // any reason, it must not take down syncLiveStatCounts below
+            // with it — that's what actually keeps comment/like counts
+            // current, and skipping it silently every tick is exactly how
+            // a count ends up looking permanently stuck instead of just
+            // one tick behind.
             try {
                 const id = chat._id || chat.id;
                 if (shouldHideReport(chat)) {
@@ -1979,12 +1879,11 @@ async function pollChatsOnce() {
             }
         });
 
-        // Existing bubbles can still change: a reply might land on an
-        // older message, or someone else's seenBy might grow — keep
-        // every own-message eye icon current, not just newly-added ones.
-        // Always runs, independent of the per-message loop above.
-        syncSeenIndicators(chats);
-        markVisibleMessagesSeen(chats);
+        // Existing bubbles can still change: a reply or a like might land
+        // on an older message — keep every card's comment/like counts
+        // current, not just newly-added ones. Always runs, independent
+        // of the per-message loop above.
+        syncLiveStatCounts(chats);
     } catch (e) {
         // silent — retries next tick
     }
@@ -2006,186 +1905,13 @@ document.addEventListener('visibilitychange', () => {
 });
 window.addEventListener('focus', () => pollChatsOnce());
 
-// -------------------------------------------------------
-// TYPING INDICATOR
-// No sockets in this app, so this rides the same polling
-// model as everything else: a heartbeat while you type,
-// and a fast poll to pick up everyone else's heartbeats.
-// Rendered as the last bubble in the thread (see render
-// function below) rather than as a separate UI element.
-// -------------------------------------------------------
-const TYPING_PING_INTERVAL_MS = 900;  // min gap between our own heartbeats
-const TYPING_POLL_INTERVAL_MS = 800;  // how often we check who else is typing
-const TYPING_STOP_DELAY_MS    = 3000; // no keystrokes for this long = "stopped"
-const TYPING_MAX_HANDLES_SHOWN = 3;
-
-function buildTypingHeartbeatBody() {
-    const myId = getCurrentUserId();
-    const loc  = chatLocation || getCurrentChatLocation();
-    if (!myId) return null;
-    if (chatScope === CHAT_SCOPE_LOCAL && !loc) return null;
-    return {
-        userId: myId,
-        handle: myHandle,
-        scope: chatScope,
-        location: chatScope === CHAT_SCOPE_GLOBAL ? 'All locations' : loc
-    };
-}
-
-function pingTyping() {
-    const body = buildTypingHeartbeatBody();
-    if (!body) return;
-    isSelfTyping = true;
-    fetch(`${API_URL}/chats/typing`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-    }).catch(() => { /* silent — next keystroke retries */ });
-}
-
-function stopTyping() {
-    clearTimeout(typingStopTimer);
-    if (!isSelfTyping) return;
-    isSelfTyping = false;
-    const body = buildTypingHeartbeatBody();
-    if (!body) return;
-    fetch(`${API_URL}/chats/typing`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-    }).catch(() => { /* silent — the TTL on the server cleans it up anyway */ });
-}
-
-chatInput?.addEventListener('input', () => {
-    if (chatInput.value.trim().length === 0) {
-        stopTyping();
-        return;
-    }
-
-    const now = Date.now();
-    if (now - lastTypingPingAt >= TYPING_PING_INTERVAL_MS) {
-        lastTypingPingAt = now;
-        pingTyping();
-    }
-
-    clearTimeout(typingStopTimer);
-    typingStopTimer = setTimeout(stopTyping, TYPING_STOP_DELAY_MS);
-});
-
-chatInput?.addEventListener('blur', stopTyping);
-
-function buildTypingPollUrl() {
-    const myId = getCurrentUserId();
-    const loc  = chatLocation || getCurrentChatLocation();
-    if (!myId) return null;
-    if (chatScope === CHAT_SCOPE_LOCAL && !loc) return null;
-    const params = new URLSearchParams({
-        scope: chatScope,
-location: chatScope === CHAT_SCOPE_GLOBAL ? 'All locations' : loc,
-        userId: myId
-    });
-    return `${API_URL}/chats/typing?${params.toString()}`;
-}
-
-function startTypingPoll() {
-    if (typingPollInterval) clearInterval(typingPollInterval);
-    if (chatScope === CHAT_SCOPE_LOCAL && !chatLocation) return;
-
-    typingPollInterval = setInterval(async () => {
-        try {
-            const url = buildTypingPollUrl();
-            if (!url) return;
-            const res = await fetch(url);
-            if (!res.ok) return;
-            renderTypingIndicator(await res.json());
-        } catch (e) {
-            // silent — retries next tick
-        }
-    }, TYPING_POLL_INTERVAL_MS);
-}
-
-// Builds/updates/removes the typing bubble, always keeping it pinned
-// as the last child of the thread. Built with textContent (not
-// innerHTML) throughout since handles are user-supplied strings.
-function renderTypingIndicator(typers) {
-    if (!chatThread) return;
-
-    if (!typers || typers.length === 0) {
-        typingIndicatorEl?.remove();
-        typingIndicatorEl = null;
-        return;
-    }
-
-    if (!typingIndicatorEl) {
-        typingIndicatorEl = document.createElement('div');
-        typingIndicatorEl.className = 'chat-message chat-message--typing';
-        typingIndicatorEl.setAttribute('role', 'status');
-        typingIndicatorEl.setAttribute('aria-live', 'polite');
-
-        const handles = document.createElement('div');
-        handles.className = 'typing-indicator__handles';
-
-        const dots = document.createElement('div');
-        dots.className = 'typing-indicator__dots';
-        dots.setAttribute('aria-hidden', 'true');
-        dots.appendChild(document.createElement('span'));
-        dots.appendChild(document.createElement('span'));
-        dots.appendChild(document.createElement('span'));
-
-        typingIndicatorEl.appendChild(handles);
-        typingIndicatorEl.appendChild(dots);
-    }
-
-    const shown = typers.slice(0, TYPING_MAX_HANDLES_SHOWN);
-    const extraCount = typers.length - shown.length;
-    const handlesEl = typingIndicatorEl.querySelector('.typing-indicator__handles');
-    handlesEl.innerHTML = "";
-
-    if (shown.length === 1) {
-        // Single typist: "handle is typing" read as one line, same
-        // spirit as WhatsApp/iMessage's single-person indicator.
-        const text = document.createElement('span');
-        text.className = 'typing-indicator__text';
-        const strong = document.createElement('strong');
-        strong.textContent = shown[0].handle;
-        text.appendChild(strong);
-        text.appendChild(document.createTextNode(' is typing'));
-        handlesEl.appendChild(text);
-    } else {
-        // 2+ typists: up to 3 handle chips laid out horizontally,
-        // with a "+N" chip if there are more than that.
-        shown.forEach(t => {
-            const chip = document.createElement('span');
-            chip.className = 'typing-indicator__handle';
-            chip.textContent = t.handle;
-            handlesEl.appendChild(chip);
-        });
-        if (extraCount > 0) {
-            const more = document.createElement('span');
-            more.className = 'typing-indicator__more';
-            more.textContent = `+${extraCount}`;
-            handlesEl.appendChild(more);
-        }
-    }
-
-    typingIndicatorEl.classList.toggle('chat-message--typing-single', shown.length === 1);
-
-    if (chatThread.lastElementChild !== typingIndicatorEl) {
-        chatThread.appendChild(typingIndicatorEl);
-    }
-    if (isNearBottom) {
-        chatThread.scrollTop = chatThread.scrollHeight;
-    }
-}
 
 // Pause poll when tab is hidden (saves mobile data & battery)
 document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
         clearInterval(pollInterval);
-        clearInterval(typingPollInterval);
     } else if (chatScope === CHAT_SCOPE_GLOBAL || chatLocation) {
         startPolling();
-        startTypingPoll();
     }
 });
 
@@ -2197,9 +1923,7 @@ if (window.currentChatLocation) loadChatHistory();
 
 window.addEventListener('locationReady', () => {
     updateScopeButtons();
-    setupChatVisibilityObserver();
 });
-setupChatVisibilityObserver();
 
 function setChatScope(nextScope) {
     const picked = nextScope === CHAT_SCOPE_GLOBAL ? CHAT_SCOPE_GLOBAL : CHAT_SCOPE_LOCAL;
@@ -2289,7 +2013,7 @@ async function postChat({ text, replyTo, repost, quote, media }) {
         const realId = saved._id || saved.id;
         if (realId && !knownIds.has(realId)) {
             knownIds.add(realId);           // tell poll: skip this one
-            addToThread(saved, true, true, true, false, true); // show it now, scroll to it, animate it in
+            addToThread(saved, true, true, true, false, true, true); // show it now, scroll to it, animate it in, expand its parent thread if it's a reply
         }
         return saved;
     } catch (err) {
@@ -2318,7 +2042,6 @@ chatForm?.addEventListener('submit', async (e) => {
     resetChatInputHeight();
     const submittedMedia = composerMediaDataUrl;
     clearComposerMedia();
-    stopTyping(); // setting .value doesn't fire 'input', so this won't happen on its own
 
     // Quick tactile pop on the button itself the instant Send is hit.
     if (chatSendBtn) {
@@ -2497,10 +2220,8 @@ window.addEventListener('lw:route-changed', (e) => {
 
     if (e.detail.view !== 'home' && !isChatView) {
         clearInterval(pollInterval);
-        clearInterval(typingPollInterval);
     } else if (chatScope === CHAT_SCOPE_GLOBAL || chatLocation) {
         startPolling();
-        startTypingPoll();
     }
 
     if (isChatView) {

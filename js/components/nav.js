@@ -240,34 +240,25 @@ function bindTopbarHamburger() {
     });
 }
 
-// ── Bottom-nav badge + toast (Reports tab) ────────────────
-const NAV_REPORTS_SEEN_KEY = 'lw_nav_reports_last_seen';
-const NAV_TOASTED_IDS_KEY = 'lw_nav_reports_toasted_ids';
-const MAX_TOASTED_IDS = 300; // cap so this never grows unbounded in localStorage
-const NAV_BADGE_POLL_MS = (typeof POLL_INTERVAL_FAST_MS !== 'undefined') ? POLL_INTERVAL_FAST_MS : 5000;
-const NAV_BADGE_TYPES = new Set(['chat', 'reply', 'success', 'warning']);
-
-let navReportsPollTimer = null;
-let navBadgeLoadedOnce = false;
-
-// Mirrors the small getCurrentUserId/getCurrentLocation pattern
-// already duplicated per-file in reports.js/news.js.
-function getNavCurrentUserId() {
-    const session = typeof getSession === 'function' ? getSession() : null;
-    if (session?.user?.id) return session.user.id;
-    return localStorage.getItem('currentUserId') || sessionStorage.getItem('currentUserId');
-}
-
-function getNavCurrentLocation() {
-    if (window.currentChatLocation) return window.currentChatLocation;
-    const raw = localStorage.getItem('currentUserData') || localStorage.getItem('signupUser');
-    if (!raw) return null;
-    try {
-        const user = JSON.parse(raw);
-        return user.city ? `${user.city}, ${user.region || ''}`.trim() : (user.region || null);
-    } catch { return null; }
-}
-
+// ── Bottom-nav badge (Reports tab) ────────────────
+// NOTE: this used to run its own full reports-badge poll+toast
+// subsystem (refreshReportsBadge / startNavBadgePolling), on the
+// same POLL_INTERVAL_FAST_MS cadence as components/nav-badges.js's
+// checkCommunity(). Both hit GET /reports?includeCommunity=1 — the
+// most expensive report endpoint on the backend (fans out into 4
+// concurrent Mongo queries) — every 30s, independently, for as long
+// as the app was open, on every signed-in device. On top of that,
+// this file's target element (`[data-nav="reports"]` /
+// `[data-nav-badge="reports"]`) doesn't exist anywhere in index.html
+// — there's no bottom-nav item named "reports" — so this whole poll
+// loop was firing a real network request every 30s purely to render
+// into elements that were never on the page. nav-badges.js is the
+// one actually wired to something real (the notifications badge —
+// [data-nav-badge="notifications"] does exist), so that one stays
+// as the single source of truth for this data. setNavBadge/setNavDot
+// below are kept — they're small, reusable, and setNavDot('account', …)
+// via refreshPushPromptDot is still real — just the reports-specific
+// polling/toast machinery that duplicated nav-badges.js is gone.
 function setNavBadge(name, count) {
     const link = document.querySelector(`.bottom-nav-link[data-nav="${name}"]`);
     const badge = link?.querySelector(`.bottom-nav-badge[data-nav-badge="${name}"]`);
@@ -287,90 +278,6 @@ function setNavDot(name, show) {
     dot.hidden = !show;
 }
 
-function getReportsLastSeen() {
-    return Number(localStorage.getItem(NAV_REPORTS_SEEN_KEY) || '0');
-}
-
-function markReportsSeen() {
-    localStorage.setItem(NAV_REPORTS_SEEN_KEY, String(Date.now()));
-    setNavBadge('reports', 0);
-}
-
-// ── Toast phrasing per item type ─────────────────────────────────
-// 'reply'/'chat' items carry chatScope/chatLocation from GET
-// /reports but not a separate handle field — the handle is embedded
-// in title (reply: "{handle} replied to your message") or text
-// (chat: "{handle}: {message}"), since that's what server.js emits.
-function scopeLabel(item) {
-    return item.chatScope === 'global' ? 'Everyone' : (item.chatLocation || 'your area');
-}
-
-function toastTextForItem(item) {
-    if (item.type === 'reply') {
-        const handle = (item.title || '').replace(/ replied to your message$/, '').trim() || 'Someone';
-        return `${handle} replied to your message in ${scopeLabel(item)}`;
-    }
-    if (item.type === 'chat') {
-        const handle = (item.text || '').split(':')[0].trim() || 'Someone';
-        return `${handle} posted in ${scopeLabel(item)}`;
-    }
-    // 'success' / 'warning' — light status change; item.text is
-    // already a complete human-readable sentence from server.js
-    // (e.g. "A volunteer reported the light is off in Bantama.").
-    return item.text || item.title;
-}
-
-function getToastedIds() {
-    return (typeof LWStorage !== 'undefined' ? LWStorage.getJSON(NAV_TOASTED_IDS_KEY) : null) || [];
-}
-
-function toastNewItems(items) {
-    if (!items.length || typeof window.lwToast !== 'function') return;
-
-    const toastedIds = getToastedIds();
-    const toastedSet = new Set(toastedIds);
-    const fresh = items.filter(item => !toastedSet.has(item.id));
-    if (!fresh.length) return;
-
-    fresh
-        .sort((a, b) => new Date(a.reportedAt) - new Date(b.reportedAt))
-        .forEach(item => window.lwToast(toastTextForItem(item)));
-
-    const updated = [...toastedIds, ...fresh.map(item => item.id)].slice(-MAX_TOASTED_IDS);
-    if (typeof LWStorage !== 'undefined') LWStorage.setJSON(NAV_TOASTED_IDS_KEY, updated);
-}
-
-async function refreshReportsBadge() {
-    const userId = getNavCurrentUserId();
-    if (!userId) { setNavBadge('reports', 0); return; }
-
-    const location = getNavCurrentLocation();
-    const params = new URLSearchParams({ limit: '30', userId, includeCommunity: '1' });
-    if (location) params.set('location', location);
-
-    try {
-        const res = await fetch(`${API_URL}/reports?${params.toString()}`);
-        const data = await res.json();
-        const items = Array.isArray(data) ? data : [];
-        const relevant = items.filter(item => NAV_BADGE_TYPES.has(item.type));
-
-        const lastSeen = getReportsLastSeen();
-        const unread = relevant.filter(item => new Date(item.reportedAt).getTime() > lastSeen).length;
-        setNavBadge('reports', unread);
-
-        // Only toast for items newer than lastSeen too — on the very
-        // first load after sign-in this also prevents a backlog of
-        // toasts firing all at once for things from before this device
-        // ever polled.
-        if (navBadgeLoadedOnce) {
-            toastNewItems(relevant.filter(item => new Date(item.reportedAt).getTime() > lastSeen));
-        }
-        navBadgeLoadedOnce = true;
-    } catch (err) {
-        console.error('Could not refresh reports nav badge:', err);
-    }
-}
-
 function refreshPushPromptDot() {
     const enabled = typeof window.isLightWatchPushEnabled === 'function'
         ? window.isLightWatchPushEnabled()
@@ -379,29 +286,11 @@ function refreshPushPromptDot() {
     setNavDot('account', !enabled);
 }
 
-function startNavBadgePolling() {
-    stopNavBadgePolling();
-    navBadgeLoadedOnce = false;
-    refreshReportsBadge();
-    refreshPushPromptDot();
-    navReportsPollTimer = setInterval(refreshReportsBadge, NAV_BADGE_POLL_MS);
-}
-
-function stopNavBadgePolling() {
-    clearInterval(navReportsPollTimer);
-    navReportsPollTimer = null;
-}
-
+// Kept as a thin wrapper (rather than wiring refreshPushPromptDot
+// straight to the event below) so any future signed-in/out nav-state
+// sync has one obvious place to live, same as before.
 function syncNavBadgesToSession() {
-    const session = typeof getSession === 'function' ? getSession() : null;
-    if (session) {
-        startNavBadgePolling();
-    } else {
-        stopNavBadgePolling();
-        setNavBadge('reports', 0);
-        setNavDot('reports', false);
-        setNavDot('account', false);
-    }
+    refreshPushPromptDot();
 }
 
 // ── Desktop topbar: hide on scroll down, reveal on scroll up ────
@@ -450,7 +339,6 @@ function initNav() {
     window.addEventListener('lw:route-changed', (e) => {
         applyActiveNav(e.detail.view);
         bindRouteLinks(); // covers any nav links a newly-mounted view added
-        if (e.detail.view === 'reports') markReportsSeen();
         closeTopbarHamburgerMenu();
     });
     window.addEventListener('lw:push-state-changed', refreshPushPromptDot);
