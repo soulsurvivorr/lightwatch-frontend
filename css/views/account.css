@@ -209,6 +209,14 @@
 
     .detail-row:last-child { border-bottom: none; }
 
+    .detail-row__left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
     .detail-row__label {
       font-size: 0.82rem;
       color: var(--text-faint);
@@ -222,6 +230,7 @@
       font-weight: 500;
       text-align: right;
       flex-shrink: 0;
+      margin-left: 12px;
       min-width: 0;
     }
 
@@ -623,6 +632,7 @@
 
     .detail-row__label {
       flex: 1;
+      margin-left: 2px;
     }
 
     #cityEditCard {

@@ -1146,7 +1146,7 @@
   const API = (typeof window.API_URL === "string" && window.API_URL)
     || ((location.protocol === "file:" || location.hostname === "localhost" || location.hostname === "127.0.0.1")
       ? "http://localhost:3000"
-      : "https://lightwatch-backend-production.up.railway.app");
+      : "https://lightwatch-backend-1yko.onrender.com");
   const TK = "lw_admin_tk";
   function getToken() { return sessionStorage.getItem(TK); }
   function setToken(t) { sessionStorage.setItem(TK, t); }
@@ -1357,6 +1357,8 @@
     if (!password) { loginError.textContent = "Enter the admin password"; return; }
     loginBtn.disabled = true; loginBtn.textContent = "Signing in…";
     try {
+      // Best-effort wake the API (do not await so we don't block the UX)
+      ensureServerWarm().catch(() => {});
       const res = await fetch(`${API}/admin/login`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password })
@@ -1391,9 +1393,9 @@
     sessionStartTime = Date.now();
     logSystemEvent("Admin signed in", "ok");
     loadAll();
-    setInterval(() => { loadActivity(); startRefreshCountdown(); }, 15000);
     startIdleTracking();
     startRefreshCountdown();
+    startDashboardAutoRefresh();
     updateHealthPanel();
   }
 
@@ -2182,10 +2184,62 @@
     }
 
     updateHealthPanel();
+    const interval = document.visibilityState === 'visible' ? 15000 : 60000;
     healthPanelRefreshTimer = setInterval(() => {
       updateHealthPanel();
-    }, 15000);
+    }, interval);
   }
+
+  // ===== DASHBOARD / VISIBILITY-AWARE POLLING =====
+  let dashboardRefreshTimer = null;
+  const DASHBOARD_INTERVAL_VISIBLE = 15000;
+  const DASHBOARD_INTERVAL_HIDDEN = 60000;
+
+  async function ensureServerWarm() {
+    try {
+      await fetch(`${API}/`, { cache: 'no-store' });
+    } catch (e) {
+      // ignore; warming best-effort
+    }
+  }
+
+  function startDashboardAutoRefresh() {
+    stopDashboardAutoRefresh();
+    // immediate updates
+    loadActivity();
+    startRefreshCountdown();
+    updateHealthPanel();
+    const interval = document.visibilityState === 'visible' ? DASHBOARD_INTERVAL_VISIBLE : DASHBOARD_INTERVAL_HIDDEN;
+    dashboardRefreshTimer = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        loadActivity();
+        startRefreshCountdown();
+      } else {
+        // when hidden, reduce load but still keep health checks
+        updateHealthPanel();
+      }
+    }, interval);
+  }
+
+  function stopDashboardAutoRefresh() {
+    if (dashboardRefreshTimer) { clearInterval(dashboardRefreshTimer); dashboardRefreshTimer = null; }
+  }
+
+  function handleVisibilityChange() {
+    if (document.visibilityState === 'visible') {
+      // Warm the API and refresh immediately when returning to the tab
+      ensureServerWarm().catch(() => {});
+      setTimeout(() => { loadAll(); startRefreshCountdown(); updateHealthPanel({ force: true }); }, 200);
+    }
+    // restart timers so they use the appropriate interval
+    startDashboardAutoRefresh();
+    // restart health timer with new interval
+    if (healthPanelRefreshTimer) { clearInterval(healthPanelRefreshTimer); }
+    const hInterval = document.visibilityState === 'visible' ? 15000 : 60000;
+    healthPanelRefreshTimer = setInterval(() => updateHealthPanel(), hInterval);
+  }
+
+  document.addEventListener('visibilitychange', handleVisibilityChange);
 
   setInterval(() => {
     if (sessionStartTime) {

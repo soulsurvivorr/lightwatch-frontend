@@ -107,32 +107,13 @@
             return;
         }
 
-        const adminBypassEmail = 'sarkdev@yahoo.com';
-        if (loginInput.trim().toLowerCase() === adminBypassEmail) {
-            const adminUser = {
-                id: 'admin-sarkdev',
-                name: 'Admin',
-                city: 'Kumasi',
-                region: 'Ashanti',
-                chatHandle: 'admin',
-                initials: 'AD',
-                email: adminBypassEmail,
-                role: 'admin'
-            };
-            saveSession(adminUser, 'admin-sarkdev', rememberMe);
-            showPageTransitionOverlay('Signing you in…');
-            setTimeout(() => {
-                hidePageTransitionOverlay();
-                window.LWRouter.navigate('home', { replace: true });
-            }, 300);
-            return;
-        }
-
+        // Keep sarkdev@yahoo.com on the normal sign-in flow so the backend can
+        // use its DEV_LOGIN_CODE-based verification path.
         sendCodeBtn.disabled = true;
         sendCodeBtn.textContent = 'Sending…';
 
         try {
-            const response = await fetch(`${API_URL}/signin`, {
+            const response = await fetchWithBackendTimeout(`${API_URL}/signin`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ emailPhone: loginInput })
@@ -168,7 +149,7 @@
 
         } catch (err) {
             console.error("Login fetch error:", err);
-            errorMsg.textContent = `Connection failed to ${API_URL}. Is the server running?`;
+            errorMsg.textContent = getBackendErrorMessage(err);
         } finally {
             sendCodeBtn.disabled = false;
             sendCodeBtn.textContent = 'Send code';

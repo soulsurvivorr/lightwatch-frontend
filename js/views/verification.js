@@ -81,7 +81,7 @@
         continueBtn.classList.add('is-loading');
 
         try {
-            const response = await fetch(`${API_URL}/verify`, {
+            const response = await fetchWithBackendTimeout(`${API_URL}/verify`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ emailPhone, code: otpValue })
@@ -99,7 +99,7 @@
 
             const rememberMe = getVerificationValue('rememberMePending') === 'true';
             const signupFlow = !!getVerificationValue('signupUser');
-            const userResponse = await fetch(`${API_URL}/user/${result.userId}`);
+            const userResponse = await fetchWithBackendTimeout(`${API_URL}/user/${result.userId}`);
             const fullUser = await userResponse.json();
             const user = {
                 id: fullUser._id,
@@ -138,7 +138,7 @@
 
         } catch (err) {
             console.error('Verification failed:', err);
-            errorMsg.textContent = 'Server error. Please try again.';
+            errorMsg.textContent = getBackendErrorMessage(err);
             shakeOtpBoxes();
         } finally {
             verifyInFlight = false;

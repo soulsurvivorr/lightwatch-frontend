@@ -100,7 +100,7 @@
         setLoading(true);
 
         try {
-            const response = await fetch(`${API_URL}/signup`, {
+            const response = await fetchWithBackendTimeout(`${API_URL}/signup`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(userData)
@@ -127,7 +127,7 @@
 
         } catch (error) {
             console.error("Signup failed:", error);
-            errorEl.textContent = "Could not reach the server. Is it running?";
+            errorEl.textContent = getBackendErrorMessage(error);
             setLoading(false);
         }
     }
