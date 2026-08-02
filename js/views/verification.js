@@ -99,15 +99,18 @@
 
             const rememberMe = getVerificationValue('rememberMePending') === 'true';
             const signupFlow = !!getVerificationValue('signupUser');
-            const userResponse = await fetchWithBackendTimeout(`${API_URL}/user/${result.userId}`);
-            const fullUser = await userResponse.json();
+            // Was: a second fetchWithBackendTimeout(`${API_URL}/user/${result.userId}`)
+            // here, sequential after the /verify call above — a full extra
+            // network round trip (plus /user/:id recomputing chatCount/
+            // reportCount, which this screen never used) just to read back
+            // name/city/region that /verify now returns directly.
             const user = {
-                id: fullUser._id,
-                name: fullUser.name,
-                city: fullUser.city,
-                region: fullUser.region,
-                chatHandle: fullUser.chatHandle,
-                initials: (fullUser.name || 'U')
+                id: result.userId,
+                name: result.name,
+                city: result.city,
+                region: result.region,
+                chatHandle: result.chatHandle,
+                initials: (result.name || 'U')
                     .split(' ')
                     .map(word => word[0])
                     .join('')
