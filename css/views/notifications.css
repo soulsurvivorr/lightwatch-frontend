@@ -361,14 +361,27 @@
    too early) depending on load timing, and could stack visibly on
    top of #notifRealContent. `.notif-data-loading` is set/cleared only
    by notifications.js itself now, so this page's loading state can't
-   be touched by any other view's loader. */
-#notifSkeleton {
+   be touched by any other view's loader.
+
+   FIX 2: this display gate was losing the cascade to the shared
+   sizing rule below (`#view-notifications .notif-page { display:
+   flex; ... }`) — both #notifSkeleton and #notifRealContent carry
+   that `.notif-page` class for their width/padding, and 1 id + 1
+   class beats a bare id selector (100 vs 110), regardless of source
+   order or which class is on <body>. In practice that meant
+   #notifSkeleton was permanently pinned to `display: flex` — visible
+   at all times, `.notif-data-loading` or not — which is exactly why
+   it always showed even once #notifRealContent had already rendered
+   real, fetched data underneath it. Scoping these to
+   `#view-notifications` (id + id, and class + id + id below) gives
+   the gate enough specificity to always win. */
+#view-notifications #notifSkeleton {
   display: none;
   opacity: 1;
   transition: opacity 0.2s ease;
 }
 
-.notif-data-loading #notifSkeleton {
+.notif-data-loading #view-notifications #notifSkeleton {
   display: block;
 }
 
@@ -382,7 +395,7 @@
   }
 }
 
-.notif-data-loading #notifRealContent {
+.notif-data-loading #view-notifications #notifRealContent {
   display: none;
 }
 
@@ -522,12 +535,20 @@
   flex-direction: column;
 }
 
-/* ---- Header: title + subtitle left, search + settings right ---- */
+/* ---- Header: title + subtitle left, search + settings right ----
+   FIX: explicit width so this reliably matches .notif-section's width
+   even if the flex-stretch default from .notif-page's column layout
+   ever gets interrupted by something upstream (a later stylesheet,
+   an inline style, etc.) — same class, so this covers the header on
+   both #notifRealContent and #notifSkeleton, since both reuse
+   `.notif-header` as-is. */
 .notif-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
   padding-top: env(safe-area-inset-top, 0px);
   margin: 10px 0 4px;
 }
@@ -576,6 +597,8 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
   background: var(--notif-panel);
   border: 1px solid var(--notif-border);
   border-radius: 999px;
@@ -603,11 +626,16 @@
   color: var(--notif-text-faint);
 }
 
-/* ---- Tabs: All / Priority / Mentions / System ---- */
+/* ---- Tabs: All / Priority / Mentions / System
+   FIX: same explicit width parity as .notif-header above — matches
+   .notif-section's width on both real content and the skeleton,
+   which shares this exact class for its tab-pill row. */
 .notif-tabs {
   display: flex;
   align-items: center;
   gap: 4px;
+  width: 100%;
+  box-sizing: border-box;
   overflow-x: auto;
   scrollbar-width: none;
   border-bottom: 1px solid var(--notif-border);

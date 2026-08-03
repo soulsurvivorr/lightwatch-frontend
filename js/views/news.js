@@ -23,7 +23,23 @@
 // ============================================================
 
 (function () {
-    const GRAPHIC_FALLBACK = new URL('../../images/graphic.png', (document.currentScript && document.currentScript.src) || document.baseURI).href;
+    const FALLBACK_IMAGE_URLS = [
+        new URL('../../images/graphic.png', (document.currentScript && document.currentScript.src) || document.baseURI).href,
+        new URL('../../images/graphic2.png', (document.currentScript && document.currentScript.src) || document.baseURI).href,
+        new URL('../../images/graphic3.png', (document.currentScript && document.currentScript.src) || document.baseURI).href,
+        new URL('../../images/graphic4.png', (document.currentScript && document.currentScript.src) || document.baseURI).href,
+        new URL('../../images/graphic5.png', (document.currentScript && document.currentScript.src) || document.baseURI).href,
+        new URL('../../images/graphic6.jpg', (document.currentScript && document.currentScript.src) || document.baseURI).href
+    ];
+
+    function getRandomFallbackImageUrl() {
+        return FALLBACK_IMAGE_URLS[Math.floor(Math.random() * FALLBACK_IMAGE_URLS.length)];
+    }
+
+    function getFallbackMediaHtml() {
+        const fallbackUrl = getRandomFallbackImageUrl();
+        return `<span class="news-item__media-fallback" aria-hidden="true" style="background-image:url('${fallbackUrl}')"><span class="news-item__media-fallback__glyph">📰</span></span>`;
+    }
 
     function ensurePullRefreshHelpers() {
         if (window.LWPullRefresh && typeof window.LWPullRefresh.attach === 'function') {
@@ -230,7 +246,7 @@
         const timeLabel = relativeLabel || (article.publishedAt ? new Date(article.publishedAt).toLocaleDateString() : '');
         const locationText = articleLocationText(article);
         const bookmarked = isBookmarked(article.id ?? index);
-        const fallbackMediaHtml = `<span class="news-item__media-fallback" aria-hidden="true" style="background-image:url('${GRAPHIC_FALLBACK}')"><span class="news-item__media-fallback__glyph">📰</span></span>`;
+        const fallbackMediaHtml = getFallbackMediaHtml();
         const mediaHtml = article.image
             ? `<img class="news-item__image" src="${escapeHtml(article.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.closest('.news-item__media')?.classList.add('news-item__media--placeholder'); this.closest('.news-item__media').innerHTML='${fallbackMediaHtml.replace(/'/g, '&#39;')}';">`
             : fallbackMediaHtml;
@@ -284,8 +300,8 @@
                 : '');
         const timeLabel = [dateLabel, relativeLabel].filter(Boolean).join(' · ');
         const thumbHtml = article.image
-            ? `<img class="lw-news-card__thumb" src="${escapeHtml(article.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('img'), {className:'lw-news-card__thumb lw-news-card__thumb--fallback', src:'${GRAPHIC_FALLBACK}', alt:''}))">`
-            : `<img class="lw-news-card__thumb lw-news-card__thumb--fallback" src="${GRAPHIC_FALLBACK}" alt="" loading="lazy">`;
+            ? `<img class="lw-news-card__thumb" src="${escapeHtml(article.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('img'), {className:'lw-news-card__thumb lw-news-card__thumb--fallback', src:'${getRandomFallbackImageUrl()}', alt:''}))">`
+            : `<img class="lw-news-card__thumb lw-news-card__thumb--fallback" src="${getRandomFallbackImageUrl()}" alt="" loading="lazy">`;
 
         return `
         <a class="lw-news-card" href="${escapeHtml(article.url)}" target="_blank" rel="noopener noreferrer" data-article-id="${article.id}">

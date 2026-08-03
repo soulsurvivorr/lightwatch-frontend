@@ -1559,8 +1559,33 @@
       <span class="skel skel-pill" style="width:68px;height:36px;"></span>
     </div>
 
+    <!-- FIX: this used to be a single 3-card section — much shorter
+         than the real "All" tab content it stands in for (a Priority
+         section + a separate Earlier section, each with their own
+         head/label and typically several cards), so the page visibly
+         shrank the moment real content replaced it. Mirrored the real
+         two-section layout here instead, so the skeleton fills the
+         same vertical space #notifRealContent actually will. -->
     <section class="notif-section" aria-hidden="true" style="margin-top:12px;">
+      <div class="notif-section__head">
+        <span class="skel skel-line" style="width:70px;height:13px;"></span>
+        <span class="skel skel-line" style="width:50px;height:11px;"></span>
+      </div>
       <div class="notif-list" aria-hidden="true">
+        <article class="notif-card notif-card--skeleton"><div class="skel skel-block" style="height:76px;"></div></article>
+        <article class="notif-card notif-card--skeleton"><div class="skel skel-block" style="height:76px;"></div></article>
+        <article class="notif-card notif-card--skeleton"><div class="skel skel-block" style="height:76px;"></div></article>
+      </div>
+    </section>
+
+    <section class="notif-section" aria-hidden="true" style="margin-top:20px;">
+      <div class="notif-section__head">
+        <span class="skel skel-line" style="width:60px;height:13px;"></span>
+        <span class="skel skel-line" style="width:90px;height:11px;"></span>
+      </div>
+      <div class="notif-list" aria-hidden="true">
+        <article class="notif-card notif-card--skeleton"><div class="skel skel-block" style="height:76px;"></div></article>
+        <article class="notif-card notif-card--skeleton"><div class="skel skel-block" style="height:76px;"></div></article>
         <article class="notif-card notif-card--skeleton"><div class="skel skel-block" style="height:76px;"></div></article>
         <article class="notif-card notif-card--skeleton"><div class="skel skel-block" style="height:76px;"></div></article>
         <article class="notif-card notif-card--skeleton"><div class="skel skel-block" style="height:76px;"></div></article>

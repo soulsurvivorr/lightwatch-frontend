@@ -125,6 +125,25 @@ html.lw-bfcache-hide body {
   }
 }
 
+/* Hide visible scrollbars across the app while preserving scroll input.
+   This applies to the viewport and any scrollable containers in the app.
+   It keeps the UX clean for native/PWA installs but still allows touch and
+   wheel scrolling normally. */
+html,
+body,
+#appShell,
+#appShell * {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+#appShell *::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
 /* ---- FIX: this needs to apply at EVERY width, not just mobile ----
    Previous pass only put this inside the max-width:720px block, which
    meant desktop was still broken: html/body were correctly scrollable
