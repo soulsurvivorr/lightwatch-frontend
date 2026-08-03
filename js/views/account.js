@@ -196,8 +196,6 @@ function isValidHandleFormat(value) {
 function initProfileIdentityForm() {
     const form = el('chatHandleEditForm');
     const avatarInput = el('profileAvatarInput');
-    const clearBtn = el('chatHandleClearAvatarBtn');
-    const avatarBtn = el('chatHandleEditAvatarBtn');
     const cancelBtn = el('chatHandleEditCancelBtn');
     const editBtn = el('profileAvatarEditBtn');
 
@@ -207,7 +205,6 @@ function initProfileIdentityForm() {
     }
 
     editBtn?.addEventListener('click', () => avatarInput?.click());
-    avatarBtn?.addEventListener('click', () => avatarInput?.click());
     cancelBtn?.addEventListener('click', () => {
         const toggleBtn = el('chatHandleRowToggle');
         const panel = el('chatHandleExpand');
@@ -215,8 +212,6 @@ function initProfileIdentityForm() {
         if (panel) panel.hidden = true;
         hydrateIdentityForm(getCurrentUserData());
     });
-
-    if (!form) return;
 
     avatarInput?.addEventListener('change', async () => {
         const messageEl = el('chatHandleEditMessage');
@@ -228,8 +223,8 @@ function initProfileIdentityForm() {
             avatarInput.value = '';
             return;
         }
-        if (file.size > 1_500_000) {
-            if (messageEl) messageEl.textContent = 'Image is too large. Use one under 1.5MB.';
+        if (file.size > 4_000_000) {
+            if (messageEl) messageEl.textContent = 'Image is too large. Use one under 4MB.';
             avatarInput.value = '';
             return;
         }
@@ -250,17 +245,10 @@ function initProfileIdentityForm() {
         pendingAvatarImageDataUrl = String(dataUrl);
         const cached = getCurrentUserData();
         applyAvatarToTargets({ ...cached, avatarImage: pendingAvatarImageDataUrl });
-        if (messageEl) messageEl.textContent = 'New profile picture selected. Save to apply everywhere.';
+        if (messageEl) messageEl.textContent = 'New profile picture selected. Save your handle to apply it.';
     });
 
-    clearBtn?.addEventListener('click', () => {
-        pendingAvatarImageDataUrl = null;
-        if (avatarInput) avatarInput.value = '';
-        const cached = getCurrentUserData();
-        applyAvatarToTargets({ ...cached, avatarImage: null });
-        const messageEl = el('chatHandleEditMessage');
-        if (messageEl) messageEl.textContent = 'Profile picture will reset to generated SVG when you save.';
-    });
+    if (!form) return;
 
     form.addEventListener('submit', async () => {
         const userId = getCurrentUserId();
@@ -969,9 +957,10 @@ function renderRecentChatActivity(chats, userId) {
         const createdAt = chat.createdAt
             ? new Date(chat.createdAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })
             : 'Unknown';
+        const formattedText = window.LWHelpers?.formatMessageTextWithMentions(chat.text) || escapeHtml(chat.text);
         return `<div class="recent-chat-item" data-chat-id="${chatId}">
             <div class="recent-chat-item__body">
-              <div class="recent-chat-item__text">${escapeHtml(chat.text) || '<span style="color:var(--text-faint);">(No text)</span>'}</div>
+              <div class="recent-chat-item__text">${formattedText || '<span style="color:var(--text-faint);">(No text)</span>'}</div>
               <div class="recent-chat-item__meta">${escapeHtml(chat.location || '')} · ${createdAt}</div>
             </div>
             <div class="recent-chat-item__actions">

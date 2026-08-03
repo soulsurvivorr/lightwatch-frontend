@@ -888,6 +888,150 @@ function refreshChatTimestamps() {
 }
 setInterval(refreshChatTimestamps, 30000);
 
+function formatMessageTextWithMentions(text) {
+    return window.LWHelpers?.formatMessageTextWithMentions(text) || text;
+}
+
+// -------------------------------------------------------
+// MENTION SUGGESTIONS
+// -------------------------------------------------------
+let mentionSuggestionsEl = null;
+let currentMentionTrigger = null; // { textarea, startIdx }
+
+function initMentionSuggestions() {
+    if (mentionSuggestionsEl) return;
+    mentionSuggestionsEl = document.createElement('div');
+    mentionSuggestionsEl.className = 'mention-suggestions';
+    mentionSuggestionsEl.hidden = true;
+    document.body.appendChild(mentionSuggestionsEl);
+
+    document.addEventListener('mousedown', (e) => {
+        if (mentionSuggestionsEl && !mentionSuggestionsEl.contains(e.target)) {
+            hideMentionSuggestions();
+        }
+    });
+}
+
+function hideMentionSuggestions() {
+    if (!mentionSuggestionsEl) return;
+    mentionSuggestionsEl.hidden = true;
+    currentMentionTrigger = null;
+}
+
+function showMentionSuggestions(textarea, startIdx, filter) {
+    initMentionSuggestions();
+    const handles = Array.from(knownHandles)
+        .filter(h => h.toLowerCase().includes(filter.toLowerCase()))
+        .sort()
+        .slice(0, 8);
+
+    if (handles.length === 0) {
+        hideMentionSuggestions();
+        return;
+    }
+
+    currentMentionTrigger = { textarea, startIdx };
+    mentionSuggestionsEl.innerHTML = '';
+
+    handles.forEach((handle, idx) => {
+        const item = document.createElement('div');
+        item.className = 'mention-suggestions__item';
+        if (idx === 0) item.classList.add('is-selected');
+
+        const avatar = document.createElement('span');
+        avatar.className = 'mention-suggestions__avatar';
+        renderAvatarIntoEl(avatar, handle, null);
+
+        const label = document.createElement('span');
+        label.className = 'mention-suggestions__label';
+        label.innerHTML = `<span class="mention-suggestions__at">@</span>${handle}`;
+
+        item.appendChild(avatar);
+        item.appendChild(label);
+
+        item.addEventListener('click', () => {
+            insertMention(handle);
+        });
+
+        mentionSuggestionsEl.appendChild(item);
+    });
+
+    // Position near the cursor if possible, or just above/below the textarea
+    const rect = textarea.getBoundingClientRect();
+    mentionSuggestionsEl.style.left = `${rect.left}px`;
+    mentionSuggestionsEl.style.width = `${rect.width}px`;
+
+    // Check if there is space below
+    const spaceBelow = window.innerHeight - rect.bottom;
+    if (spaceBelow > 220) {
+        mentionSuggestionsEl.style.top = `${rect.bottom + 4}px`;
+        mentionSuggestionsEl.style.bottom = 'auto';
+    } else {
+        mentionSuggestionsEl.style.bottom = `${window.innerHeight - rect.top + 4}px`;
+        mentionSuggestionsEl.style.top = 'auto';
+    }
+
+    mentionSuggestionsEl.hidden = false;
+}
+
+function insertMention(handle) {
+    if (!currentMentionTrigger) return;
+    const { textarea, startIdx } = currentMentionTrigger;
+    const text = textarea.value;
+    const before = text.substring(0, startIdx);
+    const after = text.substring(textarea.selectionStart);
+
+    textarea.value = `${before}@${handle} ${after}`;
+    textarea.focus();
+    textarea.selectionStart = textarea.selectionEnd = before.length + handle.length + 2;
+
+    hideMentionSuggestions();
+    updateSendButtonState();
+    autoGrowChatInput();
+}
+
+function handleMentionTyping(e) {
+    const ta = e.target;
+    const cursor = ta.selectionStart;
+    const text = ta.value.substring(0, cursor);
+    const lastAt = text.lastIndexOf('@');
+
+    if (lastAt !== -1 && (lastAt === 0 || /\s/.test(text[lastAt - 1]))) {
+        const filter = text.substring(lastAt + 1);
+        if (!/\s/.test(filter)) {
+            showMentionSuggestions(ta, lastAt, filter);
+            return;
+        }
+    }
+    hideMentionSuggestions();
+}
+
+chatInput?.addEventListener('input', handleMentionTyping);
+chatInput?.addEventListener('keydown', (e) => {
+    if (!mentionSuggestionsEl || mentionSuggestionsEl.hidden) return;
+
+    const items = mentionSuggestionsEl.querySelectorAll('.mention-suggestions__item');
+    let selectedIdx = Array.from(items).findIndex(item => item.classList.contains('is-selected'));
+
+    if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        items[selectedIdx].classList.remove('is-selected');
+        selectedIdx = (selectedIdx + 1) % items.length;
+        items[selectedIdx].classList.add('is-selected');
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        items[selectedIdx].classList.remove('is-selected');
+        selectedIdx = (selectedIdx - 1 + items.length) % items.length;
+        items[selectedIdx].classList.add('is-selected');
+    } else if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault();
+        const handle = items[selectedIdx].querySelector('span:last-child').textContent.substring(1);
+        insertMention(handle);
+    } else if (e.key === 'Escape') {
+        hideMentionSuggestions();
+    }
+});
+
 // -------------------------------------------------------
 // BUILD A MESSAGE ELEMENT
 // -------------------------------------------------------
@@ -936,6 +1080,8 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
     avatar.setAttribute('aria-hidden', 'true');
     const avatarSeed = resolveUserId(chat) || displayHandle || chat.handle;
     renderAvatarIntoEl(avatar, avatarSeed, chat.avatarImage || null);
+    if (chat.handle) knownHandles.add(chat.handle);
+    if (displayHandle) knownHandles.add(displayHandle);
 
     const who = document.createElement('div');
     who.className = 'report-card__who';
@@ -1116,7 +1262,7 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
     // ---- Body text ----
     const body = document.createElement('p');
     body.className   = "chat-message__text report-card__text";
-    body.textContent = cleanText;
+    body.innerHTML = formatMessageTextWithMentions(cleanText);
 
     let mediaEl = null;
     const media = chat.media && chat.media.url ? chat.media : null;
@@ -1160,7 +1306,7 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
         qHead.textContent = `Quoted from ${quote.handle || 'someone'}`;
         const qText = document.createElement('p');
         qText.className = 'report-card__quoted-text';
-        qText.textContent = (quote.text || '').slice(0, 180);
+        qText.innerHTML = formatMessageTextWithMentions((quote.text || '').slice(0, 180));
         quotedEl.appendChild(qHead);
         quotedEl.appendChild(qText);
 
@@ -1354,7 +1500,7 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
             const res = await fetch(`${API_URL}/chats/${encodeURIComponent(reportId)}/like`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId: myUserId })
+                body: JSON.stringify({ userId: myUserId, notify: true })
             });
             if (!res.ok) throw new Error('like-request-failed');
             const data = await res.json();
@@ -1492,11 +1638,36 @@ function createInlineComposerBox(parentChat, parentText, mode) {
 
     ta.addEventListener('input', () => {
         sendBtn.disabled = !ta.value.trim();
+        handleMentionTyping({ target: ta });
     });
     ta.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
+        if (!mentionSuggestionsEl || mentionSuggestionsEl.hidden) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                if (!sendBtn.disabled) sendBtn.click();
+            }
+            return;
+        }
+
+        const items = mentionSuggestionsEl.querySelectorAll('.mention-suggestions__item');
+        let selectedIdx = Array.from(items).findIndex(item => item.classList.contains('is-selected'));
+
+        if (e.key === 'ArrowDown') {
             e.preventDefault();
-            if (!sendBtn.disabled) sendBtn.click();
+            items[selectedIdx].classList.remove('is-selected');
+            selectedIdx = (selectedIdx + 1) % items.length;
+            items[selectedIdx].classList.add('is-selected');
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            items[selectedIdx].classList.remove('is-selected');
+            selectedIdx = (selectedIdx - 1 + items.length) % items.length;
+            items[selectedIdx].classList.add('is-selected');
+        } else if (e.key === 'Enter' || e.key === 'Tab') {
+            e.preventDefault();
+            const handle = items[selectedIdx].querySelector('span:last-child').textContent.substring(1);
+            insertMention(handle);
+        } else if (e.key === 'Escape') {
+            hideMentionSuggestions();
         }
     });
 
@@ -1622,6 +1793,7 @@ chatReplyCancel?.addEventListener('click', () => {
 // Only real server IDs go in here — never temp IDs.
 // This is the single source of truth for deduplication.
 const knownIds  = new Set();
+const knownHandles = new Set();
 // Newest createdAt we've fetched so far — sent as ?since= on every poll
 // after the first, so a tick with nothing new costs almost nothing
 // instead of re-downloading the full (image-heavy) message list.
@@ -1890,6 +2062,7 @@ function loadChatHistory() {
     chatThread.innerHTML = "";
     pendingRepliesByParent.clear();
     knownIds.clear();
+    knownHandles.clear();
     lastPolledAt = null;
 
     const url = buildChatsUrl();
@@ -2110,6 +2283,10 @@ async function postChat({ text, replyTo, repost, quote, media, mediaKind }) {
     if (!myId) return null;
     if (chatScope === CHAT_SCOPE_LOCAL && !loc) return null;
 
+    // Extract mentions from text
+    const mentions = (text.match(/@([a-zA-Z0-9-]+)/g) || []).map(m => m.substring(1));
+    const professionalMentionText = `@${myHandle} mentioned you in a post`;
+
     try {
         const res = await fetch(`${API_URL}/chats`, {
             method: "POST",
@@ -2123,7 +2300,11 @@ async function postChat({ text, replyTo, repost, quote, media, mediaKind }) {
                 replyTo: replyTo || undefined,
                 repost: repost || undefined,
                 quote: quote || undefined,
-                media: media ? { kind: mediaKind || 'image', url: media } : undefined
+                media: media ? { kind: mediaKind || 'image', url: media } : undefined,
+                mentions: mentions.length > 0 ? mentions : undefined,
+                notify: true, // Tell backend to send push notifications
+                notificationTitle: 'New Mention',
+                notificationBody: professionalMentionText
             })
         });
         if (!res.ok) return null;

@@ -45,5 +45,13 @@ const LWHelpers = {
     if (typeof API_URL !== 'undefined' && API_URL) return API_URL;
     if (typeof API_BASE_URL !== 'undefined' && API_BASE_URL) return API_BASE_URL;
     return '';
+  },
+
+  formatMessageTextWithMentions(text) {
+    if (!text) return '';
+    // Escape HTML first to prevent XSS
+    const escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    // Wrap @handle in a span. Handle can be alphanumeric plus hyphens.
+    return escaped.replace(/@([a-zA-Z0-9-]+)/g, '<span class="mention">@$1</span>');
   }
 };

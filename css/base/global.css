@@ -128,20 +128,23 @@ html.lw-bfcache-hide body {
 /* Hide visible scrollbars across the app while preserving scroll input.
    This applies to the viewport and any scrollable containers in the app.
    It keeps the UX clean for native/PWA installs but still allows touch and
-   wheel scrolling normally. */
+   wheel scrolling normally. Some Android WebView builds still render a
+   visible scrollbar unless the pseudo-element itself is explicitly hidden. */
 html,
 body,
 #appShell,
 #appShell * {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
 }
 
 html::-webkit-scrollbar,
 body::-webkit-scrollbar,
+#appShell::-webkit-scrollbar,
 #appShell *::-webkit-scrollbar {
-  width: 0;
-  height: 0;
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 /* ---- FIX: this needs to apply at EVERY width, not just mobile ----

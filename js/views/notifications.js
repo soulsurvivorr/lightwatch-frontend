@@ -162,6 +162,8 @@
         news:         { label: 'News',           chip: 'NEWS',           color: 'amber',  bucket: 'priority', accent: true  },
         power_on:     { label: 'Power On',       chip: 'POWER ON',       color: 'green',  bucket: 'other',    accent: false },
         mention:      { label: 'Mention',        chip: 'MENTION',        color: 'blue',   bucket: 'mentions', accent: false },
+        like:         { label: 'Like',           chip: 'LIKE',           color: 'red',    bucket: 'mentions', accent: false },
+        repost:       { label: 'Repost',         chip: 'REPOST',         color: 'green',  bucket: 'mentions', accent: false },
         community:    { label: 'Community',      chip: 'COMMUNITY',      color: 'teal',   bucket: 'mentions', accent: false },
         report_update:{ label: 'Report Update',  chip: 'REPORT UPDATE',  color: 'purple', bucket: 'system',   accent: false },
         system:       { label: 'System',         chip: 'SYSTEM',         color: 'blue',   bucket: 'system',   accent: false }
@@ -182,7 +184,14 @@
                 kind = 'power_on';
                 break;
             case 'reply':
+            case 'mention':
                 kind = 'mention';
+                break;
+            case 'like':
+                kind = 'like';
+                break;
+            case 'repost':
+                kind = 'repost';
                 break;
             case 'chat':
                 kind = 'community';
@@ -252,9 +261,12 @@
 
     function kindIconSvg(kind) {
         switch (kind) {
-            case 'power_off':
             case 'power_on':
                 return '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>';
+            case 'like':
+                return '<svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>';
+            case 'repost':
+                return '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M17 1l4 4-4 4m0 0v-3h-10a4 4 0 0 0-4 4v1m0 7l-4-4 4-4m0 0v3h10a4 4 0 0 0 4-4v-1" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
             case 'outage_alert':
                 return '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="8.4" stroke="currentColor" stroke-width="1.6"/><path d="M12 7.8v5.6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><circle cx="12" cy="16.4" r="1" fill="currentColor"/></svg>';
             case 'trending':
@@ -275,18 +287,18 @@
     function renderCard(notification, readIds) {
         const { _kind: kind, _meta: meta } = notification;
         const isUnread = !readIds.has(notification.id);
-        const isClickable = kind === 'mention' || kind === 'community' || kind === 'news' || kind === 'report_update';
+        const isClickable = kind === 'mention' || kind === 'like' || kind === 'repost' || kind === 'community' || kind === 'news' || kind === 'report_update';
         const dataAttrs = kind === 'news'
             ? `data-action="open-news" data-url="${escapeHtml(notification.url)}"`
-            : (kind === 'mention' || kind === 'community' || kind === 'report_update')
+            : (kind === 'mention' || kind === 'like' || kind === 'repost' || kind === 'community' || kind === 'report_update')
                 ? `data-action="open-chat" data-chat-id="${escapeHtml(notification.chatId)}" data-chat-scope="${escapeHtml(notification.chatScope || 'local')}" data-chat-location="${escapeHtml(notification.chatLocation || '')}"`
                 : '';
 
-        const iconOrAvatar = kind === 'mention'
-            ? `<span class="notif-card__avatar" style="background:${avatarGradient(notification.fromUser || notification.title)}">${escapeHtml(initials(notification.fromUser))}<span class="notif-card__avatar-badge">@</span></span>`
+        const iconOrAvatar = (kind === 'mention' || kind === 'like' || kind === 'repost')
+            ? `<span class="notif-card__avatar" style="background:${avatarGradient(notification.fromUser || notification.title)}">${escapeHtml(initials(notification.fromUser))}<span class="notif-card__avatar-badge">${kind === 'like' ? '❤️' : kind === 'repost' ? '🔄' : '@'}</span></span>`
             : `<span class="notif-card__icon notif-card__icon--${meta.color}">${kindIconSvg(kind)}</span>`;
 
-        const handleLine = kind === 'mention' && notification.handle
+        const handleLine = (kind === 'mention' || kind === 'like' || kind === 'repost') && notification.handle
             ? `<p class="notif-card__text"><span class="notif-card__handle">@${escapeHtml(notification.handle)}</span> ${escapeHtml(notification.text)}</p>`
             : `<p class="notif-card__text">${escapeHtml(notification.text)}</p>`;
 
