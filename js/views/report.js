@@ -385,6 +385,7 @@ const COMPOSER_MEDIA_MAX_DIMENSION = 1400;
 const mediaPickerInput = document.createElement('input');
 mediaPickerInput.type = 'file';
 mediaPickerInput.accept = 'image/*';
+mediaPickerInput.accept = 'image/* ,video/*';
 mediaPickerInput.hidden = true;
 chatForm?.appendChild(mediaPickerInput);
 
