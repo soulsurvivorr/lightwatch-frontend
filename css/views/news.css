@@ -441,22 +441,13 @@
 }
 
 /* Loading placeholder rows while the first GET /news call is in
-   flight — same skeleton treatment reports.js already uses. */
-.news-item--skeleton {
-  border-top: 1px solid var(--border-soft);
-}
-
-.news-item--skeleton > div {
-  width: 100%;
-  border-radius: var(--radius-sm, 10px);
-  background: linear-gradient(90deg, var(--bg-panel-raised) 25%, var(--border-soft) 50%, var(--bg-panel-raised) 75%);
-  background-size: 200% 100%;
-  animation: newsSkeletonShimmer 1.4s ease infinite;
-}
-
-@keyframes newsSkeletonShimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+   flight. Built from the same .news-item/.news-item__media/
+   .news-item__body classes as a real card (see news.js's
+   newsSkeletonFullHtml/newsSkeletonCompactHtml) so the shimmer lines
+   up exactly with where real content lands, using the shared .skel
+   shimmer primitives (loader.css) instead of a flat gray bar. */
+.news-item--skeleton .news-item__body {
+  pointer-events: none;
 }
 
 /* Headline + collapse toggle sit on one row so the chevron stays

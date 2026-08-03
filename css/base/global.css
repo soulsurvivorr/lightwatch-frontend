@@ -35,6 +35,21 @@
 #appShell section[data-view] > .page {
   flex: 1 1 auto;
   min-height: 100%;
+  /* FIX: the actual "different color below the content" bug. This
+     element's own background comes from the shared base .page rule
+     (not in this file, likely a components/ or layouts/ file), which
+     is what every view actually paints down to its full flex-grown
+     height — NOT the flat color this file sets two rules up on the
+     section. Whenever that base rule's color doesn't exactly match
+     --app-bg-solid (or leaves background transparent over a shorter-
+     than-viewport section on a view that never draws its own bg —
+     Location, Notifications, Account, etc. all rely on falling
+     through), the gap under short content reads as a different
+     shade than the card area above it. `inherit` makes background a
+     literal copy of the section's computed value no matter what that
+     other rule says, so the whole column — header, cards, empty
+     space at the bottom — is provably one solid color, always. */
+  background: inherit;
 }
 
 /* Auth visibility gates + general utility classes, shared across every view. */
@@ -134,6 +149,7 @@ html.lw-bfcache-hide body {
 #appShell > section[data-view] > .page {
   flex: 1 1 auto;
   min-height: 0;
+  background: inherit;
 }
 /* body / heading / link / list base rules moved to base/typography.css */
 

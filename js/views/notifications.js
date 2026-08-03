@@ -413,6 +413,21 @@
         }
     }
 
+    function hideNotifSkeleton() {
+        if (!document.body.classList.contains('page-data-loading')) return;
+        const skeleton = document.getElementById('notifSkeleton');
+        if (skeleton) skeleton.classList.add('lw-skel-fading');
+        setTimeout(() => {
+            document.body.classList.remove('page-data-loading');
+            const realContent = document.getElementById('notifRealContent');
+            if (realContent) {
+                realContent.style.display = '';
+                realContent.classList.add('lw-content-reveal');
+            }
+            if (skeleton) skeleton.style.display = '';
+        }, 180);
+    }
+
     // ---- Click-through: news opens the source article; mention/
     // community/report-update items jump into the Community chat tab
     // at that message, same deep-link contract views/chat.js already
@@ -562,7 +577,14 @@
         if (cached) {
             latestMergedNotifications = cached.map(classifyNotification);
             render();
+            hideNotifSkeleton();
         } else if (isFirstLoad) {
+            // No cached data on first load: show full-page skeleton
+            const realContent = document.getElementById('notifRealContent');
+            const skeleton = document.getElementById('notifSkeleton');
+            if (skeleton) skeleton.style.display = 'block';
+            if (realContent) realContent.style.display = 'none';
+            document.body.classList.add('page-data-loading');
             showNotificationLoading();
         }
 
@@ -580,6 +602,8 @@
             render();
             LWCache.write(NOTIFICATIONS_CACHE_KEY, [...notifications, ...newsItems]
                 .sort((a, b) => new Date(b.reportedAt) - new Date(a.reportedAt)));
+            // Data arrived — reveal the real content and hide skeleton
+            hideNotifSkeleton();
         });
     }
 
@@ -588,6 +612,33 @@
         bindFilterTabs();
         bindSearch();
         loadNotifications(true);
+        // Dev helper: toggle the full-page notifications skeleton for testing
+        try {
+            if ((location && (location.hostname === 'localhost' || location.hostname === '127.0.0.1')) || location.protocol === 'file:') {
+                if (!document.getElementById('devToggleNotifSkeleton')) {
+                    const btn = document.createElement('button');
+                    btn.id = 'devToggleNotifSkeleton';
+                    btn.textContent = 'Toggle Notif Skeleton';
+                    btn.setAttribute('aria-label', 'Toggle notifications skeleton');
+                    btn.style.cssText = 'position:fixed;right:12px;bottom:84px;z-index:9999;padding:8px 10px;border-radius:6px;background:var(--bg-panel);color:var(--text-bright);border:1px solid rgba(0,0,0,0.12);font-size:12px;';
+                    btn.addEventListener('click', () => {
+                        const isOn = !document.body.classList.contains('page-data-loading');
+                        const skeleton = document.getElementById('notifSkeleton');
+                        const real = document.getElementById('notifRealContent');
+                        if (isOn) {
+                            if (skeleton) skeleton.style.display = 'block';
+                            if (real) real.style.display = 'none';
+                            document.body.classList.add('page-data-loading');
+                        } else {
+                            document.body.classList.remove('page-data-loading');
+                            if (real) real.style.display = '';
+                            if (skeleton) skeleton.style.display = '';
+                        }
+                    });
+                    document.body.appendChild(btn);
+                }
+            }
+        } catch (e) { /* noop on platforms without location */ }
     }
 
     function show() {
@@ -602,7 +653,9 @@
         // (isFirstLoad:false, so it doesn't blow away a still-fresh
         // cached render, but does hit the network right away) closes
         // that gap; the interval below just keeps it current afterward.
-        loadNotifications(false);
+        // Use isFirstLoad=true here so the loader logic can decide
+        // whether to show a full-page skeleton based on cache presence.
+        loadNotifications(true);
         clearInterval(notificationsPollTimer);
         notificationsPollTimer = setInterval(() => loadNotifications(false), POLL_INTERVAL_FAST_MS);
     }

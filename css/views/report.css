@@ -175,6 +175,26 @@ body.lw-chat-community-mode #view-chat .community-banner {
   padding-right: 2px;
 }
 
+/* #communityChatSkeleton — shown only while .chat-thread-wrap carries
+   .is-loading (report.js's setChatThreadLoading(), toggled around every
+   loadChatHistory() call: first load AND every scope switch, not just
+   app boot). Plain mutually-exclusive display swap with the real
+   #chatThread underneath, same pattern as #pageSkeleton/#realPageContent
+   in home.css, so the panel never shows a bare, just-emptied thread
+   mid-reload. */
+.chat-thread--skeleton {
+  display: none;
+  pointer-events: none;
+}
+
+.chat-thread-wrap.is-loading .chat-thread--skeleton {
+  display: flex;
+}
+
+.chat-thread-wrap.is-loading > #chatThread {
+  display: none;
+}
+
 .chat-message {
   background: var(--bg-panel-raised);
   border: 1px solid var(--border-soft);

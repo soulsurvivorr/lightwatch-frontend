@@ -1811,6 +1811,17 @@ function addToThread(chat, isOwn, scrollDown, animate, hasReply, isLatestOwn, ex
 // -------------------------------------------------------
 // INITIAL LOAD
 // -------------------------------------------------------
+// Toggles the skeleton bubbles markup (#communityChatSkeleton, see
+// index.html) that sit alongside #chatThread — shown while a fetch is
+// in flight so the panel never shows a bare, suddenly-emptied thread
+// mid-reload. Local to this function's own load cycle (not gated by
+// markChatReady/window.__lwChatReady, which only ever fires once) so
+// it also covers later reloads like a scope switch (setChatScope).
+const chatThreadWrap = chatThread ? chatThread.closest('.chat-thread-wrap') : null;
+function setChatThreadLoading(isLoading) {
+    chatThreadWrap?.classList.toggle('is-loading', isLoading);
+}
+
 function loadChatHistory() {
     const loc = (targetChatLocation && pendingFocusChatId)
         ? targetChatLocation
@@ -1826,6 +1837,7 @@ function loadChatHistory() {
     }
 
     chatLocation = loc; // kept for local-scope send calls
+    setChatThreadLoading(true);
     chatThread.innerHTML = "";
     pendingRepliesByParent.clear();
     knownIds.clear();
@@ -1833,6 +1845,7 @@ function loadChatHistory() {
 
     const url = buildChatsUrl();
     if (!url) {
+        setChatThreadLoading(false);
         markChatReady();
         return Promise.resolve();
     }
@@ -1857,11 +1870,13 @@ function loadChatHistory() {
             if (chats.length > 0 && chats[0].createdAt) lastPolledAt = chats[0].createdAt;
             chatThread.scrollTop = 0;
             focusTargetMessageIfPresent();
+            setChatThreadLoading(false);
             markChatReady();
             startPolling();
         })
         .catch(err => {
             console.error("Could not load chat history:", err);
+            setChatThreadLoading(false);
             markChatReady();
         });
 }

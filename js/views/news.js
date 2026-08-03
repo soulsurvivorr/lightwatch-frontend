@@ -379,6 +379,46 @@
         });
     }
 
+    // Skeleton for the full-size Report-page card (media column + source
+    // row + headline + preview + footer) — mirrors renderNewsItem()'s real
+    // markup exactly (same classes) so the shimmer sits in precisely the
+    // spots real content will land in, instead of one flat gray bar.
+    function newsSkeletonFullHtml() {
+        return `
+        <article class="news-item news-item--skeleton" aria-hidden="true">
+          <div class="news-item__media"><span class="skel skel-block" style="width:100%;height:100%;display:block;"></span></div>
+          <div class="news-item__body">
+            <div class="news-item__source">
+              <span class="skel skel-line" style="width:64px;height:10px;"></span>
+              <span class="skel skel-line" style="width:46px;height:10px;"></span>
+            </div>
+            <span class="skel skel-line" style="width:92%;height:15px;"></span>
+            <span class="skel skel-line" style="width:65%;height:15px;"></span>
+            <span class="skel skel-line" style="width:100%;height:11px;"></span>
+            <span class="skel skel-line" style="width:78%;height:11px;"></span>
+            <div class="news-item__footer">
+              <span class="skel skel-line" style="width:74px;height:11px;"></span>
+              <span class="skel skel-circle" style="width:30px;height:30px;"></span>
+            </div>
+          </div>
+        </article>`;
+    }
+
+    // Skeleton for the compact Home-page teaser (renderCompactNewsCard) —
+    // same 76x76 thumb + tag/headline/time stack.
+    function newsSkeletonCompactHtml() {
+        return `
+        <span class="lw-news-card lw-news-card--skeleton" aria-hidden="true">
+          <span class="lw-news-card__thumb" style="padding:0;"><span class="skel skel-block" style="width:100%;height:100%;display:block;"></span></span>
+          <span class="lw-news-card__body">
+            <span class="skel skel-line" style="width:55%;height:9px;"></span>
+            <span class="skel skel-line" style="width:92%;height:14px;margin-top:8px;display:block;"></span>
+            <span class="skel skel-line" style="width:60%;height:14px;margin-top:5px;display:block;"></span>
+            <span class="skel skel-line" style="width:35%;height:10px;margin-top:8px;display:block;"></span>
+          </span>
+        </span>`;
+    }
+
     function showNewsLoading() {
         const feeds = getFeedContainers();
         if (!feeds.length) return;
@@ -386,11 +426,10 @@
             feed.classList.add('loading');
             const limit = parseInt(feed.dataset.newsFeedLimit, 10);
             const count = limit > 0 ? limit : 4;
-            feed.innerHTML = Array.from({ length: count }).map(() => `
-        <article class="news-item news-item--skeleton">
-          <div style="height: 72px;"></div>
-        </article>
-    `).join('');
+            const isCompact = limit > 0;
+            feed.innerHTML = Array.from({ length: count })
+                .map(() => (isCompact ? newsSkeletonCompactHtml() : newsSkeletonFullHtml()))
+                .join('');
         });
     }
 

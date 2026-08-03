@@ -9,10 +9,22 @@
 html, body {
   margin: 0;
   padding: 0;
-  /*overscroll-behavior: none;*/
   touch-action: pan-y;
   max-width: 100%;
   overflow-x: hidden;
+}
+
+/* FIX: html is the single scroll owner (see global.css's #appShell
+   fixes), so this belongs on html alone, not body too — matches why
+   overflow-y is likewise only ever set on html elsewhere. Without
+   this, a bounce/rubber-band scroll past the end of a short page
+   (any view whose content doesn't fill the viewport) drags html's
+   own background into view for a moment — and html doesn't get the
+   flat #appShell/section color from global.css, only the gradient-
+   tinted one in typography.css, so that instant read as a different
+   shade under the content instead of a seamless continuation of it. */
+html {
+  overscroll-behavior-y: none;
 }
 
 /* Kills Android's default translucent blue/grey tap-highlight rectangle

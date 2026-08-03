@@ -107,6 +107,8 @@
             const user = {
                 id: result.userId,
                 name: result.name,
+                email: emailPhone,
+                emailPhone,
                 city: result.city,
                 region: result.region,
                 chatHandle: result.chatHandle,

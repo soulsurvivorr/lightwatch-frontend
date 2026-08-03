@@ -322,6 +322,72 @@
   outline: none;
 }
 
+/* ------------------------------------------------------------
+   #notifSkeleton / #notifRealContent — same pattern as account.css's
+   #accountSkeleton/#accountRealContent, home.css's
+   #pageSkeleton/#realPageContent, and location.css's
+   #locationSkeleton/#locationRealContent. This page never had it:
+   both were plain block-level siblings sharing class="page" with
+   nothing making them mutually exclusive, so they stacked in normal
+   flow instead of one replacing the other — skeleton first, real
+   content shoved down beneath it, both visible at once. That's also
+   why the skeleton never matched the real content's width/height:
+   with no display:none to remove it from flow, it was never sitting
+   there being measured on its own — it was overlapping/stacking with
+   a sibling that carries the extra `.notif-page` class (max-width,
+   padding, flex column) that this element never had. Fixed both
+   here: the display gate below, and `.notif-page` added onto
+   #notifSkeleton itself in index.html so its box matches
+   #notifRealContent's exactly.
+
+   display:none/block is mutually exclusive by design: only one of
+   the pair is ever actually laid out, so neither can push the other
+   down. notifications.js's hideNotifSkeleton() adds .lw-skel-fading
+   first (triggering the opacity fade below while .page-data-loading,
+   and therefore display:block, is still in effect), then ~180ms
+   later drops .page-data-loading (snapping the now-invisible
+   skeleton to display:none) and adds .lw-content-reveal to
+   #notifRealContent for its entrance animation — mirroring
+   profile.js's showProfileLoader()/hideProfileLoader() timing for
+   Home. notifications.js's own render() already only shows this
+   skeleton when there's no cached data on first load (isFirstLoad
+   check), so this was purely the missing display-gate CSS. */
+#notifSkeleton {
+  display: none;
+  opacity: 1;
+  transition: opacity 0.2s ease;
+}
+
+.page-data-loading #notifSkeleton {
+  display: block;
+}
+
+#notifSkeleton.lw-skel-fading {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #notifSkeleton {
+    transition: none;
+  }
+}
+
+.page-data-loading #notifRealContent {
+  display: none;
+}
+
+/* @keyframes lwContentReveal is defined once in account.css and
+   loaded on every page, so it's shared here rather than redefined. */
+#notifRealContent.lw-content-reveal {
+  animation: lwContentReveal 0.4s cubic-bezier(.19, 1, .22, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #notifRealContent.lw-content-reveal {
+    animation: none;
+  }
+}
+
 /* ============================================================
    Notifications page — structural .page fixes (KEPT from the
    previous pass; still needed regardless of the markup redesign
@@ -568,11 +634,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
   border-radius: 999px;
-  font-size: 0.72rem;
+  font-size: 0.66rem;
   font-weight: 700;
   color: white;
 }
@@ -739,15 +805,15 @@
 
 .notif-card__avatar-badge {
   position: absolute;
-  right: -3px;
-  bottom: -3px;
-  width: 17px;
-  height: 17px;
+  right: -2px;
+  bottom: -2px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
   background: var(--notif-blue);
   border: 2px solid var(--notif-panel);
   color: white;
-  font-size: 0.6rem;
+  font-size: 0.5rem;
   font-weight: 800;
   display: inline-flex;
   align-items: center;
@@ -815,8 +881,8 @@
 }
 
 .notif-card__dot {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
 }
 
