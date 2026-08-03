@@ -23,13 +23,19 @@
 // ============================================================
 
 (function () {
+    function resolveFallbackImageUrl(fileName) {
+        const basePath = (window.location && window.location.pathname) || '';
+        const imageRoot = basePath.includes('/public/') ? `/public/images/${fileName}` : `/images/${fileName}`;
+        return new URL(imageRoot, window.location.href).href;
+    }
+
     const FALLBACK_IMAGE_URLS = [
-        new URL('../../images/graphic.png', (document.currentScript && document.currentScript.src) || document.baseURI).href,
-        new URL('../../images/graphic2.png', (document.currentScript && document.currentScript.src) || document.baseURI).href,
-        new URL('../../images/graphic3.png', (document.currentScript && document.currentScript.src) || document.baseURI).href,
-        new URL('../../images/graphic4.png', (document.currentScript && document.currentScript.src) || document.baseURI).href,
-        new URL('../../images/graphic5.png', (document.currentScript && document.currentScript.src) || document.baseURI).href,
-        new URL('../../images/graphic6.jpg', (document.currentScript && document.currentScript.src) || document.baseURI).href
+        resolveFallbackImageUrl('graphic.png'),
+        resolveFallbackImageUrl('graphic2.png'),
+        resolveFallbackImageUrl('graphic3.png'),
+        resolveFallbackImageUrl('graphic4.png'),
+        resolveFallbackImageUrl('graphic5.png'),
+        resolveFallbackImageUrl('graphic6.jpg')
     ];
 
     function getRandomFallbackImageUrl() {
