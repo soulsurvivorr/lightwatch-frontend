@@ -610,6 +610,8 @@
     .health-grid { grid-template-columns: 1fr; }
   }
 </style>
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@3.4.1/dist/maplibre-gl.css" />
+  <script src="https://unpkg.com/maplibre-gl@3.4.1/dist/maplibre-gl.js"></script>
   <script src="https://cdn.tailwindcss.com/3.4.17" type="text/javascript"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js" type="text/javascript"></script>
   <script src="/_sdk/0179d719c431a79e.data_sdk.js" type="text/javascript" integrity="sha512-OsRvJkI5GkC3MJQcgotQYotpzrMSX415GiKKgvYdxQEEkzD/fdchShO2FMSy0PJr/tiINMXOk5Vl2zAgg6bUiA=="></script>
@@ -1976,10 +1978,11 @@
     const selectAll = document.getElementById("usersSelectAll");
     if (!users.length) { table.style.display = "none"; empty.style.display = "block"; if (selectAll) selectAll.checked = false; return; }
     tbody.innerHTML = users.map(u => {
-      const statusLabel = u.isActive ? 'Active now' : (u.lastActiveAt ? fmtRel(u.lastActiveAt) : 'Idle');
-      const statusClass = u.isActive ? 'gold' : 'faint';
+      const lastActiveMs = u.lastActiveAt ? Date.now() - new Date(u.lastActiveAt).getTime() : Infinity;
+      const isActive = u.isActive || lastActiveMs < 10 * 60 * 1000;
+      const statusLabel = isActive ? 'Active now' : (u.lastActiveAt ? fmtRel(u.lastActiveAt) : 'Idle');
+      const statusClass = isActive ? 'gold' : 'faint';
       return `
-      <tr>
         <td data-label="Select"><input type="checkbox" class="select-checkbox user-row-select" data-user-id="${esc(u._id)}" ${selectedUserIds.has(String(u._id)) ? "checked" : ""} /></td>
         <td data-label="Name">${esc(u.name)}</td>
         <td data-label="Contact" class="gold">${esc(u.emailPhone)}</td>
