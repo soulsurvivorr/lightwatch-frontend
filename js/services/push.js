@@ -138,6 +138,38 @@ function triggerForegroundSignal(tone) {
     playToneForType(tone);
 }
 
+function parseVibrationPattern(value) {
+    if (Array.isArray(value)) {
+        return value.map(Number).filter(n => Number.isFinite(n) && n >= 0);
+    }
+    if (typeof value === 'string') {
+        try {
+            const parsed = JSON.parse(value);
+            if (Array.isArray(parsed)) {
+                return parsed.map(Number).filter(n => Number.isFinite(n) && n >= 0);
+            }
+        } catch {
+            // fall through
+        }
+        const single = Number(value);
+        if (!Number.isNaN(single)) return [single];
+    }
+    if (typeof value === 'number' && Number.isFinite(value) && value >= 0) {
+        return [value];
+    }
+    return null;
+}
+
+function triggerForegroundVibration(vibrate) {
+    const pattern = parseVibrationPattern(vibrate);
+    if (!pattern || pattern.length === 0 || typeof navigator === 'undefined' || typeof navigator.vibrate !== 'function') return;
+    try {
+        navigator.vibrate(pattern);
+    } catch (err) {
+        console.warn('Foreground vibration failed:', err);
+    }
+}
+
 // ── LightWatch sound identity ─────────────────────────────────
 // One shared "instrument" (soft sine/triangle blips, quick fade
 // in, exponential fade out) across all three tones so they read
@@ -308,6 +340,7 @@ function bindNativePushListeners() {
     // where the in-app sound (same one web push uses) plays instead.
     plugin.addListener('pushNotificationReceived', (notification) => {
         triggerForegroundSignal(notification?.data?.tone);
+        triggerForegroundVibration(notification?.data?.vibrate);
     });
 
     // User tapped a notification while the app was backgrounded —

@@ -23,6 +23,8 @@
 // ============================================================
 
 (function () {
+    const GRAPHIC_FALLBACK = new URL('../../images/graphic.png', (document.currentScript && document.currentScript.src) || document.baseURI).href;
+
     function ensurePullRefreshHelpers() {
         if (window.LWPullRefresh && typeof window.LWPullRefresh.attach === 'function') {
             return window.LWPullRefresh;
@@ -228,7 +230,7 @@
         const timeLabel = relativeLabel || (article.publishedAt ? new Date(article.publishedAt).toLocaleDateString() : '');
         const locationText = articleLocationText(article);
         const bookmarked = isBookmarked(article.id ?? index);
-        const fallbackMediaHtml = `<span class="news-item__media-fallback" aria-hidden="true"><img class="news-item__media-fallback-image" src="/images/graphic.png" alt="" loading="lazy" /><span class="news-item__media-fallback__glyph">${sourceIconHtml}</span></span>`;
+        const fallbackMediaHtml = `<span class="news-item__media-fallback" aria-hidden="true" style="background-image:url('${GRAPHIC_FALLBACK}')"><span class="news-item__media-fallback__glyph">📰</span></span>`;
         const mediaHtml = article.image
             ? `<img class="news-item__image" src="${escapeHtml(article.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.closest('.news-item__media')?.classList.add('news-item__media--placeholder'); this.closest('.news-item__media').innerHTML='${fallbackMediaHtml.replace(/'/g, '&#39;')}';">`
             : fallbackMediaHtml;
@@ -282,8 +284,8 @@
                 : '');
         const timeLabel = [dateLabel, relativeLabel].filter(Boolean).join(' · ');
         const thumbHtml = article.image
-            ? `<img class="lw-news-card__thumb" src="${escapeHtml(article.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('img'), {className:'lw-news-card__thumb lw-news-card__thumb--fallback', src:'/images/graphic.png', alt:''}))">`
-            : `<img class="lw-news-card__thumb lw-news-card__thumb--fallback" src="/images/graphic.png" alt="" loading="lazy">`;
+            ? `<img class="lw-news-card__thumb" src="${escapeHtml(article.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('img'), {className:'lw-news-card__thumb lw-news-card__thumb--fallback', src:'${GRAPHIC_FALLBACK}', alt:''}))">`
+            : `<img class="lw-news-card__thumb lw-news-card__thumb--fallback" src="${GRAPHIC_FALLBACK}" alt="" loading="lazy">`;
 
         return `
         <a class="lw-news-card" href="${escapeHtml(article.url)}" target="_blank" rel="noopener noreferrer" data-article-id="${article.id}">
