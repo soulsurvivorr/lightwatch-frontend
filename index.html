@@ -669,6 +669,25 @@
         </div>
       </div>
     </div>
+
+    <!-- Topbar skeleton — shown only while .page-data-loading is on
+         <body> (this device's very first app open, before profile.js's
+         loadCurrentUserProfile() has anything to paint). FIX: previously
+         nothing here replaced .topbar__inner during that state, so the
+         real brand logo <img> + nav + actions sat fully visible above
+         the shimmer skeleton below it — a real image/content flash
+         while the rest of the page was still pretending to load. This
+         mirrors #pageSkeleton/#accountSkeleton's display:none/block
+         swap pattern (see home.css / account.css): only one of
+         .topbar__inner or .topbar__skeleton is ever laid out at a time,
+         and since <header class="topbar"> is a full-width block-level
+         element, this shimmer bar automatically spans the exact same
+         full width the real topbar does. -->
+    <div class="topbar__skeleton" aria-hidden="true">
+      <span class="skel skel-dot" style="width:32px;height:32px;border-radius:8px;"></span>
+      <span class="skel skel-line" style="width:120px;height:16px;"></span>
+      <span class="skel skel-line" style="width:64px;height:14px;margin-left:auto;"></span>
+    </div>
   </header>
 
   <!-- Full-screen skeleton, shown while .page-data-loading is on <body>

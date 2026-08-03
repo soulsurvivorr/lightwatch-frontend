@@ -73,6 +73,31 @@
       pointer-events: none;
     }
 
+    /* ------------------------------------------------------------
+       .topbar__inner / .topbar__skeleton — mirrors home.css's rule
+       of the same name (the shared <header class="topbar"> is one
+       element used by every authenticated view, Account included).
+       FIX: without this, opening the app straight into Account on
+       its very first boot still showed the real brand logo <img> +
+       nav above the Account skeleton below it, instead of a
+       matching shimmer bar. See home.css for the full comment. */
+    .topbar__skeleton {
+      display: none;
+    }
+
+    .page-data-loading .topbar__inner {
+      display: none;
+    }
+
+    .page-data-loading .topbar__skeleton {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      width: 100%;
+      padding: 14px 20px;
+      box-sizing: border-box;
+    }
+
     /* ---- Profile card ----
        Left-aligned row: avatar (with edit-pencil overlay) on the left,
        name/handle/badge stacked immediately to its right — matches the

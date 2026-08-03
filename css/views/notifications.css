@@ -343,22 +343,32 @@
    display:none/block is mutually exclusive by design: only one of
    the pair is ever actually laid out, so neither can push the other
    down. notifications.js's hideNotifSkeleton() adds .lw-skel-fading
-   first (triggering the opacity fade below while .page-data-loading,
+   first (triggering the opacity fade below while .notif-data-loading,
    and therefore display:block, is still in effect), then ~180ms
-   later drops .page-data-loading (snapping the now-invisible
+   later drops .notif-data-loading (snapping the now-invisible
    skeleton to display:none) and adds .lw-content-reveal to
    #notifRealContent for its entrance animation — mirroring
    profile.js's showProfileLoader()/hideProfileLoader() timing for
    Home. notifications.js's own render() already only shows this
    skeleton when there's no cached data on first load (isFirstLoad
-   check), so this was purely the missing display-gate CSS. */
+   check), so this was purely the missing display-gate CSS.
+
+   FIX: this used to key off the shared `.page-data-loading` class —
+   the same flag profile.js's showProfileLoader()/hideProfileLoader()
+   uses for the unrelated Home/Account first-boot skeleton. Whichever
+   loader finished first cleared the class out from under the other,
+   so the Notifications skeleton could get stuck showing (or hidden
+   too early) depending on load timing, and could stack visibly on
+   top of #notifRealContent. `.notif-data-loading` is set/cleared only
+   by notifications.js itself now, so this page's loading state can't
+   be touched by any other view's loader. */
 #notifSkeleton {
   display: none;
   opacity: 1;
   transition: opacity 0.2s ease;
 }
 
-.page-data-loading #notifSkeleton {
+.notif-data-loading #notifSkeleton {
   display: block;
 }
 
@@ -372,7 +382,7 @@
   }
 }
 
-.page-data-loading #notifRealContent {
+.notif-data-loading #notifRealContent {
   display: none;
 }
 

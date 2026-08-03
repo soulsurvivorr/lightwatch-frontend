@@ -413,18 +413,42 @@
         }
     }
 
+    // FIX: this used to gate itself on `body.page-data-loading` — the
+    // SAME class profile.js's showProfileLoader()/hideProfileLoader()
+    // toggles for the completely separate Home/Account first-boot
+    // skeleton. Sharing one flag across independent loaders meant
+    // whichever finished first (usually Home, since it starts painting
+    // from cache immediately) would rip `page-data-loading` off <body>
+    // — flipping the CSS gate back to "hide skeleton" — while
+    // notifications' own fetch was still in flight and had already set
+    // notifSkeleton/notifRealContent to explicit inline display styles.
+    // Once that happened, this function's early-return meant those
+    // inline styles could never get cleared again: the skeleton was
+    // stuck visible (inline display:block beats a class-based rule)
+    // and the real content stuck hidden — permanently sitting on top
+    // of each other the next time this view was opened. Notifications
+    // now owns a dedicated `notif-data-loading` class (and its own
+    // notifSkeletonVisible flag below) so its loading state can never
+    // be touched by an unrelated view's loader, and pure class toggling
+    // (no inline styles) means there's nothing left to get stuck.
+    let notifSkeletonVisible = false;
+
+    function showNotifSkeleton() {
+        if (notifSkeletonVisible) return;
+        notifSkeletonVisible = true;
+        document.body.classList.add('notif-data-loading');
+    }
+
     function hideNotifSkeleton() {
-        if (!document.body.classList.contains('page-data-loading')) return;
+        if (!notifSkeletonVisible) return;
+        notifSkeletonVisible = false;
         const skeleton = document.getElementById('notifSkeleton');
         if (skeleton) skeleton.classList.add('lw-skel-fading');
         setTimeout(() => {
-            document.body.classList.remove('page-data-loading');
+            document.body.classList.remove('notif-data-loading');
             const realContent = document.getElementById('notifRealContent');
-            if (realContent) {
-                realContent.style.display = '';
-                realContent.classList.add('lw-content-reveal');
-            }
-            if (skeleton) skeleton.style.display = '';
+            if (realContent) realContent.classList.add('lw-content-reveal');
+            if (skeleton) skeleton.classList.remove('lw-skel-fading');
         }, 180);
     }
 
@@ -579,12 +603,12 @@
             render();
             hideNotifSkeleton();
         } else if (isFirstLoad) {
-            // No cached data on first load: show full-page skeleton
-            const realContent = document.getElementById('notifRealContent');
-            const skeleton = document.getElementById('notifSkeleton');
-            if (skeleton) skeleton.style.display = 'block';
-            if (realContent) realContent.style.display = 'none';
-            document.body.classList.add('page-data-loading');
+            // No cached data on first load (this device/browser's very
+            // first open, or the cache has aged out): show the full-page
+            // skeleton via the class gate only — no inline styles, so
+            // there's nothing that can get left stuck once the fetch
+            // below resolves.
+            showNotifSkeleton();
             showNotificationLoading();
         }
 
@@ -596,6 +620,12 @@
                     latestMergedNotifications = mergeAndClassify([], newsItems);
                     render();
                 }
+                // FIX: this branch used to return without ever calling
+                // hideNotifSkeleton() — a failed first fetch with no
+                // cache left the skeleton on screen forever, with no way
+                // for real content (even the empty/news-only state just
+                // rendered above) to ever be revealed.
+                hideNotifSkeleton();
                 return;
             }
             latestMergedNotifications = mergeAndClassify(notifications, newsItems);
@@ -622,17 +652,10 @@
                     btn.setAttribute('aria-label', 'Toggle notifications skeleton');
                     btn.style.cssText = 'position:fixed;right:12px;bottom:84px;z-index:9999;padding:8px 10px;border-radius:6px;background:var(--bg-panel);color:var(--text-bright);border:1px solid rgba(0,0,0,0.12);font-size:12px;';
                     btn.addEventListener('click', () => {
-                        const isOn = !document.body.classList.contains('page-data-loading');
-                        const skeleton = document.getElementById('notifSkeleton');
-                        const real = document.getElementById('notifRealContent');
-                        if (isOn) {
-                            if (skeleton) skeleton.style.display = 'block';
-                            if (real) real.style.display = 'none';
-                            document.body.classList.add('page-data-loading');
+                        if (notifSkeletonVisible) {
+                            hideNotifSkeleton();
                         } else {
-                            document.body.classList.remove('page-data-loading');
-                            if (real) real.style.display = '';
-                            if (skeleton) skeleton.style.display = '';
+                            showNotifSkeleton();
                         }
                     });
                     document.body.appendChild(btn);

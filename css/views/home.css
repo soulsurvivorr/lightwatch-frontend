@@ -1528,6 +1528,34 @@
 }
 
 /* ------------------------------------------------------------
+   .topbar__inner / .topbar__skeleton — same display:none/block
+   swap as #pageSkeleton/#realPageContent below. FIX: the rule
+   above kept .topbar fully visible (real logo <img>, nav links,
+   actions) the whole time .page-data-loading was on <body>, so
+   the brand image and nav painted immediately while the rest of
+   the page was still shimmering — a real-content flash ahead of
+   the skeleton it was supposed to be part of. Swapping the real
+   .topbar__inner for a shimmer bar here keeps the topbar visually
+   "loading" too, and shows no image at all until real data (and
+   the real logo) is ready to reveal alongside it. */
+.topbar__skeleton {
+  display: none;
+}
+
+.page-data-loading .topbar__inner {
+  display: none;
+}
+
+.page-data-loading .topbar__skeleton {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 14px 20px;
+  box-sizing: border-box;
+}
+
+/* ------------------------------------------------------------
    #pageSkeleton / #realPageContent — same pattern as account.css's
    #accountSkeleton/#accountRealContent (that page had this and Home
    didn't, which is the actual bug: with no display gate between the
