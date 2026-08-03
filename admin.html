@@ -873,11 +873,18 @@
        </div>
        <div class="add-location-row"><input type="text" id="newLocationInput" placeholder="Add a location not listed yet (e.g. Bantama, Ashanti)"> <button id="addLocationBtn" type="button">+ Add Location</button>
        </div>
-       <div class="locations-grid" id="locationsGrid"></div>
-       <div id="locationsEmpty" class="empty-state" style="display:none;">
-        <div class="empty-state__icon">
-         📍
-        </div>No locations yet — add one above.
+       <div class="locations-panel__split">
+         <div class="locations-panel__list">
+           <div id="locationsList"></div>
+           <div id="locationsEmpty" class="empty-state" style="display:none; margin-top:12px;">
+             <div class="empty-state__icon">📍</div>
+             No locations yet — add one above.
+           </div>
+         </div>
+         <div class="locations-panel__map">
+           <div class="page-head__hint" style="margin-bottom:10px;">Location heat map with status pins</div>
+           <div id="locationsMap" style="width:100%; height:100%; min-height:380px; border-radius:16px; overflow:hidden;"></div>
+         </div>
        </div>
       </div><!-- Reports panel -->
       <div class="panel" id="reportsPanel">
@@ -923,7 +930,7 @@
           <th>Email / Phone</th>
           <th>Region</th>
           <th>City</th>
-          <th>Chat handle</th>
+          <th>Status</th>
           <th>Joined</th>
           <th>Actions</th>
          </tr>
@@ -1054,21 +1061,52 @@
         <div class="health-card">
          <div class="health-card__head"><span class="health-card__title">Database</span> <span class="health-card__indicator health-card__indicator--ok" id="hDbIndicator"></span>
          </div>
-         <div class="health-card__value" id="hDbStatus">
+         <div class="health-card__value" id="hDbLatency">
           —
          </div>
          <div class="health-card__label">
-          Connection status
+          Ping latency
          </div>
         </div>
         <div class="health-card">
-         <div class="health-card__head"><span class="health-card__title">Push Notifications</span> <span class="health-card__indicator health-card__indicator--ok" id="hPushIndicator"></span>
+         <div class="health-card__head"><span class="health-card__title">CPU Usage</span> <span class="health-card__indicator health-card__indicator--ok" id="hCpuIndicator"></span>
          </div>
-         <div class="health-card__value" id="hPushSubs">
+         <div class="health-card__value" id="hCpuUsage">
           —
          </div>
          <div class="health-card__label">
-          Active subscribers
+          Process CPU utilization
+         </div>
+        </div>
+        <div class="health-card">
+         <div class="health-card__head"><span class="health-card__title">RAM Usage</span> <span class="health-card__indicator health-card__indicator--ok" id="hRamIndicator"></span>
+         </div>
+         <div class="health-card__value" id="hRamUsage">
+          —
+         </div>
+         <div class="health-card__label">
+          Heap used / total
+         </div>
+        </div>
+        <div class="health-card">
+         <div class="health-card__head"><span class="health-card__title">Avg API Latency</span> <span class="health-card__indicator health-card__indicator--ok" id="hAvgApiIndicator"></span>
+         </div>
+         <div class="health-card__value" id="hAvgApiLatency">
+          —
+         </div>
+         <div class="health-card__label">
+          Recent requests average
+         </div>
+        </div>
+        <div class="health-card" style="grid-column: span 2;">
+         <div class="health-card__head"><span class="health-card__title">Build Settings</span></div>
+         <div class="health-card__label" style="margin-top:10px;">
+          <div class="health-settings__item"><span class="health-settings__label">Maintenance mode</span><span class="health-settings__value" id="hSettingMaintenance">—</span></div>
+          <div class="health-settings__item"><span class="health-settings__label">Admin accounts</span><span class="health-settings__value" id="hSettingAdminAccounts">—</span></div>
+          <div class="health-settings__item"><span class="health-settings__label">Notification settings</span><span class="health-settings__value" id="hSettingNotifications">—</span></div>
+          <div class="health-settings__item"><span class="health-settings__label">News fetch interval</span><span class="health-settings__value" id="hSettingNewsFetch">—</span></div>
+          <div class="health-settings__item"><span class="health-settings__label">API keys configured</span><span class="health-settings__value" id="hSettingApiKeys">—</span></div>
+          <div class="health-settings__item"><span class="health-settings__label">Backup database</span><span class="health-settings__value" id="hSettingBackupDb">—</span></div>
          </div>
         </div>
         <div class="health-card">
@@ -1195,6 +1233,59 @@
     });
   }
 
+  function showPrompt({ title, description, fields = [{ name: 'value', label: 'Value', placeholder: '', value: '' }], confirmText = 'Save', cancelText = 'Cancel' }) {
+    return new Promise(resolve => {
+      const backdrop = document.createElement('div');
+      backdrop.className = 'modal-backdrop';
+      const inputsHtml = fields.map(field => `
+          <label class="modal-input-label">${field.label}
+            <input id="modalInput_${field.name}" class="modal-input" type="text" placeholder="${field.placeholder || ''}" value="${field.value || ''}" />
+          </label>
+        `).join('');
+      backdrop.innerHTML = `
+        <div class="modal-box">
+          <div class="modal-icon">✏️</div>
+          <div class="modal-title">${title}</div>
+          <div class="modal-desc">${description}</div>
+          <div class="modal-form">${inputsHtml}</div>
+          <div class="modal-actions">
+            <button class="modal-btn modal-btn--cancel" id="modalCancel">${cancelText}</button>
+            <button class="modal-btn modal-btn--confirm" id="modalConfirm">${confirmText}</button>
+          </div>
+        </div>`;
+      document.body.appendChild(backdrop);
+      const close = (result) => {
+        backdrop.classList.add('modal--hide');
+        backdrop.addEventListener('animationend', () => backdrop.remove(), { once: true });
+        resolve(result);
+      };
+      backdrop.querySelector('#modalCancel').onclick = () => close(null);
+      backdrop.querySelector('#modalConfirm').onclick = () => {
+        const values = {};
+        fields.forEach(field => {
+          const input = backdrop.querySelector(`#modalInput_${field.name}`);
+          values[field.name] = input ? input.value.trim() : '';
+        });
+        if (fields.length === 1) {
+          close(values[fields[0].name]);
+        } else {
+          close(values);
+        }
+      };
+      backdrop.addEventListener('click', e => { if (e.target === backdrop) close(null); });
+      const firstInput = backdrop.querySelector('input');
+      if (firstInput) {
+        firstInput.focus();
+        firstInput.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            backdrop.querySelector('#modalConfirm')?.click();
+          }
+        });
+      }
+    });
+  }
+
   // ===== SYSTEM EVENT LOG =====
   const systemEvents = [];
   function logSystemEvent(msg, type = "info") {
@@ -1270,16 +1361,29 @@
     return payload;
   }
 
-  async function apiDelete(path, ids) {
+  async function apiPatch(path, body) {
     const res = await fetch(`${API}${path}`, {
-      method: "DELETE",
+      method: "PATCH",
       headers: { Authorization: `Bearer ${getToken()}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ ids })
+      body: JSON.stringify(body || {})
     });
     if (res.status === 401 || res.status === 403) { clearToken(); showLogin("Session expired."); throw new Error("auth"); }
     const payload = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(payload.error || "Delete request failed");
+    if (!res.ok) throw new Error(payload.error || "Request failed");
     return payload;
+  }
+
+  async function apiDelete(path, idsOrBody) {
+    const payload = Array.isArray(idsOrBody) ? { ids: idsOrBody } : (idsOrBody || {});
+    const res = await fetch(`${API}${path}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${getToken()}`, "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    if (res.status === 401 || res.status === 403) { clearToken(); showLogin("Session expired."); throw new Error("auth"); }
+    const result = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(result.error || "Delete request failed");
+    return result;
   }
 
   async function apiDeleteNoBody(path) {
@@ -1449,6 +1553,7 @@
       allLocations = await apiFetch("/admin/locations");
       renderLocations(allLocations);
       updateLocationQuickStats();
+      updateLocationMap(allLocations);
       populateBroadcastLocations();
       status.textContent = `${allLocations.length} location${allLocations.length !== 1 ? "s" : ""} tracked`;
       const badge = document.getElementById("navBadgeLocations");
@@ -1471,70 +1576,161 @@
     if (qUnk) qUnk.textContent = unk;
   }
 
+  let locationsMap = null;
+  let locationFlyAnchor = null;
   let activeLocFilter = "all";
 
+  function initLocationMap() {
+    if (locationsMap || typeof maplibregl === 'undefined') return;
+    maplibregl.accessToken = null;
+    locationsMap = new maplibregl.Map({
+      container: "locationsMap",
+      style: "https://demotiles.maplibre.org/style.json",
+      center: [0.0, 6.7],
+      zoom: 5.2,
+      attributionControl: false
+    });
+    locationsMap.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+    locationsMap.on('load', () => {
+      locationsMap.addSource('locations', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] }
+      });
+      locationsMap.addLayer({
+        id: 'locations-heatmap',
+        type: 'heatmap',
+        source: 'locations',
+        maxzoom: 15,
+        paint: {
+          'heatmap-weight': ['interpolate', ['linear'], ['get', 'weight'], 0, 0, 1, 1],
+          'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 0, 1, 9, 3],
+          'heatmap-color': ['interpolate', ['linear'], ['heatmap-density'], 0, 'rgba(59,130,246,0)', 0.2, 'rgba(59,130,246,0.25)', 0.4, 'rgba(79,70,229,0.35)', 0.6, 'rgba(234,88,12,0.4)', 1, 'rgba(220,38,38,0.65)'],
+          'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 0, 12, 9, 24],
+          'heatmap-opacity': 0.75
+        }
+      });
+      locationsMap.addLayer({
+        id: 'location-circles',
+        type: 'circle',
+        source: 'locations',
+        minzoom: 0,
+        paint: {
+          'circle-radius': ['interpolate', ['linear'], ['zoom'], 3, 6, 9, 12],
+          'circle-color': ['match', ['get', 'status'], 'on', '#22C55E', 'off', '#EF4444', '#9CA3AF'],
+          'circle-stroke-color': '#111827',
+          'circle-stroke-width': 1.5,
+          'circle-opacity': 0.9
+        }
+      });
+      locationsMap.on('click', 'location-circles', (e) => {
+        const feature = e.features && e.features[0];
+        if (!feature) return;
+        const key = feature.properties?.locationKey;
+        if (!key) return;
+        const loc = allLocations.find(l => l.locationKey === key);
+        if (!loc) return;
+        const label = loc.label || feature.properties.label || key;
+        new maplibregl.Popup({ closeButton: false, closeOnClick: true })
+          .setLngLat(feature.geometry.coordinates)
+          .setHTML(`<strong>${esc(label)}</strong><br>${esc(loc.status || 'unknown').toUpperCase()}`)
+          .addTo(locationsMap);
+      });
+      locationsMap.on('mouseenter', 'location-circles', () => { locationsMap.getCanvas().style.cursor = 'pointer'; });
+      locationsMap.on('mouseleave', 'location-circles', () => { locationsMap.getCanvas().style.cursor = ''; });
+    });
+  }
+
+  async function updateLocationMap(locations) {
+    initLocationMap();
+    if (!locationsMap) return;
+    if (!locationsMap.isStyleLoaded()) {
+      locationsMap.once('load', () => updateLocationMap(locations));
+      return;
+    }
+    try {
+      const response = await apiFetch('/locations/map');
+      const mapLocations = Array.isArray(response.locations) ? response.locations : [];
+      const visibleKeys = new Set((locations || allLocations).map(l => l.locationKey));
+      const features = mapLocations
+        .filter(loc => visibleKeys.has(loc.locationKey))
+        .filter(loc => Number(loc.lat) || Number(loc.lng))
+        .map(loc => ({
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [Number(loc.lng) || 0, Number(loc.lat) || 0] },
+          properties: {
+            locationKey: loc.locationKey,
+            label: loc.name || loc.locationKey,
+            status: loc.status || 'unknown',
+            weight: loc.status === 'on' ? 1 : loc.status === 'off' ? 0.75 : 0.25
+          }
+        }));
+      const source = locationsMap.getSource('locations');
+      if (source) {
+        source.setData({ type: 'FeatureCollection', features });
+      }
+      if (features.length) {
+        const bounds = features.reduce((b, f) => b.extend(f.geometry.coordinates), new maplibregl.LngLatBounds(features[0].geometry.coordinates, features[0].geometry.coordinates));
+        locationsMap.fitBounds(bounds, { padding: 40, maxZoom: 11, duration: 800 });
+      }
+    } catch (err) {
+      console.warn('Could not update locations map', err);
+    }
+  }
+
   function renderLocations(locations) {
-    const grid = document.getElementById("locationsGrid");
+    const list = document.getElementById("locationsList");
     const empty = document.getElementById("locationsEmpty");
     const filtered = activeLocFilter === "all"
       ? locations
       : locations.filter(l => (l.status || "unknown") === activeLocFilter);
 
     if (!filtered.length) {
-      grid.innerHTML = "";
+      list.innerHTML = "";
       empty.style.display = "block";
       empty.querySelector(".empty-state__icon").textContent = "📍";
-      empty.childNodes[1].textContent = locations.length ? "No locations match that filter." : "No locations yet — add one above.";
+      const messageNode = empty.querySelector('.empty-state__icon')?.nextSibling;
+      if (messageNode) messageNode.textContent = locations.length ? "No locations match that filter." : "No locations yet — add one above.";
+      updateLocationMap(filtered);
       return;
     }
     empty.style.display = "none";
-    grid.innerHTML = filtered.map((loc, idx) => {
+    list.innerHTML = filtered.map((loc, idx) => {
       const status = loc.status || "unknown";
       const chipClass = status === "on" ? "status-chip--on" : status === "off" ? "status-chip--off" : "status-chip--unknown";
       const chipLabel = status === "on" ? "Light ON" : status === "off" ? "Light OFF" : "Unknown";
-      const dotClass = `loc-card__dot--${status}`;
       const meta = loc.reportedAt
         ? `Last updated by <strong>${esc(loc.reportedBy || "—")}</strong> · ${fmtRel(loc.reportedAt)}`
         : "No status set yet";
       const isOn = status === "on";
       return `
-        <div class="loc-card loc-card--${status}" data-location-key="${esc(loc.locationKey)}" style="animation-delay:${idx*0.04}s">
-          <div class="loc-card__body">
-            <div class="loc-card__top">
-              <div>
-                <div class="loc-card__name"><span class="loc-card__dot ${dotClass}"></span>${esc(loc.label)}</div>
-                <div class="loc-card__meta">${meta}</div>
-              </div>
-              <span class="status-chip ${chipClass}">${chipLabel}</span>
+        <div class="location-list-item" data-location-key="${esc(loc.locationKey)}" style="animation-delay:${idx * 0.04}s">
+          <div class="location-item__heading">
+            <div>
+              <div class="location-item__title">${esc(loc.label)}</div>
+              <div class="location-item__meta">${meta}</div>
             </div>
+            <span class="location-status-badge ${status === 'on' ? 'location-status-badge--on' : status === 'off' ? 'location-status-badge--off' : 'location-status-badge--unknown'}">${chipLabel}</span>
           </div>
-          <div class="loc-card__footer">
-            <div class="loc-toggle-group">
-              <span class="loc-toggle-label">Power status</span>
-              <label class="loc-toggle-switch" title="Toggle light status for ${esc(loc.label)}">
-                <input type="checkbox" class="loc-toggle-input" data-loc-key="${esc(loc.locationKey)}" ${isOn ? "checked" : ""} ${status === "unknown" ? "" : ""} />
-                <span class="loc-toggle-track"></span>
-                <span class="loc-toggle-thumb"></span>
-              </label>
-              <span class="loc-toggle-state-label loc-toggle-state-label--${status}">${status === "on" ? "ON" : status === "off" ? "OFF" : "—"}</span>
-            </div>
-            <button type="button" class="loc-card__action-btn loc-delete-btn" data-loc-key="${esc(loc.locationKey)}" title="Remove location">🗑</button>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:8px;">
+            <button class="btn-ghost" type="button" data-action="toggle" data-loc-key="${esc(loc.locationKey)}">${isOn ? 'Turn OFF' : 'Turn ON'}</button>
+            <button class="btn-ghost btn-ghost--danger" type="button" data-action="delete" data-loc-key="${esc(loc.locationKey)}">Remove</button>
           </div>
         </div>
       `;
     }).join("");
 
-    grid.querySelectorAll(".loc-toggle-input").forEach(input => {
-      input.addEventListener("change", async (e) => {
-        const key = e.target.dataset.locKey;
-        const newStatus = e.target.checked ? "on" : "off";
-        e.target.disabled = true;
-        await pushLocationStatus(key, newStatus, e.target);
-        e.target.disabled = false;
+    list.querySelectorAll("button[data-action='toggle']").forEach(btn => {
+      btn.addEventListener("click", async (e) => {
+        const key = e.currentTarget.dataset.locKey;
+        const loc = allLocations.find(l => l.locationKey === key);
+        const newStatus = loc?.status === "on" ? "off" : "on";
+        btn.disabled = true;
+        await pushLocationStatus(key, newStatus, btn);
+        btn.disabled = false;
       });
     });
 
-    grid.querySelectorAll(".loc-delete-btn").forEach(btn => {
+    list.querySelectorAll("button[data-action='delete']").forEach(btn => {
       btn.addEventListener("click", async (e) => {
         const key = e.currentTarget.dataset.locKey;
         const loc = allLocations.find(l => l.locationKey === key);
@@ -1544,13 +1740,20 @@
           confirmText: "Remove", danger: true
         });
         if (!confirmed) return;
-        allLocations = allLocations.filter(l => l.locationKey !== key);
-        renderLocations(allLocations);
-        updateLocationQuickStats();
-        logSystemEvent(`Removed location: ${loc?.label || key}`, "warn");
-        showToast(`Removed ${loc?.label || key}`, "info");
+        try {
+          await apiDelete('/admin/locations', { locationKeys: [key] });
+          allLocations = allLocations.filter(l => l.locationKey !== key);
+          renderLocations(allLocations);
+          updateLocationQuickStats();
+          logSystemEvent(`Removed location: ${loc?.label || key}`, "warn");
+          showToast(`Removed ${loc?.label || key}`, "info");
+        } catch (err) {
+          if (err.message !== "auth") showToast(err.message || "Could not remove location.", "err");
+        }
       });
     });
+
+    updateLocationMap(filtered);
   }
 
   document.getElementById("locFilterTabs")?.addEventListener("click", (e) => {
@@ -1567,10 +1770,10 @@
     try {
       await apiPost("/admin/lightstatus", { location: locationKey, status });
       await Promise.all([loadLocations(), loadSummary(), loadActivity()]);
-      const refreshedCard = document.querySelector(`.loc-card[data-location-key="${CSS.escape(locationKey)}"]`);
-      if (refreshedCard) {
-        refreshedCard.classList.add("loc-card--pushed");
-        setTimeout(() => refreshedCard.classList.remove("loc-card--pushed"), 1200);
+      const refreshedItem = document.querySelector(`.location-list-item[data-location-key="${CSS.escape(locationKey)}"]`);
+      if (refreshedItem) {
+        refreshedItem.classList.add("loc-card--pushed");
+        setTimeout(() => refreshedItem.classList.remove("loc-card--pushed"), 1200);
       }
       const loc = allLocations.find(l => l.locationKey === locationKey);
       logSystemEvent(`Set ${loc?.label || locationKey} → ${status.toUpperCase()}`, "ok");
@@ -1586,7 +1789,7 @@
     renderLocations(q ? allLocations.filter(l => l.label.toLowerCase().includes(q)) : allLocations);
   });
 
-  document.getElementById("addLocationBtn")?.addEventListener("click", () => {
+  document.getElementById("addLocationBtn")?.addEventListener("click", async () => {
     const input = document.getElementById("newLocationInput");
     const value = input.value.trim();
     if (!value) return;
@@ -1599,13 +1802,18 @@
       return;
     }
     const label = key.split(" ").filter(Boolean).map(w => w[0].toUpperCase() + w.slice(1)).join(" ");
-    allLocations = [...allLocations, { locationKey: key, label, status: "unknown", reportedBy: null, reportedAt: null }]
-      .sort((a, b) => a.label.localeCompare(b.label));
-    renderLocations(allLocations);
-    updateLocationQuickStats();
-    input.value = "";
-    logSystemEvent(`Added location: ${label}`, "info");
-    showToast(`Added "${label}"`, "ok");
+    try {
+      await apiPost('/admin/locations', { location: key, label });
+      allLocations = [...allLocations, { locationKey: key, label, status: "unknown", reportedBy: null, reportedAt: null }]
+        .sort((a, b) => a.label.localeCompare(b.label));
+      renderLocations(allLocations);
+      updateLocationQuickStats();
+      input.value = "";
+      logSystemEvent(`Added location: ${label}`, "info");
+      showToast(`Added "${label}"`, "ok");
+    } catch (err) {
+      if (err.message !== "auth") showToast(err.message || "Could not add location.", "err");
+    }
   });
 
   // ===== REPORTS =====
@@ -1767,17 +1975,21 @@
     const empty = document.getElementById("usersEmpty");
     const selectAll = document.getElementById("usersSelectAll");
     if (!users.length) { table.style.display = "none"; empty.style.display = "block"; if (selectAll) selectAll.checked = false; return; }
-    tbody.innerHTML = users.map(u => `
+    tbody.innerHTML = users.map(u => {
+      const statusLabel = u.isActive ? 'Active now' : (u.lastActiveAt ? fmtRel(u.lastActiveAt) : 'Idle');
+      const statusClass = u.isActive ? 'gold' : 'faint';
+      return `
       <tr>
         <td data-label="Select"><input type="checkbox" class="select-checkbox user-row-select" data-user-id="${esc(u._id)}" ${selectedUserIds.has(String(u._id)) ? "checked" : ""} /></td>
         <td data-label="Name">${esc(u.name)}</td>
         <td data-label="Contact" class="gold">${esc(u.emailPhone)}</td>
         <td data-label="Region">${esc(u.region)}</td>
         <td data-label="City">${esc(u.city)}</td>
-        <td data-label="Handle" class="faint">${esc(u.chatHandle || "—")}</td>
+        <td data-label="Status" class="${statusClass}">${esc(statusLabel)}</td>
         <td data-label="Joined" class="faint">${fmtDate(u.createdAt)}</td>
-        <td data-label="Actions"><button type="button" class="row-del-btn user-row-delete" data-user-del="${esc(u._id)}">Delete</button></td>
-      </tr>`).join("");
+        <td data-label="Actions"><button type="button" class="btn-ghost row-edit-btn" data-user-edit="${esc(u._id)}">Edit</button> <button type="button" class="row-del-btn user-row-delete" data-user-del="${esc(u._id)}">Delete</button></td>
+      </tr>`;
+    }).join("");
     table.style.display = "table"; empty.style.display = "none";
     tbody.querySelectorAll(".user-row-select").forEach(cb => {
       cb.addEventListener("change", (e) => {
@@ -1786,12 +1998,43 @@
         syncDeleteButtons();
       });
     });
+    tbody.querySelectorAll(".row-edit-btn").forEach(btn => {
+      btn.addEventListener("click", async (e) => { await editUserLocation(e.currentTarget.dataset.userEdit); });
+    });
     tbody.querySelectorAll(".user-row-delete").forEach(btn => {
       btn.addEventListener("click", async (e) => { await deleteUsersByIds([e.currentTarget.dataset.userDel]); });
     });
     if (selectAll) {
       const visibleIds = users.map(u => String(u._id));
       selectAll.checked = visibleIds.length > 0 && visibleIds.every(id => selectedUserIds.has(id));
+    }
+  }
+
+  async function editUserLocation(userId) {
+    if (!userId) return;
+    const user = allUsers.find(u => String(u._id) === String(userId));
+    if (!user) return;
+    const result = await showPrompt({
+      title: `Edit location for ${esc(user.name || 'user')}`,
+      description: `Update the user's city and region. Current location: ${esc(user.city || 'unknown')}, ${esc(user.region || 'unknown')}.`,
+      fields: [
+        { name: 'city', label: 'City', placeholder: 'City', value: user.city || '' },
+        { name: 'region', label: 'Region', placeholder: 'Region', value: user.region || '' }
+      ],
+      confirmText: 'Save location',
+      cancelText: 'Cancel'
+    });
+    if (!result || !result.city || !result.region) return;
+    const city = result.city.trim();
+    const region = result.region.trim();
+    if (!city || !region) return;
+    try {
+      await apiPatch(`/admin/users/${encodeURIComponent(userId)}/location`, { city, region });
+      await Promise.all([loadUsers(), loadActivity()]);
+      logSystemEvent(`Updated location for ${user.name || user.emailPhone || userId} → ${city}, ${region}`, "info");
+      showToast(`Updated ${user.name || user.emailPhone || 'user'} location`, "ok");
+    } catch (err) {
+      if (err.message !== "auth") showToast(err.message || "Could not update user location.", "err");
     }
   }
 
@@ -2106,6 +2349,36 @@
   let healthPanelAbortController = null;
   let lastDisplayedLatencyMs = null;
 
+  function renderHealthSettings(settings) {
+    const maintenanceEl = document.getElementById("hSettingMaintenance");
+    const adminAccountsEl = document.getElementById("hSettingAdminAccounts");
+    const notificationsEl = document.getElementById("hSettingNotifications");
+    const newsFetchEl = document.getElementById("hSettingNewsFetch");
+    const apiKeysEl = document.getElementById("hSettingApiKeys");
+    const backupDbEl = document.getElementById("hSettingBackupDb");
+    if (maintenanceEl) maintenanceEl.textContent = settings.maintenanceMode ? "Enabled" : "Disabled";
+    if (adminAccountsEl) adminAccountsEl.textContent = `Console: ${settings.adminAccounts.consoleLoginEnabled ? 'Yes' : 'No'}, Dev: ${settings.adminAccounts.devLoginEnabled ? 'Yes' : 'No'}`;
+    if (notificationsEl) notificationsEl.textContent = `Web: ${settings.notificationSettings.webPushEnabled ? 'Yes' : 'No'}, FCM: ${settings.notificationSettings.fcmEnabled ? 'Yes' : 'No'}, Email: ${settings.notificationSettings.emailOtpEnabled ? 'Yes' : 'No'}, SMS: ${settings.notificationSettings.smsOtpEnabled ? 'Yes' : 'No'}`;
+    if (newsFetchEl) newsFetchEl.textContent = `${settings.newsFetchIntervalMs} ms`;
+    if (apiKeysEl) apiKeysEl.textContent = `Google: ${settings.apiKeys.googleMaps ? 'Yes' : 'No'}, VAPID: ${settings.apiKeys.vapid ? 'Yes' : 'No'}, Brevo: ${settings.apiKeys.brevo ? 'Yes' : 'No'}, Arkesel: ${settings.apiKeys.arkesel ? 'Yes' : 'No'}, Firebase: ${settings.apiKeys.firebase ? 'Yes' : 'No'}`;
+    if (backupDbEl) backupDbEl.textContent = settings.backupDatabase.enabled ? `Configured (${settings.backupDatabase.url || 'hidden'})` : 'Disabled';
+  }
+
+  function renderHealthLogItems(logs) {
+    const list = document.getElementById("healthLogList");
+    if (!list) return;
+    if (!Array.isArray(logs) || !logs.length) {
+      list.innerHTML = `<div class="a-empty">No recent server logs available.</div>`;
+      return;
+    }
+    list.innerHTML = logs.map(log => `
+      <div class="health-log-item">
+        <span>${esc(log.entry)}</span>
+        <span class="health-log-item__time">${fmtDate(log.time)}</span>
+      </div>
+    `).join("");
+  }
+
   async function updateHealthPanel({ force = false } = {}) {
     const status = document.getElementById("healthStatus");
     if (status && (!healthPanelRequestInFlight || force)) {
@@ -2124,48 +2397,63 @@
 
     const start = performance.now();
     try {
-      const healthRes = await fetch(`${API}/`, {
-        cache: "no-store",
-        signal: controller.signal
-      });
+      const health = await apiFetch('/admin/health');
       const rawLatency = Math.round(performance.now() - start);
       const latency = lastDisplayedLatencyMs == null
         ? rawLatency
         : Math.round(lastDisplayedLatencyMs * 0.65 + rawLatency * 0.35);
       lastDisplayedLatencyMs = latency;
-      const health = await healthRes.json().catch(() => ({}));
+
       const hApiLatency = document.getElementById("hApiLatency");
       const hApiIndicator = document.getElementById("hApiIndicator");
       if (hApiLatency) hApiLatency.textContent = latency + "ms";
-      if (hApiIndicator) {
-        hApiIndicator.className = "health-card__indicator " + (latency < 400 ? "health-card__indicator--ok" : latency < 1200 ? "health-card__indicator--warn" : "health-card__indicator--err");
-      }
+      if (hApiIndicator) hApiIndicator.className = "health-card__indicator " + (latency < 400 ? "health-card__indicator--ok" : latency < 1200 ? "health-card__indicator--warn" : "health-card__indicator--err");
       if (status) status.textContent = `API: ${latency}ms`;
 
-      const hDbStatus = document.getElementById("hDbStatus");
+      const hDbLatency = document.getElementById("hDbLatency");
       const hDbIndicator = document.getElementById("hDbIndicator");
-      if (hDbStatus) hDbStatus.textContent = health.mongodb || "Unknown";
+      if (hDbLatency) hDbLatency.textContent = health.dbLatencyMs != null ? `${health.dbLatencyMs}ms` : "Unavailable";
       if (hDbIndicator) {
-        const dbState = String(health.mongodb || "").toLowerCase();
-        hDbIndicator.className = "health-card__indicator " + (dbState === "connected" ? "health-card__indicator--ok" : dbState === "connecting" ? "health-card__indicator--warn" : "health-card__indicator--err");
+        const dbOk = health.dbStatus === 'connected';
+        hDbIndicator.className = "health-card__indicator " + (dbOk ? "health-card__indicator--ok" : health.dbStatus === 'connecting' ? "health-card__indicator--warn" : "health-card__indicator--err");
       }
+
+      const hCpuUsage = document.getElementById("hCpuUsage");
+      const hCpuIndicator = document.getElementById("hCpuIndicator");
+      if (hCpuUsage) hCpuUsage.textContent = health.cpuPercent != null ? `${health.cpuPercent}%` : "—";
+      if (hCpuIndicator) hCpuIndicator.className = "health-card__indicator " + (health.cpuPercent != null && health.cpuPercent < 70 ? "health-card__indicator--ok" : health.cpuPercent != null && health.cpuPercent < 90 ? "health-card__indicator--warn" : "health-card__indicator--err");
+
+      const hRamUsage = document.getElementById("hRamUsage");
+      const hRamIndicator = document.getElementById("hRamIndicator");
+      if (hRamUsage) hRamUsage.textContent = health.ramUsedMb != null && health.ramTotalMb != null ? `${health.ramUsedMb} / ${health.ramTotalMb} MB` : "—";
+      if (hRamIndicator) hRamIndicator.className = "health-card__indicator " + (health.ramPercent != null && health.ramPercent < 70 ? "health-card__indicator--ok" : health.ramPercent != null && health.ramPercent < 90 ? "health-card__indicator--warn" : "health-card__indicator--err");
+
+      const hAvgApiLatency = document.getElementById("hAvgApiLatency");
+      const hAvgApiIndicator = document.getElementById("hAvgApiIndicator");
+      if (hAvgApiLatency) hAvgApiLatency.textContent = health.avgApiLatencyMs != null ? `${health.avgApiLatencyMs}ms` : "—";
+      if (hAvgApiIndicator) hAvgApiIndicator.className = "health-card__indicator " + (health.avgApiLatencyMs != null && health.avgApiLatencyMs < 400 ? "health-card__indicator--ok" : health.avgApiLatencyMs != null && health.avgApiLatencyMs < 900 ? "health-card__indicator--warn" : "health-card__indicator--err");
+
+      renderHealthSettings(health.buildSettings || {});
+      renderHealthLogItems(health.recentServerLogs || []);
     } catch (e) {
       if (e?.name === "AbortError") return;
       const hApiIndicator = document.getElementById("hApiIndicator");
       if (hApiIndicator) hApiIndicator.className = "health-card__indicator health-card__indicator--err";
-      const hDbStatus = document.getElementById("hDbStatus");
       const hDbIndicator = document.getElementById("hDbIndicator");
-      if (hDbStatus) hDbStatus.textContent = "Unavailable";
       if (hDbIndicator) hDbIndicator.className = "health-card__indicator health-card__indicator--err";
+      const hCpuIndicator = document.getElementById("hCpuIndicator");
+      if (hCpuIndicator) hCpuIndicator.className = "health-card__indicator health-card__indicator--err";
+      const hRamIndicator = document.getElementById("hRamIndicator");
+      if (hRamIndicator) hRamIndicator.className = "health-card__indicator health-card__indicator--err";
+      const hAvgApiIndicator = document.getElementById("hAvgApiIndicator");
+      if (hAvgApiIndicator) hAvgApiIndicator.className = "health-card__indicator health-card__indicator--err";
+      if (status) status.textContent = "Health check failed";
     } finally {
       if (healthPanelAbortController === controller) {
         healthPanelAbortController = null;
       }
       healthPanelRequestInFlight = false;
     }
-
-    const hPushSubs = document.getElementById("hPushSubs");
-    if (hPushSubs) hPushSubs.textContent = "Active";
 
     if (sessionStartTime) {
       const hUptime = document.getElementById("hUptime");
