@@ -497,6 +497,25 @@ body:has(#view-signup:not([hidden])) #view-signup {
     display: flex;
     align-items: center;
     width: 100%;
+    overflow: visible;
+    isolation: isolate;
+    z-index: 1;
+}
+
+.input-icon-wrap .loc-search__results {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    z-index: 99999;
+    background: rgba(7, 12, 20, 0.98);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    max-height: 240px;
+    overflow-y: auto;
 }
 
 .input-icon {

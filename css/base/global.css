@@ -25,6 +25,16 @@
   padding-left: 2px;
   padding-right: 2px;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 100svh;
+  min-height: 100dvh;
+}
+
+#appShell section[data-view] > .page {
+  flex: 1 1 auto;
+  min-height: 100%;
 }
 
 /* Auth visibility gates + general utility classes, shared across every view. */
@@ -114,6 +124,16 @@ html.lw-bfcache-hide body {
 #appShell {
   overflow: visible !important;
   height: auto !important;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100svh;
+  min-height: 100dvh;
+}
+
+#appShell > section[data-view] > .page {
+  flex: 1 1 auto;
+  min-height: 0;
 }
 /* body / heading / link / list base rules moved to base/typography.css */
 
