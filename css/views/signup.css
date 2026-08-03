@@ -232,18 +232,6 @@ body:has(#view-signup:not([hidden])) #view-signup {
     .signup-wrap {
         margin: 0 auto;
     }
-
-    /* Make the right-side signup column scroll independently on desktop
-       so very short viewports or large font zoom won't clip the form. */
-    .signup-columns {
-        align-items: stretch;
-    }
-
-    .signup-wrap {
-        min-height: 0;
-        max-height: calc(100svh - 48px);
-        overflow-y: auto !important;
-    }
 }
 
 /* Two-column shell: marketing panel on the left, brand + card (the
@@ -502,6 +490,23 @@ body:has(#view-signup:not([hidden])) #view-signup {
     z-index: 1;
 }
 
+/* The .field-group wrapping the city field gets its own stacking
+   context the moment its entrance animation applies a transform
+   (animation-fill-mode holds that transform after the animation
+   ends). That traps the dropdown's z-index: 99999 *inside* that
+   context — it can never paint above a later sibling like
+   .notify-wrapper, no matter how high its own z-index is, because the
+   sibling comparison happens one level up, between field-group
+   (z-index: auto) and notify-wrapper (z-index: auto), which resolves
+   by DOM order. That's what let "Stay Updated" show through the open
+   suggestions list. Elevating the field-group itself — only while its
+   dropdown is actually open — fixes the comparison at the level where
+   it's actually happening. */
+.field-group:has(.loc-search__results:not([hidden])) {
+    position: relative;
+    z-index: 50;
+}
+
 .input-icon-wrap .loc-search__results {
     position: absolute;
     top: calc(100% + 6px);
@@ -638,6 +643,110 @@ body:has(#view-signup:not([hidden])) #view-signup {
 
 @keyframes lw-spin {
     to { transform: rotate(360deg); }
+}
+
+/* ===== Locate-button coachmark =====
+   One-time onboarding hint that appears shortly after the signup
+   view mounts, pointing at the "use my location" button and
+   explaining the region -> city flow. Rendered fixed to the
+   viewport (not nested in .field-group) so it always sits above
+   everything regardless of the stacking-context quirks above, and so
+   its position tracks the button correctly even if the page scrolls. */
+.signup-coach {
+    position: fixed;
+    z-index: 9999;
+    max-width: 240px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: rgba(15, 22, 33, 0.98);
+    border: 1px solid rgba(74, 144, 217, 0.35);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    opacity: 0;
+    transform: translateY(6px) scale(.96);
+    pointer-events: none;
+    transition: opacity .28s cubic-bezier(.2,.8,.2,1), transform .28s cubic-bezier(.2,.8,.2,1);
+}
+
+.signup-coach.is-visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+}
+
+.signup-coach__arrow {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background: rgba(15, 22, 33, 0.98);
+    border-left: 1px solid rgba(74, 144, 217, 0.35);
+    border-top: 1px solid rgba(74, 144, 217, 0.35);
+}
+
+/* Arrow on top edge, pointing up at the locate button above the bubble */
+.signup-coach--above .signup-coach__arrow {
+    bottom: -7px;
+    transform: rotate(225deg);
+}
+
+/* Arrow on bottom edge, pointing down at the locate button below the bubble */
+.signup-coach--below .signup-coach__arrow {
+    top: -7px;
+    transform: rotate(45deg);
+}
+
+.signup-coach__text {
+    margin: 0 0 10px;
+    font-size: .78rem;
+    line-height: 1.45;
+    color: rgba(255, 255, 255, 0.88);
+}
+
+.signup-coach__text strong {
+    color: #8fc4f7;
+    font-weight: 700;
+}
+
+.signup-coach__dismiss {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 6px 10px;
+    border: none;
+    border-radius: 8px;
+    background: var(--brand2, #4A90D9);
+    color: white;
+    font-size: .74rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: filter .15s ease;
+}
+
+.signup-coach__dismiss:hover {
+    filter: brightness(1.08);
+}
+
+/* Pulsing ring drawing the eye to the button itself while the
+   coachmark is showing. */
+.locate-btn--coach-pulse::after {
+    content: "";
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    border: 1.5px solid var(--brand2, #4A90D9);
+    animation: lw-coach-pulse 1.8s ease-out infinite;
+}
+
+@keyframes lw-coach-pulse {
+    0% { transform: scale(.85); opacity: .9; }
+    100% { transform: scale(1.55); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .signup-coach { transition: opacity .01s linear; }
+    .locate-btn--coach-pulse::after { animation: none; }
 }
 
 .field-hint {
@@ -861,6 +970,35 @@ body:has(#view-signup:not([hidden])) #view-signup {
 /* This view is dark-themed by design (matches login/verification),
    regardless of the app's light/dark theme setting, so no
    [data-theme="dark"] overrides are needed here. */
+
+/* True desktop: the two-column layout (marketing panel + card) only
+   actually shows above 900px — the max-width: 900px query below
+   collapses it back to a single column before that. Give this wider
+   range its own polish pass rather than reusing the cramped
+   721-900px tablet numbers. */
+@media (min-width: 901px) {
+    .signup-columns {
+        gap: 4.5rem;
+        max-width: 1120px;
+    }
+
+    .submit-info-section {
+        padding: 2.1rem 2.3rem;
+        box-shadow: 0 24px 60px rgba(74, 144, 217, 0.08);
+    }
+
+    .submit-info-section h3 {
+        font-size: 2.35rem;
+    }
+
+    .signup-card {
+        padding: 1.7rem 2rem 1.6rem;
+    }
+
+    .signup-brand {
+        margin: 0 0 1.6em;
+    }
+}
 
 /* Tablet and below: collapse the two-column layout down to the single
    centered brand+card column from the reference mobile design, and

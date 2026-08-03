@@ -254,6 +254,7 @@
       background: none;
       border: none;
       font: inherit;
+      text-align: left;
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
       border-radius: 6px;
@@ -284,6 +285,51 @@
       cursor: default;
       opacity: 0.55;
       pointer-events: none;
+    }
+
+    /* The shared .locate-btn class (defined in signup.css, loaded
+       globally) is position: absolute; right: 6px — meant for sitting
+       inside a single-input wrapper. In the city-edit row it shares a
+       flex row with the "Edit" toggle button, so that absolute
+       positioning pulled it out of flow and dropped it on the same
+       spot as Edit. ID selectors out-specificity the shared class
+       without needing !important, so this resets it back into normal
+       flow just for this row. */
+    #cityEditLocateBtn {
+      position: relative;
+      flex-shrink: 0;
+      width: 38px;
+      height: 38px;
+      border: 1.5px solid var(--border-soft);
+      border-radius: 8px;
+      background: var(--bg-panel-raised, var(--bg-panel));
+      color: var(--brand2, var(--brand));
+    }
+
+    #cityEditLocateBtn:hover {
+      background: var(--bg-panel);
+    }
+
+    #cityEditLocateBtn:disabled {
+      opacity: 0.5;
+    }
+
+    /* The suggestions dropdown for this row isn't nested inside a
+       .input-icon-wrap (that selector only exists on the signup page),
+       so it had no positioning at all here. Anchor it to the row's own
+       position: relative wrapper instead. */
+    #cityEditSearchResults {
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      right: 0;
+      z-index: 50;
+      background: var(--bg-panel-raised, var(--bg-panel));
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius-md, 10px);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+      max-height: 220px;
+      overflow-y: auto;
     }
 
     /* ---- Inline expand panels (Contact / City), nested inside the

@@ -1121,16 +1121,17 @@ async function loadAccountExtras() {
 // initAccordions() above (max-height driven off scrollHeight), just
 // applied to a whole card body instead of a single accordion panel.
 //
-// My Locations, Notifications, and Display start collapsed on every
-// mobile page load (no memory of prior state) — the user opens
-// whichever section they need for that visit. On desktop there's
-// plenty of room (these cards sit in their own right-hand column
-// beside the profile card), so they start open instead.
+// My Locations starts collapsed on every mobile page load (no memory
+// of prior state) — the user opens it when they need it for that
+// visit. Notifications and Display now always start open (mobile and
+// desktop alike), since those are settings people tend to want to see
+// right away. On desktop there's plenty of room regardless (these
+// cards sit in their own right-hand column beside the profile card).
 // ------------------------------------------------------------
 // Cards that should always start collapsed on every page load, regardless
 // of whether the user opened them last time. Mobile only — see the
 // isMobileViewport() check below.
-const COLLAPSE_BY_DEFAULT_IDS = ['myLocationsCollapseBtn', 'notificationsCollapseBtn', 'displayPrefsCollapseBtn'];
+const COLLAPSE_BY_DEFAULT_IDS = ['myLocationsCollapseBtn'];
 
 // Matches the mobile/desktop split used elsewhere in account.css
 // (its "Tablet and standard Phone viewports" cutoff is 768px).
