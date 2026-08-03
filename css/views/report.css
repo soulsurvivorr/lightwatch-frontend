@@ -1217,7 +1217,8 @@ html[data-theme="device"] #view-chat .community-banner__icon-btn {
   background: color-mix(in srgb, var(--brand2) 8%, var(--bg-panel));
 }
 
-#view-chat .community-composer__media-preview img {
+#view-chat .community-composer__media-preview img,
+#view-chat .community-composer__media-preview video {
   width: auto;
   max-width: min(68vw, 220px);
   max-height: 150px;

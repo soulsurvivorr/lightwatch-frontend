@@ -590,10 +590,26 @@ function hideProfileLoader() {
   clearTimeout(profileLoaderSafetyTimer);
   profileLoadedThisSession = true;
 
-  // Generic — matches #pageSkeleton on Home and #accountSkeleton on
-  // Account (whichever is actually on screen), so both views share this
-  // one loader without needing view-specific fade logic here.
-  document.querySelectorAll('[id$="Skeleton"]').forEach(el => el.classList.add('lw-skel-fading'));
+  // Matches #pageSkeleton on Home and #accountSkeleton on Account
+  // (whichever is actually on screen), so both views share this one
+  // loader without needing view-specific fade logic here.
+  //
+  // FIX: this used to be document.querySelectorAll('[id$="Skeleton"]'),
+  // a generic "any id ending in Skeleton" match. That was meant to
+  // catch just these two, but it also matched #notifSkeleton,
+  // #locationSkeleton, and #communityChatSkeleton — skeletons that are
+  // NOT part of this shared first-boot loader and manage their own
+  // independent loading state (see notifications.css's #notifSkeleton
+  // comment). Whenever this ran, it stamped .lw-skel-fading onto those
+  // unrelated skeletons too, and nothing ever cleaned that up for them
+  // since their own hide flow doesn't know that class got added. Next
+  // time one of those views legitimately showed its own skeleton, it
+  // carried this stale class into a state its own JS never set —
+  // exactly the "skeleton doesn't match / looks stuck over real
+  // content" behavior seen on Notifications. Listing the two intended
+  // ids explicitly keeps this loader from ever touching skeletons it
+  // doesn't own.
+  document.querySelectorAll('#pageSkeleton, #accountSkeleton').forEach(el => el.classList.add('lw-skel-fading'));
 
   // Force one final dark paint before reveal
   if (document.documentElement.classList.contains('lw-cold-boot')) {

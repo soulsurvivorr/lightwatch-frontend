@@ -1598,10 +1598,23 @@
   display: none;
 }
 
-/* @keyframes lwContentReveal is defined once in account.css and
-   loaded on every page, so it's shared here rather than redefined. */
+/* The real content container now owns the entrance animation so the
+   skeleton fade stays on the placeholder layer and the content reveals
+   from its own container. */
 #realPageContent.lw-content-reveal {
   animation: lwContentReveal 0.4s cubic-bezier(.19, 1, .22, 1) both;
+  will-change: opacity, transform;
+}
+
+@keyframes lwContentReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -4877,12 +4890,28 @@ body:not(.page-data-loading) #view-home #realPageContent {
   min-height: 100%;
 }
 
-#view-home #realPageContent {
+/* FIX: #pageSkeleton is a sibling of #realPageContent, not a child —
+   it never picked up #realPageContent's width constraint below, so
+   while data was loading the skeleton stretched edge-to-edge instead
+   of matching the real page's padded, max-width column. Applying the
+   same rule to both keeps the skeleton's width identical to the real
+   content it's standing in for, at every breakpoint.
+   FIX 2: something further down the stylesheet load order (a view
+   file loaded after home.css — report/news/location/account/
+   notifications/profile/home-reminder/dashboard/animations.css all
+   load later, per index.html's <link> order) is still narrowing
+   #pageSkeleton specifically, at equal specificity, so it wins the
+   cascade purely by loading later. !important here forces this to
+   win regardless of what any later stylesheet sets. */
+#view-home #realPageContent,
+#view-home #pageSkeleton {
   /* Match location spacing: give the page top breathing room
      so content doesn't appear pinned under the native status area. */
-  padding: 6px 16px 0px;
-  max-width: 640px;
-  margin: 0 auto;
+  padding: 6px 16px 0px !important;
+  max-width: 640px !important;
+  margin: 0 auto !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
 }
 
 /* Home now follows the active app theme tokens instead of forcing
@@ -5158,6 +5187,27 @@ body:not(.page-data-loading) #view-home #realPageContent {
 
 #view-home .lw-status-hero #statusBadge {
   display: none;
+}
+
+/* FIX: the skeleton reuses the real .lw-status-hero class (on purpose,
+   so its box — min-height, radius, flex layout — matches the real
+   card exactly) but that class is also where the birds-city photo +
+   scrim background-image lives. Reusing it meant the real skyline
+   photo rendered behind the shimmer bars while data was still
+   loading. Overriding just the background here keeps every other
+   dimension identical while stopping the real photo from ever
+   painting until the card is showing real content.
+   FIX 2: this override was losing the cascade to
+   `#view-home .location-card.lw-status-hero` above — both rules
+   have equal specificity (1 id + 2 classes), and the real-card rule
+   is declared *after* this one in the file, so despite reading like
+   an override it never actually applied and the photo kept bleeding
+   through the skeleton. Matching the same `.location-card` class on
+   the selector here gives this rule the extra specificity it needs
+   to win regardless of source order. */
+#pageSkeleton .location-card.lw-status-hero {
+  background-image: none;
+  background-color: var(--lw-panel, var(--bg-panel));
 }
 
 /* Everything below the status row inside the old markup (grid
@@ -5566,9 +5616,10 @@ body:not(.page-data-loading) #view-home #realPageContent {
    the reference image only specifies mobile.
    ============================================================ */
 @media (min-width: 1024px) {
-  #view-home #realPageContent {
-    max-width: var(--max-width, 1180px);
-    padding: 28px 24px 40px;
+  #view-home #realPageContent,
+  #view-home #pageSkeleton {
+    max-width: var(--max-width, 1180px) !important;
+    padding: 28px 24px 40px !important;
   }
 
   #view-home .location-page-grid {

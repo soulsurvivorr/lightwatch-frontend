@@ -704,28 +704,19 @@
     <section id="view-home" data-view="home">
   <div class="page" id="pageSkeleton" aria-hidden="true">
 
-    <div class="hero-banner">
-      <div class="hero-banner__location">
-        <span class="skel skel-dot"></span>
-        <span class="skel skel-line" style="width:110px;"></span>
-      </div>
-      <span class="skel skel-line" style="width:150px;height:11px;margin-top:14px;"></span>
-      <span class="skel skel-line" style="width:60%;height:28px;margin-top:10px;"></span>
-      <span class="skel skel-line" style="width:85%;height:13px;margin-top:10px;"></span>
-      <div class="hero-banner__stats">
-        <div class="hero-stat">
-          <span class="skel skel-line" style="width:60%;height:20px;"></span>
-          <span class="skel skel-line" style="width:80%;height:10px;margin-top:6px;"></span>
-        </div>
-        <div class="hero-stat">
-          <span class="skel skel-line" style="width:60%;height:20px;"></span>
-          <span class="skel skel-line" style="width:80%;height:10px;margin-top:6px;"></span>
-        </div>
-        <div class="hero-stat">
-          <span class="skel skel-line" style="width:60%;height:20px;"></span>
-          <span class="skel skel-line" style="width:80%;height:10px;margin-top:6px;"></span>
-        </div>
-      </div>
+    <!-- FIX: this used to be a boxed `.hero-banner` with a 3-column
+         `.hero-banner__stats` row — a layout the real greeting header
+         doesn't use at all. #realPageContent's actual header is the
+         unboxed `.lw-home-header` (greeting + subtitle only — its
+         `.hero-banner__location` row is force-hidden by CSS, see
+         "#view-home .lw-home-header .hero-banner__location" — and
+         there's no stat row), so the old skeleton rendered an entire
+         extra "card" that never gets replaced by anything on reveal.
+         Rebuilt to match `.lw-home-header`'s real visible output
+         exactly: just the two text lines, nothing hidden included. -->
+    <div class="lw-home-header">
+      <span class="skel skel-line" style="width:60%;height:22px;"></span>
+      <span class="skel skel-line" style="width:85%;height:13px;margin-top:8px;"></span>
     </div>
 
     <div class="location-page-grid">
@@ -1562,10 +1553,10 @@
     </header>
 
     <div class="notif-tabs" aria-hidden="true" style="margin-top:12px;">
-      <span class="skel skel-pill" style="width:70px;height:34px;margin-right:8px;"></span>
-      <span class="skel skel-pill" style="width:70px;height:34px;margin-right:8px;"></span>
-      <span class="skel skel-pill" style="width:70px;height:34px;margin-right:8px;"></span>
-      <span class="skel skel-pill" style="width:70px;height:34px;"></span>
+      <span class="skel skel-pill" style="width:48px;height:36px;"></span>
+      <span class="skel skel-pill" style="width:74px;height:36px;"></span>
+      <span class="skel skel-pill" style="width:84px;height:36px;"></span>
+      <span class="skel skel-pill" style="width:68px;height:36px;"></span>
     </div>
 
     <section class="notif-section" aria-hidden="true" style="margin-top:12px;">

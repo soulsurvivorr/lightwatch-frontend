@@ -379,22 +379,19 @@ if (chatHandleDisplay) chatHandleDisplay.textContent = myHandle;
 let myAvatarImage = null;
 
 let composerMediaDataUrl = null;
+let composerMediaKind = null;
 const COMPOSER_MEDIA_MAX_DATA_URL_LENGTH = 1_100_000;
-const COMPOSER_MEDIA_MAX_UPLOAD_BYTES = 8_000_000;
+const COMPOSER_MEDIA_MAX_UPLOAD_BYTES = 24_000_000;
 const COMPOSER_MEDIA_MAX_DIMENSION = 1400;
 const mediaPickerInput = document.createElement('input');
 mediaPickerInput.type = 'file';
-mediaPickerInput.accept = 'image/*';
-mediaPickerInput.accept = 'image/* ,video/*';
+mediaPickerInput.accept = 'image/*,video/*';
 mediaPickerInput.hidden = true;
 chatForm?.appendChild(mediaPickerInput);
 
 const composerMediaPreview = document.createElement('div');
 composerMediaPreview.className = 'community-composer__media-preview';
 composerMediaPreview.hidden = true;
-const composerMediaImage = document.createElement('img');
-composerMediaImage.alt = 'Selected media preview';
-composerMediaPreview.appendChild(composerMediaImage);
 const composerMediaRemove = document.createElement('button');
 composerMediaRemove.type = 'button';
 composerMediaRemove.className = 'community-composer__media-remove';
@@ -419,13 +416,27 @@ try {
 } catch {}
 
 function updateComposerMediaPreview() {
-    if (!composerMediaPreview || !composerMediaImage || !statusMediaBtn) return;
+    if (!composerMediaPreview || !statusMediaBtn) return;
     const hasMedia = Boolean(composerMediaDataUrl);
     composerMediaPreview.hidden = !hasMedia;
     if (hasMedia) {
-        composerMediaImage.src = composerMediaDataUrl;
+        if (composerMediaKind === 'video') {
+            const videoEl = document.createElement('video');
+            videoEl.src = composerMediaDataUrl;
+            videoEl.controls = true;
+            videoEl.playsInline = true;
+            videoEl.preload = 'metadata';
+            videoEl.className = 'community-composer__media-preview-video';
+            composerMediaPreview.replaceChildren(videoEl, composerMediaRemove);
+        } else {
+            const imageEl = document.createElement('img');
+            imageEl.src = composerMediaDataUrl;
+            imageEl.alt = 'Selected media preview';
+            imageEl.className = 'community-composer__media-preview-image';
+            composerMediaPreview.replaceChildren(imageEl, composerMediaRemove);
+        }
     } else {
-        composerMediaImage.removeAttribute('src');
+        composerMediaPreview.replaceChildren(composerMediaRemove);
     }
     statusMediaBtn.classList.toggle('is-active', hasMedia);
     updateSendButtonState();
@@ -433,6 +444,7 @@ function updateComposerMediaPreview() {
 
 function clearComposerMedia() {
     composerMediaDataUrl = null;
+    composerMediaKind = null;
     mediaPickerInput.value = '';
     updateComposerMediaPreview();
 }
@@ -487,18 +499,23 @@ function fitImageWithinBounds(width, height, maxDimension) {
     };
 }
 
-async function prepareComposerImageDataUrl(file) {
-    if (!file || !file.type.startsWith('image/')) {
-        return { error: 'Please choose an image from camera or gallery.' };
+async function prepareComposerMediaDataUrl(file) {
+    if (!file || !(file.type.startsWith('image/') || file.type.startsWith('video/'))) {
+        return { error: 'Please choose an image or video from camera or gallery.' };
     }
 
+    const kind = file.type.startsWith('video/') ? 'video' : 'image';
     if (file.size > COMPOSER_MEDIA_MAX_UPLOAD_BYTES) {
-        return { error: 'Image is too large. Choose one under 8MB.' };
+        return { error: kind === 'video' ? 'Video is too large. Choose one under 24MB.' : 'Image is too large. Choose one under 24MB.' };
     }
 
     const originalDataUrl = await readFileAsDataUrl(file).catch(() => '');
-    if (!originalDataUrl || !/^data:image\//i.test(originalDataUrl)) {
-        return { error: 'Could not read image. Try another one.' };
+    if (!originalDataUrl || !/^data:(image|video)\//i.test(originalDataUrl)) {
+        return { error: kind === 'video' ? 'Could not read video. Try another one.' : 'Could not read image. Try another one.' };
+    }
+
+    if (kind === 'video') {
+        return { dataUrl: originalDataUrl, kind };
     }
 
     const originalMime = (originalDataUrl.match(/^data:([^;]+);/i)?.[1] || '').toLowerCase();
@@ -506,7 +523,7 @@ async function prepareComposerImageDataUrl(file) {
     const shouldNormalizeToJpeg = !backendSafeMime;
 
     if (!shouldNormalizeToJpeg && originalDataUrl.length <= COMPOSER_MEDIA_MAX_DATA_URL_LENGTH) {
-        return { dataUrl: originalDataUrl };
+        return { dataUrl: originalDataUrl, kind };
     }
 
     const image = await loadImageFromDataUrl(originalDataUrl).catch(() => null);
@@ -529,7 +546,7 @@ async function prepareComposerImageDataUrl(file) {
         const candidate = canvas.toDataURL('image/jpeg', quality);
         if (!best || candidate.length < best.length) best = candidate;
         if (candidate.length <= COMPOSER_MEDIA_MAX_DATA_URL_LENGTH) {
-            return { dataUrl: candidate };
+            return { dataUrl: candidate, kind };
         }
     }
 
@@ -545,7 +562,7 @@ async function prepareComposerImageDataUrl(file) {
     }
 
     if (best && best.length <= COMPOSER_MEDIA_MAX_DATA_URL_LENGTH) {
-        return { dataUrl: best };
+        return { dataUrl: best, kind };
     }
 
     return { error: 'Image is still too large after compression. Choose a smaller one.' };
@@ -649,14 +666,15 @@ mediaPickerInput.addEventListener('change', async () => {
     const [file] = mediaPickerInput.files || [];
     if (!file) return;
 
-    const prepared = await prepareComposerImageDataUrl(file);
+    const prepared = await prepareComposerMediaDataUrl(file);
     if (!prepared.dataUrl) {
-        window.lwToast?.(prepared.error || 'Could not process image. Try another one.');
+        window.lwToast?.(prepared.error || 'Could not process media. Try another one.');
         clearComposerMedia();
         return;
     }
 
     composerMediaDataUrl = String(prepared.dataUrl);
+    composerMediaKind = prepared.kind || 'image';
     updateComposerMediaPreview();
 });
 
@@ -1101,15 +1119,25 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
     body.textContent = cleanText;
 
     let mediaEl = null;
-    const media = chat.media && chat.media.kind === 'image' && chat.media.url ? chat.media : null;
-    if (media) {
+    const media = chat.media && chat.media.url ? chat.media : null;
+    if (media && (media.kind === 'image' || media.kind === 'video')) {
         mediaEl = document.createElement('figure');
         mediaEl.className = 'report-card__media';
-        const mediaImg = document.createElement('img');
-        mediaImg.src = media.url;
-        mediaImg.alt = `Image shared by ${displayHandle || 'community member'}`;
-        mediaImg.loading = 'lazy';
-        mediaEl.appendChild(mediaImg);
+        if (media.kind === 'video') {
+            const mediaVideo = document.createElement('video');
+            mediaVideo.src = media.url;
+            mediaVideo.controls = true;
+            mediaVideo.playsInline = true;
+            mediaVideo.preload = 'metadata';
+            mediaVideo.loading = 'lazy';
+            mediaEl.appendChild(mediaVideo);
+        } else {
+            const mediaImg = document.createElement('img');
+            mediaImg.src = media.url;
+            mediaImg.alt = `Image shared by ${displayHandle || 'community member'}`;
+            mediaImg.loading = 'lazy';
+            mediaEl.appendChild(mediaImg);
+        }
     }
 
     const reply = chat.replyTo;
@@ -1136,15 +1164,25 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
         quotedEl.appendChild(qHead);
         quotedEl.appendChild(qText);
 
-        const quoteMedia = quote.media && quote.media.kind === 'image' && quote.media.url ? quote.media : null;
-        if (quoteMedia) {
+        const quoteMedia = quote.media && quote.media.url ? quote.media : null;
+        if (quoteMedia && (quoteMedia.kind === 'image' || quoteMedia.kind === 'video')) {
             const qMedia = document.createElement('figure');
             qMedia.className = 'report-card__media report-card__media--quoted';
-            const qImg = document.createElement('img');
-            qImg.src = quoteMedia.url;
-            qImg.alt = `Quoted image from ${quote.handle || 'community member'}`;
-            qImg.loading = 'lazy';
-            qMedia.appendChild(qImg);
+            if (quoteMedia.kind === 'video') {
+                const qVideo = document.createElement('video');
+                qVideo.src = quoteMedia.url;
+                qVideo.controls = true;
+                qVideo.playsInline = true;
+                qVideo.preload = 'metadata';
+                qVideo.loading = 'lazy';
+                qMedia.appendChild(qVideo);
+            } else {
+                const qImg = document.createElement('img');
+                qImg.src = quoteMedia.url;
+                qImg.alt = `Quoted image from ${quote.handle || 'community member'}`;
+                qImg.loading = 'lazy';
+                qMedia.appendChild(qImg);
+            }
             quotedEl.appendChild(qMedia);
         }
     }
@@ -1426,15 +1464,25 @@ function createInlineComposerBox(parentChat, parentText, mode) {
         quotePreview.appendChild(quoteHead);
         quotePreview.appendChild(quoteText);
 
-        const quoteMedia = parentChat.media && parentChat.media.kind === 'image' && parentChat.media.url ? parentChat.media : null;
-        if (quoteMedia) {
+        const quoteMedia = parentChat.media && parentChat.media.url ? parentChat.media : null;
+        if (quoteMedia && (quoteMedia.kind === 'image' || quoteMedia.kind === 'video')) {
             const quoteMediaWrap = document.createElement('figure');
             quoteMediaWrap.className = 'report-card__media report-card__media--quoted';
-            const quoteMediaImg = document.createElement('img');
-            quoteMediaImg.src = quoteMedia.url;
-            quoteMediaImg.alt = `Quoted image from ${parentChat.handle || 'community member'}`;
-            quoteMediaImg.loading = 'lazy';
-            quoteMediaWrap.appendChild(quoteMediaImg);
+            if (quoteMedia.kind === 'video') {
+                const quoteMediaVideo = document.createElement('video');
+                quoteMediaVideo.src = quoteMedia.url;
+                quoteMediaVideo.controls = true;
+                quoteMediaVideo.playsInline = true;
+                quoteMediaVideo.preload = 'metadata';
+                quoteMediaVideo.loading = 'lazy';
+                quoteMediaWrap.appendChild(quoteMediaVideo);
+            } else {
+                const quoteMediaImg = document.createElement('img');
+                quoteMediaImg.src = quoteMedia.url;
+                quoteMediaImg.alt = `Quoted image from ${parentChat.handle || 'community member'}`;
+                quoteMediaImg.loading = 'lazy';
+                quoteMediaWrap.appendChild(quoteMediaImg);
+            }
             quotePreview.appendChild(quoteMediaWrap);
         }
 
@@ -1462,8 +1510,8 @@ function createInlineComposerBox(parentChat, parentText, mode) {
             handle: parentChat.handle || 'someone',
             text: parentText || ''
         };
-        if (mode === 'quote' && parentChat.media && parentChat.media.kind === 'image' && parentChat.media.url) {
-            parentRef.media = { kind: 'image', url: parentChat.media.url };
+        if (mode === 'quote' && parentChat.media && parentChat.media.url) {
+            parentRef.media = { kind: parentChat.media.kind || 'image', url: parentChat.media.url };
         }
         const saved = await postChat(mode === 'quote'
             ? { text: val, quote: parentRef }
@@ -2056,7 +2104,7 @@ chatInput?.addEventListener('focus', () => {
 // action — all three just needed slightly different payload shapes
 // around the same POST + "show it now" behavior.
 // -------------------------------------------------------
-async function postChat({ text, replyTo, repost, quote, media }) {
+async function postChat({ text, replyTo, repost, quote, media, mediaKind }) {
     const myId = getCurrentUserId();
     const loc  = chatLocation || getCurrentChatLocation();
     if (!myId) return null;
@@ -2075,7 +2123,7 @@ async function postChat({ text, replyTo, repost, quote, media }) {
                 replyTo: replyTo || undefined,
                 repost: repost || undefined,
                 quote: quote || undefined,
-                media: media ? { kind: 'image', url: media } : undefined
+                media: media ? { kind: mediaKind || 'image', url: media } : undefined
             })
         });
         if (!res.ok) return null;
@@ -2112,6 +2160,7 @@ chatForm?.addEventListener('submit', async (e) => {
     updateSendButtonState();
     resetChatInputHeight();
     const submittedMedia = composerMediaDataUrl;
+    const submittedMediaKind = composerMediaKind;
     clearComposerMedia();
 
     // Quick tactile pop on the button itself the instant Send is hit.
@@ -2122,12 +2171,13 @@ chatForm?.addEventListener('submit', async (e) => {
         chatSendBtn.classList.add('is-sent-pulse');
     }
 
-    const saved = await postChat({ text, replyTo: replyTarget || undefined, media: submittedMedia || undefined });
+    const saved = await postChat({ text, replyTo: replyTarget || undefined, media: submittedMedia || undefined, mediaKind: submittedMediaKind || 'image' });
 
     if (!saved) {
         // Put text back so user can retry
         chatInput.value = rawText;
         composerMediaDataUrl = submittedMedia;
+        composerMediaKind = submittedMediaKind;
         updateComposerMediaPreview();
         updateSendButtonState();
         autoGrowChatInput();
