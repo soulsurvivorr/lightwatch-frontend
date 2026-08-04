@@ -56,13 +56,16 @@
         return Math.abs(hash) % length;
     }
 
-    function getFallbackImageUrlForArticle(article) {
-        const key = (article && (article.id ?? article.url)) || 'lw-news-fallback';
+    function getFallbackImageUrlForArticle(article, index) {
+        const key = (article && (
+            article.id ?? article._id ?? article.eventId ??
+            article.url ?? article.articleUrl ?? article.title
+        )) ?? (index != null ? `idx-${index}` : 'lw-news-fallback');
         return FALLBACK_IMAGE_URLS[hashStringToIndex(key, FALLBACK_IMAGE_URLS.length)];
     }
 
-    function getFallbackMediaHtml(article) {
-        const fallbackUrl = getFallbackImageUrlForArticle(article);
+    function getFallbackMediaHtml(article, index) {
+        const fallbackUrl = getFallbackImageUrlForArticle(article, index);
         return `<span class="news-item__media-fallback" aria-hidden="true" style="background-image:url('${fallbackUrl}')"><span class="news-item__media-fallback__glyph">📰</span></span>`;
     }
 
@@ -271,7 +274,7 @@
         const timeLabel = relativeLabel || (article.publishedAt ? new Date(article.publishedAt).toLocaleDateString() : '');
         const locationText = articleLocationText(article);
         const bookmarked = isBookmarked(article.id ?? index);
-        const fallbackMediaHtml = getFallbackMediaHtml(article);
+        const fallbackMediaHtml = getFallbackMediaHtml(article, index);
         const mediaHtml = article.image
             ? `<img class="news-item__image" src="${escapeHtml(article.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.closest('.news-item__media')?.classList.add('news-item__media--placeholder'); this.closest('.news-item__media').innerHTML='${fallbackMediaHtml.replace(/'/g, '&#39;')}';">`
             : fallbackMediaHtml;
@@ -316,7 +319,7 @@
     // rather than the full expandable .news-item used by the Report
     // page's News tab. This is real fetched article data, just a
     // smaller template, not a second data source.
-    function renderCompactNewsCard(article) {
+    function renderCompactNewsCard(article, index) {
         const sourceIconHtml = renderSourceIcon(article);
         const dateLabel = article.publishedAt ? new Date(article.publishedAt).toLocaleDateString() : '';
         const relativeLabel = article.timeAgo
@@ -324,7 +327,7 @@
                 ? window.LWHelpers.formatRelativeTimeFromDate(article.publishedAt)
                 : '');
         const timeLabel = [dateLabel, relativeLabel].filter(Boolean).join(' · ');
-        const fallbackImageUrl = getFallbackImageUrlForArticle(article);
+        const fallbackImageUrl = getFallbackImageUrlForArticle(article, index);
         const thumbHtml = article.image
             ? `<img class="lw-news-card__thumb" src="${escapeHtml(article.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('img'), {className:'lw-news-card__thumb lw-news-card__thumb--fallback', src:'${fallbackImageUrl}', alt:''}))">`
             : `<img class="lw-news-card__thumb lw-news-card__thumb--fallback" src="${fallbackImageUrl}" alt="" loading="lazy">`;
