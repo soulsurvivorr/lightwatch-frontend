@@ -142,6 +142,19 @@ const ICON_DOT_ON = '●';
 const ICON_DOT_OFF = '●';
 const ICON_DOT_UNKNOWN = '○';
 
+// FIX: renderNearby() (below) called dotIconForStatus(area.status) but
+// no function of that name was ever defined anywhere in this file —
+// only the ICON_DOT_ON/OFF/UNKNOWN constants existed, applied inline
+// via ternary at the one other call site (renderHeroMiniCard, see
+// heroMiniDot.innerHTML further down). That made every render of the
+// Nearby list throw "dotIconForStatus is not defined" inside the
+// forEach callback, which aborts the rest of that renderNearby() pass
+// silently (async, so it surfaces only as an unhandled promise
+// rejection in the console, not a visible on-page error).
+function dotIconForStatus(status) {
+    return status === 'on' ? ICON_DOT_ON : status === 'off' ? ICON_DOT_OFF : ICON_DOT_UNKNOWN;
+}
+
 // -----------------------------------------------------
 // GHANA_NAMES — cosmetic display names for the recent-reports
 // feed, same idea as the anon-<word>-<number> chat handles
@@ -388,6 +401,16 @@ function animateIconDecision(iconEl, nextStatus) {
 async function toggleLightStatus() {
     if (lightToggleInFlight) return;
     if (!currentLocation) {
+        // FIX (diagnostic): this used to be only
+        // `window.lwToast?.(...)`. If window.lwToast is ever undefined
+        // (it currently is — see the missing toast.js <script> tag fix
+        // in index.html), `?.()` on it does nothing at all: no toast,
+        // no console output, no error — this function just returns and
+        // the tap looks like it silently did nothing, with zero signal
+        // as to why. console.warn here always fires regardless of
+        // whether the toast wiring is fixed, so this early-return can
+        // never be silent again.
+        console.warn('[lightstatus] toggleLightStatus() aborted: currentLocation is not set yet.');
         window.lwToast?.('Location is still loading. Try again in a moment.');
         return;
     }

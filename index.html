@@ -1160,52 +1160,84 @@
   </div>
 
 
-  <div class="home-reminder-overlay" id="homeReminderOverlay" hidden>
-    <div class="home-reminder-card" role="dialog" aria-modal="true" aria-labelledby="homeReminderTitle">
-      <div class="card__head">
-        <span class="home-reminder-card__icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:1em;height:1em;"><path d="M10 2.6 18.3 16.6H1.7L10 2.6Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M10 8v3.6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="10" cy="14" r="0.95" fill="currentColor"/></svg></span>
-        <div>
-          <span class="card__title" id="homeReminderTitle">LightWatch reminder</span>
-          <span class="card__meta">Read before you post</span>
-        </div>
-      </div>
-      <div class="home-reminder-copy">
-        <p class="home-reminder-copy__lead">People make real movement and business decisions from this page. Treat every report as a public responsibility, not a guess.</p>
-        <ul class="home-reminder-points">
-          <li>Submit updates only after personally confirming power status in your area.</li>
-          <li>Wrong or outdated reports can waste transport cost, time, and business opportunities.</li>
-          <li>LightWatch is independent and not affiliated with ECG or any government agency.</li>
-        </ul>
-      </div>
-      <div class="home-reminder-actions">
-        <button type="button" class="btn btn--primary" id="homeReminderCloseBtn">Understood</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Tap-to-report confirm — #statusIcon is a button, not a switch:
-       tapping it opens this instead of firing the report immediately,
-       same "are you sure" step admin.html uses before pushing a
-       location's status. Reuses the .home-reminder-overlay/card
-       markup so it inherits the same overlay/dialog styling instead
-       of needing its own CSS. -->
-  <div class="home-reminder-overlay" id="lightConfirmOverlay" hidden aria-hidden="true">
-    <div class="home-reminder-card" role="dialog" aria-modal="true" aria-labelledby="lightConfirmTitle">
-      <div class="card__head">
-        <span class="home-reminder-card__icon" id="lightConfirmIcon" aria-hidden="true"></span>
-        <div>
-          <span class="card__title" id="lightConfirmTitle">Mark light as ON?</span>
-          <span class="card__meta" id="lightConfirmDesc">Confirm what you're seeing right now.</span>
-        </div>
-      </div>
-      <div class="home-reminder-actions" style="display:flex;gap:10px;">
-        <button type="button" class="btn btn--ghost" id="lightConfirmCancelBtn" style="flex:1;">Cancel</button>
-        <button type="button" class="btn btn--primary" id="lightConfirmConfirmBtn" style="flex:1;">Confirm</button>
-      </div>
-    </div>
-  </div>
-
     </section>
+
+    <!-- FIX (overlay position breaks after Home → Location → Home):
+         #homeReminderOverlay and #lightConfirmOverlay both rely on
+         position: fixed to sit centered relative to the viewport.
+         They used to be nested inside <section id="view-home">.
+         app.js's playViewEnterAnimation() runs el.animate([...], {
+         fill: 'both' }) directly on that section on every view
+         transition that involves Home — and per the Web Animations
+         spec, fill:'both' keeps the last keyframe's `transform`
+         (translateX(0)/scale(1) — identity, but still a non-none
+         transform value) applied to the element indefinitely, not
+         just during the animation. Any non-none `transform` on an
+         ancestor creates a new containing block for its
+         position:fixed descendants, so once Home had played its
+         enter animation once, both overlays silently stopped being
+         positioned relative to the real viewport and started being
+         positioned relative to #view-home's own (scrolled, padded)
+         box instead — exactly the "offset/messy instead of centered
+         full-viewport" symptom, and it explains why it only showed
+         up *after* navigating away from Home and back (the first
+         paint of Home, before any transition has played, has no
+         transform yet).
+         Moved both overlays out from inside <section id="view-home">
+         to be direct children of #appShell instead — appShell itself
+         never gets a transform, so they're never at the mercy of
+         whichever view section most recently animated. This is more
+         robust than trying to carve out an animation exception in
+         app.js: it holds even if the transition logic changes later,
+         and it matches how these overlays already behave (app-wide
+         modals, not something owned by the Home view). No JS changes
+         needed — home-reminder.js/lightstatus.js already look these
+         up via document.getElementById(), which doesn't care where
+         in the DOM the element lives. -->
+    <div class="home-reminder-overlay" id="homeReminderOverlay" hidden>
+      <div class="home-reminder-card" role="dialog" aria-modal="true" aria-labelledby="homeReminderTitle">
+        <div class="card__head">
+          <span class="home-reminder-card__icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:1em;height:1em;"><path d="M10 2.6 18.3 16.6H1.7L10 2.6Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M10 8v3.6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="10" cy="14" r="0.95" fill="currentColor"/></svg></span>
+          <div>
+            <span class="card__title" id="homeReminderTitle">LightWatch reminder</span>
+            <span class="card__meta">Read before you post</span>
+          </div>
+        </div>
+        <div class="home-reminder-copy">
+          <p class="home-reminder-copy__lead">People make real movement and business decisions from this page. Treat every report as a public responsibility, not a guess.</p>
+          <ul class="home-reminder-points">
+            <li>Submit updates only after personally confirming power status in your area.</li>
+            <li>Wrong or outdated reports can waste transport cost, time, and business opportunities.</li>
+            <li>LightWatch is independent and not affiliated with ECG or any government agency.</li>
+          </ul>
+        </div>
+        <div class="home-reminder-actions">
+          <button type="button" class="btn btn--primary" id="homeReminderCloseBtn">Understood</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tap-to-report confirm — #statusIcon is a button, not a switch:
+         tapping it opens this instead of firing the report immediately,
+         same "are you sure" step admin.html uses before pushing a
+         location's status. Reuses the .home-reminder-overlay/card
+         markup so it inherits the same overlay/dialog styling instead
+         of needing its own CSS. -->
+    <div class="home-reminder-overlay" id="lightConfirmOverlay" hidden aria-hidden="true">
+      <div class="home-reminder-card" role="dialog" aria-modal="true" aria-labelledby="lightConfirmTitle">
+        <div class="card__head">
+          <span class="home-reminder-card__icon" id="lightConfirmIcon" aria-hidden="true"></span>
+          <div>
+            <span class="card__title" id="lightConfirmTitle">Mark light as ON?</span>
+            <span class="card__meta" id="lightConfirmDesc">Confirm what you're seeing right now.</span>
+          </div>
+        </div>
+        <div class="home-reminder-actions" style="display:flex;gap:10px;">
+          <button type="button" class="btn btn--ghost" id="lightConfirmCancelBtn" style="flex:1;">Cancel</button>
+          <button type="button" class="btn btn--primary" id="lightConfirmConfirmBtn" style="flex:1;">Confirm</button>
+        </div>
+      </div>
+    </div>
 
     <!-- ==== Report page section ==== -->
     <section id="view-chat" data-view="chat" hidden>
@@ -2282,6 +2314,22 @@
 
   <!-- ==== JS: cross-cutting components ==== -->
   <script src="./js/components/theme.js"></script>
+  <!-- FIX: was never loaded. css/components/toast.css is linked (see
+       <head>) and #lw-toast's container div exists in the DOM below,
+       and app.js already calls initToastComponent() (guarded by
+       `typeof === 'function'`, so it silently no-ops instead of
+       erroring) — but no <script> tag for the JS file itself was ever
+       added to this list. That means initToastComponent/window.lwToast
+       have never been defined anywhere in the app: every window.lwToast?.(...)
+       call app-wide (e.g. lightstatus.js's toggleLightStatus() early-return
+       when currentLocation isn't ready yet) silently does nothing instead
+       of showing a message — which is indistinguishable from the tap
+       just not working at all. Path assumed from the existing
+       components/ naming pattern above — confirm js/components/toast.js
+       actually exists in the repo; if it does, this one missing line is
+       likely why toasts have never appeared anywhere in the app, not
+       just here. -->
+  <script src="./js/components/toast.js"></script>
   <script src="./js/components/nav.js"></script>
   <script src="./js/components/notification.js"></script>
   <script src="./js/components/nav-badges.js"></script>
