@@ -720,6 +720,13 @@
     <div class="location-page-grid">
       <section class="location-primary">
 
+        <!-- FIX: mirrors the real .lwx-row.lwx-row--top pairing of the
+             status card with the new Weather card (see #realPageContent
+             below) — previously this skeleton only had the status card,
+             so the Weather card popped in unannounced on reveal instead
+             of having its own shimmer placeholder. -->
+        <div class="lwx-row lwx-row--top">
+
         <div class="card location-card lw-status-hero">
           <div class="card__head">
             <span class="skel skel-line" style="width:45%;height:14px;"></span>
@@ -735,7 +742,23 @@
           </div>
         </div>
 
-        <div class="lw-stat-grid">
+        <div class="card lwx-weather-card">
+          <div class="lwx-weather-card__head">
+            <span class="skel skel-circle" style="width:20px;height:20px;"></span>
+            <span class="skel skel-line" style="width:50%;height:13px;"></span>
+          </div>
+          <span class="skel skel-line" style="width:40%;height:30px;margin-top:10px;"></span>
+          <span class="skel skel-line" style="width:55%;height:12px;margin-top:8px;"></span>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-top:16px;">
+            <span class="skel skel-line" style="width:70%;height:11px;"></span>
+            <span class="skel skel-line" style="width:60%;height:11px;"></span>
+            <span class="skel skel-line" style="width:75%;height:11px;"></span>
+          </div>
+        </div>
+
+        </div><!-- /.lwx-row.lwx-row--top -->
+
+        <div class="lw-stat-grid lwx-stat-grid-5">
           <div class="lw-stat-card">
             <span class="skel skel-circle" style="width:26px;height:26px;"></span>
             <span class="skel skel-line" style="width:70%;height:10px;margin-top:8px;"></span>
@@ -755,6 +778,27 @@
             <span class="skel skel-circle" style="width:26px;height:26px;"></span>
             <span class="skel skel-line" style="width:70%;height:10px;margin-top:8px;"></span>
             <span class="skel skel-line" style="width:50%;height:14px;margin-top:6px;"></span>
+          </div>
+        </div>
+
+        <!-- FIX: matches the real .lwx-row.lwx-row--risk pair (Grid Risk
+             + Weather Impact) added below the stat grid — no equivalent
+             existed in this skeleton before. -->
+        <div class="lwx-row lwx-row--risk">
+          <div class="lwx-risk-card">
+            <div class="lwx-risk-card__text" style="width:100%;">
+              <span class="skel skel-line" style="width:45%;height:11px;"></span>
+              <span class="skel skel-pill" style="margin-top:8px;"></span>
+              <span class="skel skel-line" style="width:85%;height:11px;margin-top:10px;"></span>
+              <span class="skel skel-line" style="width:50%;height:11px;margin-top:8px;"></span>
+            </div>
+          </div>
+          <div class="lwx-risk-card">
+            <div class="lwx-risk-card__text" style="width:100%;">
+              <span class="skel skel-line" style="width:55%;height:11px;"></span>
+              <span class="skel skel-line" style="width:85%;height:11px;margin-top:12px;"></span>
+              <span class="skel skel-line" style="width:65%;height:11px;margin-top:8px;"></span>
+            </div>
           </div>
         </div>
 
@@ -772,6 +816,37 @@
           </div>
         </div>
 
+        <!-- FIX: matches the real .lwx-row.lwx-row--map pair (Live Map
+             Heat + Today's Forecast) — no equivalent existed in this
+             skeleton before, so both cards popped in unannounced. -->
+        <div class="lwx-row lwx-row--map">
+          <div class="card lwx-map-card">
+            <div class="lwx-map-card__head">
+              <span class="skel skel-line" style="width:40%;height:13px;"></span>
+              <span class="skel skel-line" style="width:30%;height:10px;"></span>
+            </div>
+            <span class="skel skel-block" style="height:150px;margin-top:10px;border-radius:12px;"></span>
+            <span class="skel skel-block" style="height:34px;margin-top:12px;border-radius:8px;"></span>
+          </div>
+          <div class="card lwx-forecast-card">
+            <div class="lwx-forecast-card__head">
+              <span class="skel skel-line" style="width:55%;height:13px;"></span>
+              <span class="skel skel-circle" style="width:16px;height:16px;"></span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px;">
+              <span class="skel skel-line" style="width:90%;height:12px;"></span>
+              <span class="skel skel-line" style="width:80%;height:12px;"></span>
+              <span class="skel skel-line" style="width:85%;height:12px;"></span>
+              <span class="skel skel-line" style="width:75%;height:12px;"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- FIX: matches the real .lwx-row.lwx-row--news pair (Latest
+             power news + Did You Know) — the news half already had a
+             skeleton below; the Did You Know half didn't. -->
+        <div class="lwx-row lwx-row--news">
+
         <div class="lw-section">
           <div class="lw-section__head">
             <span class="skel skel-line" style="width:150px;height:13px;"></span>
@@ -785,6 +860,17 @@
             </span>
           </span>
         </div>
+
+        <div class="card lwx-didyouknow-card">
+          <div class="lwx-didyouknow-card__head">
+            <span class="skel skel-circle" style="width:16px;height:16px;"></span>
+            <span class="skel skel-line" style="width:50%;height:12px;"></span>
+          </div>
+          <span class="skel skel-line" style="width:95%;height:11px;margin-top:12px;"></span>
+          <span class="skel skel-line" style="width:70%;height:11px;margin-top:6px;"></span>
+        </div>
+
+        </div><!-- /.lwx-row.lwx-row--news -->
 
         <div class="lw-section">
           <div class="lw-section__head">
@@ -973,6 +1059,9 @@
               <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="7.2" cy="6.3" r="2.9" fill="#F2B33D"/><path d="M5.6 12.4a3.4 3.4 0 0 1 .4-6.78 4.3 4.3 0 0 1 8.2 1.1 3.05 3.05 0 0 1-.6 5.68H5.6Z" fill="#C7D0DE"/></svg>
             </span>
             <span id="lwxWeatherCity">Kumasi</span>
+            <span class="lwx-weather-card__live" id="lwxWeatherLive" aria-hidden="true">
+              <span class="lwx-weather-card__live-dot"></span>Live
+            </span>
           </div>
           <div class="lwx-weather-card__temp" id="lwxWeatherTemp">29&deg;C</div>
           <div class="lwx-weather-card__desc" id="lwxWeatherDesc">Cloudy</div>
@@ -1001,6 +1090,8 @@
               <span id="lwxWeatherBannerSub">Possible power interruptions.</span>
             </div>
           </div>
+
+          <span class="lwx-weather-card__updated" id="lwxWeatherUpdated">Updated just now</span>
         </div>
 
         </div><!-- /.lwx-row.lwx-row--top -->
@@ -1131,29 +1222,8 @@
               </span>
             </div>
 
-            <div class="lwx-map-visual" id="lwxMapVisual" role="img" aria-label="Heat map of power status across nearby areas">
-              <svg class="lwx-map-visual__streets" viewBox="0 0 300 190" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <g stroke="#3a4258" stroke-width="1" opacity="0.5">
-                  <path d="M0 40 H300 M0 90 H300 M0 140 H300"/>
-                  <path d="M50 0 V190 M120 0 V190 M190 0 V190 M250 0 V190"/>
-                </g>
-              </svg>
-              <span class="lwx-map-blob lwx-map-blob--stable" style="left:8%; top:10%;"></span>
-              <span class="lwx-map-blob lwx-map-blob--stable" style="left:55%; top:0%;"></span>
-              <span class="lwx-map-blob lwx-map-blob--mixed" style="left:30%; top:35%;"></span>
-              <span class="lwx-map-blob lwx-map-blob--outage" style="left:15%; top:55%;"></span>
-              <span class="lwx-map-blob lwx-map-blob--stable" style="left:65%; top:60%;"></span>
-              <span class="lwx-map-blob lwx-map-blob--mixed" style="left:80%; top:20%;"></span>
-
-              <span class="lwx-map-label" style="left:6%; top:38%;">SUAME</span>
-              <span class="lwx-map-label" style="left:38%; top:32%;">ASHTIME</span>
-              <span class="lwx-map-label" style="left:76%; top:22%;">ASOKVME</span>
-              <span class="lwx-map-label" style="left:40%; top:58%;">KUMASI</span>
-
-              <span class="lwx-map-pin" style="left:38%; top:42%;" aria-hidden="true">
-                <span class="lwx-map-pin__pulse"></span>
-                <span class="lwx-map-pin__dot"></span>
-              </span>
+            <div class="lwx-map-visual" id="lwxMapVisual" role="img" aria-label="Live heat map of power status across nearby areas">
+              <div class="lwx-map-visual__canvas" id="lwxMapCanvas"></div>
             </div>
 
             <button type="button" class="btn btn--ghost lwx-map-card__btn" id="lwxViewFullMapBtn" data-route="location">View full map</button>
@@ -1793,6 +1863,7 @@
       <span class="skel skel-pill" style="width:90px;height:34px;"></span>
     </div>
     <span class="skel skel-block" style="height:280px;margin-top:16px;border-radius:16px;"></span>
+    <span class="skel skel-block" style="height:170px;margin-top:16px;border-radius:16px;"></span>
     <div class="card" style="margin-top:16px;padding:16px;">
       <span class="skel skel-line" style="width:140px;height:14px;"></span>
       <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px;">
@@ -1861,6 +1932,24 @@
           <button type="button" class="loc-map__style-btn" data-style="satellite">Satellite</button>
         </div>
       </div>
+
+      <!-- ==== Live Heat Map ====
+           A second, independent MapLibre instance (views/location.js,
+           see initHeatMap()) running a native `heatmap` layer over the
+           same GET /locations/map data #locMap's pins use — an
+           at-a-glance outage-density view alongside the pin map above,
+           rather than a replacement for it. -->
+      <section class="loc-heatmap card" id="locHeatMap">
+        <div class="loc-heatmap__head">
+          <span class="card__title">Live Heat Map</span>
+          <span class="loc-heatmap__legend">
+            <span class="loc-heatmap__legend-item"><span class="loc-heatmap__legend-dot loc-heatmap__legend-dot--stable"></span>Stable</span>
+            <span class="loc-heatmap__legend-item"><span class="loc-heatmap__legend-dot loc-heatmap__legend-dot--mixed"></span>Unknown</span>
+            <span class="loc-heatmap__legend-item"><span class="loc-heatmap__legend-dot loc-heatmap__legend-dot--outage"></span>Outages</span>
+          </span>
+        </div>
+        <div class="loc-heatmap__canvas" id="locHeatMapCanvas" role="img" aria-label="Live heat map of outage density across monitored locations"></div>
+      </section>
 
       <!-- Info-card template for a clicked marker — cloned into a MapLibre
            popup by views/location.js, never rendered on its own. -->
@@ -2674,6 +2763,11 @@
   <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
   <script src="https://unpkg.com/supercluster@8.0.1/dist/supercluster.min.js"></script>
   <script src="./js/views/location.js"></script>
+  <!-- Home view's "Live Map Heat" card — independent small MapLibre
+       instance, needs maplibregl (just above) + LWHelpers.apiBase()
+       (api.js, already loaded earlier). See the file header for why
+       this is separate from location.js's own map. -->
+  <script src="./js/views/map-heat-home.js"></script>
   <script src="./js/views/notifications.js"></script>
   <script src="./js/views/account.js"></script>
   <!-- views/dashboard.js intentionally not included — see that file's

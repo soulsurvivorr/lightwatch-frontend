@@ -46,7 +46,20 @@
     // these URLs for a MapTiler style (https://api.maptiler.com/...
     // ?key=YOUR_KEY, free tier, no card) if you outgrow OpenFreeMap's
     // fair-use limits — the rest of this file doesn't change either way.
-    const STYLE_STREET = 'https://tiles.openfreemap.org/styles/dark';
+    function getThemeMode() {
+        const explicit = document.documentElement.getAttribute('data-theme');
+        if (explicit === 'light') return 'light';
+        if (explicit === 'dark') return 'dark';
+        return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    }
+
+    function getStreetMapStyle() {
+        return getThemeMode() === 'light'
+            ? 'https://tiles.openfreemap.org/styles/positron'
+            : 'https://tiles.openfreemap.org/styles/dark';
+    }
+
+    const STYLE_STREET = getStreetMapStyle();
     const STYLE_SATELLITE = {
         version: 8,
         sources: {
@@ -94,6 +107,9 @@
     // ── State ──────────────────────────────────────────────────
     let map = null;
     let mapReady = false;
+    let heatMap = null;
+    let heatMapReady = false;
+    let heatMapInitStarted = false;
     let clusterIndex = null;
     let markerEls = new Map();          // cluster/point id -> maplibregl.Marker
     let openPopup = null;
@@ -255,6 +271,96 @@
         });
     }
 
+    // ============================================================
+    //  Live Heat Map (#locHeatMap / #locHeatMapCanvas)
+    //  A second, independent MapLibre instance next to the pin map
+    //  above — a native `heatmap` layer over the same locations
+    //  dataset, weighted by outage status, instead of individual
+    //  markers. Kept deliberately separate from `map` (no shared
+    //  clustering, no popups, no style toggle) since it's a supplementary
+    //  density view rather than the primary navigable map.
+    // ============================================================
+
+    // /locations/map only ever reports 'on' | 'off' | 'unknown' (see
+    // updateMarkerStatus() below) — there's no real third "mixed" tier,
+    // the heat legend's "Unknown" bucket covers that. Weighted so an
+    // outage-heavy area reads clearly hot rather than a flat wash.
+    const HEAT_WEIGHT = { off: 1, unknown: 0.45, on: 0.08 };
+
+    function locationsToHeatGeoJSON(locations) {
+        const features = (locations || [])
+            .filter(l => Number.isFinite(l.lat) && Number.isFinite(l.lng))
+            .map(l => ({
+                type: 'Feature',
+                geometry: { type: 'Point', coordinates: [l.lng, l.lat] },
+                properties: { weight: HEAT_WEIGHT[l.status] ?? HEAT_WEIGHT.unknown }
+            }));
+        return { type: 'FeatureCollection', features };
+    }
+
+    function addHeatLayer() {
+        if (!heatMap || heatMap.getSource('loc-heat-source')) return;
+        heatMap.addSource('loc-heat-source', {
+            type: 'geojson',
+            data: { type: 'FeatureCollection', features: [] }
+        });
+        heatMap.addLayer({
+            id: 'loc-heat-layer',
+            type: 'heatmap',
+            source: 'loc-heat-source',
+            paint: {
+                'heatmap-weight': ['get', 'weight'],
+                'heatmap-intensity': 1.2,
+                'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 6, 14, 14, 42],
+                'heatmap-opacity': 0.85,
+                'heatmap-color': [
+                    'interpolate', ['linear'], ['heatmap-density'],
+                    0,    'rgba(11, 107, 58, 0)',
+                    0.2,  'rgba(11, 107, 58, 0.55)',
+                    0.45, 'rgba(214, 162, 74, 0.7)',
+                    0.75, 'rgba(229, 122, 72, 0.8)',
+                    1,    'rgba(229, 72, 77, 0.9)'
+                ]
+            }
+        });
+    }
+
+    function updateHeatMap(locations) {
+        if (!heatMapReady || !heatMap) return;
+        const source = heatMap.getSource('loc-heat-source');
+        if (source) source.setData(locationsToHeatGeoJSON(locations));
+    }
+
+    function initHeatMap() {
+        if (heatMapInitStarted) return;
+        heatMapInitStarted = true;
+
+        const canvas = document.getElementById('locHeatMapCanvas');
+        if (!canvas || !window.maplibregl) return;
+
+        heatMap = new maplibregl.Map({
+            container: canvas,
+            style: STYLE_STREET,
+            center: [DEFAULT_CENTER.lng, DEFAULT_CENTER.lat],
+            zoom: COUNTRY_ZOOM,
+            pitchWithRotate: false,
+            dragRotate: false,
+            attributionControl: true
+        });
+
+        heatMap.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+
+        heatMap.on('load', () => {
+            heatMapReady = true;
+            addHeatLayer();
+            updateHeatMap(latestLocations);
+            // Center on whatever the pin map already resolved (GPS fix
+            // or saved location) instead of re-requesting geolocation a
+            // second time for a second map.
+            if (userCoords) heatMap.jumpTo({ center: [userCoords.lng, userCoords.lat], zoom: DEFAULT_ZOOM });
+        });
+    }
+
     // Pulls LightWatch's own design tokens (variables.css) and pushes
     // them onto OpenFreeMap's "dark" style's paint properties, so
     // roads/water/land/labels/boundaries read as part of the app's
@@ -269,10 +375,17 @@
     function applyBrandPalette() {
         if (currentMapStyle !== 'street' || !map) return;
         const css = getComputedStyle(document.documentElement);
+        const isLight = getThemeMode() === 'light';
         const darkBg = css.getPropertyValue('--dark-bg').trim() || '#1C1F26';
         const darkBgMid = css.getPropertyValue('--dark-bg-mid').trim() || '#2A2E38';
         const teal = css.getPropertyValue('--teal').trim() || '#3DD9C2';
         const border = css.getPropertyValue('--border-strong').trim() || '#3a3a44';
+        const textBright = css.getPropertyValue('--text-bright').trim() || '#eef3fb';
+        const textMuted = css.getPropertyValue('--text-muted').trim() || '#bdc8da';
+        const surface = isLight ? (css.getPropertyValue('--map-surface').trim() || '#ffffff') : darkBg;
+        const surfaceMuted = isLight ? (css.getPropertyValue('--map-surface-muted').trim() || '#f3f6fb') : darkBgMid;
+        const waterColor = color_mix(teal, surface, 0.16);
+        const roadColor = isLight ? '#d7dde8' : darkBgMid;
 
         const safeSet = (layer, prop, value) => {
             try {
@@ -280,23 +393,23 @@
             } catch (err) { /* layer not present in this style version — skip */ }
         };
 
-        safeSet('background', 'background-color', darkBg);
-        safeSet('landcover', 'fill-color', darkBg);
-        safeSet('landuse', 'fill-color', darkBgMid);
-        safeSet('park', 'fill-color', darkBgMid);
-        safeSet('water', 'fill-color', color_mix(teal, darkBg, 0.12));
-        safeSet('waterway', 'line-color', color_mix(teal, darkBg, 0.12));
-        safeSet('road_secondary', 'line-color', darkBgMid);
-        safeSet('road_minor', 'line-color', darkBgMid);
-        safeSet('road_major', 'line-color', darkBgMid);
+        safeSet('background', 'background-color', surface);
+        safeSet('landcover', 'fill-color', surface);
+        safeSet('landuse', 'fill-color', surfaceMuted);
+        safeSet('park', 'fill-color', surfaceMuted);
+        safeSet('water', 'fill-color', waterColor);
+        safeSet('waterway', 'line-color', waterColor);
+        safeSet('road_secondary', 'line-color', roadColor);
+        safeSet('road_minor', 'line-color', roadColor);
+        safeSet('road_major', 'line-color', roadColor);
         safeSet('road_motorway', 'line-color', border);
         safeSet('boundary_state', 'line-color', border);
         safeSet('boundary_country', 'line-color', border);
-        safeSet('place_city', 'text-color', '#ffffff');
-        safeSet('place_town', 'text-color', 'rgba(255,255,255,0.75)');
-        safeSet('place_village', 'text-color', 'rgba(255,255,255,0.75)');
-        safeSet('poi_label', 'text-color', 'rgba(255,255,255,0.5)');
-        safeSet('road_label', 'text-color', 'rgba(255,255,255,0.45)');
+        safeSet('place_city', 'text-color', textBright);
+        safeSet('place_town', 'text-color', textMuted);
+        safeSet('place_village', 'text-color', textMuted);
+        safeSet('poi_label', 'text-color', isLight ? '#5b6474' : 'rgba(255,255,255,0.5)');
+        safeSet('road_label', 'text-color', isLight ? '#5b6474' : 'rgba(255,255,255,0.45)');
     }
 
     // Cheap hex-ish blend so applyBrandPalette() doesn't need a full
@@ -620,6 +733,11 @@
         }
 
         applyFilters();
+        // Heat map always reflects the full unfiltered dataset (density
+        // of outages overall), unlike the pin map's mapSet above, which
+        // narrows to the active filter — a "Favorites"-filtered heat map
+        // would misrepresent citywide risk.
+        updateHeatMap(latestLocations);
     }
 
     // ============================================================
@@ -914,6 +1032,7 @@
     function mount() {
         bindControls();
         initMap();
+        initHeatMap();
         loadLocations(true);
     }
 
@@ -922,6 +1041,7 @@
         clearInterval(locationPollTimer);
         locationPollTimer = setInterval(() => loadLocations(false), POLL_INTERVAL_STANDARD_MS);
         if (map) setTimeout(() => map.resize(), 60); // view was hidden (display:none) — canvas needs a resize nudge
+        if (heatMap) setTimeout(() => heatMap.resize(), 60);
     }
 
     function hide() {

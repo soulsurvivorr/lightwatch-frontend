@@ -94,12 +94,12 @@
       font-family: var(--font-display);
       font-size: 1.25rem;
       font-weight: 700;
-      color: white;
+      color: var(--text-bright);
       line-height: 1.2;
     }
     .hero-banner__sub {
       font-size: 0.82rem;
-      color: rgba(255,255,255,0.65);
+      color: var(--text-muted);
       max-width: 580px;
     }
     .hero-banner__stats {
@@ -121,11 +121,11 @@
       font-family: var(--font-display);
       font-size: 1.2rem;
       font-weight: 600;
-      color: white;
+      color: var(--text-bright);
     }
     .hero-stat__label {
       font-size: 0.7rem;
-      color: rgba(255,255,255,0.5);
+      color: var(--text-faint);
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
@@ -134,12 +134,12 @@
       align-items: center;
       gap: 7px;
       align-self: flex-start;
-      background: rgba(255,255,255,0.08);
-      border: 1px solid rgba(255,255,255,0.12);
+      background: color-mix(in srgb, var(--bg-panel) 84%, transparent);
+      border: 1px solid var(--border-soft);
       border-radius: 999px;
       padding: 6px 14px;
       font-size: 0.8rem;
-      color: rgba(255,255,255,0.85);
+      color: var(--text-bright);
       max-width: 100%;
       min-width: 0;
     }
@@ -156,9 +156,9 @@
       display: inline-flex;
       align-items: center;
       gap: 7px;
-      background: rgba(61,217,194,0.1);
-      border: 1px solid rgba(61,217,194,0.3);
-      color: rgba(255,255,255,0.9);
+      background: color-mix(in srgb, var(--teal) 12%, var(--bg-panel));
+      border: 1px solid color-mix(in srgb, var(--teal) 28%, var(--border-soft));
+      color: var(--text-bright);
       border-radius: 999px;
       padding: 6px 10px 6px 12px;
       font-size: 0.78rem;
@@ -6350,6 +6350,66 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
   font-weight: 700;
 }
 
+/* ---- "Live" badge + pulse dot next to the city name, and the
+   "Updated Xs ago" ticker weather-home.js keeps refreshed — together
+   these are what make the card read as a live feed rather than a
+   frozen illustration once the rain/lightning animation isn't the
+   thing carrying it (clear/cloudy/fog days have no falling elements). ---- */
+#view-home .lwx-weather-card__live {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted, rgba(255, 255, 255, 0.75));
+  opacity: 0.9;
+}
+
+#view-home .lwx-weather-card__live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #3DD9C2;
+  box-shadow: 0 0 0 0 rgba(61, 217, 194, 0.6);
+  animation: lwxLivePulse 2.2s ease-out infinite;
+}
+
+@keyframes lwxLivePulse {
+  0%   { box-shadow: 0 0 0 0 rgba(61, 217, 194, 0.55); }
+  70%  { box-shadow: 0 0 0 6px rgba(61, 217, 194, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(61, 217, 194, 0); }
+}
+
+#view-home .lwx-weather-card__updated {
+  position: relative;
+  z-index: 1;
+  display: block;
+  margin-top: 8px;
+  font-size: 0.68rem;
+  color: var(--text-faint, rgba(255, 255, 255, 0.6));
+  text-align: right;
+  transition: opacity 0.4s ease;
+}
+
+/* Brief highlight weather-home.js toggles for ~1s right after a
+   successful refresh lands, so a new reading doesn't just silently
+   replace the old one. */
+#view-home .lwx-weather-card__updated.lwx-just-updated {
+  color: #3DD9C2;
+}
+
+#view-home .lwx-weather-card__temp.lwx-just-updated {
+  animation: lwxTempBump 0.5s ease;
+}
+@keyframes lwxTempBump {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+
 /* ---- 5th stat card colour — additive icon modifier ---- */
 #view-home .lw-stat-card__icon--maroon { background: #7A3B4A; }
 
@@ -6606,72 +6666,34 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
   height: 210px;
   border-radius: var(--radius-md);
   overflow: hidden;
-  background: var(--dark-bg, #1c1f26);
+  background: var(--map-surface-muted, var(--dark-bg, #1c1f26));
+  border: 1px solid var(--border-soft);
   margin-bottom: 12px;
 }
 
-#view-home .lwx-map-visual__streets {
+/* ---- Real MapLibre canvas (map-heat-home.js) replacing the old
+   static SVG street-grid + hand-placed blur blobs. The card is a
+   small live preview, so MapLibre's own attribution/logo chrome is
+   trimmed down to fit rather than removed outright (attribution is
+   still required — see initMap()'s attributionControl:false, which
+   only disables the auto-added default; nothing here strips credit,
+   it's just sized to not overwhelm a 210px-tall card). ---- */
+#view-home .lwx-map-visual__canvas {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
 }
 
-#view-home .lwx-map-blob {
-  position: absolute;
-  width: 46%;
-  height: 55%;
-  border-radius: 50%;
-  filter: blur(18px);
-  transform: translate(-25%, -25%);
+#view-home .lwx-map-visual .maplibregl-ctrl-top-right {
+  top: 6px;
+  right: 6px;
 }
 
-#view-home .lwx-map-blob--stable { background: radial-gradient(circle, rgba(11, 107, 58, 0.75), transparent 70%); }
-#view-home .lwx-map-blob--mixed { background: radial-gradient(circle, rgba(214, 162, 74, 0.7), transparent 70%); }
-#view-home .lwx-map-blob--outage { background: radial-gradient(circle, rgba(229, 72, 77, 0.75), transparent 70%); }
-
-#view-home .lwx-map-label {
-  position: absolute;
-  font-size: 0.62rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  color: rgba(255, 255, 255, 0.82);
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
-  white-space: nowrap;
-}
-
-#view-home .lwx-map-pin {
-  position: absolute;
-  width: 16px;
-  height: 16px;
-  transform: translate(-50%, -50%);
-}
-
-#view-home .lwx-map-pin__dot {
-  position: absolute;
-  inset: 3px;
-  border-radius: 50%;
-  background: var(--lw-blue);
-  border: 2px solid #fff;
-  box-shadow: 0 0 0 2px rgba(124, 77, 255, 0.4);
-}
-
-#view-home .lwx-map-pin__pulse {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  background: rgba(124, 77, 255, 0.5);
-  animation: lwxRingPulse 2.2s ease-out infinite;
-}
-
-@keyframes lwxRingPulse {
-  0% { transform: scale(0.85); opacity: 0.9; }
-  70% { transform: scale(1.35); opacity: 0; }
-  100% { transform: scale(1.35); opacity: 0; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  #view-home .lwx-map-pin__pulse { animation: none; }
+#view-home .lwx-map-visual .maplibregl-ctrl-group {
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
 }
 
 #view-home .lwx-map-card__btn {
@@ -7086,6 +7108,24 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
   background: linear-gradient(160deg, #6b7482 0%, #4d5561 60%, #383e48 100%);
 }
 
+/* ---- Ambient sheen — a soft highlight that slowly drifts across the
+   card on every condition, clear/cloudy/fog included. This is what
+   keeps a calm-weather card (no rain, no lightning) from reading as a
+   static picture: something in the scene is always quietly moving. ---- */
+#view-home .lwx-weather-card::after {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  z-index: -1;
+  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.14), transparent 55%);
+  animation: lwxSheenDrift 14s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes lwxSheenDrift {
+  0%, 100% { transform: translate(0, 0); }
+  50%      { transform: translate(14%, 10%); }
+}
+
 /* ---- Scene layer — sits behind the text (z-index -1 inside the
    card's own isolated stacking context, same technique the status-hero
    card above uses for its own illustration), everything inside it
@@ -7131,6 +7171,11 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
   border-radius: 50%;
   background: radial-gradient(circle at 32% 30%, #fdfdf6, #e4e4de 60%, #c9c9c2 100%);
   box-shadow: inset -10px -4px 0 0 rgba(20, 26, 46, 0.55), 0 0 22px 4px rgba(240, 240, 230, 0.28);
+  animation: lwxMoonFloat 7s ease-in-out infinite;
+}
+@keyframes lwxMoonFloat {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-5px); }
 }
 #view-home .lwx-weather-card[data-weather="clear-night"] .lwx-scene-stars {
   display: block;
@@ -7302,17 +7347,17 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
 
 #view-home .lwx-weather-card__head,
 #view-home .lwx-weather-card__temp {
-  color: #fff;
-  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
+  color: var(--text-bright, #fff);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.18);
 }
 
 #view-home .lwx-weather-card__desc,
 #view-home .lwx-weather-card__meta {
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--text-muted, rgba(255, 255, 255, 0.85));
 }
 
 #view-home .lwx-weather-card__meta svg {
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--text-faint, rgba(255, 255, 255, 0.72));
 }
 
 /* Loading/error text state — set on the card by weather-home.js while
@@ -7324,7 +7369,10 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
 }
 
 @media (prefers-reduced-motion: reduce) {
-  #view-home .lwx-weather-scene * {
+  #view-home .lwx-weather-scene *,
+  #view-home .lwx-weather-card::after,
+  #view-home .lwx-weather-card__live-dot,
+  #view-home .lwx-weather-card__temp.lwx-just-updated {
     animation: none !important;
   }
 }

@@ -46,6 +46,7 @@
         risk: document.getElementById('lwxWeatherRisk'),
         bannerTitle: document.getElementById('lwxWeatherBannerTitle'),
         bannerSub: document.getElementById('lwxWeatherBannerSub'),
+        updated: document.getElementById('lwxWeatherUpdated'),
         gridRiskCard: document.getElementById('lwxGridRiskCard'),
         gridRiskBadge: document.getElementById('lwxGridRiskBadge'),
         gridRiskDesc: document.getElementById('lwxGridRiskDesc'),
@@ -204,12 +205,63 @@
         badgeEl.textContent = level === 'high' ? 'High Risk' : level === 'medium' ? 'Medium Risk' : 'Low Risk';
     }
 
+    // Tracks the last successful fetch so the "Updated Xs ago" line can
+    // keep counting up between polls instead of only changing once every
+    // REFRESH_INTERVAL_MS — this (plus the pulsing "Live" dot in the
+    // markup) is a big part of what makes a calm-weather card, with no
+    // rain/lightning of its own, still read as a live feed.
+    let lastFetchedAt = null;
+    let updatedTickTimer = null;
+    let lastRenderedTempC = null;
+
+    function formatUpdatedAgo() {
+        if (!lastFetchedAt) return '';
+        const secs = Math.round((Date.now() - lastFetchedAt) / 1000);
+        if (secs < 5) return 'Updated just now';
+        if (secs < 60) return `Updated ${secs}s ago`;
+        const mins = Math.round(secs / 60);
+        return `Updated ${mins} min${mins === 1 ? '' : 's'} ago`;
+    }
+
+    function refreshUpdatedTicker() {
+        if (els.updated && lastFetchedAt) {
+            els.updated.textContent = formatUpdatedAgo();
+        }
+    }
+
+    function startUpdatedTicker() {
+        clearInterval(updatedTickTimer);
+        updatedTickTimer = setInterval(refreshUpdatedTicker, 1000);
+    }
+
+    // Briefly flashes the temperature + "Updated" line so a fresh
+    // reading visibly lands instead of silently overwriting the old
+    // one — removed again a moment later so it doesn't stay lit.
+    function flashJustUpdated() {
+        if (els.temp) {
+            els.temp.classList.remove('lwx-just-updated');
+            // Force reflow so re-adding the class restarts the animation
+            // even if a previous flash's timeout hasn't cleared it yet.
+            void els.temp.offsetWidth;
+            els.temp.classList.add('lwx-just-updated');
+        }
+        if (els.updated) els.updated.classList.add('lwx-just-updated');
+        clearTimeout(flashJustUpdated._t);
+        flashJustUpdated._t = setTimeout(() => {
+            if (els.updated) els.updated.classList.remove('lwx-just-updated');
+        }, 1200);
+    }
+
     function render(data) {
         const { current, risk, location, approximate } = data;
 
         if (els.city) els.city.textContent = approximate ? `Near ${location}` : location;
         if (els.temp && current.temperatureC != null) {
-            els.temp.innerHTML = `${Math.round(current.temperatureC)}&deg;C`;
+            const roundedTemp = Math.round(current.temperatureC);
+            const tempChanged = lastRenderedTempC !== null && lastRenderedTempC !== roundedTemp;
+            els.temp.innerHTML = `${roundedTemp}&deg;C`;
+            lastRenderedTempC = roundedTemp;
+            if (tempChanged) flashJustUpdated();
         }
         if (els.desc) {
             els.desc.dataset.state = 'ready';
@@ -300,6 +352,9 @@
             if (!response.ok) throw new Error(`Weather request failed (${response.status})`);
             const data = await response.json();
             render(data);
+            lastFetchedAt = Date.now();
+            refreshUpdatedTicker();
+            startUpdatedTicker();
         } catch (err) {
             console.error('[weather-home] fetch failed:', getBackendErrorMessage(err));
             setErrorState();
