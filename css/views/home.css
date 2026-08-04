@@ -2270,23 +2270,26 @@ body.lw-location-panel-open {
 
 .home-reminder-copy {
   display: grid;
-  gap: 14px;
+  gap: 12px;
   margin-top: 2px;
 }
 
 .home-reminder-copy p {
   margin: 0;
   color: var(--text-muted);
-  font-size: clamp(0.84rem, 3.2vw, 0.94rem);
-  line-height: 1.56;
+  font-size: clamp(0.9rem, 3.3vw, 1rem);
+  line-height: 1.65;
 }
 
 .home-reminder-copy__lead {
   position: relative;
-  padding-left: 14px;
-  border-left: 3px solid var(--amber);
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--amber) 14%, var(--bg-panel)), color-mix(in srgb, var(--brand) 10%, var(--bg-panel)));
+  border: 1px solid color-mix(in srgb, var(--amber) 26%, var(--border-soft));
   color: var(--text-bright);
-  font-weight: 500;
+  font-weight: 600;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.25);
 }
 
 .home-reminder-points {
@@ -2294,49 +2297,36 @@ body.lw-location-panel-open {
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 2px;
+  gap: 8px;
 }
 
 .home-reminder-points li {
   position: relative;
   margin: 0;
-  padding: clamp(9px, 2.8vw, 10px) 0 clamp(9px, 2.8vw, 10px) 26px;
-  font-size: clamp(0.8rem, 3vw, 0.88rem);
+  padding: 10px 0 10px 24px;
+  font-size: clamp(0.82rem, 3vw, 0.9rem);
   line-height: 1.5;
   color: var(--text-muted);
-}
-
-.home-reminder-points li + li {
-  border-top: 1px solid color-mix(in srgb, var(--border-soft) 70%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface-2, #f6f7fa) 70%, transparent);
 }
 
 .home-reminder-points li::before {
   content: "";
   position: absolute;
-  top: 16px;
-  left: 2px;
-  width: 14px;
-  height: 14px;
+  top: 13px;
+  left: 4px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
-  background: color-mix(in srgb, var(--amber) 18%, var(--bg-panel));
-  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--amber) 55%, transparent);
-}
-
-.home-reminder-points li::after {
-  content: "";
-  position: absolute;
-  top: 21px;
-  left: 6px;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--amber);
+  background: linear-gradient(135deg, var(--brand), var(--amber));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--amber) 16%, transparent);
 }
 
 .home-reminder-actions {
   display: flex;
   justify-content: flex-end;
-  margin-top: 20px;
+  margin-top: 18px;
 }
 
 /* FIX: this used to be `.home-reminder-actions .btn` — it force-applied
@@ -2353,19 +2343,20 @@ body.lw-location-panel-open {
   width: 100%;
   justify-content: center;
   font-size: clamp(0.86rem, 3.2vw, 0.95rem);
-  font-weight: 600;
+  font-weight: 700;
   padding-block: 12px;
-  border-radius: 12px;
+  border-radius: 999px;
   background: linear-gradient(135deg, var(--brand), var(--amber));
   border: none;
-  color: #1a1408;
+  color: #111827;
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--brand) 24%, transparent);
   transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
 }
 
 .home-reminder-actions .btn--primary:hover {
-  filter: brightness(1.06);
+  filter: brightness(1.04);
   transform: translateY(-1px);
-  box-shadow: 0 10px 22px color-mix(in srgb, var(--amber) 35%, transparent);
+  box-shadow: 0 14px 28px color-mix(in srgb, var(--amber) 30%, transparent);
 }
 
 .home-reminder-actions .btn--primary:active {
@@ -5115,8 +5106,6 @@ body:not(.page-data-loading) #view-home #realPageContent {
 }
 
 #view-home .lw-status-hero .status-hero {
-  position: relative;
-  z-index: 1;
   display: flex;
   justify-content: flex-start;
   align-items: center;
@@ -5183,6 +5172,20 @@ body:not(.page-data-loading) #view-home #realPageContent {
   height: 34px !important;
 }
 
+/* Three SVGs live in the markup (glyph--on / --off / --unknown); only
+   the one matching the icon's current state is shown. This lets each
+   state have its own purpose-drawn icon instead of one glyph re-tinted
+   by CSS across all three states. */
+#view-home .lw-status-hero .status-hero__icon-glyph {
+  display: none;
+}
+
+#view-home .lw-status-hero .status-hero__icon--on .status-hero__icon-glyph--on,
+#view-home .lw-status-hero .status-hero__icon--off .status-hero__icon-glyph--off,
+#view-home .lw-status-hero .status-hero__icon--unknown .status-hero__icon-glyph--unknown {
+  display: block;
+}
+
 #view-home .lw-status-hero .status-hero__icon--on {
   border-color: rgba(52, 211, 153, 0.85);
   background: radial-gradient(circle, rgba(52, 211, 153, 0.32), rgba(0, 0, 0, 0.06));
@@ -5202,9 +5205,57 @@ body:not(.page-data-loading) #view-home #realPageContent {
   color: var(--lw-amber);
 }
 
-#view-home .lw-status-hero .status-hero__icon--unknown {
-  border-color: rgba(214, 162, 74, 0.55);
-  color: var(--lw-amber);
+/* Signal-pulse rings for the ON state — two rings expanding outward
+   from the icon and fading, staggered a half-cycle apart so a new one
+   is always leaving as the other arrives (like a beacon/broadcast
+   ping rather than a single one-shot flash). Off/unknown stay static
+   — no rings, no animation — so the pulse itself reads as "live power"
+   at a glance. The rings sit on a dedicated span (not the icon's own
+   ::before/::after) so they can be pointer-events:none independent of
+   the icon's own tap target. */
+#view-home .lw-status-hero .status-hero__icon-rings {
+  display: none;
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+#view-home .lw-status-hero .status-hero__icon--on .status-hero__icon-rings {
+  display: block;
+}
+
+#view-home .lw-status-hero .status-hero__icon-rings::before,
+#view-home .lw-status-hero .status-hero__icon-rings::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid rgba(52, 211, 153, 0.65);
+  pointer-events: none;
+  animation: lw-signal-ping 2.4s cubic-bezier(0.25, 0.6, 0.35, 1) infinite;
+}
+
+#view-home .lw-status-hero .status-hero__icon-rings::after {
+  animation-delay: 1.2s;
+}
+
+@keyframes lw-signal-ping {
+  0% {
+    transform: scale(1);
+    opacity: 0.65;
+  }
+  100% {
+    transform: scale(1.55);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #view-home .lw-status-hero .status-hero__icon-rings::before,
+  #view-home .lw-status-hero .status-hero__icon-rings::after {
+    animation: none;
+    display: none;
+  }
 }
 
 #view-home .lw-status-hero #statusBadge {
@@ -5367,8 +5418,21 @@ body:not(.page-data-loading) #view-home #realPageContent {
   height: 18px;
 }
 
+/* Same pattern as the big status-hero__icon: three SVGs in the
+   markup, one shown per state, instead of one glyph re-tinted. */
+#view-home .status-hero__title-icon-glyph {
+  display: none;
+}
+
+#view-home .status-hero__title-icon--on .status-hero__title-icon-glyph--on,
+#view-home .status-hero__title-icon--off .status-hero__title-icon-glyph--off,
+#view-home .status-hero__title-icon--unknown .status-hero__title-icon-glyph--unknown {
+  display: block;
+}
+
 #view-home .status-hero__title-icon--on {
   color: var(--status-green, #2fbf6e);
+  animation: lw-title-icon-breathe 2.4s ease-in-out infinite;
 }
 
 #view-home .status-hero__title-icon--off {
@@ -5377,6 +5441,17 @@ body:not(.page-data-loading) #view-home #realPageContent {
 
 #view-home .status-hero__title-icon--unknown {
   color: var(--amber, #d6a24a);
+}
+
+@keyframes lw-title-icon-breathe {
+  0%, 100% { opacity: 1; filter: drop-shadow(0 0 0 transparent); }
+  50% { opacity: 0.72; filter: drop-shadow(0 0 4px currentColor); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #view-home .status-hero__title-icon--on {
+    animation: none;
+  }
 }
 
 .lw-stat-card__delta {
@@ -6005,24 +6080,24 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
    ============================================================ */
 .bottom-nav-badge--mono {
   position: absolute;
-  top: -5px;
-  right: -9px;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 5px;
+  top: -4px;
+  right: -7px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 999px;
   background: linear-gradient(135deg, #2f86ff 0%, #1767d8 100%);
   color: #fff;
-  font-size: 0.62rem;
+  font-size: 0.5rem;
   font-weight: 700;
   line-height: 1;
   font-variant-numeric: tabular-nums;
-  border: 2px solid rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.96);
   box-sizing: content-box;
-  box-shadow: 0 4px 10px rgba(23, 103, 216, 0.24);
+  box-shadow: 0 2px 6px rgba(23, 103, 216, 0.18);
 }
 /* ============================================================
    BOTTOM NAV — theme-following background + active "deep blue"
@@ -6099,4 +6174,971 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
 #bottom_nav_wrapper .bottom-nav-link--active .bottom-nav-icon {
   transform: none !important;
   animation: none !important;
+}
+
+/* ============================================================
+   HOME REDESIGN v2 — additive only.
+   ------------------------------------------------------------
+   Nothing above this line was edited. Every selector below is
+   either:
+     (a) a brand-new "lwx-" prefixed class for sections that had
+         no existing equivalent (Weather, Grid Risk / Weather
+         Impact, Live Map Heat, Forecast, Did You Know, Weather
+         Alert, Today's Summary), or
+     (b) a narrowly-scoped rule for an additive modifier class
+         that was appended (never substituted) onto an existing
+         element's class list — e.g. "lw-status-hero lwx-hero-visual",
+         "lw-stat-grid lwx-stat-grid-5" — so the original class
+         (and every id inside it) still does exactly what it did
+         before and is still stylable by the original rules.
+   All ids used below (lwx*) are new, so nothing here can collide
+   with or shadow an id a script may already target.
+   ============================================================ */
+
+#view-home .lwx-row {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+/* ---- (a) status-hero visual upgrade — additive modifier ---- */
+#view-home .lw-status-hero.lwx-hero-visual {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+#view-home .lwx-hero-bg {
+  /* FIX (bring back the birds-city photo): this element is an absolutely
+     positioned, inset:0 layer sitting INSIDE the same isolated stacking
+     context as the card (see .lwx-hero-visual above), at z-index:-1.
+     Backgrounds painted on the card itself (.location-card.lw-status-hero
+     further up this file — the birds-city.png photo + gradient scrim) are
+     the bottom-most paint layer of that box; this generated sky/skyline
+     SVG paints directly on top of them as the next layer up, at ~0.9
+     opacity, which is enough to fully hide the real photo underneath
+     instead of just tinting it. Hiding this generated layer lets the
+     photo (already wired up two rules above, nothing else to change)
+     show through exactly as before. Left in the DOM/markup untouched —
+     this is purely a "don't paint it" switch, easy to flip back. */
+  display: none;
+}
+
+/* The background art is a fixed dusk illustration regardless of
+   light/dark theme, so text sitting on it needs to stay light for
+   legibility either way. Scoped strictly to the modifier class, so
+   nothing changes for this card if the modifier is ever removed. */
+#view-home .lw-status-hero.lwx-hero-visual .card__title,
+#view-home .lw-status-hero.lwx-hero-visual .status-hero__sub,
+#view-home .lw-status-hero.lwx-hero-visual .status-hero__sub strong,
+#view-home .lw-status-hero.lwx-hero-visual #statusPillText {
+  color: #fff;
+}
+
+#view-home .lw-status-hero.lwx-hero-visual .status-hero__sub {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+/* ---- Weather card ---- */
+#view-home .lwx-weather-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+#view-home .lwx-weather-card__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--lw-text);
+}
+
+#view-home .lwx-weather-card__icon {
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
+}
+
+#view-home .lwx-weather-card__temp {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--lw-text);
+  line-height: 1.15;
+  margin-top: 2px;
+}
+
+#view-home .lwx-weather-card__desc {
+  font-size: 0.82rem;
+  color: var(--lw-text-muted);
+  margin-bottom: 10px;
+}
+
+#view-home .lwx-weather-card__meta {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: var(--lw-text-muted);
+}
+
+#view-home .lwx-weather-card__meta li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+#view-home .lwx-weather-card__meta svg {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  color: var(--lw-text-faint);
+}
+
+#view-home .lwx-risk-text--high {
+  color: var(--lw-red);
+  font-weight: 700;
+}
+
+/* ---- NEW: medium/low variants — additive, the high variant above is
+     untouched. Driven by live Open-Meteo risk data (see weather-home.js),
+     which reports one of 'high' | 'medium' | 'low'. ---- */
+#view-home .lwx-risk-text--medium {
+  color: var(--lw-amber);
+  font-weight: 700;
+}
+
+#view-home .lwx-risk-text--low {
+  color: var(--lw-green);
+  font-weight: 700;
+}
+
+#view-home .lwx-weather-card__banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: rgba(124, 77, 255, 0.12);
+  border: 1px solid rgba(124, 77, 255, 0.25);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  margin-top: auto;
+}
+
+#view-home .lwx-weather-card__banner-icon {
+  display: inline-flex;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+}
+
+#view-home .lwx-weather-card__banner div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.76rem;
+  color: var(--lw-text-muted);
+}
+
+#view-home .lwx-weather-card__banner strong {
+  color: var(--lw-text);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+/* ---- 5th stat card colour — additive icon modifier ---- */
+#view-home .lw-stat-card__icon--maroon { background: #7A3B4A; }
+
+/* ---- stat grid 5-across — additive modifier, only applies
+   when both classes are present, so the 4-across skeleton/
+   original rule is completely unaffected ---- */
+@media (min-width: 481px) {
+  #view-home .lw-stat-grid.lwx-stat-grid-5 {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
+
+/* ---- Grid Risk / Weather Impact ---- */
+#view-home .lwx-row--risk {
+  flex-direction: row;
+  gap: 14px;
+}
+
+#view-home .lwx-risk-card {
+  flex: 1 1 0;
+  min-width: 0;
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 148px;
+}
+
+#view-home .lwx-risk-card--danger {
+  background: linear-gradient(160deg, rgba(229, 72, 77, 0.16), rgba(229, 72, 77, 0.05));
+  border: 1px solid rgba(229, 72, 77, 0.28);
+}
+
+#view-home .lwx-risk-card--safe {
+  background: linear-gradient(160deg, rgba(11, 107, 58, 0.18), rgba(11, 107, 58, 0.05));
+  border: 1px solid rgba(11, 107, 58, 0.28);
+}
+
+/* ---- NEW: medium/"warn" risk state — additive, danger/safe above are
+     untouched. Applied by weather-home.js when Open-Meteo's next-12h
+     outlook is rain (not full thunderstorm) — real data, not a third
+     hardcoded card. ---- */
+#view-home .lwx-risk-card--warn {
+  background: linear-gradient(160deg, rgba(214, 162, 74, 0.18), rgba(214, 162, 74, 0.05));
+  border: 1px solid rgba(214, 162, 74, 0.3);
+}
+
+#view-home .lwx-risk-card--warn .lwx-risk-card__title {
+  color: var(--lw-amber);
+}
+
+#view-home .lwx-risk-card__text {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+#view-home .lwx-risk-card__title {
+  font-size: 0.94rem;
+  font-weight: 700;
+  color: var(--lw-text);
+  display: flex;
+  align-items: center;
+}
+
+#view-home .lwx-risk-card--safe .lwx-risk-card__title {
+  color: var(--lw-green);
+}
+
+#view-home .lwx-risk-card__badge {
+  align-self: flex-start;
+  background: rgba(229, 72, 77, 0.18);
+  color: var(--lw-red);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  margin: 2px 0 2px;
+}
+
+/* ---- NEW: badge color follows risk level — additive modifiers, the
+     base (danger/red) badge rule above is untouched and stays the
+     default markup already has in the HTML. ---- */
+#view-home .lwx-risk-card__badge--warn {
+  background: rgba(214, 162, 74, 0.18);
+  color: var(--lw-amber);
+}
+
+#view-home .lwx-risk-card__badge--safe {
+  background: rgba(11, 107, 58, 0.18);
+  color: var(--lw-green);
+}
+
+#view-home .lwx-risk-card__text p {
+  font-size: 0.78rem;
+  color: var(--lw-text-muted);
+  margin: 0;
+  line-height: 1.4;
+}
+
+#view-home .lwx-risk-card__foot-label {
+  font-size: 0.7rem;
+  color: var(--lw-text-faint);
+  margin-top: 4px;
+}
+
+#view-home .lwx-risk-card__foot-value {
+  font-size: 0.88rem;
+  color: var(--lw-text);
+  font-weight: 700;
+}
+
+#view-home .lwx-risk-card__icon {
+  flex: 0 0 auto;
+  width: 52px;
+  height: 52px;
+  display: inline-flex;
+  opacity: 0.95;
+}
+
+/* ---- Live Map Heat + Forecast ---- */
+#view-home .lwx-row--map {
+  flex-direction: column;
+}
+
+#view-home .lwx-map-card__head,
+#view-home .lwx-forecast-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+#view-home .lwx-map-card__title,
+#view-home .lwx-forecast-card__title {
+  font-size: 0.96rem;
+  font-weight: 700;
+  color: var(--lw-text);
+}
+
+#view-home .lwx-map-card__legend {
+  display: flex;
+  gap: 12px;
+  font-size: 0.72rem;
+  color: var(--lw-text-faint);
+}
+
+#view-home .lwx-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+#view-home .lwx-legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+#view-home .lwx-legend-dot--stable { background: var(--lw-green); }
+#view-home .lwx-legend-dot--mixed { background: var(--lw-amber); }
+#view-home .lwx-legend-dot--outage { background: var(--lw-red); }
+
+#view-home .lwx-map-visual {
+  position: relative;
+  height: 210px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--dark-bg, #1c1f26);
+  margin-bottom: 12px;
+}
+
+#view-home .lwx-map-visual__streets {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+#view-home .lwx-map-blob {
+  position: absolute;
+  width: 46%;
+  height: 55%;
+  border-radius: 50%;
+  filter: blur(18px);
+  transform: translate(-25%, -25%);
+}
+
+#view-home .lwx-map-blob--stable { background: radial-gradient(circle, rgba(11, 107, 58, 0.75), transparent 70%); }
+#view-home .lwx-map-blob--mixed { background: radial-gradient(circle, rgba(214, 162, 74, 0.7), transparent 70%); }
+#view-home .lwx-map-blob--outage { background: radial-gradient(circle, rgba(229, 72, 77, 0.75), transparent 70%); }
+
+#view-home .lwx-map-label {
+  position: absolute;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.82);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+  white-space: nowrap;
+}
+
+#view-home .lwx-map-pin {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  transform: translate(-50%, -50%);
+}
+
+#view-home .lwx-map-pin__dot {
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: var(--lw-blue);
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 2px rgba(124, 77, 255, 0.4);
+}
+
+#view-home .lwx-map-pin__pulse {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(124, 77, 255, 0.5);
+  animation: lwxRingPulse 2.2s ease-out infinite;
+}
+
+@keyframes lwxRingPulse {
+  0% { transform: scale(0.85); opacity: 0.9; }
+  70% { transform: scale(1.35); opacity: 0; }
+  100% { transform: scale(1.35); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #view-home .lwx-map-pin__pulse { animation: none; }
+}
+
+#view-home .lwx-map-card__btn {
+  width: auto;
+  padding: 9px 16px;
+  font-size: 0.8rem;
+}
+
+#view-home .lwx-forecast-card__clock {
+  display: inline-flex;
+  width: 16px;
+  height: 16px;
+  color: var(--lw-text-faint);
+}
+
+#view-home .lwx-forecast-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+#view-home .lwx-forecast-list li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-top: 1px solid var(--lw-border);
+  font-size: 0.82rem;
+}
+
+#view-home .lwx-forecast-list li:first-child {
+  border-top: none;
+}
+
+#view-home .lwx-forecast-list__time {
+  width: 46px;
+  flex: 0 0 auto;
+  color: var(--lw-text-faint);
+  font-size: 0.76rem;
+}
+
+#view-home .lwx-forecast-list__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+#view-home .lwx-forecast-list__dot--stable { background: var(--lw-green); }
+#view-home .lwx-forecast-list__dot--mixed { background: var(--lw-amber); }
+#view-home .lwx-forecast-list__dot--outage { background: var(--lw-red); }
+
+#view-home .lwx-forecast-list__label {
+  color: var(--lw-text);
+  font-weight: 500;
+}
+
+#view-home .lwx-forecast-list__label--danger {
+  color: var(--lw-red);
+  font-weight: 700;
+}
+
+/* ---- news row + Did You Know ---- */
+#view-home .lwx-row--news {
+  flex-direction: column;
+}
+
+#view-home .lwx-didyouknow-card {
+  position: relative;
+  padding-bottom: 34px;
+}
+
+#view-home .lwx-didyouknow-card__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+#view-home .lwx-didyouknow-card__icon {
+  display: inline-flex;
+  width: 16px;
+  height: 16px;
+}
+
+#view-home .lwx-didyouknow-card__title {
+  flex: 1;
+  font-size: 0.96rem;
+  font-weight: 700;
+  color: var(--lw-text);
+}
+
+#view-home .lwx-didyouknow-card__refresh {
+  background: none;
+  border: none;
+  padding: 4px;
+  color: var(--lw-text-faint);
+  cursor: pointer;
+  display: inline-flex;
+}
+
+#view-home .lwx-didyouknow-card__refresh svg {
+  width: 15px;
+  height: 15px;
+}
+
+#view-home .lwx-didyouknow-card__refresh:hover {
+  color: var(--lw-blue);
+}
+
+#view-home .lwx-didyouknow-card__text {
+  font-size: 0.86rem;
+  color: var(--lw-text);
+  line-height: 1.45;
+  margin: 0 0 10px;
+  max-width: 78%;
+}
+
+#view-home .lwx-didyouknow-card__illustration {
+  position: absolute;
+  right: 14px;
+  bottom: 30px;
+  width: 56px;
+  height: 56px;
+  opacity: 0.92;
+}
+
+#view-home .lwx-didyouknow-card__dots {
+  position: absolute;
+  left: 16px;
+  bottom: 14px;
+  display: flex;
+  gap: 5px;
+}
+
+#view-home .lwx-didyouknow-card__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--border-strong);
+  opacity: 0.4;
+}
+
+#view-home .lwx-didyouknow-card__dot--active {
+  background: var(--lw-teal);
+  opacity: 1;
+}
+
+/* ---- Weather Alert banner ---- */
+#view-home .lwx-alert {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(120deg, rgba(214, 162, 74, 0.22), rgba(90, 40, 20, 0.28));
+  border: 1px solid rgba(214, 162, 74, 0.35);
+  padding: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 14px;
+}
+
+#view-home .lwx-alert__text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 160px;
+}
+
+#view-home .lwx-alert__eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--lw-amber);
+}
+
+#view-home .lwx-alert__eyebrow svg {
+  width: 14px;
+  height: 14px;
+}
+
+#view-home .lwx-alert__title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--lw-text);
+}
+
+#view-home .lwx-alert__sub {
+  font-size: 0.8rem;
+  color: var(--lw-text-muted);
+}
+
+#view-home .lwx-alert__sub strong {
+  color: var(--lw-text);
+}
+
+#view-home .lwx-alert__impacts {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.8rem;
+  color: var(--lw-text-muted);
+  min-width: 160px;
+}
+
+#view-home .lwx-alert__impacts-title {
+  color: var(--lw-text);
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+#view-home .lwx-alert__impacts ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+#view-home .lwx-alert__illustration {
+  width: 60px;
+  height: 60px;
+  flex: 0 0 auto;
+  opacity: 0.85;
+  margin-left: auto;
+}
+
+/* ---- Today's Summary ---- */
+#view-home .lwx-summary-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+#view-home .lwx-summary-card__title {
+  display: block;
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--lw-text);
+}
+
+#view-home .lwx-summary-card__sub {
+  display: block;
+  font-size: 0.76rem;
+  color: var(--lw-text-faint);
+  margin-top: 2px;
+}
+
+#view-home .lwx-summary-card__btn {
+  width: auto;
+  padding: 8px 14px;
+  font-size: 0.76rem;
+  white-space: nowrap;
+}
+
+#view-home .lwx-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+#view-home .lwx-summary-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--lw-bg-raised);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  min-width: 0;
+}
+
+#view-home .lwx-summary-item__icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--lw-panel);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+#view-home .lwx-summary-item__icon svg {
+  width: 17px;
+  height: 17px;
+}
+
+#view-home .lwx-summary-item__label {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--lw-text-faint);
+}
+
+#view-home .lwx-summary-item__value {
+  display: block;
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--lw-text);
+}
+
+#view-home .lwx-summary-item__value--danger { color: var(--lw-red); }
+#view-home .lwx-summary-item__value--accent { color: var(--lw-teal); }
+
+/* ============================================================
+   Desktop / tablet — same 721px/981px breakpoints already used
+   throughout this file.
+   ============================================================ */
+@media (min-width: 721px) {
+  #view-home .lwx-row--top {
+    flex-direction: row;
+    align-items: stretch;
+  }
+
+  #view-home .lwx-row--top > .lw-status-hero {
+    flex: 1.6 1 0;
+  }
+
+  #view-home .lwx-row--top > .lwx-weather-card {
+    flex: 1 1 0;
+  }
+
+  #view-home .lwx-row--map {
+    flex-direction: row;
+    align-items: stretch;
+  }
+
+  #view-home .lwx-row--map > .lwx-map-card {
+    flex: 1.3 1 0;
+  }
+
+  #view-home .lwx-row--map > .lwx-forecast-card {
+    flex: 1 1 0;
+  }
+
+  #view-home .lwx-row--news {
+    flex-direction: row;
+  }
+
+  #view-home .lwx-row--news > #officialUpdatesPanel {
+    flex: 1.3 1 0;
+  }
+
+  #view-home .lwx-row--news > .lwx-didyouknow-card {
+    flex: 1 1 0;
+  }
+
+  #view-home .lwx-weather-card__temp {
+    font-size: 2.1rem;
+  }
+
+  #view-home .lwx-risk-card {
+    padding: 20px 22px;
+  }
+
+  #view-home .lwx-summary-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 981px) {
+  #view-home .lwx-map-visual {
+    height: 250px;
+  }
+}
+/* ============================================================
+   LIVE WEATHER CARD — animated backgrounds (replaces the static
+   placeholder look with something that actually moves), driven by
+   real Open-Meteo data. weather-home.js sets ONE attribute —
+   data-weather="clear|cloudy|rain|storm|fog" — on #lwxWeatherCard
+   after each fetch; every visual below just follows that attribute.
+   Nothing above this line is touched; every selector here is scoped
+   to #lwxWeatherCard specifically.
+   ============================================================ */
+#view-home .lwx-weather-card {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  z-index: 0;
+}
+
+#view-home .lwx-weather-card::before,
+#view-home .lwx-weather-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* Default/unknown state (before the first fetch resolves) — still
+   gently animated so it never reads as a flat, static fill. */
+#view-home .lwx-weather-card::before {
+  background: linear-gradient(160deg, #2a3550 0%, #1c243a 60%, #141a2c 100%);
+  background-size: 200% 200%;
+  animation: lwxSkyDrift 18s ease-in-out infinite alternate;
+}
+
+@keyframes lwxSkyDrift {
+  0%   { background-position: 0% 30%; }
+  100% { background-position: 100% 70%; }
+}
+
+/* ---- Clear ---- */
+#view-home .lwx-weather-card[data-weather="clear"]::before {
+  background: linear-gradient(160deg, #3a6fb0 0%, #2c4d7d 55%, #1c2a44 100%);
+  background-size: 200% 200%;
+  animation: lwxSkyDrift 20s ease-in-out infinite alternate;
+}
+#view-home .lwx-weather-card[data-weather="clear"]::after {
+  background-image:
+    radial-gradient(circle, rgba(255,255,255,0.9) 0 1px, transparent 1.6px),
+    radial-gradient(circle, rgba(255,255,255,0.7) 0 1px, transparent 1.6px),
+    radial-gradient(circle, rgba(255,255,255,0.6) 0 1px, transparent 1.6px);
+  background-size: 140px 140px, 180px 180px, 90px 90px;
+  background-position: 10% 20%, 60% 10%, 80% 45%;
+  animation: lwxTwinkle 3.2s ease-in-out infinite alternate;
+}
+@keyframes lwxTwinkle {
+  0%   { opacity: 0.35; }
+  100% { opacity: 0.9; }
+}
+
+/* ---- Cloudy ---- */
+#view-home .lwx-weather-card[data-weather="cloudy"]::before {
+  background: linear-gradient(160deg, #4b5a72 0%, #333f54 60%, #232a3a 100%);
+  background-size: 200% 200%;
+  animation: lwxSkyDrift 22s ease-in-out infinite alternate;
+}
+#view-home .lwx-weather-card[data-weather="cloudy"]::after {
+  background-image:
+    radial-gradient(ellipse 70px 26px at 20% 30%, rgba(255,255,255,0.22), transparent 70%),
+    radial-gradient(ellipse 90px 30px at 60% 55%, rgba(255,255,255,0.16), transparent 70%),
+    radial-gradient(ellipse 60px 22px at 85% 20%, rgba(255,255,255,0.14), transparent 70%);
+  background-repeat: repeat-x;
+  background-size: 260% 100%;
+  animation: lwxCloudDrift 26s linear infinite;
+}
+@keyframes lwxCloudDrift {
+  0%   { background-position: 0% 0%; }
+  100% { background-position: -260% 0%; }
+}
+
+/* ---- Rain ---- */
+#view-home .lwx-weather-card[data-weather="rain"]::before {
+  background: linear-gradient(160deg, #384a5c 0%, #27384a 60%, #1b2531 100%);
+}
+#view-home .lwx-weather-card[data-weather="rain"]::after {
+  background-image: repeating-linear-gradient(
+    115deg,
+    rgba(180, 210, 255, 0.35) 0px,
+    rgba(180, 210, 255, 0.35) 1.5px,
+    transparent 1.5px,
+    transparent 14px
+  );
+  background-size: 100% 220%;
+  animation: lwxRainFall 0.55s linear infinite;
+  opacity: 0.55;
+}
+@keyframes lwxRainFall {
+  0%   { background-position: 0 -40%; }
+  100% { background-position: 0 40%; }
+}
+
+/* ---- Storm (thunderstorm risk) ---- */
+#view-home .lwx-weather-card[data-weather="storm"]::before {
+  background: linear-gradient(160deg, #232a3d 0%, #171b28 60%, #0f121c 100%);
+}
+#view-home .lwx-weather-card[data-weather="storm"]::after {
+  background-image:
+    repeating-linear-gradient(
+      115deg,
+      rgba(180, 210, 255, 0.3) 0px,
+      rgba(180, 210, 255, 0.3) 1.5px,
+      transparent 1.5px,
+      transparent 12px
+    ),
+    radial-gradient(circle at 70% 15%, rgba(255,255,255,0.9), transparent 40%);
+  background-size: 100% 220%, 100% 100%;
+  animation: lwxRainFall 0.45s linear infinite, lwxLightning 5s ease-in-out infinite;
+}
+@keyframes lwxLightning {
+  0%, 92%, 100% { opacity: 0; }
+  93%           { opacity: 0.9; }
+  94%           { opacity: 0.1; }
+  95%           { opacity: 0.7; }
+  96%           { opacity: 0; }
+}
+
+/* ---- Fog ---- */
+#view-home .lwx-weather-card[data-weather="fog"]::before {
+  background: linear-gradient(160deg, #5b6472 0%, #444d5a 60%, #333a45 100%);
+}
+#view-home .lwx-weather-card[data-weather="fog"]::after {
+  background-image: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+  background-size: 60% 100%;
+  animation: lwxFogDrift 9s ease-in-out infinite alternate;
+}
+@keyframes lwxFogDrift {
+  0%   { background-position: -20% 0; }
+  100% { background-position: 120% 0; }
+}
+
+/* Text sits above the animated backdrop and stays legible regardless
+   of condition or theme — same "always-light-on-photo" treatment the
+   status-hero card already uses. */
+#view-home .lwx-weather-card__head,
+#view-home .lwx-weather-card__temp,
+#view-home .lwx-weather-card__desc,
+#view-home .lwx-weather-card__meta,
+#view-home .lwx-weather-card__banner {
+  position: relative;
+  z-index: 1;
+}
+
+#view-home .lwx-weather-card__head,
+#view-home .lwx-weather-card__temp {
+  color: #fff;
+}
+
+#view-home .lwx-weather-card__desc,
+#view-home .lwx-weather-card__meta {
+  color: rgba(255, 255, 255, 0.82);
+}
+
+#view-home .lwx-weather-card__meta svg {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Loading/error text state — set on the card by weather-home.js while
+   a fetch is in flight or if it fails, so the card never just sits
+   showing stale mock numbers silently. */
+#view-home .lwx-weather-card__desc[data-state="loading"],
+#view-home .lwx-weather-card__desc[data-state="error"] {
+  font-style: italic;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #view-home .lwx-weather-card::before,
+  #view-home .lwx-weather-card::after {
+    animation: none !important;
+  }
 }

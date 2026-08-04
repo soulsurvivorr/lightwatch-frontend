@@ -95,7 +95,8 @@ function clearSession() {
      'maskedContact', 'signupUser', 'userIdentifier',
      'pendingUserId', 'rememberMePending',
      'lw_skip_disclaimer_once',
-     'lw_launch_overlay_pending'
+     'lw_launch_overlay_pending',
+     HOME_REMINDER_SEEN_KEY
     ].forEach(k => {
         localStorage.removeItem(k);
         sessionStorage.removeItem(k);

@@ -273,19 +273,19 @@ html[data-theme="light"] .topbar {
 .bottom-nav-badge {
   position: absolute;
   top: -3px;
-  right: -6px;
-  min-width: 14px;
-  height: 14px;
-  padding: 0 3px;
+  right: -4px;
+  min-width: 8px;
+  height: 8px;
+  padding: 0 2px;
   border-radius: 999px;
   background: linear-gradient(135deg, #2f86ff 0%, #1767d8 100%);
   color: #ffffff;
   font-family: var(--font-body);
-  font-size: 0.56rem;
+  font-size: 0.42rem;
   font-weight: 700;
-  line-height: 14px;
+  line-height: 8px;
   text-align: center;
-  box-shadow: 0 0 0 1.5px var(--dark-bg), 0 3px 8px rgba(23, 103, 216, 0.2);
+  box-shadow: 0 0 0 1px var(--dark-bg), 0 1px 3px rgba(23, 103, 216, 0.16);
 }
 
 .bottom-nav-dot {
@@ -314,11 +314,14 @@ html[data-theme="light"] .topbar {
    js/components/nav-badges.js.
    ============================================================ */
 .bottom-nav-badge--mono {
-  display: none !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  visibility: visible;
 }
 
-.bottom-nav-badge--mono::after {
-  display: none;
+.bottom-nav-badge--mono[hidden] {
+  display: none !important;
 }
 
 /* ============================================================

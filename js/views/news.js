@@ -24,9 +24,8 @@
 
 (function () {
     function resolveFallbackImageUrl(fileName) {
-        const basePath = (window.location && window.location.pathname) || '';
-        const imageRoot = basePath.includes('/public/') ? `/public/images/${fileName}` : `/images/${fileName}`;
-        return new URL(imageRoot, window.location.href).href;
+        // Safe relative path for Capacitor and local dev
+        return `./images/${fileName}`;
     }
 
     const FALLBACK_IMAGE_URLS = [
@@ -47,21 +46,20 @@
     // the array itself, if somehow neither is present) rather than
     // anything stored in localStorage — nothing to invalidate, nothing
     // that can drift if the fallback pool ever changes.
-    function hashStringToIndex(str, length) {
-        const s = String(str || '');
-        let hash = 0;
-        for (let i = 0; i < s.length; i++) {
-            hash = (hash * 31 + s.charCodeAt(i)) | 0;
-        }
-        return Math.abs(hash) % length;
-    }
-
     function getFallbackImageUrlForArticle(article, index) {
         const key = (article && (
-            article.id ?? article._id ?? article.eventId ??
-            article.url ?? article.articleUrl ?? article.title
-        )) ?? (index != null ? `idx-${index}` : 'lw-news-fallback');
-        return FALLBACK_IMAGE_URLS[hashStringToIndex(key, FALLBACK_IMAGE_URLS.length)];
+            article.id || article._id || article.eventId ||
+            article.url || article.articleUrl || article.title
+        )) || (index != null ? `idx-${index}` : 'lw-news-fallback');
+
+        // Ensure index is stable by hashing the key
+        const str = String(key);
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            hash = (hash * 31 + str.charCodeAt(i)) | 0;
+        }
+        const idx = Math.abs(hash) % FALLBACK_IMAGE_URLS.length;
+        return FALLBACK_IMAGE_URLS[idx];
     }
 
     function getFallbackMediaHtml(article, index) {

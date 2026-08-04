@@ -776,30 +776,38 @@ async function loadCurrentUserProfile() {
 }
 
 function showOfflineError() {
-    profileLoaderPinned = true;
-
-    const container = document.getElementById('realPageContent') || document.getElementById('view-home');
-    if (!container) return;
+    const homeView = document.getElementById('view-home');
+    const skeleton = document.getElementById('pageSkeleton');
+    if (!homeView) return;
 
     // Check if error already exists
     if (document.getElementById('lwOfflineError')) return;
 
     const errorEl = document.createElement('div');
     errorEl.id = 'lwOfflineError';
-    errorEl.style.cssText = 'padding: 24px 20px 28px; margin-top: 18px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px; color: var(--text-muted); background: rgba(255,255,255,0.04); border: 1px solid var(--border-soft); border-radius: var(--radius-md);';
+    errorEl.style.cssText = 'position: absolute; inset: 0; z-index: 100; padding: 60px 20px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 16px; background: var(--bg-deep); color: var(--text-muted);';
     errorEl.innerHTML = `
-        <div style="font-size: 2.2rem; opacity: 0.7;">📡</div>
-        <div style="font-size: 1rem; font-weight: 700; color: var(--text-bright);">Something went wrong</div>
-        <p style="font-size: 0.9rem; line-height: 1.5; margin: 0; max-width: 280px;">Please check your internet connection and try again. The page will continue loading once you’re back online.</p>
-        <button type="button" class="btn btn--primary" id="lwRetryProfileBtn" style="margin-top: 6px; min-width: 120px;">Retry</button>
+        <div style="font-size: 3.5rem; opacity: 0.6; animation: lwIconBreathe 2s ease-in-out infinite;">📡</div>
+        <div style="font-size: 1.25rem; font-weight: 800; color: var(--text-bright); letter-spacing: -0.02em;">Something went wrong</div>
+        <p style="font-size: 0.95rem; line-height: 1.6; margin: 0; max-width: 280px; color: var(--text-muted);">We couldn't reach the server. Please check your internet connection and try again.</p>
+        <button type="button" class="btn btn--primary" id="lwRetryProfileBtn" style="margin-top: 12px; min-width: 140px; box-shadow: 0 8px 20px rgba(0,0,0,0.3);">Retry Connection</button>
+        <style>
+            @keyframes lwIconBreathe { 0%, 100% { transform: scale(1); opacity: 0.6; } 50% { transform: scale(1.1); opacity: 0.4; } }
+        </style>
     `;
 
-    const skeleton = document.getElementById('pageSkeleton');
-    if (skeleton) skeleton.hidden = false;
-    container.appendChild(errorEl);
+    // Ensure it shows over the skeleton if that's what's active
+    if (skeleton && !skeleton.hidden) {
+        skeleton.style.position = 'relative';
+        skeleton.appendChild(errorEl);
+    } else {
+        homeView.style.position = 'relative';
+        homeView.appendChild(errorEl);
+    }
 
     document.getElementById('lwRetryProfileBtn')?.addEventListener('click', () => {
-        clearOfflineError();
+        const btn = document.getElementById('lwRetryProfileBtn');
+        if (btn) btn.disabled = true;
         loadCurrentUserProfile();
     });
 }

@@ -58,7 +58,7 @@ function shouldShowHomeReminder() {
   if (typeof getSession === 'function' && !getSession()) return false;
 
   try {
-    return localStorage.getItem(HOME_REMINDER_SEEN_KEY) !== '1';
+    return sessionStorage.getItem(HOME_REMINDER_SEEN_KEY) !== '1';
   } catch {
     // Storage blocked (e.g. private browsing) — fall back to showing
     // it; that's a much smaller annoyance than a hard error.
@@ -67,7 +67,10 @@ function shouldShowHomeReminder() {
 }
 
 function markHomeReminderSeen() {
-  try { localStorage.setItem(HOME_REMINDER_SEEN_KEY, '1'); } catch {}
+  try {
+    sessionStorage.setItem(HOME_REMINDER_SEEN_KEY, '1');
+    localStorage.removeItem(HOME_REMINDER_SEEN_KEY);
+  } catch {}
 }
 
 function closeHomeReminder() {

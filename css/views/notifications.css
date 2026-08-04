@@ -574,7 +574,8 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  width: 100%;
+  width: 100% !important;
+  align-self: stretch !important;
   box-sizing: border-box;
   padding-top: env(safe-area-inset-top, 0px);
   margin: 10px 0 4px;
@@ -661,7 +662,8 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  width: 100%;
+  width: 100% !important;
+  align-self: stretch !important;
   box-sizing: border-box;
   overflow-x: auto;
   scrollbar-width: none;
@@ -699,13 +701,16 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 16px;
+  width: 16px;
   height: 16px;
-  padding: 0 4px;
-  border-radius: 999px;
-  font-size: 0.62rem;
-  font-weight: 700;
+  min-width: 16px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 0.58rem;
+  font-weight: 800;
   color: white;
+  flex-shrink: 0;
+  line-height: 1;
 }
 
 .notif-tab__badge--red { background: var(--notif-red); }

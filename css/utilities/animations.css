@@ -354,22 +354,22 @@
    ============================================================ */
 .bottom-nav-badge {
   position: absolute;
-  top: -4px;
-  right: -8px;
-  min-width: 16px;
-  height: 16px;
-  padding: 0 4px;
+  top: -3px;
+  right: -4px;
+  min-width: 8px;
+  height: 8px;
+  padding: 0 2px;
   border-radius: 999px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.62rem;
+  font-size: 0.4rem;
   font-weight: 700;
   line-height: 1;
   font-variant-numeric: tabular-nums;
   color: white;
   background: var(--red);
-  box-shadow: 0 0 0 2px var(--bottom-nav-surface, var(--bg-panel));
+  box-shadow: 0 0 0 1px var(--bottom-nav-surface, var(--bg-panel));
   pointer-events: none;
 }
 
@@ -378,6 +378,9 @@
    Notifications) are routine activity counts, not warnings. */
 .bottom-nav-badge--mono {
   background: var(--brand2);
+  min-width: 8px;
+  height: 8px;
+  padding: 0 2px;
 }
 
 .bottom-nav-dot {
