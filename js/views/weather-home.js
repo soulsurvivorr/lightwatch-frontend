@@ -117,11 +117,25 @@
     buildScene();
 
     function currentLocationText() {
-        const el = document.getElementById('locationName') || document.getElementById('locationSubtitleArea');
-        const text = el ? el.textContent.trim() : '';
-        // Skeleton/placeholder text shouldn't be sent as a real location.
-        if (!text || /^your location$/i.test(text) || /^your area$/i.test(text)) return '';
-        return text;
+        const locationNameEl = document.getElementById('locationName');
+        const locationSubtitleEl = document.getElementById('locationSubtitleArea');
+
+        const candidateText = (locationNameEl?.textContent || '').trim();
+        if (candidateText && !/^your location$/i.test(candidateText) && !/^your area$/i.test(candidateText)) {
+            return candidateText;
+        }
+
+        const subtitleText = (locationSubtitleEl?.textContent || '').trim();
+        if (subtitleText && !/^your location$/i.test(subtitleText) && !/^your area$/i.test(subtitleText)) {
+            return subtitleText;
+        }
+
+        const storedLocation = window.currentChatLocation ? String(window.currentChatLocation).trim() : '';
+        if (storedLocation && !/^your location$/i.test(storedLocation) && !/^your area$/i.test(storedLocation)) {
+            return storedLocation;
+        }
+
+        return '';
     }
 
     function getGpsFix() {

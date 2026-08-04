@@ -264,6 +264,21 @@ function formatRelativeTime(time) {
     return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
 }
 
+function formatStatusTimestamp(time) {
+    const date = new Date(time);
+    const now = new Date();
+    const clock = date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    const yesterday = new Date(now.getTime() - DAY);
+
+    if (date.toDateString() === now.toDateString()) {
+        return clock;
+    }
+    if (date.toDateString() === yesterday.toDateString()) {
+        return `Yesterday, ${clock}`;
+    }
+    return date.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+}
+
 function startOfTodayMs() {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
@@ -376,7 +391,7 @@ function paintPrimaryStatus(data) {
     }
 
     if (lastVerifiedEl && data.reportedAt) {
-        lastVerifiedEl.textContent = formatRelativeTime(new Date(data.reportedAt).getTime());
+        lastVerifiedEl.textContent = formatStatusTimestamp(new Date(data.reportedAt).getTime());
     }
 
     if (statusPulseEl) {
