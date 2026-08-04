@@ -38,12 +38,31 @@
         resolveFallbackImageUrl('graphic6.jpg')
     ];
 
-    function getRandomFallbackImageUrl() {
-        return FALLBACK_IMAGE_URLS[Math.floor(Math.random() * FALLBACK_IMAGE_URLS.length)];
+    // Deterministic pick instead of Math.random(): each article gets
+    // whichever fallback graphic its own id/url hashes to, so the same
+    // article always shows the same graphic — on this render, on a
+    // re-render (e.g. the onerror swap below), and the next time the
+    // user opens News and the feed re-fetches/re-renders from scratch.
+    // Keyed on the article's own stable id (falls back to its URL, then
+    // the array itself, if somehow neither is present) rather than
+    // anything stored in localStorage — nothing to invalidate, nothing
+    // that can drift if the fallback pool ever changes.
+    function hashStringToIndex(str, length) {
+        const s = String(str || '');
+        let hash = 0;
+        for (let i = 0; i < s.length; i++) {
+            hash = (hash * 31 + s.charCodeAt(i)) | 0;
+        }
+        return Math.abs(hash) % length;
     }
 
-    function getFallbackMediaHtml() {
-        const fallbackUrl = getRandomFallbackImageUrl();
+    function getFallbackImageUrlForArticle(article) {
+        const key = (article && (article.id ?? article.url)) || 'lw-news-fallback';
+        return FALLBACK_IMAGE_URLS[hashStringToIndex(key, FALLBACK_IMAGE_URLS.length)];
+    }
+
+    function getFallbackMediaHtml(article) {
+        const fallbackUrl = getFallbackImageUrlForArticle(article);
         return `<span class="news-item__media-fallback" aria-hidden="true" style="background-image:url('${fallbackUrl}')"><span class="news-item__media-fallback__glyph">📰</span></span>`;
     }
 
@@ -252,7 +271,7 @@
         const timeLabel = relativeLabel || (article.publishedAt ? new Date(article.publishedAt).toLocaleDateString() : '');
         const locationText = articleLocationText(article);
         const bookmarked = isBookmarked(article.id ?? index);
-        const fallbackMediaHtml = getFallbackMediaHtml();
+        const fallbackMediaHtml = getFallbackMediaHtml(article);
         const mediaHtml = article.image
             ? `<img class="news-item__image" src="${escapeHtml(article.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.closest('.news-item__media')?.classList.add('news-item__media--placeholder'); this.closest('.news-item__media').innerHTML='${fallbackMediaHtml.replace(/'/g, '&#39;')}';">`
             : fallbackMediaHtml;
@@ -305,9 +324,10 @@
                 ? window.LWHelpers.formatRelativeTimeFromDate(article.publishedAt)
                 : '');
         const timeLabel = [dateLabel, relativeLabel].filter(Boolean).join(' · ');
+        const fallbackImageUrl = getFallbackImageUrlForArticle(article);
         const thumbHtml = article.image
-            ? `<img class="lw-news-card__thumb" src="${escapeHtml(article.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('img'), {className:'lw-news-card__thumb lw-news-card__thumb--fallback', src:'${getRandomFallbackImageUrl()}', alt:''}))">`
-            : `<img class="lw-news-card__thumb lw-news-card__thumb--fallback" src="${getRandomFallbackImageUrl()}" alt="" loading="lazy">`;
+            ? `<img class="lw-news-card__thumb" src="${escapeHtml(article.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('img'), {className:'lw-news-card__thumb lw-news-card__thumb--fallback', src:'${fallbackImageUrl}', alt:''}))">`
+            : `<img class="lw-news-card__thumb lw-news-card__thumb--fallback" src="${fallbackImageUrl}" alt="" loading="lazy">`;
 
         return `
         <a class="lw-news-card" href="${escapeHtml(article.url)}" target="_blank" rel="noopener noreferrer" data-article-id="${article.id}">

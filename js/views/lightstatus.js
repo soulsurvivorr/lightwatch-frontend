@@ -11,6 +11,26 @@
 // ============================================================
 
 (function () {
+// FIX (the actual root cause of the whole tap-to-report bug, plus
+// more): every fetch() in this file — fetchPrimaryLightStatus,
+// toggleLightStatus, fetchLocationReports, fetchNearby,
+// loadAchievements, window.LWLightStatus.report — builds its URL from
+// `${API_BASE}/...`. API_BASE was never defined anywhere in this file
+// or any other loaded script; the actual global config.js sets up
+// (and api.js/other views correctly use) is `API_URL` — confirmed
+// live in the console: "[Config] API_URL set to: https://...". Every
+// one of those fetches has been throwing a ReferenceError before the
+// request was ever sent, since the moment this file was written —
+// each call site just happens to sit inside its own try/catch that
+// silently falls back to an empty list / hidden card / reverted UI
+// state, so nothing ever surfaced as a visible error. That's why the
+// reliability meter, trend banner, achievements card, and nearby list
+// have likely never shown real data either, not just the tap-to-
+// report toggle. Aliasing to the correctly-populated global here
+// fixes every one of those call sites at once, with no need to touch
+// each of the 7 individually.
+const API_BASE = API_URL;
+
 const reliabilityMeterValue = document.getElementById('reliabilityMeterValue');
 const reliabilityMeterFill = document.getElementById('reliabilityMeterFill');
 const reliabilityMeterTrack = document.getElementById('reliabilityMeterTrack');
