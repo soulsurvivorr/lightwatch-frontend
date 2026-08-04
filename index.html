@@ -2314,22 +2314,6 @@
 
   <!-- ==== JS: cross-cutting components ==== -->
   <script src="./js/components/theme.js"></script>
-  <!-- FIX: was never loaded. css/components/toast.css is linked (see
-       <head>) and #lw-toast's container div exists in the DOM below,
-       and app.js already calls initToastComponent() (guarded by
-       `typeof === 'function'`, so it silently no-ops instead of
-       erroring) — but no <script> tag for the JS file itself was ever
-       added to this list. That means initToastComponent/window.lwToast
-       have never been defined anywhere in the app: every window.lwToast?.(...)
-       call app-wide (e.g. lightstatus.js's toggleLightStatus() early-return
-       when currentLocation isn't ready yet) silently does nothing instead
-       of showing a message — which is indistinguishable from the tap
-       just not working at all. Path assumed from the existing
-       components/ naming pattern above — confirm js/components/toast.js
-       actually exists in the repo; if it does, this one missing line is
-       likely why toasts have never appeared anywhere in the app, not
-       just here. -->
-  <script src="./js/components/toast.js"></script>
   <script src="./js/components/nav.js"></script>
   <script src="./js/components/notification.js"></script>
   <script src="./js/components/nav-badges.js"></script>
