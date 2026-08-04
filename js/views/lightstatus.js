@@ -399,7 +399,19 @@ function animateIconDecision(iconEl, nextStatus) {
 }
 
 async function toggleLightStatus() {
-    if (lightToggleInFlight) return;
+    if (lightToggleInFlight) {
+        // FIX (diagnostic): this used to return here with zero output.
+        // Combined with the bug just below, if `lightToggleInFlight`
+        // ever got stuck `true` (see next comment), EVERY subsequent
+        // tap — including the very ones used to debug this — would
+        // hit this line and exit completely silently: no warning, no
+        // network call, nothing. That silence is exactly what showed
+        // up testing this: getEventListeners() confirmed the click
+        // listener WAS attached and firing, so the only place left
+        // that could swallow everything without a trace was here.
+        console.warn('[lightstatus] toggleLightStatus() ignored: a previous toggle is still marked in-flight.');
+        return;
+    }
     if (!currentLocation) {
         // FIX (diagnostic): this used to be only
         // `window.lwToast?.(...)`. If window.lwToast is ever undefined
@@ -414,24 +426,44 @@ async function toggleLightStatus() {
         window.lwToast?.('Location is still loading. Try again in a moment.');
         return;
     }
+
+    // FIX (the actual stuck-forever bug): `lightToggleInFlight = true`
+    // used to be set here, OUTSIDE the try block below, followed by
+    // several more lines (getReporterId(), animateIconDecision(),
+    // statusPillTextEl.innerHTML) that also ran outside the try. The
+    // flag is only ever reset back to `false` in the `finally` block
+    // — so if ANY of those pre-fetch lines ever threw (a bad session/
+    // localStorage read inside getReporterId(), a null/weird DOM state
+    // in animateIconDecision(), anything), execution would jump
+    // straight past `finally` and out of the function entirely,
+    // leaving `lightToggleInFlight` permanently `true`. From that
+    // point on, every single future tap — forever, until the page is
+    // reloaded — would hit the early-return above and exit in
+    // complete silence: no network request, no error, no toast,
+    // nothing. That matches everything observed while debugging this
+    // (click listener confirmed attached and firing, yet nothing ever
+    // happened downstream of it). Moving the flag-set + everything
+    // that follows inside the try means `finally` — and therefore the
+    // flag reset — is now unconditionally reached no matter what
+    // throws, so this state can no longer happen.
     lightToggleInFlight = true;
 
-    const previousStatus = currentReportedStatus;
-    const previousReportedAt = lastPrimaryReportedAt;
-    const nextStatus = previousStatus === 'on' ? 'off' : 'on';
-    const reporterId = getReporterId();
-
-    animateIconDecision(statusIconEl, nextStatus);
-    statusIconEl?.setAttribute('aria-busy', 'true');
-    if (statusPillTextEl) {
-        const pendingIconClass = nextStatus === 'on'
-            ? 'status-hero__title-icon status-hero__title-icon--on'
-            : 'status-hero__title-icon status-hero__title-icon--off';
-        const pendingText = nextStatus === 'on' ? 'Reporting light on…' : 'Reporting light off…';
-        statusPillTextEl.innerHTML = `<span class="${pendingIconClass}" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" fill="currentColor"/></svg></span><span>${pendingText}</span>`;
-    }
-
     try {
+        const previousStatus = currentReportedStatus;
+        const previousReportedAt = lastPrimaryReportedAt;
+        const nextStatus = previousStatus === 'on' ? 'off' : 'on';
+        const reporterId = getReporterId();
+
+        animateIconDecision(statusIconEl, nextStatus);
+        statusIconEl?.setAttribute('aria-busy', 'true');
+        if (statusPillTextEl) {
+            const pendingIconClass = nextStatus === 'on'
+                ? 'status-hero__title-icon status-hero__title-icon--on'
+                : 'status-hero__title-icon status-hero__title-icon--off';
+            const pendingText = nextStatus === 'on' ? 'Reporting light on…' : 'Reporting light off…';
+            statusPillTextEl.innerHTML = `<span class="${pendingIconClass}" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" fill="currentColor"/></svg></span><span>${pendingText}</span>`;
+        }
+
         const res = await fetch(`${API_BASE}/lightstatus`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -450,9 +482,16 @@ async function toggleLightStatus() {
 
         refreshLocationPanel();
     } catch (err) {
+        // FIX (diagnostic): this caught and silently swallowed the
+        // real error — no console.error, nothing — so even a genuine
+        // network/CORS/5xx failure here would look identical to
+        // nothing happening at all. Logging it means the next real
+        // failure (as opposed to the stuck-flag case above) shows up
+        // immediately instead of looking like the exact same silence.
+        console.error('[lightstatus] toggleLightStatus() failed:', err);
         // Always restore the last confirmed state immediately so the
         // hero never gets stuck on "Reporting..." after a failed submit.
-        paintPrimaryStatus({ status: previousStatus, reportedAt: previousReportedAt });
+        paintPrimaryStatus({ status: currentReportedStatus, reportedAt: lastPrimaryReportedAt });
         // Then try a non-blocking sync in case another device/admin
         // updated status concurrently.
         fetchPrimaryLightStatus();
