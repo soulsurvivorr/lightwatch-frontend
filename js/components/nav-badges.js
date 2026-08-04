@@ -65,9 +65,11 @@
             if (count > 0) {
                 el.textContent = count > 9 ? '9+' : String(count);
                 el.hidden = false;
+                el.setAttribute('aria-hidden', 'false');
             } else {
                 el.textContent = '';
                 el.hidden = true;
+                el.setAttribute('aria-hidden', 'true');
             }
         });
     }
@@ -224,6 +226,14 @@
         pollTimer = setInterval(runChecks, POLL_MS);
     }
 
+    function syncBadgeCountsFromNotifications() {
+        const unreadCount = Number(localStorage.getItem('lw_badge_count_notifications') || '0') || 0;
+        renderNotificationsBadge();
+        if (unreadCount > 0) {
+            renderBadgeEl('notifications', unreadCount);
+        }
+    }
+
     function getActiveReportTabFromDom() {
         const communityPanel = document.getElementById('reportPanelCommunity');
         return (communityPanel && !communityPanel.hidden) ? 'community' : 'news';
@@ -251,6 +261,10 @@
         renderAll();
         onRouteChanged();
         startPolling();
+    });
+
+    window.addEventListener('lw:notifications-updated', () => {
+        renderAll();
     });
 
     window.addEventListener('lw:route-changed', onRouteChanged);

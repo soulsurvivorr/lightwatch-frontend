@@ -272,20 +272,20 @@ html[data-theme="light"] .topbar {
 
 .bottom-nav-badge {
   position: absolute;
-  top: -4px;
-  right: -8px;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 5px;
+  top: -3px;
+  right: -6px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
   border-radius: 999px;
   background: linear-gradient(135deg, #2f86ff 0%, #1767d8 100%);
   color: #ffffff;
   font-family: var(--font-body);
-  font-size: 0.62rem;
+  font-size: 0.56rem;
   font-weight: 700;
-  line-height: 20px;
+  line-height: 14px;
   text-align: center;
-  box-shadow: 0 0 0 2px var(--dark-bg), 0 4px 10px rgba(23, 103, 216, 0.24);
+  box-shadow: 0 0 0 1.5px var(--dark-bg), 0 3px 8px rgba(23, 103, 216, 0.2);
 }
 
 .bottom-nav-dot {
@@ -314,16 +314,7 @@ html[data-theme="light"] .topbar {
    js/components/nav-badges.js.
    ============================================================ */
 .bottom-nav-badge--mono {
-  width: 10px;
-  height: 10px;
-  min-width: unset;
-  padding: 0;
-  border-radius: 50%;
-  background: var(--brand2);
-  color: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.9);
-  box-shadow: 0 0 0 2px var(--bottom-nav-surface, var(--bg-panel));
-  font-weight: 700;
+  display: none !important;
 }
 
 .bottom-nav-badge--mono::after {

@@ -54,6 +54,15 @@ const statusBadgeEl = document.getElementById('statusBadge');
 const lastVerifiedEl = document.getElementById('lastVerified');
 const statusPulseEl = document.getElementById('statusPulse');
 
+// -- Tap-to-report confirm overlay (see .home-reminder-overlay markup
+//    reused for #lightConfirmOverlay in index.html) --
+const lightConfirmOverlayEl = document.getElementById('lightConfirmOverlay');
+const lightConfirmIconEl = document.getElementById('lightConfirmIcon');
+const lightConfirmTitleEl = document.getElementById('lightConfirmTitle');
+const lightConfirmDescEl = document.getElementById('lightConfirmDesc');
+const lightConfirmCancelBtn = document.getElementById('lightConfirmCancelBtn');
+const lightConfirmConfirmBtn = document.getElementById('lightConfirmConfirmBtn');
+
 const ICON_PEOPLE = '👥';
 const ICON_BOLT = '⚡';
 const ICON_WARNING = '⚠️';
@@ -169,7 +178,7 @@ function slugify(loc) {
 // -----------------------------------------------------
 let currentLocation = null;
 let currentLocationKey = null;
-let currentUserId = (typeof getSession === 'function' && getSession()?.user?.id) || localStorage.getItem('currentUserId');
+let currentUserId = null;
 let locationReports = []; // reports scoped to the current location, newest first
 let reportsPollInterval = null;
 
@@ -177,9 +186,17 @@ function isValidObjectId(value) {
     return typeof value === 'string' && /^[0-9a-fA-F]{24}$/.test(value.trim());
 }
 
+function resolveCurrentUserId() {
+    const sessionId = (typeof getSession === 'function' && getSession()?.user?.id) || null;
+    const storedId = localStorage.getItem('currentUserId') || sessionStorage.getItem('currentUserId');
+    const candidate = String(sessionId || storedId || '').trim();
+    currentUserId = isValidObjectId(candidate) ? candidate : null;
+    return currentUserId;
+}
+
 function getReporterId() {
     const sessionId = (typeof getSession === 'function' && getSession()?.user?.id) || null;
-    const candidate = sessionId || currentUserId;
+    const candidate = sessionId || currentUserId || resolveCurrentUserId();
     return isValidObjectId(candidate) ? candidate.trim() : undefined;
 }
 
@@ -353,12 +370,59 @@ async function toggleLightStatus() {
     }
 }
 
+// #statusIcon reads as a button, not a switch — tapping it doesn't fire
+// the report immediately, it opens this confirm step first (the same
+// "are you sure" pattern admin.html uses before pushing a location's
+// status). toggleLightStatus() itself is unchanged and only runs once
+// the person taps Confirm.
+function openLightConfirm(nextStatus) {
+    if (!lightConfirmOverlayEl) {
+        // No confirm markup on the page for some reason — fall back to
+        // the old direct-toggle behavior instead of doing nothing.
+        toggleLightStatus();
+        return;
+    }
+    if (lightConfirmIconEl) lightConfirmIconEl.innerHTML = STATUS_ICON_SVG[nextStatus];
+    if (lightConfirmTitleEl) {
+        lightConfirmTitleEl.textContent = nextStatus === 'on' ? 'Mark light as ON?' : 'Mark light as OFF?';
+    }
+    if (lightConfirmDescEl) {
+        lightConfirmDescEl.textContent = nextStatus === 'on'
+            ? "Confirm the light just came back on where you are. This updates the status everyone else sees."
+            : "Confirm the light just went off where you are. This updates the status everyone else sees.";
+    }
+    lightConfirmOverlayEl.hidden = false;
+    lightConfirmOverlayEl.setAttribute('aria-hidden', 'false');
+}
+
+function closeLightConfirm() {
+    if (!lightConfirmOverlayEl) return;
+    lightConfirmOverlayEl.hidden = true;
+    lightConfirmOverlayEl.setAttribute('aria-hidden', 'true');
+}
+
+lightConfirmCancelBtn?.addEventListener('click', closeLightConfirm);
+lightConfirmConfirmBtn?.addEventListener('click', () => {
+    closeLightConfirm();
+    toggleLightStatus();
+});
+// Tapping the dimmed backdrop (not the card itself) also dismisses it.
+lightConfirmOverlayEl?.addEventListener('click', (e) => {
+    if (e.target === lightConfirmOverlayEl) closeLightConfirm();
+});
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && lightConfirmOverlayEl && !lightConfirmOverlayEl.hidden) {
+        closeLightConfirm();
+    }
+});
+
 if (statusIconEl) {
     const triggerStatusIconToggle = () => {
         const now = Date.now();
         if (now - lastStatusIconTriggerAt < 320) return;
         lastStatusIconTriggerAt = now;
-        toggleLightStatus();
+        const nextStatus = currentReportedStatus === 'on' ? 'off' : 'on';
+        openLightConfirm(nextStatus);
     };
 
     statusIconEl.setAttribute('role', 'button');
@@ -823,10 +887,18 @@ window.addEventListener('focus', () => {
 // Any component that reports light status (modal, secondary location,
 // future quick actions) broadcasts this event. Refresh immediately so
 // the primary hero does not sit on stale/unknown text until the poll.
-window.addEventListener('lw:light-status-reported', (e) => {
-    const reportedLocation = slugify(e?.detail?.location || '');
-    if (!currentLocationKey || !reportedLocation) return;
-    if (reportedLocation === currentLocationKey) {
+//
+// FIX: this listened for 'lw:light-status-reported' and read
+// e.detail.location, but every reporter (toggleLightStatus above,
+// window.LWLightStatus.report) actually dispatches
+// 'lw:lightstatus-changed' with e.detail.locationKey (already
+// slugified — see location.js's own listener for the same event).
+// The name AND the field were wrong, so this never fired and the
+// primary hero only ever updated on its own 20s poll.
+window.addEventListener('lw:lightstatus-changed', (e) => {
+    const reportedKey = e?.detail?.locationKey;
+    if (!currentLocationKey || !reportedKey) return;
+    if (reportedKey === currentLocationKey) {
         fetchPrimaryLightStatus();
         refreshLocationPanel();
     }

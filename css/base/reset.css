@@ -14,6 +14,16 @@ html, body {
   overflow-x: hidden;
 }
 
+/* Hide scrollbars for a cleaner native app experience */
+::-webkit-scrollbar {
+  display: none;
+}
+
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
 /* FIX: html is the single scroll owner (see global.css's #appShell
    fixes), so this belongs on html alone, not body too — matches why
    overflow-y is likewise only ever set on html elsewhere. Without

@@ -525,6 +525,7 @@ let profileLoaderSafetyTimer = null;
 // never re-triggers the skeleton, satisfying "once the first skeleton
 // shows, it never shows again while the app is still running."
 let profileLoadedThisSession = false;
+let profileLoaderPinned = false;
 
 // Is there real, renderable data sitting in storage right now — a
 // cached user snapshot AND (if we know their location) a light-status
@@ -567,6 +568,8 @@ function hasReadyToPaintData() {
 }
 
 function showProfileLoader(maxDuration = 8000) {
+    profileLoaderPinned = false;
+
     // On the very first successful reveal of this running app instance,
     // keep the full-page skeleton over the app instead of letting the
     // raw content snap into place. This avoids the visible refresh jolt
@@ -582,13 +585,17 @@ function showProfileLoader(maxDuration = 8000) {
 
     clearTimeout(profileLoaderSafetyTimer);
     profileLoaderSafetyTimer = setTimeout(() => {
+        if (profileLoaderPinned) return;
         hideProfileLoader();
     }, safetyDuration);
 }
 
-function hideProfileLoader() {
+function hideProfileLoader(force = false) {
+  if (profileLoaderPinned && !force) return;
+
   clearTimeout(profileLoaderSafetyTimer);
   profileLoadedThisSession = true;
+  profileLoaderPinned = false;
 
   // Matches #pageSkeleton on Home and #accountSkeleton on Account
   // (whichever is actually on screen), so both views share this one
@@ -663,6 +670,7 @@ async function loadCurrentUserProfile() {
     if (window.__lwAuthRedirecting) return;
 
     showProfileLoader();
+    clearOfflineError();
 
     // ── Get user ID from the active session (set by auth.js) ──
     const session = getSession(); // defined in auth.js
@@ -717,6 +725,8 @@ async function loadCurrentUserProfile() {
         return;
     }
 
+    let profileLoadedSuccessfully = false;
+
     try {
         const response = await fetch(`${API_URL}/user/${userId}`);
 
@@ -734,6 +744,7 @@ async function loadCurrentUserProfile() {
 
         if (!response.ok) {
             if (!fallbackUser) renderSignedOutEverywhere();
+            showOfflineError();
             return;
         }
 
@@ -748,16 +759,56 @@ async function loadCurrentUserProfile() {
 
         renderUserEverywhere(user);
         await renderLocationPage(user);
+        profileLoadedSuccessfully = true;
 
     } catch (error) {
         console.error("Could not load profile:", error);
         if (!fallbackUser) {
             document.querySelectorAll('#profileContact').forEach(el => { el.textContent = "Could not reach server"; });
         }
+        showOfflineError();
     } finally {
         await waitForChatReady();
-        hideProfileLoader();
+        if (profileLoadedSuccessfully || hasReadyToPaintData()) {
+            hideProfileLoader();
+        }
     }
+}
+
+function showOfflineError() {
+    profileLoaderPinned = true;
+
+    const container = document.getElementById('realPageContent') || document.getElementById('view-home');
+    if (!container) return;
+
+    // Check if error already exists
+    if (document.getElementById('lwOfflineError')) return;
+
+    const errorEl = document.createElement('div');
+    errorEl.id = 'lwOfflineError';
+    errorEl.style.cssText = 'padding: 24px 20px 28px; margin-top: 18px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px; color: var(--text-muted); background: rgba(255,255,255,0.04); border: 1px solid var(--border-soft); border-radius: var(--radius-md);';
+    errorEl.innerHTML = `
+        <div style="font-size: 2.2rem; opacity: 0.7;">📡</div>
+        <div style="font-size: 1rem; font-weight: 700; color: var(--text-bright);">Something went wrong</div>
+        <p style="font-size: 0.9rem; line-height: 1.5; margin: 0; max-width: 280px;">Please check your internet connection and try again. The page will continue loading once you’re back online.</p>
+        <button type="button" class="btn btn--primary" id="lwRetryProfileBtn" style="margin-top: 6px; min-width: 120px;">Retry</button>
+    `;
+
+    const skeleton = document.getElementById('pageSkeleton');
+    if (skeleton) skeleton.hidden = false;
+    container.appendChild(errorEl);
+
+    document.getElementById('lwRetryProfileBtn')?.addEventListener('click', () => {
+        clearOfflineError();
+        loadCurrentUserProfile();
+    });
+}
+
+function clearOfflineError() {
+    const errorEl = document.getElementById('lwOfflineError');
+    if (errorEl) errorEl.remove();
+    const skeleton = document.getElementById('pageSkeleton');
+    if (skeleton) skeleton.hidden = false;
 }
 
 
@@ -839,6 +890,12 @@ function initProfileChrome() {
     sidebarOverlay?.addEventListener('click', closeSidebar);
     sidebarClose?.addEventListener('click', closeSidebar);
     window.addEventListener('lw:route-changed', closeSidebar);
+    window.addEventListener('online', () => {
+        if (profileLoaderPinned) {
+            clearOfflineError();
+            loadCurrentUserProfile();
+        }
+    });
 
     // This chrome (topbar avatar/name, sidebar) is also only initialized
     // once per page-load. If someone signs out and a different person

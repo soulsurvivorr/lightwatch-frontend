@@ -578,18 +578,20 @@
 
 /* Desktop and Laptop viewports (min-width: 981px) */
 @media (min-width: 981px) {
-  /* #locationRealContent stacks vertically: hero-banner full width on
-     top, then .location-layout (the horizontal main+sidebar split)
-     filling the rest. flex + min-height keeps the whole page at least
-     viewport-tall (including on large/tall laptop screens) instead of
-     shrink-wrapping to content height and leaving dead space below —
-     without forcing an exact height, so it still grows past the
-     viewport if the city list is genuinely long. */
+  /* FIX (max-content sections): this used to force
+     min-height: calc(100vh - header) here specifically so the page
+     never shrink-wrapped below one screen -- but that's exactly what
+     left dead, empty space below a short city list. global.css's
+     #appShell section[data-view] rule already keeps this view's
+     background reading as one continuous color all the way down to
+     #appShell/body even when it's shorter than the viewport, so
+     nothing needs this forced floor anymore; #locationRealContent now
+     just sizes to its real content and still grows past the viewport
+     normally once the city list is genuinely long. */
   #locationRealContent {
     display: flex;
     flex-direction: column;
     width: 100%;
-    min-height: calc(100vh - var(--header-height, 72px));
   }
 
   #view-location .hero-banner {
@@ -811,7 +813,7 @@
 }
 
 #locationRealContent {
-  padding: 20px 16px 64px;
+  padding: 20px 16px 0px;
 }
 
 /* ---- Header: title / subtitle + add button ---- */

@@ -185,6 +185,7 @@
                 break;
             case 'reply':
             case 'mention':
+            case 'comment':
                 kind = 'mention';
                 break;
             case 'like':
@@ -209,7 +210,13 @@
                 kind = 'system';
         }
         const meta = KIND_META[kind];
-        return { ...notification, _kind: kind, _bucket: meta.bucket, _meta: meta };
+        return {
+            ...notification,
+            handle: notification.actorHandle || notification.handle || notification.fromUser || '',
+            _kind: kind,
+            _bucket: meta.bucket,
+            _meta: meta
+        };
     }
 
     // A purely client-side insight, not a real server notification: if
@@ -401,7 +408,14 @@
             earlierSection.hidden = true;
             flatSection.hidden = false;
 
-            document.getElementById('notifFlatTitle').textContent = FILTER_TITLES[activeFilter] || 'Notifications';
+            const flatTitleEl = document.getElementById('notifFlatTitle');
+            const flatDotEl = document.getElementById('notifFlatDot');
+            if (flatTitleEl) flatTitleEl.textContent = FILTER_TITLES[activeFilter] || 'Notifications';
+            if (flatDotEl) {
+                flatDotEl.hidden = activeFilter !== 'priority';
+                flatDotEl.className = 'notif-dot notif-dot--red';
+            }
+
             const flatList = document.getElementById('notifFlatList');
             flatList.innerHTML = filtered.length
                 ? filtered.map(n => renderCard(n, readIds)).join('')
@@ -654,26 +668,6 @@
         bindFilterTabs();
         bindSearch();
         loadNotifications(true);
-        // Dev helper: toggle the full-page notifications skeleton for testing
-        try {
-            if ((location && (location.hostname === 'localhost' || location.hostname === '127.0.0.1')) || location.protocol === 'file:') {
-                if (!document.getElementById('devToggleNotifSkeleton')) {
-                    const btn = document.createElement('button');
-                    btn.id = 'devToggleNotifSkeleton';
-                    btn.textContent = 'Toggle Notif Skeleton';
-                    btn.setAttribute('aria-label', 'Toggle notifications skeleton');
-                    btn.style.cssText = 'position:fixed;right:12px;bottom:84px;z-index:9999;padding:8px 10px;border-radius:6px;background:var(--bg-panel);color:var(--text-bright);border:1px solid rgba(0,0,0,0.12);font-size:12px;';
-                    btn.addEventListener('click', () => {
-                        if (notifSkeletonVisible) {
-                            hideNotifSkeleton();
-                        } else {
-                            showNotifSkeleton();
-                        }
-                    });
-                    document.body.appendChild(btn);
-                }
-            }
-        } catch (e) { /* noop on platforms without location */ }
     }
 
     function show() {

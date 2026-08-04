@@ -33,6 +33,18 @@
   display: block;
 }
 
+.page-data-loading .toggle,
+.page-data-loading .light-switch,
+.page-data-loading .notify-toggle,
+.page-data-loading .location-expand-notify,
+.page-data-loading .loc-map__style-toggle,
+.page-data-loading [role="switch"],
+.page-data-loading .notif-icon-btn,
+.page-data-loading .notif-search {
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
 [id$="Skeleton"].lw-skel-fading {
   opacity: 0;
   pointer-events: none; /* Prevent clicks during fade */

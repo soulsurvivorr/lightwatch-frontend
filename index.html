@@ -631,7 +631,7 @@
       <nav class="nav" id="primaryNav">
         <a href="#" class="nav__link" data-nav="home" data-route="home">Home</a>
         <a href="#" class="nav__link" data-nav="location" data-route="location">Map</a>
-        <a href="#" class="nav__link" data-nav="chat" data-route="chat">Chats</a>
+        <a href="#" class="nav__link" data-nav="chat" data-route="chat">Community Report</a>
         <a href="#" class="nav__link" data-nav="notifications" data-route="notifications">Notifications</a>
       </nav>
       <span class="avatar-name" id="navAccountName" hidden>Account</span>
@@ -1043,6 +1043,24 @@
           </div>
         </div>
 
+        <div class="card achievement-card" id="achievementCard">
+          <div class="achievement-card__head">
+            <span class="achievement-card__badge" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:1em;height:1em;"><circle cx="10" cy="12.5" r="5" fill="#D6A24A" stroke="#A66C14" stroke-width="1"/><path d="m7.3 2.5 2.7 4 2.7-4M8 8.2l-2.6-3.9M12 8.2l2.6-3.9" stroke="#A66C14" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8.6 13.1 9.7 11l1.1 2.1 2.2.3-1.6 1.5.4 2.2-2-1-2 1 .4-2.2-1.6-1.5Z" fill="#FCEBC8"/></svg></span>
+            <span class="achievement-card__title" id="achievementHeadline">You helped today</span>
+          </div>
+          <div class="achievement-card__points" id="achievementPoints">+0 <span>points</span></div>
+          <div class="achievement-card__stats">
+            <div class="achievement-card__stat">
+              <strong id="achievementWeekReports">—</strong>
+              <span>Reports this week</span>
+            </div>
+            <div class="achievement-card__stat">
+              <strong id="achievementTotalReports">—</strong>
+              <span>Total reports</span>
+            </div>
+          </div>
+        </div>
+
       </section>
 
       <aside class="location-sidebar">
@@ -1062,24 +1080,6 @@
             <div><span>Location</span><strong id="profileRegion" data-skel="line">—</strong></div>
           </div>
           <button type="button" class="btn btn--ghost" id="homeProfileSignOutBtn" data-action="signout">Log out</button>
-        </div>
-
-        <div class="card achievement-card" id="achievementCard" hidden>
-          <div class="achievement-card__head">
-            <span class="achievement-card__badge" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:1em;height:1em;"><circle cx="10" cy="12.5" r="5" fill="#D6A24A" stroke="#A66C14" stroke-width="1"/><path d="m7.3 2.5 2.7 4 2.7-4M8 8.2l-2.6-3.9M12 8.2l2.6-3.9" stroke="#A66C14" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8.6 13.1 9.7 11l1.1 2.1 2.2.3-1.6 1.5.4 2.2-2-1-2 1 .4-2.2-1.6-1.5Z" fill="#FCEBC8"/></svg></span>
-            <span class="achievement-card__title" id="achievementHeadline">You helped today</span>
-          </div>
-          <div class="achievement-card__points" id="achievementPoints">+0 <span>points</span></div>
-          <div class="achievement-card__stats">
-            <div class="achievement-card__stat">
-              <strong id="achievementWeekReports">—</strong>
-              <span>Reports this week</span>
-            </div>
-            <div class="achievement-card__stat">
-              <strong id="achievementTotalReports">—</strong>
-              <span>Total reports</span>
-            </div>
-          </div>
         </div>
 
       </aside>
@@ -1185,6 +1185,28 @@
     </div>
   </div>
 
+  <!-- Tap-to-report confirm — #statusIcon is a button, not a switch:
+       tapping it opens this instead of firing the report immediately,
+       same "are you sure" step admin.html uses before pushing a
+       location's status. Reuses the .home-reminder-overlay/card
+       markup so it inherits the same overlay/dialog styling instead
+       of needing its own CSS. -->
+  <div class="home-reminder-overlay" id="lightConfirmOverlay" hidden aria-hidden="true">
+    <div class="home-reminder-card" role="dialog" aria-modal="true" aria-labelledby="lightConfirmTitle">
+      <div class="card__head">
+        <span class="home-reminder-card__icon" id="lightConfirmIcon" aria-hidden="true"></span>
+        <div>
+          <span class="card__title" id="lightConfirmTitle">Mark light as ON?</span>
+          <span class="card__meta" id="lightConfirmDesc">Confirm what you're seeing right now.</span>
+        </div>
+      </div>
+      <div class="home-reminder-actions" style="display:flex;gap:10px;">
+        <button type="button" class="btn btn--ghost" id="lightConfirmCancelBtn" style="flex:1;">Cancel</button>
+        <button type="button" class="btn btn--primary" id="lightConfirmConfirmBtn" style="flex:1;">Confirm</button>
+      </div>
+    </div>
+  </div>
+
     </section>
 
     <!-- ==== Report page section ==== -->
@@ -1201,8 +1223,8 @@
         <!-- ==== Official News panel (default) ==== -->
         <div class="report-panel" id="reportPanelNews" data-panel="news" role="region" aria-labelledby="reportTabNewsBtn">
           <div class="news-page-header">
-            <h1 class="news-page-header__title" id="reportTabNewsBtn">Power News</h1>
-            <p class="news-page-header__sub">Latest updates from ECG and media outlets.</p>
+            <h1 class="news-page-header__title" id="reportTabNewsBtn">Official News</h1>
+            <p class="news-page-header__sub">Latest official updates from ECG and trusted media outlets.</p>
           </div>
 
           <!-- Client-side filter over the same fetched article list —
@@ -1237,7 +1259,7 @@
             <div class="community-banner__row">
               <div class="community-banner__text">
                 <h1 class="community-banner__title" id="reportPanelCommunityTitle">Community Report</h1>
-                <p class="community-banner__sub">Real-time updates from the community</p>
+                <p class="community-banner__sub">Live updates from nearby residents, businesses, and responders.</p>
               </div>
               <!-- Mobile-only quick actions — the topbar (with its own
                    search/notifications) is hidden while this panel is
@@ -1660,7 +1682,7 @@
          Priority/Earlier split. -->
     <section class="notif-section" id="notifFlatSection" hidden>
       <div class="notif-section__head">
-        <span class="notif-section__title" id="notifFlatTitle">Priority</span>
+        <span class="notif-section__title"><i class="notif-dot" id="notifFlatDot" aria-hidden="true" hidden></i><span id="notifFlatTitle">Priority</span></span>
         <button type="button" class="notif-section__action" data-action="mark-all-read">Mark all as read</button>
       </div>
       <div class="notif-list" id="notifFlatList"></div>
@@ -2218,9 +2240,10 @@
 
        <!-- Elevated Report CTA — keep as a CTA but remove data-route so
          it doesn't navigate to the combined report route automatically. -->
-       <a href="#" class="bottom-nav-link bottom-nav-link--elevated" data-nav="chat" aria-label="Report" data-action="report-elevated">
+       <a href="#" class="bottom-nav-link bottom-nav-link--elevated" data-nav="chat" aria-label="Community Report" data-action="report-elevated">
         <span class="bottom-nav-icon bottom-nav-icon--elevated">
-          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M7 5h10a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3.5l-2.5 2.5L9 16H7a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><path d="M8.2 9.2h7.6M8.2 12h5.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+          <span class="lw-icon-btn__badge bottom-nav-badge bottom-nav-badge--mono" data-nav-badge="chat" hidden aria-hidden="true"></span>
         </span>
         <span class="bottom-nav-label">Report</span>
       </a>

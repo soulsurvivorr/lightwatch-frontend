@@ -11,6 +11,31 @@
 
 .report-panel {
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 0 8px;
+}
+
+.report-panel + .report-panel {
+  margin-top: 6px;
+  padding-top: 16px;
+  border-top: 1px solid color-mix(in srgb, var(--border-soft) 78%, transparent);
+}
+
+.report-panel .news-page-header,
+.report-panel .hero-banner {
+  border: 1px solid color-mix(in srgb, var(--border-soft) 78%, transparent);
+  border-radius: var(--radius-md);
+  box-shadow: 0 10px 24px rgba(2, 8, 16, 0.14);
+}
+
+.report-panel .news-page-header {
+  margin-bottom: 0;
+}
+
+.report-panel .chat-card {
+  padding-top: 2px;
 }
 
 /* ============================================================
@@ -1762,11 +1787,12 @@ html[data-theme="device"] #view-chat .community-banner__icon-btn {
   height: 24px;
   border-radius: 50%;
   background: var(--bg-panel);
-  border: 1px solid var(--border-strong);
+  border: none;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .mention-suggestions__avatar svg {

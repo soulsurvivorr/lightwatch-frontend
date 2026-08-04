@@ -440,14 +440,20 @@
      are left alone so Notifications sizes exactly like every other
      view. flex-direction:column above only fixes the ROW-vs-COLUMN
      direction — width was never actually broken and didn't need an
-     override. min-height:100vh is unrelated to width — without it, a
-     short notification list leaves .page shorter than the viewport
-     on tall monitors, and the page's own background stops short of
-     the bottom, exposing the bare <html> background underneath. */
+     override. (This block used to also defend a min-height:100vh rule
+     here on the grounds that a short list would expose bare <html>
+     background beneath it — see the FIX comment just below for why
+     that's no longer true and the rule was removed.) */
   #view-notifications .page {
     display: flex;
     flex-direction: column;
-    min-height: 100vh;
+    /* FIX (max-content sections): was min-height:100vh here, forcing
+       this view to a full screen even with a short list on tall
+       monitors. See global.css's #appShell section[data-view] fix --
+       the section's own background (still --app-bg-solid, unaffected
+       by this change) already reads as one continuous color with
+       #appShell/body beneath a shorter page, so nothing relies on this
+       forced height anymore; removing it just stops the dead space. */
     box-sizing: border-box;
     /* FIX: the same unseen base .page rule that forces row layout
        (see the 981px block's comment) also carries justify-content
@@ -517,22 +523,43 @@
   }
 }
 
+/* FIX (max-content sections): this used to force min-height:100vh/100dvh
+   here directly, with no media query -- so it fired at every width,
+   including mobile, independently re-stretching this view to a full
+   screen even after global.css's #appShell section[data-view] rule was
+   fixed to stop doing that. Removed, same reasoning as global.css: a
+   short notification list should just end where its content ends, not
+   leave dead space above the (position:fixed) bottom nav. */
 #view-notifications {
   background: var(--notif-bg);
   color: var(--notif-text);
-  min-height: 100%;
   display: flex;
   flex-direction: column;
 }
 
 #view-notifications .notif-page {
   max-width: 640px;
+  width: 100%;
+  max-width: 100%;
   margin: 0 auto;
-  padding: 6px 16px 90px;
+  padding: 6px 16px 0px;
   flex: 1 1 auto;
   min-height: 100%;
   display: flex;
   flex-direction: column;
+  justify-content: flex-start !important;
+  align-items: stretch !important;
+  box-sizing: border-box;
+}
+
+#view-notifications .notif-header,
+#view-notifications .notif-tabs,
+#view-notifications .notif-section,
+#view-notifications .notif-list {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  align-self: stretch;
 }
 
 /* ---- Header: title + subtitle left, search + settings right ----
@@ -672,11 +699,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
   border-radius: 999px;
-  font-size: 0.66rem;
+  font-size: 0.62rem;
   font-weight: 700;
   color: white;
 }
@@ -810,19 +837,6 @@
 .notif-card__icon--green { background: color-mix(in srgb, var(--notif-green) 16%, transparent); color: var(--notif-green); }
 .notif-card__icon--teal { background: color-mix(in srgb, var(--notif-teal) 18%, transparent); color: var(--notif-teal); }
 .notif-card__icon--purple { background: color-mix(in srgb, var(--notif-purple) 16%, transparent); color: var(--notif-purple); }
-
-.notif-card__icon--amber {
-  width: 46px;
-  height: 46px;
-  border-radius: 14px;
-  padding: 2px;
-}
-
-.notif-card__icon--amber svg {
-  width: 30px;
-  height: 30px;
-  display: block;
-}
 
 /* ---- Mention avatar (initials, since notification authors don't
    carry a real profile-photo URL from the server) ---- */

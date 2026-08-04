@@ -20,6 +20,23 @@
    its own (larger) padding — this 5px is just the floor, in case a
    view ever renders content directly inside its <section> without
    going through .page. */
+/* FIX (max-content sections): this used to have `flex: 1 1 auto` PLUS
+   its own `min-height: 100svh/100dvh` floor. #appShell (below) already
+   guarantees the shell is at least one screen tall; combined with that,
+   flex-grow:1 here force-stretched every view -- Home, Location, Chat,
+   Notifications, Account alike -- to fill that entire floor even when
+   its real content was much shorter, leaving dead scrollable space
+   below short content (the empty gap under "Nearby"/"Recent activity"
+   etc. in the walkthrough video). #bottom_nav_wrapper is position:fixed
+   (independent of this section's height), so nothing relies on the
+   section itself being artificially tall. `flex: 0 1 auto` + no forced
+   min-height lets each section size to `max-content` -- exactly as
+   tall as its real content, never more, never less -- and it still
+   grows normally past one screen once content actually needs it (that
+   part was never broken; html keeps overflow-y:auto regardless of this
+   value). Background stays on --app-bg-solid so a short section still
+   reads as one continuous color with #appShell/body underneath it --
+   no seam, just no more forced-empty space. */
 #appShell section[data-view] {
   background: var(--app-bg-solid, var(--bg-deep));
   padding-left: 2px;
@@ -27,14 +44,13 @@
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  flex: 1 1 auto;
-  min-height: 100svh;
-  min-height: 100dvh;
+  flex: 0 1 auto;
+  width: 100%;
 }
 
 #appShell section[data-view] > .page {
-  flex: 1 1 auto;
-  min-height: 100%;
+  flex: 0 1 auto;
+  min-height: 0;
   /* FIX: the actual "different color below the content" bug. This
      element's own background comes from the shared base .page rule
      (not in this file, likely a components/ or layouts/ file), which
@@ -133,7 +149,8 @@ html.lw-bfcache-hide body {
 html,
 body,
 #appShell,
-#appShell * {
+#appShell *,
+* {
   scrollbar-width: none !important;
   -ms-overflow-style: none !important;
 }
@@ -141,7 +158,8 @@ body,
 html::-webkit-scrollbar,
 body::-webkit-scrollbar,
 #appShell::-webkit-scrollbar,
-#appShell *::-webkit-scrollbar {
+#appShell *::-webkit-scrollbar,
+*::-webkit-scrollbar {
   display: none !important;
   width: 0 !important;
   height: 0 !important;
@@ -168,11 +186,14 @@ body::-webkit-scrollbar,
   min-height: 100dvh;
 }
 
-#appShell > section[data-view] > .page {
-  flex: 1 1 auto;
-  min-height: 0;
-  background: inherit;
-}
+/* FIX: this used to be a second `#appShell > section[data-view] > .page`
+   rule sitting way down here, with the exact same CSS specificity as
+   the consolidated one near the top of this file but a *different*
+   min-height value -- so whichever one happened to be written later in
+   the file silently won, with no warning that the earlier rule was
+   dead. Removed; the single rule near the top of this file (right
+   after `#appShell section[data-view]`) is now the only place `.page`'s
+   flex/min-height is set. */
 /* body / heading / link / list base rules moved to base/typography.css */
 
 /* ============================================================
