@@ -57,6 +57,65 @@
     // Home view isn't on screen (or this markup changed) — nothing to wire up.
     if (!els.card) return;
 
+    // ------------------------------------------------------------
+    // SCENE — a handful of illustrated elements (sun/moon, clouds,
+    // rain, a lightning bolt, fog) built once and left in the DOM.
+    // Which ones are actually visible + animated is driven entirely
+    // by CSS off the data-weather attribute (see home.css) — this
+    // function only ever builds the shapes, never toggles them.
+    // ------------------------------------------------------------
+    function buildScene() {
+        const scene = document.createElement('div');
+        scene.className = 'lwx-weather-scene';
+        scene.setAttribute('aria-hidden', 'true');
+
+        scene.innerHTML = `
+            <div class="lwx-scene-sun"></div>
+            <div class="lwx-scene-moon"></div>
+            <div class="lwx-scene-stars"></div>
+            <div class="lwx-scene-cloud lwx-scene-cloud--1"></div>
+            <div class="lwx-scene-cloud lwx-scene-cloud--2"></div>
+            <div class="lwx-scene-cloud lwx-scene-cloud--3"></div>
+            <div class="lwx-scene-rain"></div>
+            <div class="lwx-scene-lightning"></div>
+            <div class="lwx-scene-flash"></div>
+            <div class="lwx-scene-fog--1"></div>
+            <div class="lwx-scene-fog--2"></div>
+        `;
+
+        // Stars — scattered positions + independently randomized twinkle
+        // timing so they don't all blink in lockstep.
+        const starsHost = scene.querySelector('.lwx-scene-stars');
+        for (let i = 0; i < 10; i++) {
+            const star = document.createElement('span');
+            star.className = 'lwx-scene-star';
+            star.style.top = `${8 + Math.random() * 55}%`;
+            star.style.left = `${5 + Math.random() * 90}%`;
+            star.style.animationDelay = `${(Math.random() * 2.6).toFixed(2)}s`;
+            starsHost.appendChild(star);
+        }
+
+        // Rain drops — randomized horizontal position, fall speed and
+        // start delay, so the rain reads as natural rather than a
+        // visibly repeating tile.
+        const rainHost = scene.querySelector('.lwx-scene-rain');
+        for (let i = 0; i < 22; i++) {
+            const drop = document.createElement('span');
+            drop.className = 'lwx-scene-drop';
+            drop.style.left = `${Math.random() * 100}%`;
+            drop.style.animationDuration = `${(0.55 + Math.random() * 0.5).toFixed(2)}s`;
+            drop.style.animationDelay = `${(Math.random() * 1.2).toFixed(2)}s`;
+            rainHost.appendChild(drop);
+        }
+
+        els.card.insertBefore(scene, els.card.firstChild);
+        return scene;
+    }
+
+    // Built once on load; CSS handles all show/hide/animation from
+    // here based on the card's data-weather attribute.
+    buildScene();
+
     function currentLocationText() {
         const el = document.getElementById('locationName') || document.getElementById('locationSubtitleArea');
         const text = el ? el.textContent.trim() : '';
@@ -153,9 +212,14 @@
             applyRiskClass(els.risk, 'lwx-risk-text', risk.level);
         }
 
-        // Animated backdrop — see the data-weather rules appended to
-        // home.css. This one attribute drives the whole moving scene.
-        els.card.setAttribute('data-weather', current.condition);
+        // Illustrated scene — see the data-weather rules in home.css and
+        // the shapes built by buildScene() above. "clear" splits into a
+        // sun (daytime) or moon+stars (nighttime) scene using
+        // Open-Meteo's own is_day flag, not local device time.
+        const sceneCondition = current.condition === 'clear' && current.isDay === 0
+            ? 'clear-night'
+            : current.condition;
+        els.card.setAttribute('data-weather', sceneCondition);
 
         // Storm/rain banner — only worth showing when there's actually
         // something ahead; hide it outright on a clear/low-risk read

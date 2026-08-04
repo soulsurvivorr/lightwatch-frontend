@@ -23,7 +23,7 @@
 // ============================================================
 
 // ── 1. VERSIONED CACHE ────────────────────────────────────────
-const APP_VERSION   = '2.1.4';
+const APP_VERSION   = '2.1.5';
 const STATIC_CACHE  = `lightwatch-static-v${APP_VERSION}`;
 const HTML_CACHE     = `lightwatch-html-v${APP_VERSION}`;
 const CURRENT_CACHES = [STATIC_CACHE, HTML_CACHE];
