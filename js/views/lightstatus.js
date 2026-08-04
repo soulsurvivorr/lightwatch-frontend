@@ -63,6 +63,75 @@ const lightConfirmDescEl = document.getElementById('lightConfirmDesc');
 const lightConfirmCancelBtn = document.getElementById('lightConfirmCancelBtn');
 const lightConfirmConfirmBtn = document.getElementById('lightConfirmConfirmBtn');
 
+// -----------------------------------------------------
+// STATUS ICON WIRING — attached right here, immediately, before any
+// of the heavier data/rendering code below runs.
+//
+// FIX: this used to live at the very bottom of the file (after the
+// reliability meter, timeline, achievements, nearby-locations code,
+// etc.). This whole file is one script, so if ANY line above that
+// point throws — a bad selector, an unexpected null, whatever — the
+// button's click listener never gets attached at all, and taps on it
+// do nothing with no visible error unless you're watching the
+// console. Wiring the button first and wrapping it in its own
+// try/catch means a problem elsewhere in this file can no longer
+// take the button down with it.
+// -----------------------------------------------------
+function initStatusIconToggle() {
+    if (!statusIconEl) return;
+
+    const triggerStatusIconToggle = () => {
+        const now = Date.now();
+        if (now - lastStatusIconTriggerAt < 320) return;
+        lastStatusIconTriggerAt = now;
+        const nextStatus = currentReportedStatus === 'on' ? 'off' : 'on';
+        openLightConfirm(nextStatus);
+    };
+
+    statusIconEl.setAttribute('role', 'button');
+    statusIconEl.setAttribute('tabindex', '0');
+    statusIconEl.setAttribute('aria-label', 'Tap to report the current light status');
+    statusIconEl.addEventListener('click', triggerStatusIconToggle);
+    statusIconEl.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        triggerStatusIconToggle();
+    }, { passive: false });
+    statusIconEl.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            triggerStatusIconToggle();
+        }
+    });
+
+    lightConfirmCancelBtn?.addEventListener('click', closeLightConfirm);
+    lightConfirmConfirmBtn?.addEventListener('click', () => {
+        closeLightConfirm();
+        toggleLightStatus();
+    });
+    // Tapping the dimmed backdrop (not the card itself) also dismisses it.
+    lightConfirmOverlayEl?.addEventListener('click', (e) => {
+        if (e.target === lightConfirmOverlayEl) closeLightConfirm();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && lightConfirmOverlayEl && !lightConfirmOverlayEl.hidden) {
+            closeLightConfirm();
+        }
+    });
+}
+
+// openLightConfirm/closeLightConfirm/toggleLightStatus are declared
+// with `function` further down (see LIGHT TOGGLE section) — that's
+// fine to reference here even though this call happens first
+// textually, since function declarations are hoisted with their full
+// body, not just their name. Only the ATTACHING happens now; the
+// listeners themselves don't run until the person actually taps,
+// by which point the rest of the file has long finished loading.
+try {
+    initStatusIconToggle();
+} catch (err) {
+    console.error('[lightstatus] status icon wiring failed — tap-to-report will not work:', err);
+}
+
 const ICON_PEOPLE = '👥';
 const ICON_BOLT = '⚡';
 const ICON_WARNING = '⚠️';
@@ -391,54 +460,26 @@ function openLightConfirm(nextStatus) {
             ? "Confirm the light just came back on where you are. This updates the status everyone else sees."
             : "Confirm the light just went off where you are. This updates the status everyone else sees.";
     }
+    // FIX: .home-reminder-overlay's default (closed) state is opacity:0 /
+    // visibility:hidden / pointer-events:none at the CSS level — the
+    // [hidden] attribute rule is just a display:none backstop. Actual
+    // visibility is gated on the .is-open class (see home-reminder.js's
+    // openHomeReminder(), the working reference for this pattern).
+    // Clearing `hidden` alone left the overlay at opacity 0: in the DOM,
+    // but never shown. Also mirrors home-reminder.js in locking page
+    // scroll via body.modal-open while the overlay is up.
     lightConfirmOverlayEl.hidden = false;
     lightConfirmOverlayEl.setAttribute('aria-hidden', 'false');
+    lightConfirmOverlayEl.classList.add('is-open');
+    document.body.classList.add('modal-open');
 }
 
 function closeLightConfirm() {
     if (!lightConfirmOverlayEl) return;
     lightConfirmOverlayEl.hidden = true;
     lightConfirmOverlayEl.setAttribute('aria-hidden', 'true');
-}
-
-lightConfirmCancelBtn?.addEventListener('click', closeLightConfirm);
-lightConfirmConfirmBtn?.addEventListener('click', () => {
-    closeLightConfirm();
-    toggleLightStatus();
-});
-// Tapping the dimmed backdrop (not the card itself) also dismisses it.
-lightConfirmOverlayEl?.addEventListener('click', (e) => {
-    if (e.target === lightConfirmOverlayEl) closeLightConfirm();
-});
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && lightConfirmOverlayEl && !lightConfirmOverlayEl.hidden) {
-        closeLightConfirm();
-    }
-});
-
-if (statusIconEl) {
-    const triggerStatusIconToggle = () => {
-        const now = Date.now();
-        if (now - lastStatusIconTriggerAt < 320) return;
-        lastStatusIconTriggerAt = now;
-        const nextStatus = currentReportedStatus === 'on' ? 'off' : 'on';
-        openLightConfirm(nextStatus);
-    };
-
-    statusIconEl.setAttribute('role', 'button');
-    statusIconEl.setAttribute('tabindex', '0');
-    statusIconEl.setAttribute('aria-label', 'Tap to report the current light status');
-    statusIconEl.addEventListener('click', triggerStatusIconToggle);
-    statusIconEl.addEventListener('touchend', (e) => {
-        e.preventDefault();
-        triggerStatusIconToggle();
-    }, { passive: false });
-    statusIconEl.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            triggerStatusIconToggle();
-        }
-    });
+    lightConfirmOverlayEl.classList.remove('is-open');
+    document.body.classList.remove('modal-open');
 }
 
 

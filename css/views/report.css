@@ -14,7 +14,7 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 14px 0 8px;
+  padding: 0px 0 8px;
 }
 
 .report-panel + .report-panel {

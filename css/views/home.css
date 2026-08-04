@@ -2339,7 +2339,17 @@ body.lw-location-panel-open {
   margin-top: 20px;
 }
 
-.home-reminder-actions .btn {
+/* FIX: this used to be `.home-reminder-actions .btn` — it force-applied
+   width:100% and a hardcoded amber gradient to EVERY .btn in the row.
+   That's correct for the single full-width "Understood" button this
+   was written for, but #lightConfirmOverlay reuses the same markup
+   with TWO buttons (Cancel/Confirm): width:100% on both overflowed
+   the row, and the hardcoded gradient background also stomped
+   .btn--ghost's own (lower-specificity) transparent/outlined look on
+   Cancel, so it rendered identical to Confirm instead of reading as
+   secondary. Narrowed to .btn--primary — the only variant that ever
+   needed this treatment — so .btn--ghost is free to style itself. */
+.home-reminder-actions .btn--primary {
   width: 100%;
   justify-content: center;
   font-size: clamp(0.86rem, 3.2vw, 0.95rem);
@@ -2352,14 +2362,26 @@ body.lw-location-panel-open {
   transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
 }
 
-.home-reminder-actions .btn:hover {
+.home-reminder-actions .btn--primary:hover {
   filter: brightness(1.06);
   transform: translateY(-1px);
   box-shadow: 0 10px 22px color-mix(in srgb, var(--amber) 35%, transparent);
 }
 
-.home-reminder-actions .btn:active {
+.home-reminder-actions .btn--primary:active {
   transform: translateY(0);
+}
+
+/* Two-button row (tap-to-report confirm: Cancel + Confirm). Share the
+   row evenly instead of each claiming 100% width, and let btn--ghost/
+   btn--primary keep their own distinct look. */
+#lightConfirmOverlay .home-reminder-actions {
+  gap: 10px;
+}
+
+#lightConfirmOverlay .home-reminder-actions .btn {
+  width: auto;
+  flex: 1;
 }
 
 /* Narrow-to-mid phones (e.g. iPhone 12/13/14, Galaxy S21) */

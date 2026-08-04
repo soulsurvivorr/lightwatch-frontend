@@ -832,7 +832,17 @@ function clearOfflineError() {
 // -----------------------------------------------------
 let profileButton, sidebarPanel, sidebarOverlay, sidebarClose, bottomNavUserBtn;
 
+// FIX: #userSidebarPanel/#sidebarOverlay/#profileMenuButton no longer
+// exist anywhere in index.html — that sidebar was replaced by the
+// profile card + "Log out" button during the redesign, but this file
+// still wired up the old sidebar unconditionally. sidebarPanel/
+// sidebarOverlay were always null as a result, so closeSidebar()
+// (registered below on every 'lw:route-changed') threw an uncaught
+// TypeError on every single navigation. Guarding on sidebarPanel
+// existing stops the throw; if the sidebar markup comes back later
+// these just start working again with no other changes needed.
 function openSidebar() {
+    if (!sidebarPanel || !sidebarOverlay) return;
     sidebarPanel.classList.add('user-sidebar-panel--open');
     sidebarOverlay.classList.add('sidebar-overlay--visible');
     sidebarPanel.setAttribute('aria-hidden', 'false');
@@ -840,6 +850,7 @@ function openSidebar() {
 }
 
 function closeSidebar() {
+    if (!sidebarPanel || !sidebarOverlay) return;
     sidebarPanel.classList.remove('user-sidebar-panel--open');
     sidebarOverlay.classList.remove('sidebar-overlay--visible');
     sidebarPanel.setAttribute('aria-hidden', 'true');
@@ -873,7 +884,7 @@ function initProfileChrome() {
     bottomNavUserBtn = document.getElementById('bottomNavUserBtn');
 
     profileButton?.addEventListener('click', () => {
-        if (sidebarPanel.classList.contains('user-sidebar-panel--open')) {
+        if (sidebarPanel?.classList.contains('user-sidebar-panel--open')) {
             closeSidebar();
         } else {
             openSidebar();
