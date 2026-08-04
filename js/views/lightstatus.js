@@ -476,6 +476,14 @@ function openLightConfirm(nextStatus) {
 
 function closeLightConfirm() {
     if (!lightConfirmOverlayEl) return;
+    // FIX: aria-hidden was being set on this overlay while the Confirm
+    // (or Cancel) button inside it still had focus — browsers block
+    // that (a hidden subtree can't contain the focused element) and
+    // log a console warning. Move focus back to the trigger icon
+    // first if focus is currently inside the overlay, then hide it.
+    if (lightConfirmOverlayEl.contains(document.activeElement)) {
+        statusIconEl?.focus();
+    }
     lightConfirmOverlayEl.hidden = true;
     lightConfirmOverlayEl.setAttribute('aria-hidden', 'true');
     lightConfirmOverlayEl.classList.remove('is-open');
