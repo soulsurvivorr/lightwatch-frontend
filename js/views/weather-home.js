@@ -58,6 +58,10 @@
     // Home view isn't on screen (or this markup changed) — nothing to wire up.
     if (!els.card) return;
 
+    // Keep the skeleton mask active immediately so the card's default
+    // placeholder content never flashes before the weather request settles.
+    els.card.classList.add('lwx-weather-card--loading');
+
     // ------------------------------------------------------------
     // SCENE — a handful of illustrated elements (sun/moon, clouds,
     // rain, a lightning bolt, fog) built once and left in the DOM.
@@ -120,6 +124,7 @@
     function currentLocationText() {
         const locationNameEl = document.getElementById('locationName');
         const locationSubtitleEl = document.getElementById('locationSubtitleArea');
+        const weatherCityEl = document.getElementById('lwxWeatherCity');
 
         const candidateText = (locationNameEl?.textContent || '').trim();
         if (candidateText && !/^your location$/i.test(candidateText) && !/^your area$/i.test(candidateText)) {
@@ -129,6 +134,11 @@
         const subtitleText = (locationSubtitleEl?.textContent || '').trim();
         if (subtitleText && !/^your location$/i.test(subtitleText) && !/^your area$/i.test(subtitleText)) {
             return subtitleText;
+        }
+
+        const weatherCityText = (weatherCityEl?.textContent || '').trim();
+        if (weatherCityText && !/^your location$/i.test(weatherCityText) && !/^your area$/i.test(weatherCityText)) {
+            return weatherCityText;
         }
 
         const storedLocation = window.currentChatLocation ? String(window.currentChatLocation).trim() : '';
@@ -168,13 +178,18 @@
     }
 
     function setLoadingState() {
+        if (els.card) els.card.classList.add('lwx-weather-card--loading');
         if (els.desc) {
             els.desc.dataset.state = 'loading';
-            els.desc.textContent = 'Fetching live weather…';
+            els.desc.textContent = 'Checking live weather…';
+        }
+        if (els.temp) {
+            els.temp.innerHTML = '&mdash;';
         }
     }
 
     function setErrorState() {
+        if (els.card) els.card.classList.add('lwx-weather-card--loading');
         if (els.desc) {
             els.desc.dataset.state = 'error';
             els.desc.textContent = "Couldn't load live weather";
@@ -255,6 +270,7 @@
     function render(data) {
         const { current, risk, location, approximate } = data;
 
+        if (els.card) els.card.classList.remove('lwx-weather-card--loading');
         if (els.city) els.city.textContent = approximate ? `Near ${location}` : location;
         if (els.temp && current.temperatureC != null) {
             const roundedTemp = Math.round(current.temperatureC);
@@ -339,10 +355,9 @@
     async function refresh() {
         const url = await buildWeatherUrl();
         if (!url) {
-            // No GPS and no location text yet (still on skeleton) — try
-            // again shortly rather than failing silently forever.
+            setLoadingState();
             clearTimeout(retryTimer);
-            retryTimer = setTimeout(refresh, 2000);
+            retryTimer = setTimeout(refresh, 1000);
             return;
         }
 

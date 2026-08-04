@@ -107,7 +107,6 @@
     // ── State ──────────────────────────────────────────────────
     let map = null;
     let mapReady = false;
-    let heatMap = null;
     let heatMapReady = false;
     let heatMapInitStarted = false;
     let clusterIndex = null;
@@ -273,92 +272,40 @@
 
     // ============================================================
     //  Live Heat Map (#locHeatMap / #locHeatMapCanvas)
-    //  A second, independent MapLibre instance next to the pin map
-    //  above — a native `heatmap` layer over the same locations
-    //  dataset, weighted by outage status, instead of individual
-    //  markers. Kept deliberately separate from `map` (no shared
-    //  clustering, no popups, no style toggle) since it's a supplementary
-    //  density view rather than the primary navigable map.
+    //  NOT a second MapLibre instance — a custom red/amber/green status
+    //  panel (shared with Home's smaller version — see
+    //  utils/heat-panel.js's header for why this reads more clearly at
+    //  a glance than a heatmap layer on the same street tiles the pin
+    //  map above already uses). Fed by the same locations dataset,
+    //  updated every time renderLocations() runs (see below).
     // ============================================================
 
-    // /locations/map only ever reports 'on' | 'off' | 'unknown' (see
-    // updateMarkerStatus() below) — there's no real third "mixed" tier,
-    // the heat legend's "Unknown" bucket covers that. Weighted so an
-    // outage-heavy area reads clearly hot rather than a flat wash.
-    const HEAT_WEIGHT = { off: 1, unknown: 0.45, on: 0.08 };
-
-    function locationsToHeatGeoJSON(locations) {
-        const features = (locations || [])
-            .filter(l => Number.isFinite(l.lat) && Number.isFinite(l.lng))
-            .map(l => ({
-                type: 'Feature',
-                geometry: { type: 'Point', coordinates: [l.lng, l.lat] },
-                properties: { weight: HEAT_WEIGHT[l.status] ?? HEAT_WEIGHT.unknown }
-            }));
-        return { type: 'FeatureCollection', features };
-    }
-
-    function addHeatLayer() {
-        if (!heatMap || heatMap.getSource('loc-heat-source')) return;
-        heatMap.addSource('loc-heat-source', {
-            type: 'geojson',
-            data: { type: 'FeatureCollection', features: [] }
-        });
-        heatMap.addLayer({
-            id: 'loc-heat-layer',
-            type: 'heatmap',
-            source: 'loc-heat-source',
-            paint: {
-                'heatmap-weight': ['get', 'weight'],
-                'heatmap-intensity': 1.2,
-                'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 6, 14, 14, 42],
-                'heatmap-opacity': 0.85,
-                'heatmap-color': [
-                    'interpolate', ['linear'], ['heatmap-density'],
-                    0,    'rgba(11, 107, 58, 0)',
-                    0.2,  'rgba(11, 107, 58, 0.55)',
-                    0.45, 'rgba(214, 162, 74, 0.7)',
-                    0.75, 'rgba(229, 122, 72, 0.8)',
-                    1,    'rgba(229, 72, 77, 0.9)'
-                ]
-            }
-        });
-    }
+    let heatPanel = null;
 
     function updateHeatMap(locations) {
-        if (!heatMapReady || !heatMap) return;
-        const source = heatMap.getSource('loc-heat-source');
-        if (source) source.setData(locationsToHeatGeoJSON(locations));
+        if (heatPanel) heatPanel.update(locations);
     }
 
     function initHeatMap() {
         if (heatMapInitStarted) return;
         heatMapInitStarted = true;
 
-        const canvas = document.getElementById('locHeatMapCanvas');
-        if (!canvas || !window.maplibregl) return;
+        const host = document.getElementById('locHeatMapCanvas');
+        if (!host || !window.LWHeatPanel) return;
 
-        heatMap = new maplibregl.Map({
-            container: canvas,
-            style: STYLE_STREET,
-            center: [DEFAULT_CENTER.lng, DEFAULT_CENTER.lat],
-            zoom: COUNTRY_ZOOM,
-            pitchWithRotate: false,
-            dragRotate: false,
-            attributionControl: true
+        heatPanel = window.LWHeatPanel.create(host, {
+            onSelect(loc) {
+                // Tapping a point on the panel opens the same info card
+                // the pin map's own marker click does, rather than
+                // duplicating that UI here.
+                if (loc && loc.lat != null && loc.lng != null) {
+                    openLocationPopup(loc, [loc.lng, loc.lat]);
+                    if (map) map.flyTo({ center: [loc.lng, loc.lat], zoom: Math.max(map.getZoom(), DEFAULT_ZOOM) });
+                }
+            }
         });
-
-        heatMap.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
-
-        heatMap.on('load', () => {
-            heatMapReady = true;
-            addHeatLayer();
-            updateHeatMap(latestLocations);
-            // Center on whatever the pin map already resolved (GPS fix
-            // or saved location) instead of re-requesting geolocation a
-            // second time for a second map.
-            if (userCoords) heatMap.jumpTo({ center: [userCoords.lng, userCoords.lat], zoom: DEFAULT_ZOOM });
-        });
+        heatMapReady = true;
+        updateHeatMap(latestLocations);
     }
 
     // Pulls LightWatch's own design tokens (variables.css) and pushes
@@ -1041,7 +988,6 @@
         clearInterval(locationPollTimer);
         locationPollTimer = setInterval(() => loadLocations(false), POLL_INTERVAL_STANDARD_MS);
         if (map) setTimeout(() => map.resize(), 60); // view was hidden (display:none) — canvas needs a resize nudge
-        if (heatMap) setTimeout(() => heatMap.resize(), 60);
     }
 
     function hide() {

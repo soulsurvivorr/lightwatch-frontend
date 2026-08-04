@@ -1185,11 +1185,12 @@ html[data-theme="light"] .loc-header__title {
   background: var(--map-surface, var(--dark-bg, #1C1F26));
 }
 
-.loc-heatmap__canvas .maplibregl-ctrl-attrib,
-.loc-heatmap__canvas .maplibregl-ctrl-logo {
-  filter: none;
-  opacity: 0.9;
-  color: var(--map-text-muted);
+/* Location's panel is bigger than Home's preview — points can afford
+   slightly larger labels. Base .lw-heat-point styles live in home.css
+   (loaded on every view — see its own comment on why they're shared
+   there rather than duplicated per view). */
+.loc-heatmap__canvas .lw-heat-point__label {
+  font-size: 0.66rem;
 }
 
 @media (max-width: 768px) {

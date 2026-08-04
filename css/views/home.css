@@ -5303,9 +5303,12 @@ body:not(.page-data-loading) #view-home #realPageContent {
    ============================================================ */
 .lw-stat-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
   margin-top: 4px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .lw-stat-card {
@@ -5314,6 +5317,9 @@ body:not(.page-data-loading) #view-home #realPageContent {
   border-radius: var(--radius-md, 10px);
   padding: 9px 10.5px;
   min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 @media (max-width: 720px) {
@@ -5325,8 +5331,8 @@ body:not(.page-data-loading) #view-home #realPageContent {
 @media (max-width: 480px) {
   .lw-stat-card {
     min-height: 60px !important;
-    width: calc(100% + 2.5px) !important;
-    margin-left: -1.25px !important;
+    width: 100% !important;
+    margin-left: 0 !important;
   }
 }
 
@@ -5340,8 +5346,8 @@ body:not(.page-data-loading) #view-home #realPageContent {
 @media (max-width: 480px) {
   .lw-stat-card {
     min-height: 60px !important;
-    width: calc(100% + 2.5px) !important;
-    margin-left: -1.25px !important;
+    width: 100% !important;
+    margin-left: 0 !important;
   }
 }
 
@@ -5384,7 +5390,7 @@ body:not(.page-data-loading) #view-home #realPageContent {
 .lw-stat-card__value {
   display: block;
   margin-top: 6px;
-  font-size: 1.15rem;
+  font-size: 1rem; /* reduced for better balance */
   font-weight: 600;
   color: var(--lw-text);
   line-height: 1.1;
@@ -6195,11 +6201,23 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
    with or shadow an id a script may already target.
    ============================================================ */
 
+#view-home,
+#realPageContent,
+#pageSkeleton {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
 #view-home .lwx-row {
   display: flex;
   flex-direction: column;
   gap: 12px;
   margin-top: 14px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 /* ---- (a) status-hero visual upgrade — additive modifier ---- */
@@ -6244,7 +6262,13 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
 #view-home .lwx-weather-card {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
+  min-height: 0;
+  padding: 14px 16px 12px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 #view-home .lwx-weather-card__head {
@@ -6263,27 +6287,27 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
 }
 
 #view-home .lwx-weather-card__temp {
-  font-size: 1.8rem;
+  font-size: 1.56rem;
   font-weight: 700;
   color: var(--lw-text);
-  line-height: 1.15;
-  margin-top: 2px;
+  line-height: 1.1;
+  margin-top: 0;
 }
 
 #view-home .lwx-weather-card__desc {
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   color: var(--lw-text-muted);
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 #view-home .lwx-weather-card__meta {
   list-style: none;
-  margin: 0 0 12px;
+  margin: 0 0 8px;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  font-size: 0.78rem;
+  gap: 5px;
+  font-size: 0.76rem;
   color: var(--lw-text-muted);
 }
 
@@ -6325,7 +6349,7 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
   background: rgba(124, 77, 255, 0.12);
   border: 1px solid rgba(124, 77, 255, 0.25);
   border-radius: var(--radius-md);
-  padding: 10px 12px;
+  padding: 8px 10px;
   margin-top: auto;
 }
 
@@ -6394,6 +6418,58 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
   transition: opacity 0.4s ease;
 }
 
+#view-home .lwx-weather-card--loading {
+  opacity: 0.96;
+}
+
+/* Weather card: show skeleton overlay while loading and hide content
+   until real data arrives. Keep skeleton blocks stacked and clickable
+   content pointer-events disabled while loading. */
+#view-home .lwx-weather-card {
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+#view-home .lwx-weather-card__skeleton {
+  display: none;
+  /* overlay the content to fully mask until data arrives */
+  position: absolute;
+  inset: 0 0 0 0;
+  z-index: 4;
+  /* match the .card default padding so skeleton aligns pixel-perfect */
+  padding: 22px;
+  box-sizing: border-box;
+  background: linear-gradient(180deg, rgba(0,0,0,0.02), rgba(0,0,0,0.03));
+  max-width: 100%;
+  overflow: hidden;
+}
+
+#view-home .lwx-weather-card.lwx-weather-card--loading .lwx-weather-card__skeleton {
+  display: block;
+}
+
+#view-home .lwx-weather-card__content {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+
+#view-home .lwx-weather-card.lwx-weather-card--loading .lwx-weather-card__content {
+  opacity: 0;
+  transform: translateY(0);
+  pointer-events: none;
+}
+
+/* On narrower screens force the final (Reports) stat card to its
+   own row so it doesn't crowd the first four cards. */
+@media (max-width: 860px) {
+  #view-home .lw-stat-grid.lwx-stat-grid-5 .lw-stat-card:last-child {
+    grid-column: 1 / -1;
+  }
+}
+
 /* Brief highlight weather-home.js toggles for ~1s right after a
    successful refresh lands, so a new reading doesn't just silently
    replace the old one. */
@@ -6416,7 +6492,9 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
 /* ---- stat grid 5-across — additive modifier, only applies
    when both classes are present, so the 4-across skeleton/
    original rule is completely unaffected ---- */
-@media (min-width: 481px) {
+/* Only show 5-across on wide viewports; keep 4-across on small/phone
+   sizes so the last (Reports) card wraps naturally. */
+@media (min-width: 861px) {
   #view-home .lw-stat-grid.lwx-stat-grid-5 {
     grid-template-columns: repeat(5, 1fr);
   }
@@ -6430,14 +6508,18 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
    already toggles — nothing about that contract changed. ---- */
 #view-home .lwx-row--risk {
   flex-direction: row;
+  flex-wrap: wrap;
   gap: 14px;
 }
 
 #view-home .lwx-risk-card {
   position: relative;
   overflow: hidden;
-  flex: 1 1 0;
+  flex: 1 1 280px;
   min-width: 0;
+  width: auto;
+  max-width: 100%;
+  box-sizing: border-box;
   border-radius: var(--radius-lg);
   padding: 18px 18px 18px 22px;
   display: flex;
@@ -6581,6 +6663,48 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
   font-weight: 800;
 }
 
+/* Arrange risk card text into a simple 2-column grid so the
+   title and status badge share the first row, description spans
+   the full width on the second row, and the foot label/value
+   sit on the final row with the value right-aligned. */
+#view-home .lwx-risk-card__text {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto auto;
+  gap: 8px;
+  min-width: 0;
+}
+
+#view-home .lwx-risk-card__title {
+  grid-column: 1 / 2;
+  grid-row: 1 / 2;
+  align-self: center;
+}
+
+#view-home .lwx-risk-card__badge {
+  grid-column: 2 / 3;
+  grid-row: 1 / 2;
+  justify-self: end;
+  align-self: center;
+  margin: 0;
+}
+
+#view-home .lwx-risk-card__text p {
+  grid-column: 1 / 3;
+  grid-row: 2 / 3;
+}
+
+#view-home .lwx-risk-card__foot-label {
+  grid-column: 1 / 2;
+  grid-row: 3 / 4;
+}
+
+#view-home .lwx-risk-card__foot-value {
+  grid-column: 2 / 3;
+  grid-row: 3 / 4;
+  justify-self: end;
+}
+
 #view-home .lwx-risk-card--danger .lwx-risk-card__foot-value { color: var(--lw-red); }
 #view-home .lwx-risk-card--warn .lwx-risk-card__foot-value { color: var(--lw-amber); }
 #view-home .lwx-risk-card--safe .lwx-risk-card__foot-value { color: var(--lw-green); }
@@ -6671,29 +6795,105 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
   margin-bottom: 12px;
 }
 
-/* ---- Real MapLibre canvas (map-heat-home.js) replacing the old
-   static SVG street-grid + hand-placed blur blobs. The card is a
-   small live preview, so MapLibre's own attribution/logo chrome is
-   trimmed down to fit rather than removed outright (attribution is
-   still required — see initMap()'s attributionControl:false, which
-   only disables the auto-added default; nothing here strips credit,
-   it's just sized to not overwhelm a 210px-tall card). ---- */
-#view-home .lwx-map-visual__canvas {
+/* ---- Shared "heat panel" (utils/heat-panel.js) — unscoped so both
+   this card and the Location view's Live Heat Map panel can use the
+   same classes; each view's own CSS only handles sizing/context (e.g.
+   #view-home .lwx-map-visual's fixed 210px height above). Deliberately
+   not a MapLibre map — see heat-panel.js's header for why: a colored
+   status point + city label communicates "who's affected right now"
+   faster than a blurred heatmap layer on real street tiles would. ---- */
+.lw-heat-panel {
+  position: absolute;
+  inset: 0;
+}
+
+.lw-heat-panel__grid {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
+  color: var(--map-text-muted, #8C97AE);
 }
 
-#view-home .lwx-map-visual .maplibregl-ctrl-top-right {
-  top: 6px;
-  right: 6px;
+.lw-heat-panel__points {
+  position: absolute;
+  inset: 0;
 }
 
-#view-home .lwx-map-visual .maplibregl-ctrl-group {
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+.lw-heat-point {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  transition: left 0.6s ease, top 0.6s ease;
+}
+
+.lw-heat-point__dot {
+  position: relative;
+  display: block;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--lw-heat-fill, rgba(214, 162, 74, 0.85));
+  box-shadow: 0 0 16px 6px var(--lw-heat-glow, rgba(214, 162, 74, 0.5));
+  transition: background 0.5s ease, box-shadow 0.5s ease;
+}
+
+.lw-heat-point__ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  border-radius: 50%;
+  background: var(--lw-heat-glow, rgba(229, 72, 77, 0.5));
+  opacity: 0;
+}
+
+/* Only "off" (outage) points get the expanding alert ring — this is
+   the thing that should visually shout "here" on the panel; stable
+   and unknown points stay a calm, still dot. */
+.lw-heat-point--alert .lw-heat-point__ring {
+  animation: lwHeatRingPulse 2s ease-out infinite;
+}
+@keyframes lwHeatRingPulse {
+  0%   { transform: scale(0.8); opacity: 0.75; }
+  75%  { transform: scale(2.4); opacity: 0; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+
+.lw-heat-point__label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--map-text, rgba(255, 255, 255, 0.9));
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
+  white-space: nowrap;
+  order: -1; /* label above the dot by default */
+}
+
+.lw-heat-point--label-below .lw-heat-point__label {
+  order: 1; /* flipped below the dot for points near the top edge — see heat-panel.js */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lw-heat-point__ring {
+    animation: none;
+  }
+}
+
+/* Home's card is small — trim the label size down a notch so 6-8
+   points don't crowd each other out. */
+#view-home .lwx-map-visual .lw-heat-point__label {
+  font-size: 0.58rem;
 }
 
 #view-home .lwx-map-card__btn {
