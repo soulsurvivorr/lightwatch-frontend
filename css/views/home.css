@@ -1161,6 +1161,21 @@
   background: var(--bg-panel);
 }
 
+.trend-banner {
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+}
+.trend-banner:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(8,10,15,0.18);
+}
+.trend-banner:active { transform: translateY(0); }
+
+.trend-banner .lw-live-card__badge { display:inline-flex; align-items:center; gap:8px; font-size:0.72rem; color:var(--text-faint); }
+.trend-banner__text strong { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:calc(100vw - 180px); }
+.trend-banner__text span { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+
 .trend-banner__icon {
   font-size: 1.25rem;
   line-height: 1;
@@ -1468,35 +1483,6 @@
 
 .profile-card__details strong {
   color: var(--text-bright);
-}
-
-.location-form {
-  display: grid;
-  gap: 16px;
-}
-
-.form-field {
-  display: grid;
-  gap: 8px;
-  font-size: 0.88rem;
-  color: var(--text-faint);
-}
-
-.form-field input,
-.form-field select {
-  width: 100%;
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-md);
-  padding: 12px 14px;
-  font-size: 0.95rem;
-  background: var(--bg-panel);
-  color: var(--text-bright);
-}
-
-.form-field input:focus,
-.form-field select:focus {
-  outline: none;
-  border-color: var(--teal);
 }
 
 .location-card__meta-panel {
@@ -2467,159 +2453,6 @@ body.lw-location-panel-open {
 }
 
 
-/* Search + add-location toolbar */
-.locations-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 18px;
-  flex-wrap: wrap;
-}
-
-.search-field {
-  position: relative;
-  flex: 1;
-  min-width: 220px;
-}
-
-.search-field__icon {
-  position: absolute;
-  left: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--text-faint);
-  font-size: 0.95rem;
-  pointer-events: none;
-}
-
-.search-field__input {
-  width: 100%;
-  background: var(--bg-panel);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-md);
-  padding: 11px 14px 11px 38px;
-  color: var(--text-bright);
-  font-size: 0.9rem;
-  font-family: var(--font-body);
-}
-
-.search-field__input::placeholder {
-  color: var(--text-faint);
-}
-
-.search-field__input:focus {
-  border-color: var(--teal);
-}
-
-/* ============================================================
-   Buttons & form elements
-   ============================================================ */
-
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 11px 20px;
-  border-radius: var(--radius-md);
-  font-size: 0.92rem;
-  font-weight: 600;
-  border: 1px solid transparent;
-  cursor: pointer;
-  transition: transform 0.1s ease, opacity 0.15s ease;
-}
-
-.btn:active {
-  transform: scale(0.98);
-}
-
-.btn--primary {
-  background: var(--brand);
-  color: #fff;
-}
-
-.btn--primary:hover {
-  background: var(--brand-dim);
-  opacity: 1;
-}
-
-.btn--ghost {
-  background: transparent;
-  border-color: var(--border-strong);
-  color: var(--text-muted);
-}
-
-.btn--ghost:hover {
-  border-color: var(--teal);
-  color: var(--teal);
-}
-
-.btn--block {
-  width: 100%;
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 1px;
-}
-
-.field__label {
-  font-size: 0.84rem;
-  color: var(--text-muted);
-}
-
-.field__input-wrap {
-  position: relative;
-}
-
-.field__input {
-  width: 100%;
-  background: var(--bg-deep);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-md);
-  padding: 12px 14px;
-  color: var(--text-bright);
-  font-size: 0.94rem;
-  font-family: var(--font-body);
-}
-
-.field__input::placeholder {
-  color: var(--text-faint);
-}
-
-.field__input:focus {
-  border-color: var(--teal);
-}
-
-.field-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 0.85rem;
-}
-
-.checkbox-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--text-muted);
-}
-
-.checkbox-row input {
-  accent-color: var(--teal);
-  width: 16px;
-  height: 16px;
-}
-
-.link {
-  color: var(--teal);
-}
-
-.link:hover {
-  text-decoration: underline;
-}
 /* ============================================================
    Add-location autocomplete
    ============================================================ */
@@ -3411,16 +3244,6 @@ body.lw-location-panel-open {
     font-size: 0.8rem;
   }
 
-  .checkbox-row {
-    gap: 6px;
-    font-size: 0.72rem;
-  }
-
-  .checkbox-row input {
-    width: 14px;
-    height: 14px;
-  }
-
   .card,
   .location-card,
   .report-card,
@@ -3793,18 +3616,11 @@ body.lw-location-panel-open {
   }
 }
 
-  .form-field input,
-  .form-field select {
-    font-size: 0.72rem;
-  }
-
   .chat-message__time {
     font-size: 0.58rem;
   }
 
-  .chat-form__input,
-  .form-field input,
-  .form-field select {
+  .chat-form__input {
     padding: 8px 12px;
   }
 
@@ -3868,11 +3684,6 @@ body.lw-location-panel-open {
   .chat-message__text,
   .chat-form__input {
     font-size: 0.76rem;
-  }
-
-  .form-field input,
-  .form-field select {
-    font-size: 0.68rem;
   }
 
   .chat-form .btn,

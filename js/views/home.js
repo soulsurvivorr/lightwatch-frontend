@@ -601,78 +601,57 @@ addLocationForm?.addEventListener('submit', (e) => {
 
 initHomeReminder();
 // -----------------------------------------------------
-// TRENDING POST — replace the "Live updates in your area"
-// lw-section with a single-card preview of the most-engaged
-// report (likes + reposts + quotes + replies). If none has
-// engagement, falls back to the latest post. Keeps the same
-// visual container size, crops images, and truncates long
-// captions with an ellipsis.
+// TRENDING POST — fills the "Trending Stories" lw-live-card
+// (#trendBanner / #trendBannerTitle / #trendBannerSub) with the
+// most-engaged community report (likes + reposts + quotes +
+// replies). If nothing has engagement yet, falls back to the
+// latest post.
 // -----------------------------------------------------
+function normalizeHomeLocationText(rawText) {
+    const text = String(rawText || '').trim();
+    if (!text) return '';
+    const normalized = text.toLowerCase();
+    if (normalized.includes('your area') || normalized.includes('your neighborhood') || normalized.includes('your location')) {
+        return '';
+    }
+    return text;
+}
+
 async function initHomeTrending() {
     try {
-        const sectionTitle = 'Live updates in your area';
-        let targetSection = null;
-        document.querySelectorAll('.lw-section').forEach(s => {
-            const titleEl = s.querySelector('.lw-section__title');
-            if (titleEl && titleEl.textContent && titleEl.textContent.trim() === sectionTitle) {
-                targetSection = s;
-            }
-        });
-        if (!targetSection) return;
+        const banner = document.getElementById('trendBanner');
+        const titleEl = document.getElementById('trendBannerTitle');
+        const subEl = document.getElementById('trendBannerSub');
+        if (!banner || !titleEl || !subEl) return;
 
-        // Prefer a stat-card layout inside the stat grid instead of the
-        // original section layout. This keeps the new card aligned with
-        // the other stat cards and preserves the requested container size.
-        const statGrid = document.querySelector('.lw-stat-grid.lwx-stat-grid-5');
-        if (!statGrid) {
-            console.warn('[home] trending stat grid not found');
-            return;
-        }
-
-        if (targetSection.parentNode !== statGrid) {
-            statGrid.appendChild(targetSection);
-        }
-
-        targetSection.classList.remove('lw-section');
-        targetSection.classList.add('lw-stat-card', 'home-trending-card-wrapper');
-        targetSection.style.marginTop = '0';
-        targetSection.style.minHeight = '72px';
-        targetSection.style.padding = '10px';
-        targetSection.style.boxSizing = 'border-box';
-
-        const host = document.createElement('div');
-        host.className = 'home-trending-card';
-        host.id = 'homeTrendingPost';
-        targetSection.replaceChildren(host);
-
-        if (targetSection.parentNode !== statGrid) {
-            statGrid.appendChild(targetSection);
-        }
-
-        // Build the fetch params (scope to current visible location when possible)
-        const loc = (document.getElementById('locationSubtitleArea')?.textContent || '').trim();
-        const params = new URLSearchParams();
-        if (loc) params.set('location', loc);
-        params.set('limit', '100');
-
-        const res = await fetch(`${API_URL}/reports?${params.toString()}`);
-        if (!res.ok) throw new Error('reports fetch failed');
+        // Build the fetch params (scope to current visible location when possible).
+        // Ignore placeholder labels like "your area" so the feed query isn't
+        // accidentally scoped to a non-location value.
+        const rawLoc = document.getElementById('locationSubtitleArea')?.textContent || '';
+        const loc = window.currentChatLocation || normalizeHomeLocationText(rawLoc);
+        banner.dataset.homeTrending = '1';
+        // For home trending we want the top community post across everyone,
+        // not just the visitor's selected location. Request the backend's
+        // trending aggregation which returns the best post for the scope.
+        const res = await fetch(`${API_URL}/chats?trending=1&scope=global`, { cache: 'no-store' });
+        if (!res.ok) throw new Error('chats fetch failed');
         const chats = await res.json();
-        if (!Array.isArray(chats) || chats.length === 0) {
-            host.innerHTML = `
-                <div class="home-trending-card__body">
-                    <div class="home-trending-card__meta">
-                        <strong class="home-trending-card__handle">Community</strong>
-                    </div>
-                    <div class="home-trending-card__text">No community posts yet</div>
-                </div>
-            `;
+
+        // Admin broadcasts aren't community posts — leave them out of the
+        // trending computation.
+        const posts = Array.isArray(chats) ? chats.filter(c => !c.isAdmin) : [];
+
+        if (posts.length === 0) {
+            titleEl.textContent = 'No community posts yet';
+            subEl.textContent = '—';
+            banner.classList.remove('trend-banner--stable', 'trend-banner--warning');
+            banner.dataset.homeTrending = '1';
             return;
         }
 
         // compute reply counts (comments)
         const repliedCounts = new Map();
-        chats.forEach(c => {
+        posts.forEach(c => {
             if (c.replyTo && c.replyTo.chatId) {
                 const key = String(c.replyTo.chatId);
                 repliedCounts.set(key, (repliedCounts.get(key) || 0) + 1);
@@ -682,48 +661,86 @@ async function initHomeTrending() {
         // score = likes + reposts + quotes + replies
         let best = null;
         let bestScore = -1;
-        chats.forEach(c => {
+        posts.forEach(c => {
             const id = String(c._id || c.id || '');
             const score = (Number(c.likeCount || 0) + Number(c.repostCount || 0) + Number(c.quoteCount || 0) + Number(repliedCounts.get(id) || 0));
-            if (score > bestScore) {
+            const createdAt = new Date(c.createdAt || 0).getTime();
+            const currentBestCreatedAt = best ? new Date(best.createdAt || 0).getTime() : 0;
+            if (score > bestScore || (score === bestScore && createdAt > currentBestCreatedAt)) {
                 bestScore = score;
                 best = c;
             }
         });
 
-        // If no engagement found (all scores 0), fall back to newest
-        if (!best || bestScore <= 0) best = chats[0];
+        // If no post has any engagement yet, fall back to the latest post
+        // (GET /chats returns newest-first).
+        if (!best || bestScore <= 0) best = posts[0];
 
-        // Render preview card — keep it compact and consistent with the
-        // existing trend-banner sizing, crop any image, and truncate text.
-        const media = best.media && best.media.url ? best.media : null;
-        const text = (best.text || '')
-            .replace(/\s+/g, ' ')
-            .trim();
-        const short = text.length > 120 ? text.slice(0, 117).trim() + '...' : text;
+        if (best) {
+            console.debug('[home] trending selected post', {
+                id: String(best._id || best.id || ''),
+                score: bestScore,
+                createdAt: best.createdAt,
+                likes: best.likeCount,
+                reposts: best.repostCount,
+                quotes: best.quoteCount,
+                replies: repliedCounts.get(String(best._id || best.id || '')) || 0,
+                text: String(best.text || '').slice(0, 100)
+            });
+        }
 
-        host.innerHTML = `
-            <div class="home-trending-card__body">
-                <div class="home-trending-card__meta">
-                    <strong class="home-trending-card__handle">${best.handle ? escapeHtml(best.handle) : 'Community'}</strong>
-                    <span class="home-trending-card__time">${new Date(best.createdAt || Date.now()).toLocaleString([], { hour: 'numeric', minute: '2-digit', month: 'short', day: 'numeric' })}</span>
-                </div>
-                <div class="home-trending-card__text">${escapeHtml(short)}</div>
-            </div>
-            ${media && media.kind === 'image' ? `<div class="home-trending-card__media"><img src="${escapeHtml(media.url)}" alt="Shared image" loading="lazy"></div>` : ''}
-        `;
+        const text = (best.text || '').replace(/\s+/g, ' ').trim() || 'Shared an update';
+        const short = text.length > 90 ? text.slice(0, 87).trim() + '...' : text;
+        const handle = (best.handle || 'Community').trim();
+        const time = new Date(best.createdAt || Date.now()).toLocaleString([], { hour: 'numeric', minute: '2-digit', month: 'short', day: 'numeric' });
+
+        // .textContent (not innerHTML) — no manual escaping needed and none
+        // of this can be interpreted as markup.
+        titleEl.textContent = short;
+        subEl.textContent = `${handle} • ${time}`;
+        banner.classList.remove('trend-banner--stable', 'trend-banner--warning');
+
+        // Attach metadata and click behavior so tapping the banner opens
+        // the full post in the Reports (Community) view.
+        const postId = String(best._id || best.id || '');
+        banner.dataset.homeTrending = '1';
+        banner.dataset.chatId = postId;
+        banner.dataset.chatScope = best.scope || 'global';
+        banner.dataset.chatLocation = best.location || '';
+
+        banner.setAttribute('role', 'button');
+        banner.setAttribute('tabindex', '0');
+
+        const openTrendingPost = () => {
+            try {
+                const params = new URLSearchParams({
+                    chatId: banner.dataset.chatId,
+                    chatScope: banner.dataset.chatScope || 'global',
+                    chatLocation: banner.dataset.chatLocation || ''
+                });
+                window.LWRouter?.navigate('chat', { search: `?${params.toString()}` });
+            } catch (e) { console.error('[home] navigate to trending post failed', e); }
+        };
+
+        banner.onclick = openTrendingPost;
+        banner.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openTrendingPost(); } };
 
     } catch (err) {
         console.error('[home] trending init failed', err);
     }
 }
 
-function escapeHtml(s) {
-    return String(s || '').replace(/[&<>"']/g, function (c) {
-        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-    });
-}
-
 // Run after initial render — non-blocking.
 setTimeout(initHomeTrending, 400);
+
+if (!window.currentChatLocation) {
+    window.addEventListener('locationReady', () => initHomeTrending());
+    const locationReadyFallback = setInterval(() => {
+        if (window.currentChatLocation) {
+            clearInterval(locationReadyFallback);
+            initHomeTrending();
+        }
+    }, 300);
+    setTimeout(() => clearInterval(locationReadyFallback), 15000);
+}
 })();

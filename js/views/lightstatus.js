@@ -686,6 +686,7 @@ function renderCommunityActivity() {
 // -----------------------------------------------------
 function updateTrendBanner() {
     if (!trendBanner) return;
+    if (trendBanner.dataset.homeTrending === '1') return;
 
     const todayStart = startOfTodayMs();
     const outagesToday = locationReports.filter(r => r.status === 'off' && new Date(r.reportedAt).getTime() >= todayStart);

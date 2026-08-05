@@ -1107,7 +1107,48 @@
 
         </div><!-- /.lwx-row.lwx-row--top -->
 
-        <!-- Stat grid: Outage today / Avg outage / Confidence / Reports -->
+        <!-- NEW: swipeable risk / weather-impact carousel -->
+        <div class="lwx-row lwx-row--risk">
+          <div class="lwx-risk-carousel" id="lwxRiskCarousel">
+            <div class="lwx-risk-carousel__viewport" id="lwxRiskCarouselViewport">
+              <div class="lwx-risk-carousel__track" id="lwxRiskCarouselTrack"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hidden data sources kept for other code that reads them
+             (profile.js / lightstatus.js) — not shown directly since
+             confidenceBarValue/Caption above already surface this. -->
+        <div class="lw-visually-hidden-data">
+          <div class="confidence-bar" id="confidenceBarLabel">
+            <span class="confidence-bar__track"><span class="confidence-bar__fill" id="confidenceBarFill"></span></span>
+          </div>
+          <strong id="sourceConfidence" data-skel="line">—</strong>
+          <span id="heroContributorsPill">— contributors</span>
+          <span id="heroChecksPill">— total checks</span>
+        </div>
+
+        <!-- Trending Stories — most-engaged community report (likes +
+             reposts + quotes + replies), falling back to the latest post
+             when nothing has engagement yet. Filled in by home.js's
+             initHomeTrending(). -->
+        <div class="lw-section">
+          <div class="lw-section__head">
+            <span class="lw-section__title">Trending Stories</span>
+          </div>
+          <div class="lw-live-card trend-banner" id="trendBanner" data-home-trending="1">
+            <div>
+              <span class="lw-live-card__badge"><span class="pulse pulse--on" style="width:6px;height:6px;display:inline-block;"></span> Live</span>
+              <div class="lw-live-card__title" id="trendBannerTitle">Checking today's trend…</div>
+              <div class="lw-live-card__meta" id="trendBannerSub">—</div>
+            </div>
+            <span class="lw-live-card__icon" id="trendBannerIcon" aria-hidden="true">
+              <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M11.2 2.2 4.8 11.4a.8.8 0 0 0 .66 1.26h3.3l-.72 5.14a.8.8 0 0 0 1.44.58l6-8.3a.8.8 0 0 0-.65-1.27h-3.3l.72-5.13a.8.8 0 0 0-1.43-.58Z" fill="currentColor"/></svg>
+            </span>
+          </div>
+        </div>
+
+         <!-- Stat grid: Outage today / Avg outage / Confidence / Reports -->
         <div class="lw-stat-grid lwx-stat-grid-5">
           <div class="lw-stat-card">
             <span class="lw-stat-card__icon lw-stat-card__icon--green" aria-hidden="true">
@@ -1140,54 +1181,8 @@
             <span class="lw-stat-card__label">Reports</span>
             <span class="lw-stat-card__value" id="heroChecks" data-skel="line">—</span>
           </div>
-
-          <!-- NEW: 5th stat card, additive — no existing equivalent -->
-          <!--<div class="lw-stat-card">
-            <span class="lw-stat-card__icon lw-stat-card__icon--maroon" aria-hidden="true">
-              <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3.4" y="5.4" width="9.2" height="7.4" rx="2" fill="currentColor"/><path d="M8 5.4V3.2M6.4 3.2h3.2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><circle cx="6.1" cy="8.8" r="0.85" fill="#1C1F26"/><circle cx="9.9" cy="8.8" r="0.85" fill="#1C1F26"/></svg>
-            </span>
-            <span class="lw-stat-card__label">AI Outlook</span>
-            <span class="lw-stat-card__value" id="lwxStatOutlook" data-skel="line">Stable</span>
-          </div>-->
         </div>
 
-        <!-- NEW: swipeable risk / weather-impact carousel -->
-        <div class="lwx-row lwx-row--risk">
-          <div class="lwx-risk-carousel" id="lwxRiskCarousel">
-            <div class="lwx-risk-carousel__viewport" id="lwxRiskCarouselViewport">
-              <div class="lwx-risk-carousel__track" id="lwxRiskCarouselTrack"></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Hidden data sources kept for other code that reads them
-             (profile.js / lightstatus.js) — not shown directly since
-             confidenceBarValue/Caption above already surface this. -->
-        <div class="lw-visually-hidden-data">
-          <div class="confidence-bar" id="confidenceBarLabel">
-            <span class="confidence-bar__track"><span class="confidence-bar__fill" id="confidenceBarFill"></span></span>
-          </div>
-          <strong id="sourceConfidence" data-skel="line">—</strong>
-          <span id="heroContributorsPill">— contributors</span>
-          <span id="heroChecksPill">— total checks</span>
-        </div>
-
-        <!-- Live updates in your area -->
-        <div class="lw-section">
-          <div class="lw-section__head">
-            <span class="lw-section__title">Live updates in your area</span>
-          </div>
-          <div class="lw-live-card trend-banner trend-banner--stable" id="trendBanner">
-            <div>
-              <span class="lw-live-card__badge"><span class="pulse pulse--on" style="width:6px;height:6px;display:inline-block;"></span> Live</span>
-              <div class="lw-live-card__title" id="trendBannerTitle">Checking today's trend…</div>
-              <div class="lw-live-card__meta" id="trendBannerSub">—</div>
-            </div>
-            <span class="lw-live-card__icon" id="trendBannerIcon" aria-hidden="true">
-              <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M11.2 2.2 4.8 11.4a.8.8 0 0 0 .66 1.26h3.3l-.72 5.14a.8.8 0 0 0 1.44.58l6-8.3a.8.8 0 0 0-.65-1.27h-3.3l.72-5.13a.8.8 0 0 0-1.43-.58Z" fill="currentColor"/></svg>
-            </span>
-          </div>
-        </div>
 
         <!-- NEW: Live Map Heat + Today's Forecast — additive, no
              existing equivalent (the real map lives on the Map tab;
