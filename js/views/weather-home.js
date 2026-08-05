@@ -5,7 +5,8 @@
 //  index.html (#lwxWeatherCard, #lwxGridRiskCard,
 //  #lwxWeatherImpactCard) with a real fetch to the backend's
 //  GET /weather route (see weather.js on the server), which itself
-//  calls Open-Meteo. No API key needed anywhere in this file.
+//  calls WeatherAPI.com. No API key needed anywhere in this file —
+//  that lives in the backend's WEATHERAPI_KEY env var.
 //
 //  LOCATION: prefers a real GPS fix (navigator.geolocation) since
 //  that's the most accurate signal available client-side. If the
@@ -43,6 +44,8 @@
         desc: document.getElementById('lwxWeatherDesc'),
         wind: document.getElementById('lwxWeatherWind'),
         rain: document.getElementById('lwxWeatherRain'),
+        humidity: document.getElementById('lwxWeatherHumidity'),
+        graph: document.getElementById('lwxWeatherGraph'),
         risk: document.getElementById('lwxWeatherRisk'),
         bannerTitle: document.getElementById('lwxWeatherBannerTitle'),
         bannerSub: document.getElementById('lwxWeatherBannerSub'),
@@ -128,31 +131,116 @@
     let riskCarouselIndex = 0;
     let riskCarouselTimer = null;
     let riskCarouselTouchStartX = 0;
+    let lastRiskCarouselData = null;
+
+    function buildRiskSlides(data) {
+        const fallback = data || {};
+        const current = fallback.current || {};
+        const risk = fallback.risk || {};
+        const location = fallback.location || 'your area';
+        const level = risk.level || 'low';
+        const levelLabel = level === 'high' ? 'High Risk' : level === 'medium' ? 'Medium Risk' : 'Low Risk';
+        const eta = risk.eta || 'Now';
+        const temp = current.temperatureC != null ? `${Math.round(current.temperatureC)}°C` : '—';
+        const wind = current.windKph != null ? `${Math.round(current.windKph)} km/h` : '—';
+        const rain = current.rainChance != null ? `${current.rainChance}%` : '—';
+
+        const baseAccent = level === 'high' ? '#ff6b6b' : level === 'medium' ? '#f2b84b' : '#3dd9c2';
+        const basePanel = level === 'high'
+            ? 'linear-gradient(145deg, rgba(255,107,107,0.16), rgba(255,107,107,0.04))'
+            : level === 'medium'
+                ? 'linear-gradient(145deg, rgba(242,184,75,0.16), rgba(242,184,75,0.04))'
+                : 'linear-gradient(145deg, rgba(61,217,194,0.16), rgba(61,217,194,0.04))';
+        const baseBorder = level === 'high' ? 'rgba(255,107,107,0.28)' : level === 'medium' ? 'rgba(242,184,75,0.3)' : 'rgba(61,217,194,0.24)';
+        const baseBadge = level === 'high' ? 'rgba(255,107,107,0.16)' : level === 'medium' ? 'rgba(242,184,75,0.18)' : 'rgba(61,217,194,0.18)';
+        const baseIcon = level === 'high' ? 'radial-gradient(circle, rgba(255,107,107,0.24), rgba(255,107,107,0.03) 72%)' : level === 'medium' ? 'radial-gradient(circle, rgba(242,184,75,0.24), rgba(242,184,75,0.03) 72%)' : 'radial-gradient(circle, rgba(61,217,194,0.24), rgba(61,217,194,0.03) 72%)';
+
+        const theme = { accent: baseAccent, panel: basePanel, border: baseBorder, badge: baseBadge, icon: baseIcon };
+
+        return [
+            {
+                title: 'Grid Risk',
+                badge: levelLabel,
+                description: risk.gridRiskDescription || `Local conditions around ${location} are steady right now.`,
+                footLabel: 'Estimated arrival',
+                footValue: eta,
+                iconSvg: `<svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M17 34a11 11 0 0 1 1.4-21.6A14 14 0 0 1 45 15.3a9.8 9.8 0 0 1-2 19.4H17Z" fill="#8C97AE"/><path d="M32 29 24 43h6l-4.5 11L38 39h-6l4.5-10Z" fill="#F2B33D"/></svg>`,
+                theme
+            },
+            {
+                title: 'Weather Impact',
+                badge: 'Live outlook',
+                description: risk.impactDescription || `Weather is shaping how quickly the area may shift today.`,
+                footLabel: 'Current window',
+                footValue: eta,
+                iconSvg: `<svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="24" cy="24" r="11" fill="#F2B33D"/><g stroke="#F2B33D" stroke-width="2.4" stroke-linecap="round"><path d="M24 5v5M42 24h-5M8 24H3M37.5 10.5l-3.5 3.5M13.9 34.1l-3.5 3.5M10.5 10.5 14 14"/></g><path d="M20 40a11 11 0 0 1 1.4-21.6 14 14 0 0 1 26.6 3.9 9.8 9.8 0 0 1-2 19.4H20Z" fill="#C7D0DE"/></svg>`,
+                theme
+            },
+            {
+                title: 'Outdoor Readiness',
+                badge: 'Today',
+                description: `Expect ${current.condition || 'mixed'} conditions with a ${temp} feel and ${wind} winds.`,
+                footLabel: 'Rain chance',
+                footValue: rain,
+                iconSvg: `<svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M15 39a10 10 0 0 1 1.2-19.3A13.1 13.1 0 0 1 44 14.6a8.8 8.8 0 0 1-1.8 17.4H15Z" fill="#8C97AE"/><path d="M28 20 22 32h5l-2.9 10 10-13h-5l3-9Z" fill="#F2B33D"/></svg>`,
+                theme: { ...theme, accent: '#8fb6ff', panel: 'linear-gradient(145deg, rgba(143,182,255,0.16), rgba(143,182,255,0.04))', border: 'rgba(143,182,255,0.24)', badge: 'rgba(143,182,255,0.16)', icon: 'radial-gradient(circle, rgba(143,182,255,0.24), rgba(143,182,255,0.03) 72%)' }
+            },
+            {
+                title: 'Charging Window',
+                badge: 'Best time',
+                description: `If you need to charge devices, plan around the next ${eta.toLowerCase() === 'now' ? 'few hours' : eta.toLowerCase()} window.`,
+                footLabel: 'Wind',
+                footValue: wind,
+                iconSvg: `<svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="14" y="16" width="36" height="26" rx="8" fill="#3DD9C2" fill-opacity="0.18" stroke="#3DD9C2" stroke-width="3"/><path d="M28 26v12M36 26v12M44 30h-6" stroke="#3DD9C2" stroke-width="3" stroke-linecap="round"/></svg>`,
+                theme: { ...theme, accent: '#7ad2ff', panel: 'linear-gradient(145deg, rgba(122,210,255,0.16), rgba(122,210,255,0.04))', border: 'rgba(122,210,255,0.24)', badge: 'rgba(122,210,255,0.16)', icon: 'radial-gradient(circle, rgba(122,210,255,0.24), rgba(122,210,255,0.03) 72%)' }
+            },
+            {
+                title: 'Community Pulse',
+                badge: 'Nearby signal',
+                description: `Neighbors around ${location} are seeing ${level === 'high' ? 'strong urgency' : level === 'medium' ? 'steady caution' : 'calm conditions'}.`,
+                footLabel: 'Rain chance',
+                footValue: rain,
+                iconSvg: `<svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="24" cy="24" r="10" fill="#F2B33D"/><circle cx="40" cy="24" r="8" fill="#8C97AE"/><path d="M17 44c2.5-6 6-8.8 12-8.8 6 0 9.7 2.8 13 8.8" stroke="#3DD9C2" stroke-width="3" stroke-linecap="round"/></svg>`,
+                theme: { ...theme, accent: '#8c7bff', panel: 'linear-gradient(145deg, rgba(140,123,255,0.16), rgba(140,123,255,0.04))', border: 'rgba(140,123,255,0.24)', badge: 'rgba(140,123,255,0.16)', icon: 'radial-gradient(circle, rgba(140,123,255,0.24), rgba(140,123,255,0.03) 72%)' }
+            }
+        ];
+    }
 
     function getRiskSlides() {
         if (!els.riskCarouselTrack) return [];
         return Array.from(els.riskCarouselTrack.children).filter((child) => child.classList.contains('lwx-risk-card'));
     }
 
-    function renderRiskCarousel() {
-        const slides = getRiskSlides();
-        if (!els.riskCarouselTrack || !slides.length) return;
-        const safeIndex = ((riskCarouselIndex % slides.length) + slides.length) % slides.length;
+    function renderRiskCarousel(data) {
+        if (!els.riskCarouselTrack) return;
+        lastRiskCarouselData = data || lastRiskCarouselData || {};
+        const slides = buildRiskSlides(lastRiskCarouselData);
+        els.riskCarouselTrack.innerHTML = slides.map((slide) => `
+            <div class="lwx-risk-card" style="--risk-accent:${slide.theme.accent};--risk-panel:${slide.theme.panel};--risk-border:${slide.theme.border};--risk-badge-bg:${slide.theme.badge};--risk-icon-bg:${slide.theme.icon};">
+              <div class="lwx-risk-card__text">
+                <span class="lwx-risk-card__title">${slide.title}</span>
+                <span class="lwx-risk-card__badge">${slide.badge}</span>
+                <p>${slide.description}</p>
+                <span class="lwx-risk-card__foot-label">${slide.footLabel}</span>
+                <strong class="lwx-risk-card__foot-value">${slide.footValue}</strong>
+              </div>
+              <span class="lwx-risk-card__icon" aria-hidden="true">${slide.iconSvg}</span>
+            </div>
+        `).join('');
+
+        const renderedSlides = getRiskSlides();
+        if (!renderedSlides.length) return;
+        const safeIndex = ((riskCarouselIndex % renderedSlides.length) + renderedSlides.length) % renderedSlides.length;
         riskCarouselIndex = safeIndex;
         els.riskCarouselTrack.style.transform = `translateX(-${safeIndex * 100}%)`;
-        slides.forEach((slide, index) => slide.classList.toggle('is-active', index === safeIndex));
-        if (els.riskCarouselDots) {
-            els.riskCarouselDots.innerHTML = slides.map((_, index) => `
-                <button class="lwx-risk-carousel__dot ${index === safeIndex ? 'is-active' : ''}" type="button" data-index="${index}" aria-label="Show risk card ${index + 1}"></button>
-            `).join('');
-        }
+        renderedSlides.forEach((slide, index) => slide.classList.toggle('is-active', index === safeIndex));
     }
 
     function goToRiskCarouselSlide(index) {
         const slides = getRiskSlides();
         if (!slides.length) return;
         riskCarouselIndex = (index + slides.length) % slides.length;
-        renderRiskCarousel();
+        renderRiskCarousel(lastRiskCarouselData);
     }
 
     function startRiskCarouselAutoPlay() {
@@ -161,7 +249,7 @@
         if (slides.length <= 1) return;
         riskCarouselTimer = setInterval(() => {
             goToRiskCarouselSlide(riskCarouselIndex + 1);
-        }, 6500);
+        }, 9000);
     }
 
     function initRiskCarousel() {
@@ -169,24 +257,6 @@
 
         renderRiskCarousel();
         startRiskCarouselAutoPlay();
-
-        const controls = els.riskCarousel.querySelectorAll('[data-dir]');
-        controls.forEach((button) => {
-            button.addEventListener('click', () => {
-                const direction = button.getAttribute('data-dir');
-                goToRiskCarouselSlide(direction === 'next' ? riskCarouselIndex + 1 : riskCarouselIndex - 1);
-                startRiskCarouselAutoPlay();
-            });
-        });
-
-        if (els.riskCarouselDots) {
-            els.riskCarouselDots.addEventListener('click', (event) => {
-                const dot = event.target.closest('button[data-index]');
-                if (!dot) return;
-                goToRiskCarouselSlide(Number(dot.getAttribute('data-index')));
-                startRiskCarouselAutoPlay();
-            });
-        }
 
         if (els.riskCarouselViewport) {
             els.riskCarouselViewport.addEventListener('touchstart', (event) => {
@@ -204,59 +274,66 @@
 
     initRiskCarousel();
 
+    function normalizeLocationText(value) {
+        if (typeof value !== 'string') return '';
+        const trimmed = value.trim().replace(/\s+/g, ' ');
+        if (!trimmed) return '';
+        const lowered = trimmed.toLowerCase();
+        if (['your location', 'your area', 'unknown', 'not set', 'n/a', 'none', '—', '-'].includes(lowered)) {
+            return '';
+        }
+        return trimmed.replace(/,\s*(kumasi|ghana|accra)\s*,?.*$/gi, '').trim();
+    }
+
     function currentLocationText() {
+        const candidates = [];
+
+        try {
+            const rawUserData = localStorage.getItem('currentUserData')
+                || sessionStorage.getItem('currentUserData')
+                || localStorage.getItem('signupUser')
+                || sessionStorage.getItem('signupUser');
+            if (rawUserData) {
+                const parsed = JSON.parse(rawUserData);
+                if (parsed && typeof parsed === 'object') {
+                    const city = normalizeLocationText(parsed.city);
+                    const region = normalizeLocationText(parsed.region);
+                    const location = normalizeLocationText(parsed.location);
+                    if (city && region) candidates.push(`${city}, ${region}`);
+                    else if (city) candidates.push(city);
+                    else if (region) candidates.push(region);
+                    else if (location) candidates.push(location);
+                }
+            }
+        } catch {
+            // Ignore malformed cached user data; continue with DOM/window fallbacks.
+        }
+
         const locationNameEl = document.getElementById('locationName');
         const locationSubtitleEl = document.getElementById('locationSubtitleArea');
         const weatherCityEl = document.getElementById('lwxWeatherCity');
 
-        const candidateText = (locationNameEl?.textContent || '').trim();
-        if (candidateText && !/^your location$/i.test(candidateText) && !/^your area$/i.test(candidateText)) {
-            return candidateText;
-        }
+        const fallbackCandidates = [
+            locationNameEl?.textContent,
+            locationSubtitleEl?.textContent,
+            weatherCityEl?.textContent,
+            window.currentChatLocation
+        ];
 
-        const subtitleText = (locationSubtitleEl?.textContent || '').trim();
-        if (subtitleText && !/^your location$/i.test(subtitleText) && !/^your area$/i.test(subtitleText)) {
-            return subtitleText;
-        }
-
-        const weatherCityText = (weatherCityEl?.textContent || '').trim();
-        if (weatherCityText && !/^your location$/i.test(weatherCityText) && !/^your area$/i.test(weatherCityText)) {
-            return weatherCityText;
-        }
-
-        const storedLocation = window.currentChatLocation ? String(window.currentChatLocation).trim() : '';
-        if (storedLocation && !/^your location$/i.test(storedLocation) && !/^your area$/i.test(storedLocation)) {
-            return storedLocation;
-        }
-
-        return '';
-    }
-
-    function getGpsFix() {
-        return new Promise((resolve) => {
-            if (!('geolocation' in navigator)) {
-                resolve(null);
-                return;
-            }
-            navigator.geolocation.getCurrentPosition(
-                (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-                () => resolve(null),
-                { timeout: 6000, maximumAge: 10 * 60 * 1000 }
-            );
+        fallbackCandidates.forEach((candidate) => {
+            const normalized = normalizeLocationText(candidate);
+            if (normalized) candidates.push(normalized);
         });
+
+        return candidates.find(Boolean) || '';
     }
 
     async function buildWeatherUrl() {
-        const gps = await getGpsFix();
+        const locationText = currentLocationText();
+        if (!locationText) return null;
+
         const params = new URLSearchParams();
-        if (gps) {
-            params.set('lat', gps.lat);
-            params.set('lng', gps.lng);
-        } else {
-            const locationText = currentLocationText();
-            if (!locationText) return null; // nothing usable yet — caller retries later
-            params.set('location', locationText);
-        }
+        params.set('location', locationText);
         return `/weather?${params.toString()}`;
     }
 
@@ -350,6 +427,125 @@
         }, 1200);
     }
 
+    // ------------------------------------------------------------
+    // TREND GRAPH — a small SVG line+area chart of the next few
+    // hours' temperature, drawn fresh into #lwxWeatherGraph on every
+    // render() from the /weather route's `hourly` array (see
+    // weather.js's hourlyTrend). Smoothed with a Catmull-Rom curve so
+    // it reads as a gentle moving line rather than sharp zig-zags.
+    // ------------------------------------------------------------
+    function catmullRomPath(points) {
+        if (points.length < 2) return '';
+        if (points.length === 2) {
+            return `M${points[0].x},${points[0].y} L${points[1].x},${points[1].y}`;
+        }
+        let d = `M${points[0].x},${points[0].y}`;
+        for (let i = 0; i < points.length - 1; i++) {
+            const p0 = points[i - 1] || points[i];
+            const p1 = points[i];
+            const p2 = points[i + 1];
+            const p3 = points[i + 2] || p2;
+            const cp1x = p1.x + (p2.x - p0.x) / 6;
+            const cp1y = p1.y + (p2.y - p0.y) / 6;
+            const cp2x = p2.x - (p3.x - p1.x) / 6;
+            const cp2y = p2.y - (p3.y - p1.y) / 6;
+            d += ` C${cp1x.toFixed(1)},${cp1y.toFixed(1)} ${cp2x.toFixed(1)},${cp2y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
+        }
+        return d;
+    }
+
+    // WeatherAPI hour.time is a local "YYYY-MM-DD HH:00" string —
+    // parsed as-is (no timezone math needed, it's already local).
+    function formatHourLabel(timeStr) {
+        if (typeof timeStr !== 'string') return '';
+        const parsed = new Date(timeStr.replace(' ', 'T'));
+        if (Number.isNaN(parsed.getTime())) return '';
+        let hour = parsed.getHours();
+        const suffix = hour >= 12 ? 'PM' : 'AM';
+        hour = hour % 12 || 12;
+        return `${hour}${suffix}`;
+    }
+
+    function buildTrendGraphSvg(hourly, accent) {
+        const points = Array.isArray(hourly)
+            ? hourly.filter((h) => h && typeof h.temperatureC === 'number')
+            : [];
+        if (points.length < 2) return '';
+
+        const width = 300;
+        const height = 90;
+        const padX = 8;
+        const padTop = 16;
+        const padBottom = 20;
+        const plotW = width - padX * 2;
+        const plotH = height - padTop - padBottom;
+
+        const temps = points.map((p) => p.temperatureC);
+        const minT = Math.min(...temps);
+        const maxT = Math.max(...temps);
+        const range = Math.max(maxT - minT, 1); // keep a flat line off the floor/ceiling
+
+        const coords = points.map((p, i) => ({
+            x: padX + (plotW * i) / (points.length - 1),
+            y: padTop + plotH - ((p.temperatureC - minT) / range) * plotH,
+            temp: p.temperatureC,
+            time: p.time
+        }));
+
+        const linePath = catmullRomPath(coords);
+        const last = coords[coords.length - 1];
+        const first = coords[0];
+        const areaPath = `${linePath} L${last.x.toFixed(1)},${(padTop + plotH).toFixed(1)} L${first.x.toFixed(1)},${(padTop + plotH).toFixed(1)} Z`;
+
+        const dots = coords.map((c) => {
+            const isPeak = c.temp === maxT;
+            return `<circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="${isPeak ? 2.6 : 1.6}" class="lwx-weather-graph__dot${isPeak ? ' lwx-weather-graph__dot--peak' : ''}"></circle>`;
+        }).join('');
+
+        const midIndex = Math.floor((coords.length - 1) / 2);
+        const labels = coords.map((c, i) => {
+            if (i !== 0 && i !== coords.length - 1 && i !== midIndex) return '';
+            const anchor = i === 0 ? 'start' : i === coords.length - 1 ? 'end' : 'middle';
+            const text = i === 0 ? 'Now' : formatHourLabel(c.time);
+            if (!text) return '';
+            return `<text x="${c.x.toFixed(1)}" y="${height - 4}" text-anchor="${anchor}" class="lwx-weather-graph__hour">${text}</text>`;
+        }).join('');
+
+        const peak = coords.find((c) => c.temp === maxT);
+        const peakLabel = peak
+            ? `<text x="${peak.x.toFixed(1)}" y="${Math.max(peak.y - 6, 10).toFixed(1)}" text-anchor="middle" class="lwx-weather-graph__temp">${Math.round(peak.temp)}&deg;</text>`
+            : '';
+
+        const gradientId = `lwxWeatherGraphFill${Math.random().toString(36).slice(2, 8)}`;
+
+        return `<svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" class="lwx-weather-graph__svg" role="img" aria-label="Temperature trend for the next few hours">
+            <defs>
+              <linearGradient id="${gradientId}" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="${accent}" stop-opacity="0.38"></stop>
+                <stop offset="100%" stop-color="${accent}" stop-opacity="0"></stop>
+              </linearGradient>
+            </defs>
+            <path d="${areaPath}" fill="url(#${gradientId})" stroke="none"></path>
+            <path d="${linePath}" fill="none" stroke="${accent}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+            ${dots}
+            ${peakLabel}
+            ${labels}
+          </svg>`;
+    }
+
+    function renderTrendGraph(hourly, riskLevel) {
+        if (!els.graph) return;
+        const accent = riskLevel === 'high' ? '#ff6b6b' : riskLevel === 'medium' ? '#f2b84b' : '#3dd9c2';
+        const svg = buildTrendGraphSvg(hourly, accent);
+        if (svg) {
+            els.graph.innerHTML = svg;
+            els.graph.classList.add('lwx-weather-card__graph--ready');
+        } else {
+            els.graph.innerHTML = '';
+            els.graph.classList.remove('lwx-weather-card__graph--ready');
+        }
+    }
+
     function render(data) {
         const { current, risk, location, approximate } = data;
 
@@ -372,6 +568,10 @@
         if (els.rain) {
             els.rain.textContent = current.rainChance != null ? `${current.rainChance}%` : '—';
         }
+        if (els.humidity) {
+            els.humidity.textContent = current.humidity != null ? `${Math.round(current.humidity)}%` : '—';
+        }
+        renderTrendGraph(data.hourly, risk.level);
         if (els.risk) {
             els.risk.textContent = risk.label.replace(' Risk', '');
             applyRiskClass(els.risk, 'lwx-risk-text', risk.level);
@@ -380,11 +580,16 @@
         // Illustrated scene — see the data-weather rules in home.css and
         // the shapes built by buildScene() above. "clear" splits into a
         // sun (daytime) or moon+stars (nighttime) scene using
-        // Open-Meteo's own is_day flag, not local device time.
-        const sceneCondition = current.condition === 'clear' && current.isDay === 0
+        // WeatherAPI's own is_day flag, not local device time.
+        const isNight = current.isDay === 0;
+        const sceneCondition = current.condition === 'clear' && isNight
             ? 'clear-night'
             : current.condition;
         els.card.setAttribute('data-weather', sceneCondition);
+        // Independent of the condition itself — night, cloudy or not,
+        // dims the sky and shows stars, so overcast/rainy nights still
+        // read as night instead of looking identical to daytime.
+        els.card.classList.toggle('lwx-weather-card--night', isNight);
 
         // Storm/rain banner — only worth showing when there's actually
         // something ahead; hide it outright on a clear/low-risk read
@@ -408,28 +613,7 @@
             }
         }
 
-        // Grid Risk card
-        if (els.gridRiskDesc) els.gridRiskDesc.textContent = risk.gridRiskDescription;
-        if (els.gridRiskEta) {
-            const footLabel = document.querySelector('#lwxGridRiskCard .lwx-risk-card__foot-label');
-            if (risk.eta) {
-                els.gridRiskEta.textContent = risk.eta;
-                els.gridRiskEta.style.display = '';
-                if (footLabel) footLabel.style.display = '';
-            } else {
-                // No storm/rain ahead in the next 12h — an ETA line
-                // reading "Estimated arrival: —" is more confusing than
-                // just not showing it.
-                els.gridRiskEta.style.display = 'none';
-                if (footLabel) footLabel.style.display = 'none';
-            }
-        }
-        applyBadgeVariant(els.gridRiskBadge, risk.level);
-        applyRiskCardVariant(els.gridRiskCard, risk.level);
-
-        // Weather Impact card
-        if (els.weatherImpactDesc) els.weatherImpactDesc.textContent = risk.impactDescription;
-        applyRiskCardVariant(els.weatherImpactCard, risk.level);
+        renderRiskCarousel(data);
     }
 
     let pollTimer = null;
@@ -470,5 +654,6 @@
     // cache on first paint — re-run once the real page data is in, same
     // signal home.js already listens for elsewhere in this view.
     window.addEventListener('lw-page-revealed', refresh);
+    window.addEventListener('locationReady', refresh);
 
 })();

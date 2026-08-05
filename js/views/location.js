@@ -123,6 +123,7 @@
     let mapInitStarted = false;
     let nearbyCollapsed = false;
     let currentMapStyle = 'street';
+    let activeMapTab = 'heatmap'; // 'heatmap' | 'map' — see setMapTab()
     let geocoderDebounceTimer = null;
 
     // ── Favorites (unchanged localStorage contract) ───────────
@@ -306,6 +307,40 @@
         });
         heatMapReady = true;
         updateHeatMap(latestLocations);
+    }
+
+    // ============================================================
+    //  Map / Heat Map tabs (#locMapTabs)
+    //  #locMap and #locHeatMap used to render stacked on top of each
+    //  other; now only one is shown at a time and the user picks
+    //  which. Heat Map opens by default (see `hidden` on #locMap in
+    //  index.html). Whichever panel gets revealed was laid out at
+    //  0×0 while `hidden` (same reason show() below nudges the pin
+    //  map with .resize() on view-level show) — so switching TO a
+    //  tab re-triggers that panel's own layout pass now that its
+    //  container has real dimensions.
+    // ============================================================
+
+    function setMapTab(tab) {
+        if (tab !== 'map' && tab !== 'heatmap') return;
+        activeMapTab = tab;
+
+        const mapEl = document.getElementById('locMap');
+        const heatEl = document.getElementById('locHeatMap');
+        if (mapEl) mapEl.hidden = tab !== 'map';
+        if (heatEl) heatEl.hidden = tab !== 'heatmap';
+
+        document.querySelectorAll('#locMapTabs .loc-map-tab').forEach(btn => {
+            const isActive = btn.dataset.tab === tab;
+            btn.classList.toggle('is-active', isActive);
+            btn.setAttribute('aria-selected', String(isActive));
+        });
+
+        if (tab === 'map' && map) {
+            setTimeout(() => map.resize(), 60);
+        } else if (tab === 'heatmap' && heatPanel) {
+            updateHeatMap(latestLocations);
+        }
     }
 
     // Pulls LightWatch's own design tokens (variables.css) and pushes
@@ -954,6 +989,16 @@
             });
         }
 
+        // Map / Heat Map tabs
+        const mapTabs = document.getElementById('locMapTabs');
+        if (mapTabs) {
+            mapTabs.addEventListener('click', (event) => {
+                const btn = event.target.closest('.loc-map-tab');
+                if (!btn) return;
+                setMapTab(btn.dataset.tab);
+            });
+        }
+
         // Street / Satellite toggle
         const styleToggle = document.getElementById('locMapStyleToggle');
         if (styleToggle) {
@@ -987,7 +1032,11 @@
         document.body.classList.add('view-location-active');
         clearInterval(locationPollTimer);
         locationPollTimer = setInterval(() => loadLocations(false), POLL_INTERVAL_STANDARD_MS);
-        if (map) setTimeout(() => map.resize(), 60); // view was hidden (display:none) — canvas needs a resize nudge
+        if (activeMapTab === 'map' && map) {
+            setTimeout(() => map.resize(), 60); // view was hidden (display:none) — canvas needs a resize nudge
+        } else if (activeMapTab === 'heatmap' && heatPanel) {
+            updateHeatMap(latestLocations); // same 0×0-while-hidden issue as the pin map above
+        }
     }
 
     function hide() {

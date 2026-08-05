@@ -2,9 +2,13 @@
 //  UTILS/HEAT-PANEL.JS
 //  A small, dependency-free "heat map": real monitored locations
 //  (name + lat/lng + status from GET /locations/map) laid out on a
-//  blank panel by relative position, each drawn as a soft colored
-//  glow — red for an outage, amber for unknown, green for stable —
-//  with the city's name labeled right on it.
+//  blank panel by relative position, each drawn as a large soft
+//  colored glow (.lw-heat-point__halo, sized off the panel itself via
+//  CSS container query units so it scales per instance) — red for an
+//  outage, amber for unknown, green for stable — that blends with
+//  nearby cities' halos (mix-blend-mode: screen) so the panel reads
+//  as actual spreading "heat" rather than isolated pins. A small dot
+//  + city label sit on top of the halo for the precise point + name.
 //
 //  WHY NOT A REAL MAP: a MapLibre `heatmap` layer on the same street
 //  tiles the pin map already uses just reads as a second copy of that
@@ -87,9 +91,14 @@
         container.classList.add('lw-heat-panel');
         container.innerHTML = `
             <svg class="lw-heat-panel__grid" viewBox="0 0 300 190" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <g stroke="currentColor" stroke-width="1" opacity="0.18">
-                    <path d="M0 40 H300 M0 90 H300 M0 140 H300"/>
-                    <path d="M50 0 V190 M120 0 V190 M190 0 V190 M250 0 V190"/>
+                <g fill="none" stroke="currentColor" stroke-width="1" opacity="0.22" stroke-linecap="round">
+                    <path d="M-10 28 C 60 8, 130 55, 200 30 S 320 15, 340 25"/>
+                    <path d="M-10 75 C 70 55, 150 105, 220 78 S 320 60, 340 72"/>
+                    <path d="M-10 132 C 65 112, 160 158, 230 128 S 320 118, 340 128"/>
+                    <path d="M25 -10 C 5 55, 62 95, 35 150 S 45 210, 30 200"/>
+                    <path d="M108 -10 C 88 55, 148 90, 118 150 S 130 210, 112 200"/>
+                    <path d="M190 -10 C 168 60, 232 100, 198 150 S 212 210, 192 200"/>
+                    <path d="M262 -10 C 240 55, 298 95, 268 150 S 280 210, 262 200"/>
                 </g>
             </svg>
             <div class="lw-heat-panel__points" aria-hidden="true"></div>
@@ -149,6 +158,7 @@
                     el.type = 'button';
                     el.className = 'lw-heat-point';
                     el.innerHTML = `
+                        <span class="lw-heat-point__halo" aria-hidden="true"></span>
                         <span class="lw-heat-point__ring" aria-hidden="true"></span>
                         <span class="lw-heat-point__dot" aria-hidden="true"></span>
                         <span class="lw-heat-point__label"></span>
@@ -163,6 +173,12 @@
                 el.style.setProperty('--lw-heat-fill', color.fill);
                 el.style.setProperty('--lw-heat-glow', color.glow);
                 el.classList.toggle('lw-heat-point--alert', !!color.ring);
+                // The signed-in user's own reported location gets a
+                // distinct "you are here" blue pin on top of its status
+                // color, same idea as the pin map's own blue GPS dot —
+                // see location.js's `live` flag (set by matching against
+                // the user's registered city).
+                el.classList.toggle('lw-heat-point--self', !!loc.live);
                 // Flip the label to sit below the dot instead of above
                 // when the point is near the top edge, so it doesn't
                 // get clipped by the panel's own bounds.

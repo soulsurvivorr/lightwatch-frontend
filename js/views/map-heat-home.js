@@ -37,14 +37,19 @@
 
     async function fetchLocations() {
         try {
-            const base = (window.LWHelpers && LWHelpers.apiBase) ? LWHelpers.apiBase() : (window.API_URL || '');
-            const res = await fetch(`${base}/locations/map`);
+            const base = (typeof LWHelpers !== 'undefined' && typeof LWHelpers.apiBase === 'function')
+                ? LWHelpers.apiBase()
+                : (window.API_URL || '');
+            const url = `${base}/locations/map`;
+            const res = window.fetchWithBackendTimeout
+                ? await window.fetchWithBackendTimeout(url)
+                : await fetch(url);
             if (!res.ok) throw new Error(`Bad response (${res.status})`);
             const data = await res.json();
-            if (!Array.isArray(data.locations)) throw new Error('Malformed /locations/map response');
+            if (!data || !Array.isArray(data.locations)) throw new Error('Malformed /locations/map response');
             return data.locations;
         } catch (err) {
-            console.error('[map-heat-home] fetch failed:', err.message);
+            console.error('[map-heat-home] fetch failed:', err?.message || err);
             return null;
         }
     }

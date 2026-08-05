@@ -5302,24 +5302,36 @@ body:not(.page-data-loading) #view-home #realPageContent {
    breathing room instead of changing the column count.
    ============================================================ */
 .lw-stat-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  display: flex;
+  flex-wrap: nowrap;
   gap: 8px;
   margin-top: 4px;
   width: 100%;
   max-width: 100%;
   min-width: 0;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+
+.lw-stat-grid::-webkit-scrollbar {
+  display: none;
 }
 
 .lw-stat-card {
+  flex: 1 1 0;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
   background: var(--lw-panel);
   border: 1px solid var(--lw-border);
   border-radius: var(--radius-md, 10px);
   padding: 9px 10.5px;
-  min-width: 0;
-  width: 100%;
-  max-width: 100%;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 72px;
 }
 
 @media (max-width: 720px) {
@@ -6311,6 +6323,50 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
   color: var(--lw-text-muted);
 }
 
+/* ---- NEW: hourly temperature trend graph, drawn by weather-home.js
+   (buildTrendGraphSvg()) into #lwxWeatherGraph, sitting between the
+   description and the wind/rain/humidity meta list. This slot is
+   ALWAYS reserved (fixed height, not collapsed) since the card always
+   ends up showing a graph — only its content fades in once the first
+   fetch lands, so there's no layout shift and the skeleton block
+   below can match it pixel-for-pixel. ---- */
+#view-home .lwx-weather-card__graph {
+  height: 58px;
+  margin-bottom: 10px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+#view-home .lwx-weather-card__graph.lwx-weather-card__graph--ready {
+  opacity: 1;
+}
+
+#view-home .lwx-weather-graph__svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+}
+
+#view-home .lwx-weather-graph__dot {
+  fill: rgba(255, 255, 255, 0.85);
+}
+
+#view-home .lwx-weather-graph__dot--peak {
+  fill: #fff;
+}
+
+#view-home .lwx-weather-graph__hour {
+  font-size: 6.5px;
+  fill: rgba(255, 255, 255, 0.6);
+}
+
+#view-home .lwx-weather-graph__temp {
+  font-size: 8px;
+  font-weight: 700;
+  fill: #fff;
+}
+
 #view-home .lwx-weather-card__meta li {
   display: flex;
   align-items: center;
@@ -6330,7 +6386,7 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
 }
 
 /* ---- NEW: medium/low variants — additive, the high variant above is
-     untouched. Driven by live Open-Meteo risk data (see weather-home.js),
+     untouched. Driven by live WeatherAPI risk data (see weather-home.js),
      which reports one of 'high' | 'medium' | 'low'. ---- */
 #view-home .lwx-risk-text--medium {
   color: var(--lw-amber);
@@ -6495,8 +6551,8 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
 /* Only show 5-across on wide viewports; keep 4-across on small/phone
    sizes so the last (Reports) card wraps naturally. */
 @media (min-width: 861px) {
-  #view-home .lw-stat-grid.lwx-stat-grid-5 {
-    grid-template-columns: repeat(5, 1fr);
+  #view-home .lw-stat-grid.lwx-stat-grid-5 .lw-stat-card {
+    min-width: 0;
   }
 }
 
@@ -6531,7 +6587,8 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  transition: transform 0.38s cubic-bezier(.22, 1, .36, 1);
+  transition: transform 0.8s cubic-bezier(.22, 1, .36, 1);
+  will-change: transform;
 }
 
 #view-home .lwx-risk-card {
@@ -6550,62 +6607,14 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
   min-height: 148px;
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.16);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  background: var(--risk-panel, linear-gradient(145deg, rgba(61, 217, 194, 0.16), rgba(61, 217, 194, 0.04)));
+  border: 1px solid var(--risk-border, rgba(61, 217, 194, 0.24));
 }
 
 #view-home .lwx-risk-card:hover,
 #view-home .lwx-risk-card:active {
   transform: translateY(-2px);
   box-shadow: 0 16px 34px rgba(0, 0, 0, 0.22);
-}
-
-#view-home .lwx-risk-carousel__controls {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  margin-top: 10px;
-}
-
-#view-home .lwx-risk-carousel__button {
-  width: 34px;
-  height: 34px;
-  border: 0;
-  border-radius: 999px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--lw-text);
-  cursor: pointer;
-  transition: transform 0.2s ease, background 0.2s ease;
-}
-
-#view-home .lwx-risk-carousel__button:hover,
-#view-home .lwx-risk-carousel__button:focus-visible {
-  transform: translateY(-1px);
-  background: rgba(255, 255, 255, 0.16);
-}
-
-#view-home .lwx-risk-carousel__dots {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-#view-home .lwx-risk-carousel__dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  border: 0;
-  padding: 0;
-  background: rgba(255, 255, 255, 0.28);
-  cursor: pointer;
-  transition: transform 0.2s ease, background 0.2s ease;
-}
-
-#view-home .lwx-risk-carousel__dot.is-active {
-  transform: scale(1.2);
-  background: var(--lw-teal);
 }
 
 /* Colored left accent edge — the one glance-able "how bad is this"
@@ -6617,36 +6626,33 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
   top: 0;
   bottom: 0;
   width: 4px;
+  background: var(--risk-accent, var(--lw-teal));
+  box-shadow: 0 0 10px var(--risk-accent, rgba(61, 217, 194, 0.7));
 }
 
 #view-home .lwx-risk-card--danger {
-  background: linear-gradient(160deg, rgba(229, 72, 77, 0.16), rgba(229, 72, 77, 0.04) 65%);
-  border: 1px solid rgba(229, 72, 77, 0.28);
-}
-#view-home .lwx-risk-card--danger::before {
-  background: var(--lw-red);
-  box-shadow: 0 0 10px rgba(229, 72, 77, 0.7);
+  --risk-accent: var(--lw-red);
+  --risk-panel: linear-gradient(160deg, rgba(229, 72, 77, 0.16), rgba(229, 72, 77, 0.04) 65%);
+  --risk-border: rgba(229, 72, 77, 0.28);
+  --risk-badge-bg: rgba(229, 72, 77, 0.16);
+  --risk-icon-bg: radial-gradient(circle, rgba(229, 72, 77, 0.24), rgba(229, 72, 77, 0.03) 72%);
 }
 
 #view-home .lwx-risk-card--safe {
-  background: linear-gradient(160deg, rgba(11, 107, 58, 0.18), rgba(11, 107, 58, 0.04) 65%);
-  border: 1px solid rgba(11, 107, 58, 0.28);
-}
-#view-home .lwx-risk-card--safe::before {
-  background: var(--lw-green);
-  box-shadow: 0 0 10px rgba(11, 107, 58, 0.6);
+  --risk-accent: var(--lw-green);
+  --risk-panel: linear-gradient(160deg, rgba(11, 107, 58, 0.18), rgba(11, 107, 58, 0.04) 65%);
+  --risk-border: rgba(11, 107, 58, 0.28);
+  --risk-badge-bg: rgba(11, 107, 58, 0.18);
+  --risk-icon-bg: radial-gradient(circle, rgba(11, 107, 58, 0.24), rgba(11, 107, 58, 0.03) 72%);
 }
 
-/* ---- Medium/"warn" risk state — applied by weather-home.js when
-     Open-Meteo's next-12h outlook is rain (not full thunderstorm) —
-     real data, not a third hardcoded card. ---- */
+/* ---- Medium/"warn" risk state ---- */
 #view-home .lwx-risk-card--warn {
-  background: linear-gradient(160deg, rgba(214, 162, 74, 0.18), rgba(214, 162, 74, 0.04) 65%);
-  border: 1px solid rgba(214, 162, 74, 0.3);
-}
-#view-home .lwx-risk-card--warn::before {
-  background: var(--lw-amber);
-  box-shadow: 0 0 10px rgba(214, 162, 74, 0.6);
+  --risk-accent: var(--lw-amber);
+  --risk-panel: linear-gradient(160deg, rgba(214, 162, 74, 0.18), rgba(214, 162, 74, 0.04) 65%);
+  --risk-border: rgba(214, 162, 74, 0.3);
+  --risk-badge-bg: rgba(214, 162, 74, 0.18);
+  --risk-icon-bg: radial-gradient(circle, rgba(214, 162, 74, 0.24), rgba(214, 162, 74, 0.03) 72%);
 }
 
 #view-home .lwx-risk-card--warn .lwx-risk-card__title {
@@ -6679,8 +6685,8 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: rgba(229, 72, 77, 0.18);
-  color: var(--lw-red);
+  background: var(--risk-badge-bg, rgba(229, 72, 77, 0.18));
+  color: var(--risk-accent, var(--lw-red));
   font-size: 0.68rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -6700,9 +6706,7 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
   box-shadow: 0 0 6px currentColor;
 }
 
-/* ---- Badge color follows risk level — additive modifiers, the base
-     (danger/red) badge rule above stays the default the markup ships
-     with. ---- */
+/* ---- Badge color follows risk level ---- */
 #view-home .lwx-risk-card__badge--warn {
   background: rgba(214, 162, 74, 0.18);
   color: var(--lw-amber);
@@ -6800,14 +6804,8 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
   filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.25));
 }
 
-#view-home .lwx-risk-card--danger .lwx-risk-card__icon {
-  background: radial-gradient(circle, rgba(229, 72, 77, 0.24), rgba(229, 72, 77, 0.03) 72%);
-}
-#view-home .lwx-risk-card--warn .lwx-risk-card__icon {
-  background: radial-gradient(circle, rgba(214, 162, 74, 0.24), rgba(214, 162, 74, 0.03) 72%);
-}
-#view-home .lwx-risk-card--safe .lwx-risk-card__icon {
-  background: radial-gradient(circle, rgba(11, 107, 58, 0.24), rgba(11, 107, 58, 0.03) 72%);
+#view-home .lwx-risk-card__icon {
+  background: var(--risk-icon-bg, radial-gradient(circle, rgba(61, 217, 194, 0.24), rgba(61, 217, 194, 0.03) 72%));
 }
 
 /* ---- Live Map Heat + Forecast ---- */
@@ -6861,7 +6859,9 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
   height: 210px;
   border-radius: var(--radius-md);
   overflow: hidden;
-  background: var(--map-surface-muted, var(--dark-bg, #1c1f26));
+  isolation: isolate;
+  z-index: 0;
+  background: linear-gradient(135deg, rgba(12, 17, 27, 0.98) 0%, rgba(22, 29, 43, 0.95) 100%);
   border: 1px solid var(--border-soft);
   margin-bottom: 12px;
 }
@@ -6876,6 +6876,11 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
 .lw-heat-panel {
   position: absolute;
   inset: 0;
+  z-index: 1;
+  /* Scopes .lw-heat-point__halo's mix-blend-mode: screen to blending
+     only with other halos in this panel, not with whatever's behind
+     the card elsewhere in the page. */
+  isolation: isolate;
 }
 
 .lw-heat-panel__grid {
@@ -6889,6 +6894,13 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
 .lw-heat-panel__points {
   position: absolute;
   inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  /* Lets .lw-heat-point__halo size itself off this container's actual
+     rendered height (cqh units below) instead of a fixed px value, so
+     halos scale correctly whether they're in Home's ~210px card or
+     Location's ~260px canvas. */
+  container-type: size;
 }
 
 .lw-heat-point {
@@ -6902,18 +6914,44 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
   background: none;
   padding: 0;
   cursor: pointer;
+  z-index: 3;
+  pointer-events: auto;
   transition: left 0.6s ease, top 0.6s ease;
+}
+
+/* The actual "heat" — a large soft glow per city, layered behind the
+   dot/ring/label (plain DOM order, painted first = behind, no z-index
+   needed since none of its siblings set one either). Sized off the
+   panel's own height via container query units so it scales with the
+   card instead of overflowing/underflowing on different instances.
+   mix-blend-mode: screen lets overlapping halos from nearby cities
+   brighten/blend together the way real heat-map glows do, rather than
+   one flatly covering the other. */
+.lw-heat-point__halo {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 130cqh;
+  height: 130cqh;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--lw-heat-glow, rgba(214, 162, 74, 0.5)) 0%, color-mix(in srgb, var(--lw-heat-glow, rgba(214, 162, 74, 0.5)) 55%, transparent) 45%, transparent 75%);
+  filter: blur(14px);
+  mix-blend-mode: screen;
+  pointer-events: none;
+  transition: background 0.6s ease;
 }
 
 .lw-heat-point__dot {
   position: relative;
   display: block;
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.18);
   background: var(--lw-heat-fill, rgba(214, 162, 74, 0.85));
-  box-shadow: 0 0 16px 6px var(--lw-heat-glow, rgba(214, 162, 74, 0.5));
-  transition: background 0.5s ease, box-shadow 0.5s ease;
+  box-shadow: 0 0 0 2px rgba(255,255,255,0.06), 0 0 18px 8px var(--lw-heat-glow, rgba(214, 162, 74, 0.5));
+  transition: background 0.5s ease, box-shadow 0.5s ease, transform 0.2s ease;
 }
 
 .lw-heat-point__ring {
@@ -6940,13 +6978,32 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
   100% { transform: scale(2.4); opacity: 0; }
 }
 
+/* The signed-in user's own reported location — a blue "you are here"
+   pin layered on top of its status color, same treatment as the pin
+   map's own MapLibre GeolocateControl dot (location.css), so the two
+   maps read consistently. The halo underneath still shows the area's
+   real status color; this is purely a "this one's you" marker. */
+.lw-heat-point--self .lw-heat-point__dot {
+  background: var(--brand2, #4A90D9);
+  border-color: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.9), 0 0 16px 6px rgba(74, 144, 217, 0.6);
+}
+.lw-heat-point--self .lw-heat-point__ring {
+  background: rgba(74, 144, 217, 0.5);
+  animation: lwHeatRingPulse 2s ease-out infinite;
+}
+
 .lw-heat-point__label {
   font-size: 0.62rem;
   font-weight: 700;
   letter-spacing: 0.03em;
   text-transform: uppercase;
-  color: var(--map-text, rgba(255, 255, 255, 0.9));
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
+  color: var(--map-text, rgba(255, 255, 255, 0.95));
+  background: rgba(8, 12, 21, 0.76);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 2px 6px;
+  border-radius: 999px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.24);
   white-space: nowrap;
   order: -1; /* label above the dot by default */
 }
@@ -7341,7 +7398,7 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
 }
 /* ============================================================
    LIVE WEATHER CARD — illustrated scene, not a flat animated gradient.
-   Driven by real Open-Meteo data. weather-home.js builds a handful of
+   Driven by real WeatherAPI data. weather-home.js builds a handful of
    scene elements once (sun/moon, clouds, rain drops, a lightning bolt,
    fog bands, stars) inside `.lwx-weather-scene`, then just sets ONE
    attribute — data-weather="clear|clear-night|cloudy|rain|storm|fog"
@@ -7431,7 +7488,7 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
   50%      { transform: scale(1.07); box-shadow: 0 0 44px 16px rgba(255, 199, 92, 0.62); }
 }
 
-/* ---- Moon + stars (clear, nighttime — from Open-Meteo's is_day flag) ---- */
+/* ---- Moon + stars (clear, nighttime — from WeatherAPI's is_day flag) ---- */
 #view-home .lwx-weather-card[data-weather="clear-night"] .lwx-scene-moon {
   display: block;
   position: absolute;
@@ -7448,7 +7505,14 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
   0%, 100% { transform: translateY(0); }
   50%      { transform: translateY(-5px); }
 }
-#view-home .lwx-weather-card[data-weather="clear-night"] .lwx-scene-stars {
+/* ---- NEW: stars are keyed off .lwx-weather-card--night (set by
+   weather-home.js from is_day alone), not off data-weather="clear-night"
+   — so an overcast, rainy, foggy or stormy NIGHT still shows stars
+   peeking through instead of looking identical to the same condition
+   in daytime. The moon itself stays clear-sky-only (above): stars is
+   the general "it's dark out" signal, the moon is the "and it's
+   actually clear" bonus. ---- */
+#view-home .lwx-weather-card.lwx-weather-card--night .lwx-scene-stars {
   display: block;
 }
 #view-home .lwx-scene-stars {
@@ -7466,6 +7530,22 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
 @keyframes lwxTwinkle {
   0%, 100% { opacity: 0.25; transform: scale(1); }
   50%      { opacity: 1; transform: scale(1.4); }
+}
+
+/* ---- NEW: night dims the whole scene a touch further, under the
+   clouds/rain/moon/stars but above the plain sky gradient, so cloudy
+   and rainy nights read as noticeably darker than their daytime
+   counterparts rather than relying on stars alone. Sits at the same
+   z-index as .lwx-weather-scene; ::before paints first among same-
+   z-index siblings, so it lands under the scene shapes and the ::after
+   sheen. ---- */
+#view-home .lwx-weather-card.lwx-weather-card--night::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: rgba(4, 7, 16, 0.32);
+  pointer-events: none;
 }
 
 /* ---- Clouds (cloudy / rain / storm share the same puff shape, just
@@ -7514,6 +7594,33 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
 #view-home .lwx-weather-card[data-weather="storm"] .lwx-scene-cloud--3 {
   display: block;
   background: rgba(120, 128, 145, 0.8);
+}
+
+/* ---- NEW: while it's actually raining/storming, the rain clouds
+   don't just drift sideways — they drift AND dip, a slow easing
+   bob up and down as they cross, so the cloud carrying the rain
+   feels heavy and alive rather than sliding past on rails. Longer
+   duration + ease-in-out (not the plain-drift's linear) is what
+   makes it read as "slow and easy" rather than jittery. ---- */
+#view-home .lwx-weather-card[data-weather="rain"] .lwx-scene-cloud--1,
+#view-home .lwx-weather-card[data-weather="storm"] .lwx-scene-cloud--1 {
+  animation: lwxCloudDriftDip 40s ease-in-out infinite;
+}
+#view-home .lwx-weather-card[data-weather="rain"] .lwx-scene-cloud--2,
+#view-home .lwx-weather-card[data-weather="storm"] .lwx-scene-cloud--2 {
+  animation: lwxCloudDriftDip 52s ease-in-out infinite;
+  animation-delay: -18s;
+}
+#view-home .lwx-weather-card[data-weather="storm"] .lwx-scene-cloud--3 {
+  animation: lwxCloudDriftDip 60s ease-in-out infinite;
+  animation-delay: -34s;
+}
+@keyframes lwxCloudDriftDip {
+  0%   { transform: translate(0, 0); }
+  25%  { transform: translate(85px, 7px); }
+  50%  { transform: translate(170px, 0); }
+  75%  { transform: translate(255px, 7px); }
+  100% { transform: translate(340px, 0); }
 }
 
 /* ---- Rain — individual falling drops (positions/timings randomized
