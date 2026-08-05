@@ -108,7 +108,7 @@
     let map = null;
     let mapReady = false;
     let heatMapReady = false;
-    let heatMapInitStarted = false;
+    let heatMapInitStarted = false; // heat map removed, keep flags for safety
     let clusterIndex = null;
     let markerEls = new Map();          // cluster/point id -> maplibregl.Marker
     let openPopup = null;
@@ -283,22 +283,12 @@
 
     let heatPanel = null;
 
-    function updateHeatMap(locations) {
-        if (heatPanel) heatPanel.update(locations);
-    }
-
-    function initHeatMap() {
-        if (heatMapInitStarted) return;
-        heatMapInitStarted = true;
-
-        const host = document.getElementById('locHeatMapCanvas');
+    function ensureHeatPanel() {
+        if (heatPanel) return;
+        const host = document.getElementById('locMapHeatPanel');
         if (!host || !window.LWHeatPanel) return;
-
         heatPanel = window.LWHeatPanel.create(host, {
             onSelect(loc) {
-                // Tapping a point on the panel opens the same info card
-                // the pin map's own marker click does, rather than
-                // duplicating that UI here.
                 if (loc && loc.lat != null && loc.lng != null) {
                     openLocationPopup(loc, [loc.lng, loc.lat]);
                     if (map) map.flyTo({ center: [loc.lng, loc.lat], zoom: Math.max(map.getZoom(), DEFAULT_ZOOM) });
@@ -306,7 +296,10 @@
             }
         });
         heatMapReady = true;
-        updateHeatMap(latestLocations);
+    }
+
+    function updateHeatMap(locations) {
+        if (heatPanel && typeof heatPanel.update === 'function') heatPanel.update(locations);
     }
 
     // ============================================================
@@ -322,25 +315,16 @@
     // ============================================================
 
     function setMapTab(tab) {
-        if (tab !== 'map' && tab !== 'heatmap') return;
-        activeMapTab = tab;
-
+        if (tab !== 'map') return;
+        activeMapTab = 'map';
         const mapEl = document.getElementById('locMap');
-        const heatEl = document.getElementById('locHeatMap');
-        if (mapEl) mapEl.hidden = tab !== 'map';
-        if (heatEl) heatEl.hidden = tab !== 'heatmap';
-
+        if (mapEl) mapEl.hidden = false;
         document.querySelectorAll('#locMapTabs .loc-map-tab').forEach(btn => {
-            const isActive = btn.dataset.tab === tab;
+            const isActive = btn.dataset.tab === 'map';
             btn.classList.toggle('is-active', isActive);
             btn.setAttribute('aria-selected', String(isActive));
         });
-
-        if (tab === 'map' && map) {
-            setTimeout(() => map.resize(), 60);
-        } else if (tab === 'heatmap' && heatPanel) {
-            updateHeatMap(latestLocations);
-        }
+        if (map) setTimeout(() => map.resize(), 60);
     }
 
     // Pulls LightWatch's own design tokens (variables.css) and pushes
@@ -999,20 +983,34 @@
             });
         }
 
-        // Street / Satellite toggle
+        // Street / Satellite / Heat Map toggle
         const styleToggle = document.getElementById('locMapStyleToggle');
+        function setMapStyle(style) {
+            const canvas = document.getElementById('locMapCanvas');
+            const host = document.getElementById('locMapHeatPanel');
+            if (style === 'heatmap') {
+                if (canvas) canvas.hidden = true;
+                if (host) host.hidden = false;
+                ensureHeatPanel();
+                updateHeatMap(latestLocations);
+                currentMapStyle = 'heatmap';
+            } else {
+                if (canvas) canvas.hidden = false;
+                if (host) host.hidden = true;
+                const wantsSatellite = style === 'satellite';
+                currentMapStyle = wantsSatellite ? 'satellite' : 'street';
+                if (map) map.setStyle(wantsSatellite ? STYLE_SATELLITE : STYLE_STREET);
+                if (map) setTimeout(() => map.resize(), 60);
+            }
+            if (styleToggle) styleToggle.querySelectorAll('.loc-map__style-btn').forEach(b => b.classList.toggle('is-active', b.dataset.style === style));
+        }
+
         if (styleToggle) {
             styleToggle.addEventListener('click', (event) => {
                 const btn = event.target.closest('.loc-map__style-btn');
-                if (!btn || !map) return;
-                const wantsSatellite = btn.dataset.style === 'satellite';
-                if ((wantsSatellite && currentMapStyle === 'satellite') || (!wantsSatellite && currentMapStyle === 'street')) return;
-                currentMapStyle = wantsSatellite ? 'satellite' : 'street';
-                // STYLE_STREET is an OpenFreeMap style URL; STYLE_SATELLITE is
-                // an inline style object pointing at Esri's keyless raster
-                // tiles — setStyle() accepts either form.
-                map.setStyle(wantsSatellite ? STYLE_SATELLITE : STYLE_STREET);
-                styleToggle.querySelectorAll('.loc-map__style-btn').forEach(b => b.classList.toggle('is-active', b === btn));
+                if (!btn) return;
+                const style = btn.dataset.style || 'street';
+                setMapStyle(style);
             });
         }
     }
@@ -1024,7 +1022,7 @@
     function mount() {
         bindControls();
         initMap();
-        initHeatMap();
+        // heat panel is created on-demand via the style toggle
         loadLocations(true);
     }
 
@@ -1032,10 +1030,22 @@
         document.body.classList.add('view-location-active');
         clearInterval(locationPollTimer);
         locationPollTimer = setInterval(() => loadLocations(false), POLL_INTERVAL_STANDARD_MS);
-        if (activeMapTab === 'map' && map) {
-            setTimeout(() => map.resize(), 60); // view was hidden (display:none) — canvas needs a resize nudge
-        } else if (activeMapTab === 'heatmap' && heatPanel) {
-            updateHeatMap(latestLocations); // same 0×0-while-hidden issue as the pin map above
+        // If the router requested a specific map mode (e.g. from the Home card), honor it on reveal
+        if (window.__lwPendingMapMode) {
+            const mode = window.__lwPendingMapMode;
+            window.__lwPendingMapMode = null;
+            const styleToggle = document.getElementById('locMapStyleToggle');
+            if (styleToggle) {
+                const btn = styleToggle.querySelector(`.loc-map__style-btn[data-style="${mode}"]`);
+                if (btn) btn.click();
+            }
+        } else {
+            if (currentMapStyle === 'heatmap') {
+                ensureHeatPanel();
+                updateHeatMap(latestLocations);
+            } else if (map) {
+                setTimeout(() => map.resize(), 60);
+            }
         }
     }
 

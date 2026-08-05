@@ -177,12 +177,15 @@ function bindRouteLinks() {
             if (link.hasAttribute('data-route')) {
                 e.preventDefault();
                 if (typeof window.LWRouter?.navigate === 'function') {
-                    // Set before navigate() so chat.js's 'lw:route-changed'
-                    // listener — fired from inside navigate(), timing
-                    // unknown from here — sees the pending panel no matter
-                    // when it actually runs.
+                    // Set before navigate() so listeners on the destination
+                    // view can honor the requested sub-mode (e.g. open the
+                    // Heat Map when navigating to Location).
                     if (panel && view === 'chat') {
                         window.__lwPendingReportPanel = panel;
+                    }
+                    const mapMode = link.dataset.mapMode;
+                    if (mapMode && view === 'location') {
+                        window.__lwPendingMapMode = mapMode;
                     }
                     window.LWRouter.navigate(view);
                     // Also activate directly for instant feedback rather

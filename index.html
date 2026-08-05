@@ -1205,7 +1205,7 @@
 
             <div class="lwx-map-visual" id="lwxMapVisual" role="img" aria-label="Live heat map of power status across nearby areas"></div>
 
-            <button type="button" class="btn btn--ghost lwx-map-card__btn" id="lwxViewFullMapBtn" data-route="location">View full map</button>
+            <button type="button" class="btn btn--ghost lwx-map-card__btn" id="lwxViewFullMapBtn" data-route="location" data-map-mode="heatmap">View full map</button>
           </div>
 
           <div class="card lwx-forecast-card" id="lwxForecastCard">
@@ -1899,10 +1899,7 @@
            which one they want. Heat Map is the default open tab (see
            `hidden` on #locMap below) — see views/location.js's
            setMapTab() for the switch + resize-on-reveal logic. -->
-      <div class="loc-map-tabs" id="locMapTabs" role="tablist" aria-label="Map view">
-        <button type="button" class="loc-map-tab is-active" data-tab="heatmap" role="tab" aria-selected="true">Heat Map</button>
-        <button type="button" class="loc-map-tab" data-tab="map" role="tab" aria-selected="false">Map</button>
-      </div>
+      <!-- Map tabs removed; style toggle now includes a Heat Map option -->
 
       <!-- ==== Map ====
            MapLibre GL renders into #locMapCanvas. Everything else here is
@@ -1912,7 +1909,7 @@
            `hidden` by default — Heat Map tab opens first; setMapTab()
            toggles this and nudges MapLibre with .resize() when it's
            revealed, since it was laid out at 0×0 while hidden. -->
-      <div class="loc-map" id="locMap" hidden>
+      <div class="loc-map" id="locMap">
         <div class="loc-map__canvas" id="locMapCanvas" role="application" aria-label="Map of monitored locations"></div>
 
         <div class="loc-map__loading" id="locMapLoading">
@@ -1923,7 +1920,11 @@
         <div class="loc-map__style-toggle" id="locMapStyleToggle" role="group" aria-label="Map view">
           <button type="button" class="loc-map__style-btn is-active" data-style="street">Street</button>
           <button type="button" class="loc-map__style-btn" data-style="satellite">Satellite</button>
+          <button type="button" class="loc-map__style-btn" data-style="heatmap">Heat Map</button>
         </div>
+
+        <!-- Host for the full-page heat panel replicated from Home's small card -->
+        <div id="locMapHeatPanel" class="loc-map__heat-panel" hidden></div>
       </div>
 
       <!-- ==== Live Heat Map ====
@@ -1931,17 +1932,7 @@
            see initHeatMap()) — NOT a MapLibre map, see utils/heat-panel.js's
            header. Fed by the same GET /locations/map data #locMap's pins
            use. Open by default — see the tabs above. -->
-      <section class="loc-heatmap card" id="locHeatMap">
-        <div class="loc-heatmap__head">
-          <span class="card__title">Live Heat Map</span>
-          <span class="loc-heatmap__legend">
-            <span class="loc-heatmap__legend-item"><span class="loc-heatmap__legend-dot loc-heatmap__legend-dot--stable"></span>Stable</span>
-            <span class="loc-heatmap__legend-item"><span class="loc-heatmap__legend-dot loc-heatmap__legend-dot--mixed"></span>Unknown</span>
-            <span class="loc-heatmap__legend-item"><span class="loc-heatmap__legend-dot loc-heatmap__legend-dot--outage"></span>Outages</span>
-          </span>
-        </div>
-        <div class="loc-heatmap__canvas" id="locHeatMapCanvas" role="img" aria-label="Live heat map of outage status across monitored locations, colored by status and labeled by city"></div>
-      </section>
+      <!-- Heat Map removed per request -->
 
       <!-- Info-card template for a clicked marker — cloned into a MapLibre
            popup by views/location.js, never rendered on its own. -->

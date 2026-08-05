@@ -800,6 +800,14 @@
   max-width: none;
   margin: 0;
   box-sizing: border-box;
+  /* FIX (filters bleeding past the page margin): belt-and-suspenders
+     backstop for whatever is making .loc-filters' own box render wider
+     than the space it's given (see that rule's own fix below) — even
+     if some future child ever does the same thing, it gets clipped
+     right here at the page edge instead of poking out past the 16px
+     margin (or the viewport itself). Nothing in this page legitimately
+     needs to overflow horizontally, so this is always safe. */
+  overflow-x: hidden;
 }
 
 #view-location .page,
@@ -822,19 +830,16 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
-  padding: 15px 12px;
-  border-radius: var(--radius-lg);
-  background: transparent;
+  gap: 14px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.loc-header__title {
-  font-family: var(--font-display);
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--text-bright);
-  line-height: 1.2;
+.loc-header__text {
+  min-width: 0;
 }
+
+.loc-heatmap { display:none; }
 
 html[data-theme="light"] .loc-header__title {
   color: #111318;
@@ -959,6 +964,28 @@ html[data-theme="light"] .loc-header__title {
   padding-right: 0;
   margin-left: 0;
   margin-right: 0;
+  /* FIX (the actual "stuck past the margin" bug): min-width: 0 above
+     only removes the automatic min-content floor — it doesn't by
+     itself guarantee this row's width equals its share of .loc-page.
+     That equality was coming entirely from flex cross-axis stretch
+     (.loc-page's default align-items: stretch), which is easy to
+     defeat unintentionally (an inherited/overridden align-items
+     upstream, a stray inline style, a browser quirk) — and when it
+     is, a flex item with no explicit width falls back to shrink-to-fit
+     sizing off its CONTENT, which for a nowrap row of flex-shrink: 0
+     pills is the full sum of every pill's width, not the space
+     actually available. That's what let this row render wider than
+     .loc-page and push its last pill out past the page's right
+     margin, with no amount of internal scrolling able to bring it
+     back in — the box itself, not just its content, was too wide.
+     An explicit width/max-width here removes that dependency on
+     stretch behaving correctly: the row can never be wider than its
+     parent no matter what sets its cross-axis size, so overflow-x:
+     auto has a fixed, correct box to scroll *within* rather than a
+     box that grows to fit its own oversized content. */
+  width: 100%;
+  max-width: 100%;
+  align-self: stretch;
 }
 
 .loc-filters::-webkit-scrollbar {
@@ -1163,13 +1190,18 @@ html[data-theme="light"] .loc-header__title {
   color: var(--bg-deep, #0b1512);
 }
 
-/* ---- Live Heat Map — second, smaller MapLibre instance below the
-   pin map (see views/location.js's initHeatMap()). Shorter than
-   .loc-map since it's a supplementary density view, not the primary
-   navigable map. ---- */
+/* ---- Live Heat Map — the abstract status panel (heat-panel.js),
+   shown in the Heat Map / Map tab above instead of stacked below the
+   pin map (see views/location.js's initHeatMap() and setMapTab()).
+   Same tab-level footprint as the pin map, so .loc-heatmap__canvas
+   below is deliberately sized to match .loc-map's width/height at
+   every breakpoint (350px mobile-first / 58vh+min 320px under 768px /
+   min(64vh,620px) 769-980px / fixed 350px at 981px+) rather than the
+   smaller fixed preview size it used when it rendered as a secondary
+   card underneath the map. ---- */
 
 .loc-heatmap {
-  margin-top: 16px;
+  margin-top: 0;
   padding: 14px;
 }
 
@@ -1184,9 +1216,17 @@ html[data-theme="light"] .loc-header__title {
 
 .loc-heatmap__legend {
   display: flex;
-  gap: 12px;
+  flex-wrap: wrap;
+  gap: 10px 12px;
   font-size: 0.7rem;
   color: var(--map-text-muted);
+}
+
+@media (max-width: 400px) {
+  .loc-heatmap__legend {
+    gap: 6px 10px;
+    font-size: 0.66rem;
+  }
 }
 
 .loc-heatmap__legend-item {
@@ -1205,11 +1245,23 @@ html[data-theme="light"] .loc-header__title {
 .loc-heatmap__legend-dot--mixed { background: #d6a24a; }
 .loc-heatmap__legend-dot--outage { background: #e5484d; }
 
+/* Matches .lw-heat-point--approx's dashed-dot treatment (home.css) —
+   an open/dashed ring instead of a filled swatch, so the legend key
+   itself explains what the dashed points on the panel mean. */
+.loc-heatmap__legend-dot--approx {
+  background: transparent;
+  border: 1.5px dashed var(--map-text-muted, #8C97AE);
+  box-sizing: border-box;
+}
+
 .loc-heatmap__canvas {
   position: relative;
   width: 100%;
-  height: 260px;
-  border-radius: var(--radius-md);
+  /* Mobile-first base — same as .loc-map's own base height, since this
+     panel now occupies the same tab-level slot the pin map does
+     rather than a smaller secondary preview. */
+  height: 350px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
   border: 1px solid var(--border-soft);
   background: var(--map-surface, var(--dark-bg, #1C1F26));
@@ -1223,9 +1275,26 @@ html[data-theme="light"] .loc-header__title {
   font-size: 0.66rem;
 }
 
+/* ---- Width/height tiers below deliberately mirror .loc-map's own
+   breakpoints exactly (see that rule's comments), so switching
+   between the Map and Heat Map tabs never changes the panel's
+   footprint on the page. ---- */
+@media (min-width: 769px) {
+  .loc-heatmap__canvas {
+    height: min(64vh, 620px);
+  }
+}
+
 @media (max-width: 768px) {
   .loc-heatmap__canvas {
-    height: 220px;
+    height: 58vh;
+    min-height: 320px;
+  }
+}
+
+@media (min-width: 981px) {
+  .loc-heatmap__canvas {
+    height: 350px;
   }
 }
 

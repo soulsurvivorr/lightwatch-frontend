@@ -600,4 +600,130 @@ addLocationForm?.addEventListener('submit', (e) => {
 
 
 initHomeReminder();
+// -----------------------------------------------------
+// TRENDING POST — replace the "Live updates in your area"
+// lw-section with a single-card preview of the most-engaged
+// report (likes + reposts + quotes + replies). If none has
+// engagement, falls back to the latest post. Keeps the same
+// visual container size, crops images, and truncates long
+// captions with an ellipsis.
+// -----------------------------------------------------
+async function initHomeTrending() {
+    try {
+        const sectionTitle = 'Live updates in your area';
+        let targetSection = null;
+        document.querySelectorAll('.lw-section').forEach(s => {
+            const titleEl = s.querySelector('.lw-section__title');
+            if (titleEl && titleEl.textContent && titleEl.textContent.trim() === sectionTitle) {
+                targetSection = s;
+            }
+        });
+        if (!targetSection) return;
+
+        // Prefer a stat-card layout inside the stat grid instead of the
+        // original section layout. This keeps the new card aligned with
+        // the other stat cards and preserves the requested container size.
+        const statGrid = document.querySelector('.lw-stat-grid.lwx-stat-grid-5');
+        if (!statGrid) {
+            console.warn('[home] trending stat grid not found');
+            return;
+        }
+
+        if (targetSection.parentNode !== statGrid) {
+            statGrid.appendChild(targetSection);
+        }
+
+        targetSection.classList.remove('lw-section');
+        targetSection.classList.add('lw-stat-card', 'home-trending-card-wrapper');
+        targetSection.style.marginTop = '0';
+        targetSection.style.minHeight = '72px';
+        targetSection.style.padding = '10px';
+        targetSection.style.boxSizing = 'border-box';
+
+        const host = document.createElement('div');
+        host.className = 'home-trending-card';
+        host.id = 'homeTrendingPost';
+        targetSection.replaceChildren(host);
+
+        if (targetSection.parentNode !== statGrid) {
+            statGrid.appendChild(targetSection);
+        }
+
+        // Build the fetch params (scope to current visible location when possible)
+        const loc = (document.getElementById('locationSubtitleArea')?.textContent || '').trim();
+        const params = new URLSearchParams();
+        if (loc) params.set('location', loc);
+        params.set('limit', '100');
+
+        const res = await fetch(`${API_URL}/reports?${params.toString()}`);
+        if (!res.ok) throw new Error('reports fetch failed');
+        const chats = await res.json();
+        if (!Array.isArray(chats) || chats.length === 0) {
+            host.innerHTML = `
+                <div class="home-trending-card__body">
+                    <div class="home-trending-card__meta">
+                        <strong class="home-trending-card__handle">Community</strong>
+                    </div>
+                    <div class="home-trending-card__text">No community posts yet</div>
+                </div>
+            `;
+            return;
+        }
+
+        // compute reply counts (comments)
+        const repliedCounts = new Map();
+        chats.forEach(c => {
+            if (c.replyTo && c.replyTo.chatId) {
+                const key = String(c.replyTo.chatId);
+                repliedCounts.set(key, (repliedCounts.get(key) || 0) + 1);
+            }
+        });
+
+        // score = likes + reposts + quotes + replies
+        let best = null;
+        let bestScore = -1;
+        chats.forEach(c => {
+            const id = String(c._id || c.id || '');
+            const score = (Number(c.likeCount || 0) + Number(c.repostCount || 0) + Number(c.quoteCount || 0) + Number(repliedCounts.get(id) || 0));
+            if (score > bestScore) {
+                bestScore = score;
+                best = c;
+            }
+        });
+
+        // If no engagement found (all scores 0), fall back to newest
+        if (!best || bestScore <= 0) best = chats[0];
+
+        // Render preview card — keep it compact and consistent with the
+        // existing trend-banner sizing, crop any image, and truncate text.
+        const media = best.media && best.media.url ? best.media : null;
+        const text = (best.text || '')
+            .replace(/\s+/g, ' ')
+            .trim();
+        const short = text.length > 120 ? text.slice(0, 117).trim() + '...' : text;
+
+        host.innerHTML = `
+            <div class="home-trending-card__body">
+                <div class="home-trending-card__meta">
+                    <strong class="home-trending-card__handle">${best.handle ? escapeHtml(best.handle) : 'Community'}</strong>
+                    <span class="home-trending-card__time">${new Date(best.createdAt || Date.now()).toLocaleString([], { hour: 'numeric', minute: '2-digit', month: 'short', day: 'numeric' })}</span>
+                </div>
+                <div class="home-trending-card__text">${escapeHtml(short)}</div>
+            </div>
+            ${media && media.kind === 'image' ? `<div class="home-trending-card__media"><img src="${escapeHtml(media.url)}" alt="Shared image" loading="lazy"></div>` : ''}
+        `;
+
+    } catch (err) {
+        console.error('[home] trending init failed', err);
+    }
+}
+
+function escapeHtml(s) {
+    return String(s || '').replace(/[&<>"']/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+}
+
+// Run after initial render — non-blocking.
+setTimeout(initHomeTrending, 400);
 })();

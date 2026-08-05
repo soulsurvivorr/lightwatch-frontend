@@ -179,12 +179,23 @@
                 // see location.js's `live` flag (set by matching against
                 // the user's registered city).
                 el.classList.toggle('lw-heat-point--self', !!loc.live);
+                // Places nobody has ever pinned via the location picker —
+                // GET /locations/map falls back to geocoding the town name
+                // for these and marks them coordsApproximate: true. Both
+                // this panel and the pin map read the same flag off the
+                // same response, so they stay consistent with each other;
+                // here it renders as a dashed ring instead of a solid
+                // filled dot, so it's clear at a glance which points are
+                // user-confirmed positions vs. best-effort guesses.
+                el.classList.toggle('lw-heat-point--approx', !!loc.coordsApproximate);
                 // Flip the label to sit below the dot instead of above
                 // when the point is near the top edge, so it doesn't
                 // get clipped by the panel's own bounds.
                 el.classList.toggle('lw-heat-point--label-below', loc.yPct < 18);
                 el.querySelector('.lw-heat-point__label').textContent = loc.name || '';
-                el.setAttribute('aria-label', `${loc.name || 'Unknown area'}: ${loc.status === 'off' ? 'power outage' : loc.status === 'on' ? 'stable' : 'status unknown'}`);
+                const statusLabel = loc.status === 'off' ? 'power outage' : loc.status === 'on' ? 'stable' : 'status unknown';
+                const approxSuffix = loc.coordsApproximate ? ' (approximate location)' : '';
+                el.setAttribute('aria-label', `${loc.name || 'Unknown area'}: ${statusLabel}${approxSuffix}`);
                 el.title = el.getAttribute('aria-label');
             });
 

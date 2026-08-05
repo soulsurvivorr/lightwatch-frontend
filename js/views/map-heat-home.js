@@ -31,11 +31,22 @@
     const MAX_ZOOM = 16;
     const HEAT_RADIUS = 40; // 35-45px
     const HEAT_BLUR = 30;   // 25-35px
+    const MAX_MARKERS = 8;  // small card — cap labeled points so they don't crowd each other
 
     // ON / UNKNOWN / OFF -> heat intensity. Keys are lowercase since
     // GET /locations/map already returns lowercase status strings
     // ('on' | 'off' | 'unknown'); normalized defensively below anyway.
     const STATUS_INTENSITY = { on: 0.2, unknown: 0.5, off: 1.0 };
+
+    // Same statuses, as marker dot colors — kept in sync with the
+    // gradient stops passed to L.heatLayer below and with the card's own
+    // legend (🟢 Stable / 🟡 Mixed / 🔴 Outages) so a location's dot
+    // always matches the heat glow underneath it.
+    const STATUS_COLOR = {
+        on: { fill: '#0B914E', glow: 'rgba(11, 145, 78, 0.55)' },
+        unknown: { fill: '#D6A24A', glow: 'rgba(214, 162, 74, 0.55)' },
+        off: { fill: '#E5484D', glow: 'rgba(229, 72, 77, 0.6)' }
+    };
 
     // Ghana-wide default view (this app is GH-only) — used until the
     // first real batch of points comes in and the map fits to them.
@@ -50,12 +61,42 @@
         return;
     }
 
+    function statusKey(rawStatus) {
+        return String(rawStatus || 'unknown').toLowerCase();
+    }
+
+    function colorFor(rawStatus) {
+        return STATUS_COLOR[statusKey(rawStatus)] || STATUS_COLOR.unknown;
+    }
+
+    // Ranks "off" first so, on a card that caps how many labeled points
+    // it shows, the places that actually need attention are the ones
+    // kept — same rule the old status panel used.
+    function severityRank(rawStatus) {
+        const key = statusKey(rawStatus);
+        if (key === 'off') return 0;
+        if (key === 'unknown') return 1;
+        return 2;
+    }
+
+    function escapeHtml(str) {
+        return String(str || '').replace(/[&<>"']/g, (ch) => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[ch]));
+    }
+
     // ---- Build the card's inner DOM once ----
     // (map canvas + the "Live" badge / stats bar overlays that sit on
     // top of it — see home.css .lwx-map-live-badge / .lwx-map-stats).
+    // The canvas gets its dark background as an inline style, not just
+    // via CSS: Leaflet's own stylesheet sets ".leaflet-container {
+    // background: #ddd}" once L.map() runs, and because leaflet.css is
+    // linked after home.css in <head>, it would otherwise win the
+    // cascade and show a flash/patch of light gray. Inline style always
+    // beats an external stylesheet regardless of link order.
     visual.classList.add('lwx-heat-map-host');
     visual.innerHTML = `
-        <div class="lwx-heat-map" id="lwxHeatMapCanvas"></div>
+        <div class="lwx-heat-map" id="lwxHeatMapCanvas" style="background:#0b0e14"></div>
         <div class="lwx-map-live-badge"><span class="pulse pulse--on" aria-hidden="true"></span>Live</div>
         <div class="lwx-map-stats" id="lwxMapStatsBar">
             <span id="lwxMapReportCount">Loading…</span>
@@ -70,61 +111,118 @@
     const updatedAtEl = visual.querySelector('#lwxMapUpdatedAt');
     const statusEl = visual.querySelector('#lwxMapStatus');
 
-    // ---- Map — created exactly once. Guards against this script ever
-    // running twice on the same page (re-creating a Leaflet map on top
-    // of a live one is a memory leak). ----
-    const map = L.map(mapEl, {
-        center: DEFAULT_CENTER,
-        zoom: DEFAULT_ZOOM,
-        maxZoom: MAX_ZOOM,
-        zoomControl: false,        // small preview card — keep it clean
-        attributionControl: false, // "Hide Leaflet attribution on the homepage"
-        scrollWheelZoom: false,    // don't fight page scroll
-        touchZoom: true,           // pinch-zoom stays on for mobile
-        tap: true,
-        dragging: true
-    });
+    // ---- Map — built lazily, the first time the card is actually
+    // visible (see ensureMapBuilt() below), and then exactly once after
+    // that. This view's script runs *before* app.js (the router) ever
+    // gets to mark #view-home as the active view — see index.html's
+    // script order — so at the moment this file first executes, the
+    // card can easily still be sitting at display:none with zero layout
+    // size. Leaflet reads its container's actual pixel size at init
+    // time; building it against a 0×0 box is what produces a map that
+    // only ever renders a tiny sliver in one corner, which
+    // invalidateSize() later can't fully recover from. Deferring
+    // construction until there's real layout avoids that entirely. ----
+    let map = null;
+    let heatLayer = null;
+    let markersLayer = null;
+    let mapBuilt = false;
+    let pendingLocations = null; // data that arrived before the map could be built
 
-    // Dark OSM basemap (CARTO's free "dark_all" tiles — OpenStreetMap
-    // data underneath, no Google Maps, no API key).
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        subdomains: 'abcd',
-        maxZoom: MAX_ZOOM
-    }).addTo(map);
-
-    // Tapping the preview (not dragging it) opens the full map — same
-    // "this is just a preview, tap through for detail" behavior the old
-    // per-point status panel had.
-    map.on('click', () => {
-        document.getElementById('lwxViewFullMapBtn')?.click();
-    });
-
-    // ---- Layer registry (future-ready) ----
-    // Additional live overlays — weather radar, lightning strikes, storm
-    // warnings, flood alerts, planned ECG maintenance zones — can be
-    // added later by calling registerLayer('radar', L.someLayer(...))
-    // and toggling layers.radar.addTo(map) / .remove() independently of
-    // the heat layer below. Nothing else in this file needs to change.
-    const layers = {};
-    function registerLayer(name, leafletLayer) {
-        layers[name] = leafletLayer;
-        return leafletLayer;
+    function isVisible(el) {
+        return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
     }
 
-    const heatLayer = registerLayer('heat', L.heatLayer([], {
-        radius: HEAT_RADIUS,
-        blur: HEAT_BLUR,
-        maxZoom: MAX_ZOOM,
-        max: 1.0,
-        minOpacity: 0.35,
-        gradient: {
-            0.0: 'rgba(11, 145, 78, 0)',
-            0.2: '#0B914E', // stable
-            0.5: '#D6A24A', // mixed / unknown
-            1.0: '#E5484D'  // outage
+    function buildMap() {
+        if (mapBuilt) return;
+        mapBuilt = true;
+
+        map = L.map(mapEl, {
+            center: DEFAULT_CENTER,
+            zoom: DEFAULT_ZOOM,
+            maxZoom: MAX_ZOOM,
+            zoomControl: false,        // small preview card — keep it clean
+            attributionControl: false, // "Hide Leaflet attribution on the homepage"
+            scrollWheelZoom: false,    // don't fight page scroll
+            touchZoom: true,           // pinch-zoom stays on for mobile
+            tap: true,
+            dragging: true
+        });
+
+        // Dark OSM basemap (CARTO's free "dark_all" tiles — OpenStreetMap
+        // data underneath, no Google Maps, no API key).
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            subdomains: 'abcd',
+            maxZoom: MAX_ZOOM
+        }).addTo(map);
+
+        // Tapping the open map background (not a marker, not a drag)
+        // opens the full map — same "this is just a preview, tap through
+        // for detail" behavior the old per-point status panel had.
+        map.on('click', () => {
+            document.getElementById('lwxViewFullMapBtn')?.click();
+        });
+
+        // ---- Layer registry (future-ready) ----
+        // Additional live overlays — weather radar, lightning strikes,
+        // storm warnings, flood alerts, planned ECG maintenance zones —
+        // can be added later by calling
+        // registerLayer('radar', L.someLayer(...)) and toggling
+        // layers.radar.addTo(map) / .remove() independently of the heat
+        // and markers layers below. Nothing else in this file needs to
+        // change.
+        const layers = {};
+        function registerLayer(name, leafletLayer) {
+            layers[name] = leafletLayer;
+            return leafletLayer;
         }
-    }));
-    heatLayer.addTo(map);
+
+        heatLayer = registerLayer('heat', L.heatLayer([], {
+            radius: HEAT_RADIUS,
+            blur: HEAT_BLUR,
+            maxZoom: MAX_ZOOM,
+            max: 1.0,
+            minOpacity: 0.35,
+            gradient: {
+                0.0: 'rgba(11, 145, 78, 0)',
+                0.2: STATUS_COLOR.on.fill,      // stable
+                0.5: STATUS_COLOR.unknown.fill, // mixed / unknown
+                1.0: STATUS_COLOR.off.fill      // outage
+            }
+        }));
+        heatLayer.addTo(map);
+
+        // Per-location colored dot + name label, layered on top of the
+        // heat blur — one per plotted place, colored to match its
+        // current status, so individual towns are identifiable and not
+        // just an anonymous glow. A plain LayerGroup so it can be
+        // cleared and rebuilt each poll without touching the heat layer.
+        markersLayer = registerLayer('markers', L.layerGroup());
+        markersLayer.addTo(map);
+
+        // Belt-and-braces: even though we only build once the container
+        // reports a real size, force a size recheck a couple of times
+        // right after construction — covers the case where the reveal
+        // and the build happen in the same tick, before the browser has
+        // actually painted the new layout.
+        requestAnimationFrame(() => map.invalidateSize());
+        setTimeout(() => map.invalidateSize(), 250);
+
+        if (pendingLocations) {
+            renderHeat(pendingLocations);
+            pendingLocations = null;
+        }
+    }
+
+    // Returns true if the map exists (building it first if the card has
+    // just become visible); false if it still can't be built yet.
+    function ensureMapBuilt() {
+        if (mapBuilt) return true;
+        if (isVisible(visual)) {
+            buildMap();
+            return true;
+        }
+        return false;
+    }
 
     let hasFitBoundsOnce = false;
     let hasLoadedOnce = false;
@@ -179,13 +277,42 @@
     // Smoothly swaps the heat layer's data in place — reuses the same
     // Leaflet.heat instance/canvas every poll (setLatLngs() replaces the
     // old point set wholesale, so nothing from a previous poll lingers),
-    // rather than tearing down and recreating a layer each refresh.
+    // rather than tearing down and recreating a layer each refresh. The
+    // colored location markers are rebuilt the same way: clearLayers()
+    // first removes every marker from the previous poll before the new
+    // batch is added, so nothing stale is ever left on the map.
     function renderHeat(locations) {
-        const points = locations
-            .filter(loc => Number.isFinite(loc.lat) && Number.isFinite(loc.lng))
-            .map(loc => [loc.lat, loc.lng, statusIntensity(loc.status)]);
+        const plottable = locations.filter(loc => Number.isFinite(loc.lat) && Number.isFinite(loc.lng));
 
+        const points = plottable.map(loc => [loc.lat, loc.lng, statusIntensity(loc.status)]);
         heatLayer.setLatLngs(points);
+
+        markersLayer.clearLayers();
+        plottable
+            .slice()
+            .sort((a, b) => severityRank(a.status) - severityRank(b.status))
+            .slice(0, MAX_MARKERS)
+            .forEach(loc => {
+                const color = colorFor(loc.status);
+                const icon = L.divIcon({
+                    className: 'lwx-heat-marker-icon',
+                    iconSize: [14, 14],
+                    iconAnchor: [7, 7],
+                    html: `
+                        <span class="lwx-heat-marker__dot" style="--lwx-marker-fill:${color.fill};--lwx-marker-glow:${color.glow}"></span>
+                        <span class="lwx-heat-marker__label">${escapeHtml(loc.name)}</span>
+                    `
+                });
+                const marker = L.marker([loc.lat, loc.lng], { icon, keyboard: false });
+                const statusLabel = statusKey(loc.status) === 'off' ? 'power outage' : statusKey(loc.status) === 'on' ? 'stable' : 'status unknown';
+                marker.bindTooltip(`${loc.name || 'Unknown area'}: ${statusLabel}`, { direction: 'top', offset: [0, -6] });
+                // Tapping a specific location behaves the same as tapping
+                // the map background — opens the full map for detail.
+                marker.on('click', () => {
+                    document.getElementById('lwxViewFullMapBtn')?.click();
+                });
+                markersLayer.addLayer(marker);
+            });
 
         if (points.length && !hasFitBoundsOnce) {
             // Only auto-fit once, on the first real batch of points —
@@ -210,7 +337,14 @@
         const locations = await fetchReports();
         if (locations) {
             hasLoadedOnce = true;
-            renderHeat(locations);
+            if (ensureMapBuilt()) {
+                renderHeat(locations);
+            } else {
+                // Card's still hidden (e.g. Home isn't the active view yet)
+                // — hang onto the data and draw it the moment the map can
+                // be built, instead of dropping this poll on the floor.
+                pendingLocations = locations;
+            }
         } else if (!hasLoadedOnce) {
             // Nothing has ever loaded successfully — show the error instead
             // of leaving the card on "Loading…" forever. A later successful
@@ -227,14 +361,13 @@
         pollTimer = setInterval(refresh, POLL_INTERVAL_MS);
     }
 
-    // Leaflet sizes itself off its container's actual rendered
-    // dimensions at creation time — if the Home view is hidden (e.g.
-    // display:none via the SPA router) when this script runs, the map
-    // would otherwise freeze at 0×0. invalidateSize() on reveal (and via
-    // ResizeObserver, for any other layout shift) keeps it correctly
-    // sized without ever recreating the map instance.
+    // Fires on every reveal of the card's view (including, per home.js's
+    // own use of the same event, the very first one) — makes sure the
+    // map gets built/resized/refreshed as soon as it's actually on
+    // screen, not just on the next 30s poll.
     function handleReveal() {
-        map.invalidateSize();
+        const justBuilt = ensureMapBuilt();
+        if (justBuilt && map) map.invalidateSize();
         refresh();
     }
 
@@ -242,8 +375,30 @@
     startPolling();
     window.addEventListener('lw-page-revealed', handleReveal);
 
+    // Extra safety nets for the "still hidden when this script ran"
+    // case, in case lw-page-revealed isn't dispatched for the very first
+    // view shown on page load:
+    // 1) ResizeObserver — fires when the (until-now display:none) card
+    //    is laid out for the first time.
     if (typeof ResizeObserver === 'function') {
-        const ro = new ResizeObserver(() => map.invalidateSize());
+        const ro = new ResizeObserver(() => {
+            if (ensureMapBuilt() && map) map.invalidateSize();
+        });
         ro.observe(visual);
     }
+    // 2) Short polling loop as a last resort, in case neither of the
+    //    above fires before the router shows the view — stops once the
+    //    map is built or after ~6s.
+    let visibilityChecks = 0;
+    const visibilityPoll = setInterval(() => {
+        visibilityChecks += 1;
+        if (mapBuilt || visibilityChecks > 40) {
+            clearInterval(visibilityPoll);
+            return;
+        }
+        if (ensureMapBuilt() && map) {
+            map.invalidateSize();
+            if (pendingLocations) refresh();
+        }
+    }, 150);
 })();

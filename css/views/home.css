@@ -6367,10 +6367,84 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
   fill: #fff;
 }
 
+/* Subtle, slow motion to make the small trend graph feel alive */
+#view-home .lwx-weather-graph__svg {
+  will-change: transform;
+  transform-origin: 50% 50%;
+  animation: lwx-graph-sway 6s ease-in-out infinite;
+}
+
+#view-home .lwx-weather-graph__svg path[stroke] {
+  /* long dash so the offset animation produces a gentle flowing effect */
+  stroke-dasharray: 1000;
+  animation: lwx-graph-flow 14s linear infinite;
+}
+
+@keyframes lwx-graph-sway {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+  100% { transform: translateY(0); }
+}
+
+@keyframes lwx-graph-flow {
+  0% { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: -1000; }
+}
+
 #view-home .lwx-weather-card__meta li {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+/* Trending post preview styles (keeps compact fixed height, crops media) */
+.home-trending-card-wrapper {
+  min-height: 72px;
+}
+.home-trending-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+.home-trending-card__body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.home-trending-card__meta {
+  display:flex;
+  gap:8px;
+  align-items:center;
+  font-size:12px;
+  color: rgba(255,255,255,0.9);
+}
+.home-trending-card__handle { font-weight:700; }
+.home-trending-card__time { font-size:11px; color: rgba(255,255,255,0.6); }
+.home-trending-card__text {
+  font-size:13px;
+  color: rgba(255,255,255,0.95);
+  line-height:1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.home-trending-card__media {
+  width: 68px;
+  height: 68px;
+  flex: 0 0 68px;
+  overflow: hidden;
+  border-radius: 10px;
+}
+.home-trending-card__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display:block;
 }
 
 #view-home .lwx-weather-card__meta svg {
@@ -6895,6 +6969,62 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
   filter: brightness(0.92) contrast(1.05);
 }
 
+/* Per-location colored dot + name label (views/map-heat-home.js's
+   markersLayer), sitting on top of the heat blur so individual places
+   are identifiable and not just an anonymous glow. --lwx-marker-fill /
+   --lwx-marker-glow are set inline per marker to match that location's
+   current status — same red/amber/green as the heat layer and the
+   card's own legend. */
+.lwx-heat-marker-icon {
+  background: none;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.lwx-heat-marker__dot {
+  display: block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  background: var(--lwx-marker-fill, #D6A24A);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.08), 0 0 10px 4px var(--lwx-marker-glow, rgba(214, 162, 74, 0.5));
+}
+
+.lwx-heat-marker__label {
+  font-size: 0.56rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.95);
+  background: rgba(8, 12, 21, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 1px 5px;
+  border-radius: 999px;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+/* Leaflet's own tooltip chrome, restyled to match the dark card instead
+   of its default white box (shown on tap/hover of a location marker). */
+.lwx-heat-map .leaflet-tooltip {
+  background: rgba(8, 12, 21, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: var(--lw-text, rgba(255, 255, 255, 0.95));
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 4px 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+.lwx-heat-map .leaflet-tooltip-top:before {
+  border-top-color: rgba(8, 12, 21, 0.92);
+}
+
 /* Leaflet's own attribution/zoom chrome — attribution is turned off at
    the map-options level (attributionControl: false) per spec, this just
    keeps any Leaflet-injected control corner from taking up space if one
@@ -7120,6 +7250,29 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
 .lw-heat-point--self .lw-heat-point__ring {
   background: rgba(74, 144, 217, 0.5);
   animation: lwHeatRingPulse 2s ease-out infinite;
+}
+
+/* Approximate positions — nobody has ever pinned this place via the
+   location picker, so GET /locations/map fell back to geocoding the
+   town name instead of a confirmed coordinate. Same status color, but
+   an open/dashed ring instead of a solid filled dot, so it's clear at
+   a glance which points are user-confirmed vs. best-effort guesses.
+   Halo/label/status color are untouched — this is purely about the
+   center marker's fill. */
+.lw-heat-point--approx .lw-heat-point__dot {
+  background: transparent;
+  border-style: dashed;
+  border-width: 2px;
+  border-color: var(--lw-heat-fill, rgba(214, 162, 74, 0.85));
+  box-shadow: 0 0 14px 4px var(--lw-heat-glow, rgba(214, 162, 74, 0.5));
+}
+
+/* The "you are here" marker is always a confirmed GPS/registered
+   position, never a geocoded guess — but keep this rule defensive in
+   case that ever changes, so --self's solid blue treatment always wins. */
+.lw-heat-point--approx.lw-heat-point--self .lw-heat-point__dot {
+  background: var(--brand2, #4A90D9);
+  border-style: solid;
 }
 
 .lw-heat-point__label {
