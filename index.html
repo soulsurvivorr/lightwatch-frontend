@@ -681,11 +681,7 @@
          and since <header class="topbar"> is a full-width block-level
          element, this shimmer bar automatically spans the exact same
          full width the real topbar does. -->
-    <div class="topbar__skeleton" aria-hidden="true">
-      <span class="skel skel-dot" style="width:32px;height:32px;border-radius:8px;"></span>
-      <span class="skel skel-line" style="width:120px;height:16px;"></span>
-      <span class="skel skel-line" style="width:64px;height:14px;margin-left:auto;"></span>
-    </div>
+    
   </header>
 
   <!-- Full-screen skeleton, shown while .page-data-loading is on <body>
@@ -911,31 +907,11 @@
 
 
   <main class="page" id="realPageContent">
-
+    <!---->
     <!-- Greeting header -->
     <div class="lw-home-header">
-      <div class="hero-banner__location">
-        <span class="pulse pulse--on" style="width:8px;height:8px;"></span>
-        <span id="locationName" data-skel="line">Your location</span>
-      </div>
       <div class="lw-home-header__greeting" id="pageGreeting" data-skel="line">Welcome back</div>
       <div class="lw-home-header__sub" id="locationSubtitle" data-skel="line">Here's what's happening in <span id="locationSubtitleArea">your area</span></div>
-
-      <!-- Shown only when the user has added a second location on the
-           Account page. Tapping it opens a side panel. -->
-      <button type="button" class="secondary-location-chip" id="secondaryLocationChip" hidden>
-        <span class="secondary-location-chip__dot" aria-hidden="true"></span>
-        <span id="secondaryLocationChipLabel">Second location</span>
-        <span class="secondary-location-chip__arrow" aria-hidden="true">›</span>
-      </button>
-
-      <!-- Contributors / uptime still tracked, just not part of the
-           new 4-card stat grid below — kept for any code reading
-           these ids, not shown on screen. -->
-      <div class="lw-visually-hidden-data">
-        <span class="hero-stat__value" id="heroContributors" data-skel="line"></span>
-        <span class="hero-stat__value" id="heroUptime" data-skel="line"></span>
-      </div>
     </div>
 
     <div class="location-page-grid">
