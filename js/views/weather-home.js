@@ -52,7 +52,11 @@
         gridRiskDesc: document.getElementById('lwxGridRiskDesc'),
         gridRiskEta: document.getElementById('lwxGridRiskEta'),
         weatherImpactCard: document.getElementById('lwxWeatherImpactCard'),
-        weatherImpactDesc: document.getElementById('lwxWeatherImpactDesc')
+        weatherImpactDesc: document.getElementById('lwxWeatherImpactDesc'),
+        riskCarousel: document.getElementById('lwxRiskCarousel'),
+        riskCarouselViewport: document.getElementById('lwxRiskCarouselViewport'),
+        riskCarouselTrack: document.getElementById('lwxRiskCarouselTrack'),
+        riskCarouselDots: document.getElementById('lwxRiskCarouselDots')
     };
 
     // Home view isn't on screen (or this markup changed) — nothing to wire up.
@@ -120,6 +124,85 @@
     // Built once on load; CSS handles all show/hide/animation from
     // here based on the card's data-weather attribute.
     buildScene();
+
+    let riskCarouselIndex = 0;
+    let riskCarouselTimer = null;
+    let riskCarouselTouchStartX = 0;
+
+    function getRiskSlides() {
+        if (!els.riskCarouselTrack) return [];
+        return Array.from(els.riskCarouselTrack.children).filter((child) => child.classList.contains('lwx-risk-card'));
+    }
+
+    function renderRiskCarousel() {
+        const slides = getRiskSlides();
+        if (!els.riskCarouselTrack || !slides.length) return;
+        const safeIndex = ((riskCarouselIndex % slides.length) + slides.length) % slides.length;
+        riskCarouselIndex = safeIndex;
+        els.riskCarouselTrack.style.transform = `translateX(-${safeIndex * 100}%)`;
+        slides.forEach((slide, index) => slide.classList.toggle('is-active', index === safeIndex));
+        if (els.riskCarouselDots) {
+            els.riskCarouselDots.innerHTML = slides.map((_, index) => `
+                <button class="lwx-risk-carousel__dot ${index === safeIndex ? 'is-active' : ''}" type="button" data-index="${index}" aria-label="Show risk card ${index + 1}"></button>
+            `).join('');
+        }
+    }
+
+    function goToRiskCarouselSlide(index) {
+        const slides = getRiskSlides();
+        if (!slides.length) return;
+        riskCarouselIndex = (index + slides.length) % slides.length;
+        renderRiskCarousel();
+    }
+
+    function startRiskCarouselAutoPlay() {
+        clearInterval(riskCarouselTimer);
+        const slides = getRiskSlides();
+        if (slides.length <= 1) return;
+        riskCarouselTimer = setInterval(() => {
+            goToRiskCarouselSlide(riskCarouselIndex + 1);
+        }, 6500);
+    }
+
+    function initRiskCarousel() {
+        if (!els.riskCarousel) return;
+
+        renderRiskCarousel();
+        startRiskCarouselAutoPlay();
+
+        const controls = els.riskCarousel.querySelectorAll('[data-dir]');
+        controls.forEach((button) => {
+            button.addEventListener('click', () => {
+                const direction = button.getAttribute('data-dir');
+                goToRiskCarouselSlide(direction === 'next' ? riskCarouselIndex + 1 : riskCarouselIndex - 1);
+                startRiskCarouselAutoPlay();
+            });
+        });
+
+        if (els.riskCarouselDots) {
+            els.riskCarouselDots.addEventListener('click', (event) => {
+                const dot = event.target.closest('button[data-index]');
+                if (!dot) return;
+                goToRiskCarouselSlide(Number(dot.getAttribute('data-index')));
+                startRiskCarouselAutoPlay();
+            });
+        }
+
+        if (els.riskCarouselViewport) {
+            els.riskCarouselViewport.addEventListener('touchstart', (event) => {
+                riskCarouselTouchStartX = event.touches[0].clientX;
+            }, { passive: true });
+
+            els.riskCarouselViewport.addEventListener('touchend', (event) => {
+                const delta = event.changedTouches[0].clientX - riskCarouselTouchStartX;
+                if (Math.abs(delta) < 50) return;
+                goToRiskCarouselSlide(delta < 0 ? riskCarouselIndex + 1 : riskCarouselIndex - 1);
+                startRiskCarouselAutoPlay();
+            }, { passive: true });
+        }
+    }
+
+    initRiskCarousel();
 
     function currentLocationText() {
         const locationNameEl = document.getElementById('locationName');

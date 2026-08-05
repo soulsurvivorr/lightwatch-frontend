@@ -6507,18 +6507,39 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
    still comes entirely from the existing modifier classes weather-home.js
    already toggles — nothing about that contract changed. ---- */
 #view-home .lwx-row--risk {
-  flex-direction: row;
-  flex-wrap: wrap;
-  gap: 14px;
+  width: 100%;
+  margin-top: 14px;
+}
+
+#view-home .lwx-risk-carousel {
+  width: 100%;
+  max-width: 100%;
+}
+
+#view-home .lwx-risk-carousel__viewport {
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+#view-home .lwx-risk-carousel__track {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 100%;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  transition: transform 0.38s cubic-bezier(.22, 1, .36, 1);
 }
 
 #view-home .lwx-risk-card {
   position: relative;
   overflow: hidden;
-  flex: 1 1 280px;
-  min-width: 0;
-  width: auto;
+  width: 100%;
   max-width: 100%;
+  min-width: 0;
   box-sizing: border-box;
   border-radius: var(--radius-lg);
   padding: 18px 18px 18px 22px;
@@ -6535,6 +6556,56 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
 #view-home .lwx-risk-card:active {
   transform: translateY(-2px);
   box-shadow: 0 16px 34px rgba(0, 0, 0, 0.22);
+}
+
+#view-home .lwx-risk-carousel__controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+#view-home .lwx-risk-carousel__button {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--lw-text);
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+#view-home .lwx-risk-carousel__button:hover,
+#view-home .lwx-risk-carousel__button:focus-visible {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.16);
+}
+
+#view-home .lwx-risk-carousel__dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+#view-home .lwx-risk-carousel__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  border: 0;
+  padding: 0;
+  background: rgba(255, 255, 255, 0.28);
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+#view-home .lwx-risk-carousel__dot.is-active {
+  transform: scale(1.2);
+  background: var(--lw-teal);
 }
 
 /* Colored left accent edge — the one glance-able "how bad is this"
