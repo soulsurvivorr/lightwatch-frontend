@@ -113,6 +113,15 @@
        defined global by the time views/location.js runs at the bottom
        of the body. -->
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+
+  <!-- ==== Leaflet + Leaflet.heat (Home "Live Map Heat" card) ====
+       Real OSM-tiled map + heat layer for the Home preview card — see
+       views/map-heat-home.js. Kept separate from the MapLibre bundle
+       above (Location tab's full pin map): different library, different
+       card, no shared dependency either way. Loaded here (not deferred)
+       so L / L.heatLayer are defined globals by the time
+       views/map-heat-home.js runs at the bottom of the body. -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 </head>
 <body>
 
@@ -745,9 +754,11 @@
           </div>
           <span class="skel skel-line" style="width:40%;height:30px;margin-top:10px;"></span>
           <span class="skel skel-line" style="width:55%;height:12px;margin-top:8px;"></span>
+          <span class="skel skel-block" style="height:58px;margin-top:10px;border-radius:10px;"></span>
           <div style="display:flex;flex-direction:column;gap:8px;margin-top:16px;">
             <span class="skel skel-line" style="width:70%;height:11px;"></span>
             <span class="skel skel-line" style="width:60%;height:11px;"></span>
+            <span class="skel skel-line" style="width:65%;height:11px;"></span>
             <span class="skel skel-line" style="width:75%;height:11px;"></span>
           </div>
         </div>
@@ -990,7 +1001,7 @@
                     <path d="M7 6.3a7.5 7.5 0 1 0 10 0" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
                   </svg>
                 </span>
-                <span id="statusPillText" data-skel="line">Checking status…</span>
+                <span id="statusPillText" data-skel="line"></span>
               </div>
               <div class="status-hero__sub">
                 Since <strong id="lastVerified" data-skel="line">—</strong>
@@ -2704,10 +2715,11 @@
        scripts, each depends on globals the previous one defined) ==== -->
   <script src="./js/utils/validators.js"></script>
   <script src="./js/utils/helpers.js"></script>
-  <!-- Shared red/amber/green status panel (NOT a map) used by both
-       the Home "Live Map Heat" card and the Location view's Live Heat
-       Map panel — loaded early so both view scripts can rely on
-       window.LWHeatPanel already existing. See the file header. -->
+  <!-- Shared red/amber/green status panel (NOT a map) — still used by
+       the Location view's own Live Heat Map panel. The Home "Live Map
+       Heat" card no longer uses this (see views/map-heat-home.js, now a
+       real Leaflet map); loaded early regardless so location.js can rely
+       on window.LWHeatPanel already existing. See the file header. -->
   <script src="./js/utils/heat-panel.js"></script>
   <script src="./js/utils/location-picker.js"></script>
   <script src="./js/services/auth.js"></script>
@@ -2749,10 +2761,16 @@
   <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
   <script src="https://unpkg.com/supercluster@8.0.1/dist/supercluster.min.js"></script>
   <script src="./js/views/location.js"></script>
-  <!-- Home view's "Live Map Heat" card — a custom red/amber/green
-       status panel (NOT a MapLibre map — see the file header for why),
-       needs LWHelpers.apiBase() (api.js, already loaded earlier). Kept
-       here alongside location.js just for script-order tidiness. -->
+  <!-- Leaflet + Leaflet.heat — real OSM map + heat layer for the Home
+       "Live Map Heat" card (views/map-heat-home.js below). Separate from
+       the MapLibre bundle above, which powers the Location tab's full
+       pin map instead. -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+  <!-- Home view's "Live Map Heat" card — a real Leaflet + Leaflet.heat
+       map (dark OSM tiles) driven by GET /locations/map, needs
+       LWHelpers.apiBase() (api.js, already loaded earlier). Kept here
+       alongside location.js just for script-order tidiness. -->
   <script src="./js/views/map-heat-home.js"></script>
   <script src="./js/views/notifications.js"></script>
   <script src="./js/views/account.js"></script>

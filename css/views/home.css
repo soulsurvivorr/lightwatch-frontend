@@ -6856,7 +6856,7 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
 
 #view-home .lwx-map-visual {
   position: relative;
-  height: 210px;
+  height: 260px;
   border-radius: var(--radius-md);
   overflow: hidden;
   isolation: isolate;
@@ -6864,6 +6864,135 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
   background: linear-gradient(135deg, rgba(12, 17, 27, 0.98) 0%, rgba(22, 29, 43, 0.95) 100%);
   border: 1px solid var(--border-soft);
   margin-bottom: 12px;
+}
+
+/* ---- Real Leaflet + Leaflet.heat map (views/map-heat-home.js) ----
+   Replaces the old flat red/amber/green status panel with a real,
+   dark-tiled OSM map and a genuine heat layer built from live report
+   data. Unscoped (like .lw-heat-panel below) so the same classes could
+   back another card later; sizing/context stays on
+   #view-home .lwx-map-visual above. */
+.lwx-heat-map-host {
+  isolation: isolate;
+}
+
+.lwx-heat-map {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: #0b0e14; /* shows through briefly while dark tiles load */
+}
+
+/* Subtle glow on the heat canvas itself, on top of the blur/gradient
+   Leaflet.heat already bakes in — keeps the card from reading as flat
+   colored blobs on a map. */
+.lwx-heat-map .leaflet-heatmap-layer {
+  filter: saturate(1.15) drop-shadow(0 0 14px rgba(255, 255, 255, 0.06));
+  mix-blend-mode: screen;
+}
+
+.lwx-heat-map .leaflet-tile-pane {
+  filter: brightness(0.92) contrast(1.05);
+}
+
+/* Leaflet's own attribution/zoom chrome — attribution is turned off at
+   the map-options level (attributionControl: false) per spec, this just
+   keeps any Leaflet-injected control corner from taking up space if one
+   ever gets added back. */
+.lwx-heat-map .leaflet-control-container {
+  font-family: inherit;
+}
+
+.lwx-heat-map .leaflet-control-zoom a {
+  background: rgba(8, 12, 21, 0.82);
+  color: var(--lw-text, #fff);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+/* "● Live" badge, top-left over the map — same pulsing dot used by
+   trendBanner elsewhere on Home. */
+.lwx-map-live-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--lw-text, rgba(255, 255, 255, 0.95));
+  background: rgba(8, 12, 21, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(4px);
+  pointer-events: none;
+}
+
+.lwx-map-live-badge .pulse {
+  width: 6px;
+  height: 6px;
+}
+
+/* Bottom overlay bar — active report count + last-updated time, sits
+   above the "View full map" button which stays outside this panel. */
+.lwx-map-stats {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--lw-text, rgba(255, 255, 255, 0.92));
+  background: rgba(8, 12, 21, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(4px);
+  pointer-events: none;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.lwx-map-stats__sep {
+  color: var(--lw-text-faint);
+  opacity: 0.6;
+}
+
+#lwxMapUpdatedAt {
+  color: var(--lw-text-faint);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Loading/error text — same treatment as the shared heat-panel's own
+   status line, shown only when there's nothing plottable yet. */
+.lwx-map-status {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0 20px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--lw-text-faint);
+  background: rgba(10, 13, 20, 0.55);
+  pointer-events: none;
+}
+
+.lwx-map-status[data-variant="error"] {
+  color: var(--lw-red);
 }
 
 /* ---- Shared "heat panel" (utils/heat-panel.js) — unscoped so both
@@ -7393,7 +7522,7 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
 
 @media (min-width: 981px) {
   #view-home .lwx-map-visual {
-    height: 250px;
+    height: 280px;
   }
 }
 /* ============================================================
