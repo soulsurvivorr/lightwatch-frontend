@@ -10,7 +10,7 @@
 
 /* Bottom nav indicators */
 .bottom-nav-link {
-	transition: background-color 0.2s ease, color 0.2s ease;
+	transition: background-color 0.05s ease, color 0.05s ease;
 }
 
 .bottom-nav-link--active {

@@ -117,6 +117,7 @@
     function setCount(key, count) {
         setCountRaw(key, count);
         renderAll();
+        window.dispatchEvent(new CustomEvent('lw:notifications-unread-changed'));
     }
 
     function increment(key, by = 1) {

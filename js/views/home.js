@@ -16,6 +16,189 @@
 // ============================================================
 
 (function () {
+// ------------------------------------------------------------
+// SHARED: createLoopCarousel() — a small seamless infinite-loop
+// carousel helper. Built for the risk carousel and the Did You Know
+// card, both of which either had a jarring "snap back to the start"
+// on loop (risk carousel) or weren't interactive at all (Did You
+// Know). Exposed on window since weather-home.js (loaded after this
+// file — see index.html's script order) needs it too, and this is
+// the one shared piece of behavior between two otherwise unrelated
+// cards rather than duplicating the same logic twice.
+//
+// How the "no jump" loop works: the real slides are rendered with a
+// clone of the LAST slide prepended and a clone of the FIRST slide
+// appended, so index 0 is a clone, 1..n are the real slides, and n+1
+// is another clone. Advancing off the real last slide animates onto
+// the trailing clone like normal, then the instant that transition
+// finishes we jump (with transitions off) to the real first slide,
+// which sits in the exact same visual position — so the "reset" is
+// invisible instead of a hard cut backwards across the whole track.
+//
+// Swiping/dragging uses Pointer Events (not touchstart/touchend) so
+// it works with touch AND mouse drag, which is also the "something
+// for the user to swipe" affordance that was missing before.
+// ------------------------------------------------------------
+function createLoopCarousel({ viewport, track, autoplayMs, onChange }) {
+    let realCount = 0;
+    let total = 0;
+    let posIndex = 0;
+    let logicalIndex = 0;
+    let autoplayTimer = null;
+    let loopResetTimer = null;
+
+    function setTransform(pos, animate) {
+        if (!animate) track.style.transition = 'none';
+        track.style.transform = `translateX(-${pos * 100}%)`;
+        if (!animate) {
+            // Force a reflow so the *next* transform change (which will
+            // have transitions back on) actually animates, instead of
+            // the browser coalescing this jump with it.
+            void track.offsetHeight;
+            track.style.transition = '';
+        }
+    }
+
+    function clearLoopResetTimer() {
+        if (loopResetTimer) {
+            clearTimeout(loopResetTimer);
+            loopResetTimer = null;
+        }
+    }
+
+    function jumpToBoundaryIfNeeded() {
+        if (realCount <= 1) return;
+        if (posIndex === 0) {
+            posIndex = realCount;
+            setTransform(posIndex, false);
+        } else if (posIndex === total - 1) {
+            posIndex = 1;
+            setTransform(posIndex, false);
+        }
+    }
+
+    function scheduleLoopReset() {
+        clearLoopResetTimer();
+        const duration = parseFloat(getComputedStyle(track).transitionDuration) || 0.8;
+        const delay = Math.max(25, Math.ceil(duration * 1000) + 25);
+        loopResetTimer = setTimeout(() => {
+            loopResetTimer = null;
+            jumpToBoundaryIfNeeded();
+        }, delay);
+    }
+
+    function handleTransitionEnd(event) {
+        if (event.target !== track || realCount <= 1) return;
+        clearLoopResetTimer();
+        jumpToBoundaryIfNeeded();
+    }
+    track.addEventListener('transitionend', handleTransitionEnd);
+
+    function render(slidesHtml) {
+        clearLoopResetTimer();
+        realCount = slidesHtml.length;
+        if (realCount === 0) {
+            track.innerHTML = '';
+            total = 0;
+            return;
+        }
+        logicalIndex = ((logicalIndex % realCount) + realCount) % realCount;
+        if (realCount === 1) {
+            track.innerHTML = slidesHtml[0];
+            total = 1;
+            posIndex = 0;
+            setTransform(0, false);
+            onChange?.(0, 1);
+            return;
+        }
+        track.innerHTML = [slidesHtml[realCount - 1], ...slidesHtml, slidesHtml[0]].join('');
+        total = realCount + 2;
+        posIndex = logicalIndex + 1;
+        setTransform(posIndex, false);
+        onChange?.(logicalIndex, realCount);
+    }
+
+    function goTo(index, animate = true) {
+        if (realCount === 0) return;
+        logicalIndex = ((index % realCount) + realCount) % realCount;
+        posIndex = logicalIndex + 1;
+        setTransform(posIndex, animate);
+        if (animate) scheduleLoopReset();
+        onChange?.(logicalIndex, realCount);
+    }
+
+    function next() {
+        if (realCount <= 1) return;
+        logicalIndex = (logicalIndex + 1) % realCount;
+        posIndex += 1;
+        setTransform(posIndex, true);
+        scheduleLoopReset();
+        onChange?.(logicalIndex, realCount);
+    }
+
+    function prev() {
+        if (realCount <= 1) return;
+        logicalIndex = (logicalIndex - 1 + realCount) % realCount;
+        posIndex -= 1;
+        setTransform(posIndex, true);
+        scheduleLoopReset();
+        onChange?.(logicalIndex, realCount);
+    }
+
+    function stopAutoplay() {
+        clearInterval(autoplayTimer);
+        autoplayTimer = null;
+    }
+
+    function startAutoplay() {
+        stopAutoplay();
+        if (!autoplayMs || realCount <= 1) return;
+        autoplayTimer = setInterval(next, autoplayMs);
+    }
+
+    if (viewport) {
+        let dragging = false;
+        let startX = 0;
+        viewport.style.touchAction = 'pan-y';
+        viewport.style.cursor = 'grab';
+
+        viewport.addEventListener('pointerdown', (event) => {
+            dragging = true;
+            startX = event.clientX;
+            viewport.style.cursor = 'grabbing';
+            stopAutoplay();
+            try { viewport.setPointerCapture(event.pointerId); } catch {}
+        });
+
+        const endDrag = (event) => {
+            if (!dragging) return;
+            dragging = false;
+            viewport.style.cursor = 'grab';
+            const delta = event.clientX - startX;
+            if (Math.abs(delta) > 40) {
+                delta < 0 ? next() : prev();
+            }
+            startAutoplay();
+        };
+
+        viewport.addEventListener('pointerup', endDrag);
+        viewport.addEventListener('pointercancel', endDrag);
+        viewport.addEventListener('pointerleave', (event) => { if (dragging) endDrag(event); });
+    }
+
+    return {
+        render,
+        goTo,
+        next,
+        prev,
+        startAutoplay,
+        stopAutoplay,
+        get index() { return logicalIndex; },
+        get count() { return realCount; }
+    };
+}
+window.createLoopCarousel = createLoopCarousel;
+
 // location-autocomplete.js
 // Suggests addresses as the user types in the "Add a
 // location" form. Right now this is a small hardcoded list
@@ -617,11 +800,40 @@ function normalizeHomeLocationText(rawText) {
     return text;
 }
 
+function renderTrendBannerAvatar(target, chat) {
+    if (!target) return;
+    target.innerHTML = '';
+    target.classList.remove('avatar--generated', 'trend-banner__avatar--image', 'is-empty');
+
+    const avatarImage = chat?.avatarImage || chat?.user?.avatarImage || '';
+    const seed = chat?.userId || chat?.user?._id || chat?.user?.id || chat?.handle || chat?.user?.handle || chat?.chatHandle || chat?._id || chat?.id || '';
+
+    if (avatarImage && /^data:image\//i.test(avatarImage)) {
+        const img = document.createElement('img');
+        img.src = avatarImage;
+        img.alt = '';
+        img.setAttribute('loading', 'lazy');
+        target.appendChild(img);
+        target.classList.add('trend-banner__avatar--image');
+        return;
+    }
+
+    if (window.LWAvatar && seed) {
+        window.LWAvatar.renderInto(target, seed);
+        target.classList.add('avatar--generated');
+        return;
+    }
+
+    target.textContent = '↗';
+    target.classList.add('is-empty');
+}
+
 async function initHomeTrending() {
     try {
         const banner = document.getElementById('trendBanner');
         const titleEl = document.getElementById('trendBannerTitle');
         const subEl = document.getElementById('trendBannerSub');
+        const avatarEl = document.getElementById('trendBannerAvatar');
         if (!banner || !titleEl || !subEl) return;
 
         // Build the fetch params (scope to current visible location when possible).
@@ -644,6 +856,7 @@ async function initHomeTrending() {
         if (posts.length === 0) {
             titleEl.textContent = 'No community posts yet';
             subEl.textContent = '—';
+            renderTrendBannerAvatar(avatarEl, null);
             banner.classList.remove('trend-banner--stable', 'trend-banner--warning');
             banner.dataset.homeTrending = '1';
             return;
@@ -698,6 +911,7 @@ async function initHomeTrending() {
         // of this can be interpreted as markup.
         titleEl.textContent = short;
         subEl.textContent = `${handle} • ${time}`;
+        renderTrendBannerAvatar(avatarEl, best);
         banner.classList.remove('trend-banner--stable', 'trend-banner--warning');
 
         // Attach metadata and click behavior so tapping the banner opens
@@ -711,7 +925,9 @@ async function initHomeTrending() {
         banner.setAttribute('role', 'button');
         banner.setAttribute('tabindex', '0');
 
-        const openTrendingPost = () => {
+        const openTrendingPost = (event) => {
+            if (!banner.dataset.chatId) return;
+            event?.preventDefault?.();
             try {
                 const params = new URLSearchParams({
                     chatId: banner.dataset.chatId,
@@ -723,7 +939,7 @@ async function initHomeTrending() {
         };
 
         banner.onclick = openTrendingPost;
-        banner.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openTrendingPost(); } };
+        banner.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openTrendingPost(e); } };
 
     } catch (err) {
         console.error('[home] trending init failed', err);
@@ -743,4 +959,107 @@ if (!window.currentChatLocation) {
     }, 300);
     setTimeout(() => clearInterval(locationReadyFallback), 15000);
 }
+
+// ============================================================
+// DID YOU KNOW — interactive fact carousel. FIX: this card used to
+// be entirely inert — #lwxDidYouKnowText held one hardcoded sentence
+// forever, and the refresh button + dots were unwired decoration
+// with nothing behind them to move. Now backed by a real slide
+// track and the shared createLoopCarousel() helper (see the top of
+// this file) so it auto-advances slowly, responds to the refresh
+// button and dots, and is swipeable/draggable.
+// ============================================================
+(function initDidYouKnowCard() {
+    const card = document.getElementById('lwxDidYouKnowCard');
+    const viewport = document.getElementById('lwxDidYouKnowViewport');
+    const track = document.getElementById('lwxDidYouKnowTrack');
+    const dotsHost = document.getElementById('lwxDidYouKnowDots');
+    const refreshBtn = document.getElementById('lwxDidYouKnowRefresh');
+    const illustration = card?.querySelector('.lwx-didyouknow-card__illustration');
+    if (!card || !viewport || !track || typeof window.createLoopCarousel !== 'function') return;
+
+    // Small icon set, same 2-color style as the card's existing storm
+    // illustration (gray #8C97AE base, amber #F2B33D accent) so a new
+    // icon never looks bolted-on. Each fact below opts into whichever
+    // one actually fits it; facts that don't get an explicit match
+    // (e.g. a future fact added without one) fall back to `default`
+    // instead of being forced into an unrelated icon.
+    const ICONS = {
+        storm: `<svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M17 38a11 11 0 0 1 1.4-21.6A14 14 0 0 1 45 19.3a9.8 9.8 0 0 1-2 19.4H17Z" fill="#8C97AE"/><path d="M32 33 24 47h6l-4.5 11L38 43h-6l4.5-10Z" fill="#F2B33D"/></svg>`,
+        report: `<svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M13 26v12a4 4 0 0 0 4 4h4l16 10V12L21 22h-4a4 4 0 0 0-4 4Z" fill="#8C97AE"/><path d="M40 20a14 14 0 0 1 0 24" stroke="#F2B33D" stroke-width="3.2" stroke-linecap="round"/><path d="M46 14a22 22 0 0 1 0 36" stroke="#F2B33D" stroke-width="3.2" stroke-linecap="round" opacity="0.55"/></svg>`,
+        demand: `<svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="34" r="18" fill="#8C97AE"/><path d="M32 34A18 18 0 0 1 47 41" stroke="#F2B33D" stroke-width="4" stroke-linecap="round" fill="none"/><path d="M32 23v11l8 5" stroke="#F5F7FA" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><rect x="27" y="9" width="10" height="5" rx="2.5" fill="#8C97AE"/></svg>`,
+        fridge: `<svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="19" y="9" width="26" height="46" rx="4" fill="#8C97AE"/><rect x="19" y="26" width="26" height="2.5" fill="#22160f" opacity="0.25"/><rect x="23" y="14" width="3" height="7" rx="1.5" fill="#F2B33D"/><rect x="23" y="31" width="3" height="7" rx="1.5" fill="#F2B33D"/></svg>`,
+        surge: `<svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M32 8 50 15v14c0 14-8 23-18 27C22 52 14 43 14 29V15Z" fill="#8C97AE"/><path d="M34 20 24 34h6l-3 12 15-17h-7l4-9Z" fill="#F2B33D"/></svg>`,
+        community: `<svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="24" cy="24" r="8" fill="#8C97AE"/><path d="M10 48c0-9 6-15 14-15s14 6 14 15" fill="#8C97AE"/><circle cx="42" cy="22" r="6.5" fill="#F2B33D" opacity="0.85"/><path d="M32 47c1-7 6-12 13-12s12 5 13 12" fill="#F2B33D" opacity="0.85"/></svg>`,
+        default: `<svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M32 8a16 16 0 0 0-9 29 8 8 0 0 1 3.4 6v1h11.2v-1a8 8 0 0 1 3.4-6A16 16 0 0 0 32 8Z" fill="#8C97AE"/><path d="M26 50h12" stroke="#F2B33D" stroke-width="3" stroke-linecap="round"/><path d="M27.5 55h9" stroke="#F2B33D" stroke-width="3" stroke-linecap="round"/></svg>`
+    };
+
+    // Real, LightWatch-relevant tips — same spirit as the original
+    // hardcoded sentence, just more than one of them.
+    const FACTS = [
+        { text: 'Most outages in Kumasi happen during heavy evening storms.', icon: 'storm' },
+        { text: 'Reporting an outage the moment it starts helps power get restored faster.', icon: 'report' },
+        { text: 'Electricity demand usually peaks between 6PM and 9PM.', icon: 'demand' },
+        { text: 'Keeping your fridge closed during an outage keeps food cold for hours longer.', icon: 'fridge' },
+        { text: 'A surge protector can save your appliances when power suddenly returns.', icon: 'surge' },
+        { text: 'The more neighbors who report, the faster LightWatch can flag an outage.', icon: 'community' }
+    ];
+
+    function slideHtml(fact) {
+        return `<div class="lwx-didyouknow-card__slide"><p class="lwx-didyouknow-card__text">${fact.text}</p></div>`;
+    }
+
+    function renderDots(count, activeIndex) {
+        if (!dotsHost) return;
+        dotsHost.innerHTML = Array.from({ length: count }, (_, i) =>
+            `<span class="lwx-didyouknow-card__dot${i === activeIndex ? ' lwx-didyouknow-card__dot--active' : ''}" data-dot-index="${i}"></span>`
+        ).join('');
+    }
+
+    function updateIllustration(activeIndex) {
+        if (!illustration) return;
+        illustration.innerHTML = ICONS[FACTS[activeIndex]?.icon] || ICONS.default;
+    }
+
+    // createLoopCarousel calls onChange as (activeIndex, count) — see
+    // render()/goTo()/next()/prev() above. renderDots' own params were
+    // named (count, activeIndex), the reverse, so wiring it in as
+    // `onChange: renderDots` directly was quietly passing it the wrong
+    // values (rendering `activeIndex` dots with the "active" one at an
+    // out-of-range index, so none ever lit up). Routing through one
+    // correctly-ordered handler fixes that and drives the illustration
+    // swap from the same event.
+    function handleSlideChange(activeIndex, count) {
+        renderDots(count, activeIndex);
+        updateIllustration(activeIndex);
+    }
+
+    const carousel = window.createLoopCarousel({
+        viewport,
+        track,
+        autoplayMs: 7000, // slow, unhurried auto-advance
+        onChange: handleSlideChange
+    });
+
+    carousel.render(FACTS.map(slideHtml));
+    carousel.startAutoplay();
+
+    dotsHost?.addEventListener('click', (event) => {
+        const dot = event.target.closest('[data-dot-index]');
+        if (!dot) return;
+        carousel.goTo(Number(dot.dataset.dotIndex));
+        carousel.startAutoplay();
+    });
+
+    refreshBtn?.addEventListener('click', () => {
+        carousel.next();
+        carousel.startAutoplay();
+    });
+
+    // Pause the slow auto-advance while a mouse user is reading;
+    // touch/drag pausing is already handled inside createLoopCarousel.
+    card.addEventListener('mouseenter', () => carousel.stopAutoplay());
+    card.addEventListener('mouseleave', () => carousel.startAutoplay());
+})();
+
 })();

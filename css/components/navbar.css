@@ -94,10 +94,16 @@ html[data-theme="light"] .topbar {
   transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
-.nav__link:hover {
+.nav__link:hover,
+.nav__link:active,
+.nav__link:focus-visible {
   background: color-mix(in srgb, var(--bg-panel-raised) 84%, transparent);
   border-color: color-mix(in srgb, var(--brand2) 30%, var(--border-soft));
   color: var(--text-bright);
+}
+
+.nav__link:active {
+  outline: none;
 }
 
 .nav__link--active {
@@ -142,6 +148,14 @@ html[data-theme="light"] .topbar {
   background: currentColor;
 }
 
+.topbar__hamburger:hover,
+.topbar__hamburger:active,
+.topbar__hamburger:focus-visible {
+  background: color-mix(in srgb, var(--brand2) 18%, var(--bg-panel-raised));
+  border-color: color-mix(in srgb, var(--brand2) 44%, var(--border-soft));
+  outline: none;
+}
+
 .topbar__hamburger-menu {
   position: absolute;
   top: calc(100% + 8px);
@@ -176,10 +190,15 @@ html[data-theme="light"] .topbar {
 }
 
 .topbar__hamburger-link:hover,
-.topbar__hamburger-link:focus-visible {
+.topbar__hamburger-link:focus-visible,
+.topbar__hamburger-link:active {
   border-color: color-mix(in srgb, var(--brand2) 32%, var(--border-soft));
   background: color-mix(in srgb, var(--brand2) 12%, var(--bg-panel-raised));
   color: var(--text-bright);
+}
+
+.topbar__hamburger-link:active {
+  outline: none;
 }
 
 .topbar__hamburger-link.is-active {
@@ -314,9 +333,6 @@ html[data-theme="light"] .topbar {
    js/components/nav-badges.js.
    ============================================================ */
 .bottom-nav-badge--mono {
-  display: inline-flex !important;
-  align-items: center;
-  justify-content: center;
   visibility: visible;
 }
 

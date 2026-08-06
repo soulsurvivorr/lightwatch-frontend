@@ -55,6 +55,7 @@
   --bottom-nav-label-active: var(--teal);
   --bottom-nav-active-bg:  rgba(61, 217, 194, 0.1);
   --bottom-nav-icon-active-bg: rgba(61, 217, 194, 0.12);
+  --login-keyboard-offset: -120px;
 }
 
 /* Explicit user-selected themes (set by theme.js) */

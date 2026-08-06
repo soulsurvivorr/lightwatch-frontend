@@ -96,6 +96,7 @@
   display: none;
 }
 
+
 /* Other views' CSS (loaded later in the stylesheet order) sets
    body/html to position:fixed + overflow:hidden for their own
    layouts. That leaks onto this view since those are bare
@@ -416,8 +417,19 @@
   flex-direction: column;
   align-items: center;
   margin-top: 8px;
-  transform: translateY(var(--login-keyboard-shift, 0px));
-  transition: transform 0.18s ease-out;
+}
+
+.login-box,
+.signup-wrap {
+    transition: transform 0.35s ease;
+}
+
+.login-box.keyboard-open {
+    transform: translateY(var(--login-keyboard-offset));
+}
+
+.signup-wrap.keyboard-open {
+    transform: translateY(var(--signup-keyboard-offset));
 }
 
 /* Hero: logo badge + wordmark + typewriter tagline, centered above the card */

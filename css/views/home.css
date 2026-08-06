@@ -2211,11 +2211,39 @@ body.lw-location-panel-open {
   background: linear-gradient(90deg, var(--amber), var(--red));
 }
 
+.home-reminder-card__close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: none;
+  background: color-mix(in srgb, var(--text-bright) 8%, transparent);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.home-reminder-card__close svg {
+  width: 14px;
+  height: 14px;
+}
+
+.home-reminder-card__close:hover {
+  background: color-mix(in srgb, var(--red) 16%, transparent);
+  color: var(--red);
+}
+
 .home-reminder-card .card__head {
   display: flex;
   align-items: center;
   gap: 14px;
   margin-bottom: 18px;
+  padding-right: 26px;
 }
 
 .home-reminder-card__icon {
@@ -2286,6 +2314,17 @@ body.lw-location-panel-open {
   gap: 8px;
 }
 
+/* FIX (dark theme): this used to mix in var(--surface-2, #f6f7fa) —
+   --surface-2 isn't actually defined anywhere in this app's token
+   set, so the color-mix() always fell through to the hardcoded
+   #f6f7fa fallback. That's a near-white chip regardless of theme,
+   which is invisible-ish on a light card but renders as a glaring
+   pale rectangle behind every bullet once the app is in dark mode.
+   Mixing the theme's own foreground color at low opacity over
+   transparent instead gives a subtle surface that's automatically
+   correct in both themes: a soft light tint on dark text/light bg,
+   a soft dark tint on light text/dark bg — no undefined token, no
+   permanently-light fallback. */
 .home-reminder-points li {
   position: relative;
   margin: 0;
@@ -2294,7 +2333,7 @@ body.lw-location-panel-open {
   line-height: 1.5;
   color: var(--text-muted);
   border-radius: 10px;
-  background: color-mix(in srgb, var(--surface-2, #f6f7fa) 70%, transparent);
+  background: color-mix(in srgb, var(--text-bright) 6%, transparent);
 }
 
 .home-reminder-points li::before {
@@ -3985,38 +4024,50 @@ body.lw-location-panel-open {
 /* ---- Achievements card ---- */
 .achievement-card {
   text-align: left;
+  border-radius: 18px;
+  border: 1px solid var(--lw-border);
+  padding: 14px 15px;
+  background: var(--lw-panel);
+  box-shadow: none;
 }
 
 .achievement-card__head {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 4px;
+  margin-bottom: 8px;
 }
 
 .achievement-card__badge {
-  font-size: 1.3rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--lw-amber) 12%, var(--lw-panel));
+  color: var(--lw-amber);
   line-height: 1;
 }
 
 .achievement-card__title {
   font-size: 0.92rem;
   font-weight: 700;
-  color: var(--text-bright);
+  color: var(--lw-text);
 }
 
 .achievement-card__points {
   font-family: var(--font-display);
-  font-size: 1.6rem;
+  font-size: 1.55rem;
   font-weight: 700;
-  color: var(--brand);
-  margin: 6px 0 12px;
+  color: var(--lw-text);
+  margin: 2px 0 12px;
 }
 
 .achievement-card__points span {
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   font-weight: 600;
-  color: var(--text-faint);
+  color: var(--lw-text-faint);
   margin-left: 6px;
 }
 
@@ -4029,20 +4080,21 @@ body.lw-location-panel-open {
 .achievement-card__stat {
   padding: 10px;
   border-radius: 12px;
-  background: var(--bg-panel-raised);
+  background: color-mix(in srgb, var(--lw-panel) 90%, white 10%);
+  border: 1px solid var(--lw-border);
   text-align: center;
 }
 
 .achievement-card__stat strong {
   display: block;
   font-family: var(--font-display);
-  font-size: 1.1rem;
-  color: var(--text-bright);
+  font-size: 1.02rem;
+  color: var(--lw-text);
 }
 
 .achievement-card__stat span {
-  font-size: 0.68rem;
-  color: var(--text-faint);
+  font-size: 0.67rem;
+  color: var(--lw-text-faint);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -4788,6 +4840,14 @@ body:not(.page-data-loading) #view-home #realPageContent {
   background: transparent;
   color: var(--lw-text, var(--text-bright));
   cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.lw-icon-btn:hover,
+.lw-icon-btn:active,
+.lw-icon-btn:focus-visible {
+  background: color-mix(in srgb, var(--lw-teal, #3dd9c2) 16%, transparent);
+  outline: none;
 }
 
 .lw-icon-btn svg {
@@ -4802,8 +4862,50 @@ body:not(.page-data-loading) #view-home #realPageContent {
 
 .lw-icon-btn__badge {
   position: absolute;
-  top: -2px;
+  top: -3px;
+  right: -3px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 3.5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #2f86ff 0%, #1767d8 100%);
+  color: #ffffff;
+  font-size: 0.56rem;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 0 0 2px var(--dark-bg), 0 1px 4px rgba(23, 103, 216, 0.28);
+}
+
+.lw-icon-btn__tooltip {
+  position: absolute;
+  top: 2px;
   right: -2px;
+  transform: translate(-100%, 0);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 7px;
+  border-radius: 999px;
+  background: rgba(10, 15, 26, 0.95);
+  color: var(--text-bright);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  font-size: 0.63rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  z-index: 3;
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+
+.lw-icon-btn__tooltip.is-visible {
+  opacity: 1;
 }
 
 .lw-icon-btn__dot {
@@ -4818,6 +4920,15 @@ body:not(.page-data-loading) #view-home #realPageContent {
   background: none;
   cursor: pointer;
   display: inline-flex;
+  border-radius: 50%;
+  transition: box-shadow 0.15s ease;
+}
+
+.lw-header-avatar-btn:hover,
+.lw-header-avatar-btn:active,
+.lw-header-avatar-btn:focus-visible {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--lw-teal, #3dd9c2) 30%, transparent);
+  outline: none;
 }
 
 .lw-header-avatar-btn .avatar--nav {
@@ -4884,9 +4995,9 @@ body:not(.page-data-loading) #view-home #realPageContent {
   /* Lighter overlay than before — just enough at the bottom for text
      contrast — so the skyline/birds photo actually reads clearly
      instead of being mostly hidden under a near-opaque scrim. */
-  background-image:
+  /*background-image:
     linear-gradient(180deg, rgba(8, 13, 24, 0.08) 0%, rgba(8, 13, 24, 0.35) 65%, rgba(6, 10, 18, 0.6) 100%),
-    url("../../images/birds-city.png");
+    url("../../images/birds-city.png");*/
   background-size: cover, cover;
   background-position: center, center bottom;
   background-repeat: no-repeat;
@@ -4998,10 +5109,22 @@ body:not(.page-data-loading) #view-home #realPageContent {
 }
 
 #view-home .lw-status-hero .status-hero__icon--on {
-  border-color: rgba(52, 211, 153, 0.85);
-  background: radial-gradient(circle, rgba(52, 211, 153, 0.32), rgba(0, 0, 0, 0.06));
-  box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.16), 0 0 14px rgba(52, 211, 153, 0.14), 0 0 24px rgba(52, 211, 153, 0.22);
-  color: #6ee7b7;
+  border-color: rgba(110, 231, 183, 0.95);
+  background: radial-gradient(circle, rgba(52, 211, 153, 0.5) 0%, rgba(52, 211, 153, 0.12) 65%, rgba(0, 0, 0, 0.05) 100%);
+  box-shadow:
+    0 0 0 5px rgba(52, 211, 153, 0.2),
+    0 0 18px rgba(52, 211, 153, 0.55),
+    0 0 38px rgba(52, 211, 153, 0.45),
+    0 0 68px rgba(52, 211, 153, 0.3);
+  color: #eafff5;
+}
+
+/* The bulb glyph itself gets its own tight glow on top of the icon's
+   circle glow above — without this the glyph reads as a flat outline
+   sitting inside a glowing ring, rather than the thing doing the
+   glowing. */
+#view-home .lw-status-hero .status-hero__icon--on .status-hero__icon-glyph--on {
+  filter: drop-shadow(0 0 5px rgba(167, 255, 214, 0.95)) drop-shadow(0 0 12px rgba(52, 211, 153, 0.7));
 }
 
 #view-home .lw-status-hero .status-hero__icon--off {
@@ -5041,7 +5164,8 @@ body:not(.page-data-loading) #view-home #realPageContent {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  border: 2px solid rgba(52, 211, 153, 0.65);
+  border: 2.5px solid rgba(110, 231, 183, 0.85);
+  box-shadow: 0 0 14px rgba(52, 211, 153, 0.55);
   pointer-events: none;
   animation: lw-signal-ping 2.4s cubic-bezier(0.25, 0.6, 0.35, 1) infinite;
 }
@@ -5318,7 +5442,7 @@ body:not(.page-data-loading) #view-home #realPageContent {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  margin-bottom: 10px;
+  margin-bottom: 5px;
 }
 
 .lw-section__title {
@@ -5344,6 +5468,207 @@ body:not(.page-data-loading) #view-home #realPageContent {
   border: 1px solid rgba(52, 211, 153, 0.25);
   border-radius: var(--radius-lg, 16px);
   padding: 14px 16px;
+}
+
+/* ---- Trending Stories — redesigned to actually stand out instead
+   of reading as a flat teal-tinted rectangle: a glowing left accent
+   edge, a warm layered gradient, a lifted hover/tap state, an
+   icon-in-a-badge treatment, and heavier title type. Section title
+   gets a small glowing lead dot to match. ---- */
+#view-home .lw-section--trending .lw-section__title,
+#view-home .lw-section--news .lw-section__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 1.02rem;
+}
+
+#view-home .lw-section--trending .lw-section__title::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  background: var(--lw-green);
+  box-shadow: 0 0 9px var(--lw-green);
+}
+
+#view-home .lw-section--news .lw-section__title::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  background: var(--lw-blue);
+  box-shadow: 0 0 9px var(--lw-blue);
+}
+
+/* ---- Trending Stories. FIX v2: the first pass (glowing green left
+   stripe + a blinking "Live" pulse dot) read as raw/unfinished and
+   the green didn't fit — nothing else on Home uses green for
+   "trending", and a permanently-blinking dot on a card that only
+   updates once per load was misleading. Redesigned as a proper
+   list-row card: a round icon avatar on the left (warm amber, matches
+   the flame/trend-up meaning of the icon), a small static "Trending
+   now" label instead of a fake live indicator, and a trailing chevron
+   that signals it's tappable — the same pattern news/report rows use
+   elsewhere, just themed for this section. ---- */
+#view-home .lw-section--trending .lw-section__title,
+#view-home .lw-section--news .lw-section__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 1.02rem;
+}
+
+#view-home .lw-section--trending .lw-section__title::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  background: var(--lw-amber);
+  box-shadow: 0 0 9px var(--lw-amber);
+}
+
+#view-home .lw-section--news .lw-section__title::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  background: var(--lw-blue);
+  box-shadow: 0 0 9px var(--lw-blue);
+}
+
+#view-home .trend-banner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--lw-panel);
+  border: 1px solid var(--lw-border);
+  border-left: 3px solid var(--lw-amber);
+  border-radius: 16px;
+  padding: 12px 14px;
+  cursor: pointer;
+  overflow: hidden;
+  isolation: isolate;
+  transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease;
+}
+
+#view-home .trend-banner:hover,
+#view-home .trend-banner:active {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--lw-border) 72%, var(--lw-amber) 28%);
+  background: color-mix(in srgb, var(--lw-panel) 92%, white 8%);
+}
+
+#view-home .trend-banner__avatar {
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--lw-border) 82%, var(--lw-amber) 18%);
+  background: color-mix(in srgb, var(--lw-amber) 12%, var(--lw-panel));
+  color: var(--lw-amber);
+}
+
+#view-home .trend-banner__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+#view-home .trend-banner__avatar svg {
+  width: 20px;
+  height: 20px;
+}
+
+#view-home .trend-banner__avatar.is-empty {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+#view-home .trend-banner__body {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+#view-home .trend-banner__meta-row {
+  display: flex;
+  align-items: center;
+}
+
+#view-home .trend-banner__pill {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--lw-amber);
+  background: color-mix(in srgb, var(--lw-amber) 12%, transparent);
+  border-radius: 999px;
+  padding: 3px 8px;
+}
+
+#view-home .trend-banner .lw-live-card__title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--lw-text);
+}
+
+#view-home .trend-banner .lw-live-card__meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--lw-text-faint);
+}
+
+#view-home .trend-banner__icon {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--lw-amber) 10%, var(--lw-panel));
+  color: var(--lw-amber);
+}
+
+#view-home .trend-banner__icon svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* ---- Latest power news — wrapped in its own elevated shell so the
+   section reads as a distinct, weighted card instead of a bare list
+   floating directly on the page background. ---- */
+#view-home .lw-section--news {
+  background: var(--lw-panel);
+  border: 1px solid var(--lw-border);
+  border-radius: var(--radius-lg, 16px);
+  padding: 14px 14px 16px;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.16);
+}
+
+#view-home .lw-section--news .lw-section__head {
+  margin-bottom: 12px;
 }
 
 .lw-live-card__badge {
@@ -5538,8 +5863,8 @@ body:not(.page-data-loading) #view-home #realPageContent {
 .bottom-nav-icon--elevated svg { width: 22px; height: 22px; }
 
 .bottom-nav-link--elevated:active .bottom-nav-icon--elevated {
-  transform: scale(0.96);
-  box-shadow: 0 7px 16px rgba(74, 144, 217, 0.3);
+  transform: none;
+  box-shadow: 0 10px 24px rgba(74, 144, 217, 0.45), 0 0 0 4px rgba(74, 144, 217, 0.22);
 }
 
 /* ============================================================
@@ -5907,26 +6232,8 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
    .bottom-nav-icon (now position:relative, above) so it sits at the
    icon's top-right corner regardless of which nav item it's on.
    ============================================================ */
-.bottom-nav-badge--mono {
-  position: absolute;
-  top: -4px;
-  right: -7px;
-  min-width: 14px;
-  height: 14px;
-  padding: 0 3px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  background: linear-gradient(135deg, #2f86ff 0%, #1767d8 100%);
-  color: #fff;
-  font-size: 0.5rem;
-  font-weight: 700;
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-  border: 1px solid rgba(255, 255, 255, 0.96);
-  box-sizing: content-box;
-  box-shadow: 0 2px 6px rgba(23, 103, 216, 0.18);
+#bottom_nav_wrapper .bottom-nav-badge--mono {
+  display: none !important;
 }
 /* ============================================================
    BOTTOM NAV — theme-following background + active "deep blue"
@@ -5959,16 +6266,7 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
 .bottom-nav-link--active .bottom-nav-icon,
 .bottom-nav-link[aria-current="page"] .bottom-nav-icon {
   background: transparent;
-  border-radius: 50%;
-  width: 34px;
-  height: 34px;
   box-shadow: none;
-  transition: background-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.bottom-nav-link--active .bottom-nav-icon svg,
-.bottom-nav-link[aria-current="page"] .bottom-nav-icon svg {
-  color: white !important;
 }
 
 /* Requested: 2px of breathing room below the icons themselves, on
@@ -5984,23 +6282,21 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
 /* ============================================================
    BOTTOM NAV — stop the tap/press transform
    ------------------------------------------------------------
-   The tap animation itself (translateY bounce, glow blob, dot,
-   click-pulse ring) is defined in css/utilities/animations.css and
-   css/views/animations.css — neither of which was included in this
-   file set, so it can't be edited at its source here. Both of those
-   sheets load AFTER this file, so this can't just be removed there;
-   instead this neutralizes the transform component specifically
-   (leaving any color/opacity/glow part of the same animation intact)
-   by winning the cascade on `transform` for every state of
-   .bottom-nav-icon and its svg. If the animation is later found to
-   still move the icon, the actual keyframes need a `transform: none`
-   step added at their source in animations.css.
+   The old tap animation (translateY bounce, glow blob, dot,
+   click-pulse ring) has now been fixed at its actual source in
+   animations.css — tap shows the same plain background highlight as
+   hover, nothing moves. This block stays as a belt-and-suspenders
+   override (also covering the elevated Report icon and its svg/img
+   children) so nothing can reintroduce motion on press here.
    ============================================================ */
 #bottom_nav_wrapper .bottom-nav-icon,
 #bottom_nav_wrapper .bottom-nav-icon svg,
+#bottom_nav_wrapper .bottom-nav-icon img,
+#bottom_nav_wrapper .bottom-nav-icon--elevated,
 #bottom_nav_wrapper .bottom-nav-link:active .bottom-nav-icon,
 #bottom_nav_wrapper .bottom-nav-link.is-active .bottom-nav-icon,
-#bottom_nav_wrapper .bottom-nav-link--active .bottom-nav-icon {
+#bottom_nav_wrapper .bottom-nav-link--active .bottom-nav-icon,
+#bottom_nav_wrapper .bottom-nav-link--elevated:active .bottom-nav-icon--elevated {
   transform: none !important;
   animation: none !important;
 }
@@ -6037,7 +6333,7 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin-top: 14px;
+  margin-top: 4px;
   width: 100%;
   max-width: 100%;
   min-width: 0;
@@ -6050,35 +6346,124 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
   isolation: isolate;
 }
 
+/* Scrim over the city art — darkest right where the location name (top)
+   and status text/timestamp (bottom) sit; the middle stays a little
+   lighter so the tap-to-report icon's glow still reads, but even that
+   band now carries real darkening instead of nearly none — the art was
+   still overpowering the text through it. Negative z-index puts it in
+   the same paint step as .lwx-hero-bg below (stacked above the art
+   since it comes later in the DOM), which keeps it under every
+   non-negative element in the card — no z-index change needed on the
+   text itself. */
+#view-home .lw-status-hero.lwx-hero-visual::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(
+    180deg,
+    rgba(4, 6, 10, 0.82) 0%,
+    rgba(4, 6, 10, 0.5) 20%,
+    rgba(4, 6, 10, 0.4) 45%,
+    rgba(4, 6, 10, 0.55) 68%,
+    rgba(3, 4, 8, 0.88) 88%,
+    rgba(2, 3, 6, 0.94) 100%
+  );
+}
+
 #view-home .lwx-hero-bg {
-  /* FIX (bring back the birds-city photo): this element is an absolutely
-     positioned, inset:0 layer sitting INSIDE the same isolated stacking
-     context as the card (see .lwx-hero-visual above), at z-index:-1.
-     Backgrounds painted on the card itself (.location-card.lw-status-hero
-     further up this file — the birds-city.png photo + gradient scrim) are
-     the bottom-most paint layer of that box; this generated sky/skyline
-     SVG paints directly on top of them as the next layer up, at ~0.9
-     opacity, which is enough to fully hide the real photo underneath
-     instead of just tinting it. Hiding this generated layer lets the
-     photo (already wired up two rules above, nothing else to change)
-     show through exactly as before. Left in the DOM/markup untouched —
-     this is purely a "don't paint it" switch, easy to flip back. */
-  display: none;
+  /* Absolutely positioned, inset:0 layer sitting INSIDE the same isolated
+     stacking context as the card (see .lwx-hero-visual above), at
+     z-index:-1 — so it paints behind .card__head/.status-hero (both
+     effectively z-index:auto/1 within that context) without needing
+     those to change. This is now the card's only background layer: the
+     birds-city.png photo above stays commented out. */
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  border-radius: inherit;
+}
+
+/* The generated city — same SVG regardless of power state, just with
+   its power-dependent layers (see .lw-hero-layer-- below) faded in or
+   out via [data-power] on this element. lightstatus.js sets that
+   attribute from the same status paint that drives #statusIcon. */
+#view-home .lw-hero-city {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Base city + sky + clouds are always visible — the "always on" scene. */
+#view-home .lw-hero-layer--base,
+#view-home .lw-hero-layer--clouds {
+  opacity: 1;
+}
+
+/* Power-dependent layers: default (no [data-power] set yet) = off. */
+#view-home .lw-hero-layer--windows,
+#view-home .lw-hero-layer--street,
+#view-home .lw-hero-layer--glow,
+#view-home .lw-hero-layer--fog,
+#view-home .lw-hero-layer--particles {
+  opacity: 0;
+  transition: opacity 1.1s ease;
+}
+
+/* Slight stagger so the scene feels like power spreading through the
+   city rather than a single flat crossfade. */
+#view-home .lw-hero-city[data-power="on"] .lw-hero-layer--windows   { opacity: 1; transition-delay: 0s; }
+#view-home .lw-hero-city[data-power="on"] .lw-hero-layer--street    { opacity: 1; transition-delay: 0.15s; }
+#view-home .lw-hero-city[data-power="on"] .lw-hero-layer--glow      { opacity: 1; transition-delay: 0.3s; }
+#view-home .lw-hero-city[data-power="on"] .lw-hero-layer--fog       { opacity: 1; transition-delay: 0.35s; }
+#view-home .lw-hero-city[data-power="on"] .lw-hero-layer--particles { opacity: 1; transition-delay: 0.45s; }
+
+#view-home .lw-hero-city[data-power="off"] .lw-hero-layer--windows,
+#view-home .lw-hero-city[data-power="off"] .lw-hero-layer--street,
+#view-home .lw-hero-city[data-power="off"] .lw-hero-layer--glow,
+#view-home .lw-hero-city[data-power="off"] .lw-hero-layer--fog,
+#view-home .lw-hero-city[data-power="off"] .lw-hero-layer--particles {
+  opacity: 0;
+  transition-delay: 0s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #view-home .lw-hero-layer--windows,
+  #view-home .lw-hero-layer--street,
+  #view-home .lw-hero-layer--glow,
+  #view-home .lw-hero-layer--fog,
+  #view-home .lw-hero-layer--particles {
+    transition: none;
+  }
 }
 
 /* The background art is a fixed dusk illustration regardless of
    light/dark theme, so text sitting on it needs to stay light for
    legibility either way. Scoped strictly to the modifier class, so
-   nothing changes for this card if the modifier is ever removed. */
+   nothing changes for this card if the modifier is ever removed.
+   Text-shadow (not just the scrim) does the real contrast work here —
+   the city art behind has bright, high-frequency windows/streetlight
+   detail the gradient alone can't fully tame without going nearly
+   opaque, so each line gets its own dark halo. */
 #view-home .lw-status-hero.lwx-hero-visual .card__title,
 #view-home .lw-status-hero.lwx-hero-visual .status-hero__sub,
 #view-home .lw-status-hero.lwx-hero-visual .status-hero__sub strong,
 #view-home .lw-status-hero.lwx-hero-visual #statusPillText {
   color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9), 0 1px 10px rgba(0, 0, 0, 0.75);
 }
 
+/* "Since <time>" sits at the very bottom of the card, right over the
+   streetlight row in the art — bumped to near-solid white (was 0.75
+   alpha) since the text-shadow above now carries the separation from
+   the art instead of relying on the scrim being dark enough there. */
 #view-home .lw-status-hero.lwx-hero-visual .status-hero__sub {
-  color: rgba(255, 255, 255, 0.75);
+  color: rgba(255, 255, 255, 0.92);
 }
 
 /* ---- Weather card ---- */
@@ -6449,7 +6834,7 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
    already toggles — nothing about that contract changed. ---- */
 #view-home .lwx-row--risk {
   width: 100%;
-  margin-top: 14px;
+  margin-top: 0px;
 }
 
 #view-home .lwx-risk-carousel {
@@ -6463,6 +6848,7 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
   width: 100%;
   max-width: 100%;
   min-width: 0;
+  touch-action: pan-y;
 }
 
 #view-home .lwx-risk-carousel__track {
@@ -6474,6 +6860,42 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
   min-width: 0;
   transition: transform 0.8s cubic-bezier(.22, 1, .36, 1);
   will-change: transform;
+}
+
+/* FIX: hitting the last card used to snap straight back to the
+   first with no transition (goToRiskCarouselSlide()'s index just
+   wrapped via modulo, and the track transform jumped instantly the
+   full width backwards) — jarring and looked broken. The carousel
+   now renders real slide + a cloned first/last slide on each end
+   (see createLoopCarousel() in home.js) so advancing past the last
+   card animates smoothly onto the clone, then snaps invisibly back
+   to the real first card the instant that animation finishes. ---- */
+#view-home .lwx-risk-carousel__dots {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+#view-home .lwx-risk-carousel__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--lw-border-soft, var(--lw-border));
+  opacity: 0.5;
+  cursor: pointer;
+  transition: opacity 0.2s ease, transform 0.2s ease, background 0.2s ease;
+}
+
+#view-home .lwx-risk-carousel__dot:hover {
+  opacity: 0.8;
+}
+
+#view-home .lwx-risk-carousel__dot.is-active {
+  opacity: 1;
+  background: var(--lw-teal);
+  transform: scale(1.25);
 }
 
 #view-home .lwx-risk-card {
@@ -7227,12 +7649,37 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
   color: var(--lw-blue);
 }
 
+/* FIX: this card used to be a single hardcoded <p> — nothing to
+   grab, nothing to swipe, the refresh button and dots were unwired
+   decoration. It's now a real slide track (populated by home.js's
+   initDidYouKnowCard(), driven by the shared createLoopCarousel()
+   helper — same seamless infinite-loop logic the risk carousel
+   uses) that auto-advances slowly and responds to drag/swipe. */
+#view-home .lwx-didyouknow-card__viewport {
+  overflow: hidden;
+  border-radius: 8px;
+  touch-action: pan-y;
+}
+
+#view-home .lwx-didyouknow-card__track {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 100%;
+  transition: transform 0.7s cubic-bezier(.22, 1, .36, 1);
+  will-change: transform;
+}
+
+#view-home .lwx-didyouknow-card__slide {
+  min-width: 0;
+}
+
 #view-home .lwx-didyouknow-card__text {
   font-size: 0.86rem;
   color: var(--lw-text);
   line-height: 1.45;
   margin: 0 0 10px;
   max-width: 78%;
+  min-height: 2.9em;
 }
 
 #view-home .lwx-didyouknow-card__illustration {
@@ -7258,19 +7705,28 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
   border-radius: 50%;
   background: var(--border-strong);
   opacity: 0.4;
+  cursor: pointer;
+  transition: opacity 0.2s ease, transform 0.2s ease, background 0.2s ease;
+}
+
+#view-home .lwx-didyouknow-card__dot:hover {
+  opacity: 0.7;
 }
 
 #view-home .lwx-didyouknow-card__dot--active {
   background: var(--lw-teal);
   opacity: 1;
+  transform: scale(1.2);
 }
 
-/* ---- Weather Alert banner ---- */
+/* ---- Weather Alert banner. Restored to the simpler, original
+   presentation so it reads like a compact warning card rather than
+   a new, heavier treatment. ---- */
 #view-home .lwx-alert {
   position: relative;
+  isolation: isolate;
   overflow: hidden;
   border-radius: var(--radius-lg);
-  background: linear-gradient(120deg, rgba(214, 162, 74, 0.22), rgba(90, 40, 20, 0.28));
   border: 1px solid rgba(214, 162, 74, 0.35);
   padding: 18px;
   display: flex;
@@ -7279,6 +7735,27 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
   align-items: center;
   justify-content: space-between;
   margin-top: 14px;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.24);
+}
+
+#view-home .lwx-alert__scene {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  display: block;
+}
+
+#view-home .lwx-alert[data-risk="high"] {
+  border-color: rgba(255, 107, 107, 0.4);
+}
+
+#view-home .lwx-alert[data-risk="high"] .lwx-alert__eyebrow,
+#view-home .lwx-alert[data-risk="high"] .lwx-alert__eyebrow svg path,
+#view-home .lwx-alert[data-risk="high"] .lwx-alert__eyebrow svg circle {
+  color: #ff8a7a;
+  stroke: #ff8a7a;
 }
 
 #view-home .lwx-alert__text {
@@ -7339,14 +7816,6 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
   display: flex;
   flex-direction: column;
   gap: 2px;
-}
-
-#view-home .lwx-alert__illustration {
-  width: 60px;
-  height: 60px;
-  flex: 0 0 auto;
-  opacity: 0.85;
-  margin-left: auto;
 }
 
 /* ---- Today's Summary ---- */

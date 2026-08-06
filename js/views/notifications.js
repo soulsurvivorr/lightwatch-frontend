@@ -345,6 +345,17 @@
         return `<article class="notif-card notif-card--empty"><div class="notif-card__body"><strong class="notif-card__title">${escapeHtml(message)}</strong></div></article>`;
     }
 
+    function updateNotificationTooltips() {
+        const count = Number(localStorage.getItem('lw_badge_count_notifications') || '0') || 0;
+        document.querySelectorAll('.lw-icon-btn[data-nav="notifications"]').forEach((btn) => {
+            const tooltip = btn.querySelector('.lw-icon-btn__tooltip');
+            if (!tooltip) return;
+            tooltip.textContent = 'Notifications';
+            tooltip.classList.toggle('is-visible', true);
+            tooltip.setAttribute('aria-hidden', 'false');
+        });
+    }
+
     function updateTabBadges(notifications, readIds) {
         const counts = { all: 0, priority: 0, mentions: 0, system: 0 };
         notifications.forEach(n => {
@@ -493,8 +504,9 @@
         const openNotification = (card) => {
             markIdsRead([card.dataset.id]);
             card.querySelector('.notif-card__dot')?.remove();
-            if (card.dataset.action === 'open-news' && card.dataset.url) {
-                window.open(card.dataset.url, '_blank', 'noopener,noreferrer');
+            if (card.dataset.action === 'open-news') {
+                window.__lwPendingReportPanel = 'news';
+                window.LWRouter?.navigate('chat');
             } else if (card.dataset.action === 'open-chat' && card.dataset.chatId) {
                 const params = new URLSearchParams({
                     chatId: card.dataset.chatId,
@@ -503,6 +515,7 @@
                 });
                 window.LWRouter?.navigate('chat', { search: `?${params.toString()}` });
             }
+            updateNotificationTooltips();
             updateTabBadges(latestMergedNotifications, getReadIds());
             syncNavBadgeCountWithReadState();
         };
@@ -511,7 +524,13 @@
             const actionBtn = e.target.closest('[data-action]');
             if (actionBtn?.dataset.action === 'view-all-priority') { setActiveFilter('priority'); return; }
             if (actionBtn?.dataset.action === 'mark-all-read') {
-                markIdsRead(latestMergedNotifications.map(n => n.id));
+                const scope = actionBtn.dataset.markScope || (activeFilter === 'priority' ? 'priority' : (activeFilter === 'all' ? 'non-priority' : activeFilter));
+                const idsToMark = latestMergedNotifications.filter((n) => {
+                    if (scope === 'priority') return n._bucket === 'priority';
+                    if (scope === 'non-priority') return n._bucket !== 'priority';
+                    return n._bucket === scope;
+                }).map(n => n.id);
+                markIdsRead(idsToMark);
                 render();
                 return;
             }

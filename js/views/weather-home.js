@@ -59,7 +59,12 @@
         riskCarousel: document.getElementById('lwxRiskCarousel'),
         riskCarouselViewport: document.getElementById('lwxRiskCarouselViewport'),
         riskCarouselTrack: document.getElementById('lwxRiskCarouselTrack'),
-        riskCarouselDots: document.getElementById('lwxRiskCarouselDots')
+        riskCarouselDots: document.getElementById('lwxRiskCarouselDots'),
+        forecastList: document.getElementById('lwxForecastList'),
+        alertCard: document.getElementById('lwxWeatherAlert'),
+        alertTitle: document.getElementById('lwxWeatherAlertTitle'),
+        alertTime: document.getElementById('lwxWeatherAlertTime'),
+        alertImpacts: document.getElementById('lwxWeatherAlertImpacts')
     };
 
     // Home view isn't on screen (or this markup changed) — nothing to wire up.
@@ -128,9 +133,7 @@
     // here based on the card's data-weather attribute.
     buildScene();
 
-    let riskCarouselIndex = 0;
-    let riskCarouselTimer = null;
-    let riskCarouselTouchStartX = 0;
+    let riskCarousel = null;
     let lastRiskCarouselData = null;
 
     function buildRiskSlides(data) {
@@ -206,16 +209,8 @@
         ];
     }
 
-    function getRiskSlides() {
-        if (!els.riskCarouselTrack) return [];
-        return Array.from(els.riskCarouselTrack.children).filter((child) => child.classList.contains('lwx-risk-card'));
-    }
-
-    function renderRiskCarousel(data) {
-        if (!els.riskCarouselTrack) return;
-        lastRiskCarouselData = data || lastRiskCarouselData || {};
-        const slides = buildRiskSlides(lastRiskCarouselData);
-        els.riskCarouselTrack.innerHTML = slides.map((slide) => `
+    function riskSlideHtml(slide) {
+        return `
             <div class="lwx-risk-card" style="--risk-accent:${slide.theme.accent};--risk-panel:${slide.theme.panel};--risk-border:${slide.theme.border};--risk-badge-bg:${slide.theme.badge};--risk-icon-bg:${slide.theme.icon};">
               <div class="lwx-risk-card__text">
                 <span class="lwx-risk-card__title">${slide.title}</span>
@@ -226,50 +221,50 @@
               </div>
               <span class="lwx-risk-card__icon" aria-hidden="true">${slide.iconSvg}</span>
             </div>
-        `).join('');
-
-        const renderedSlides = getRiskSlides();
-        if (!renderedSlides.length) return;
-        const safeIndex = ((riskCarouselIndex % renderedSlides.length) + renderedSlides.length) % renderedSlides.length;
-        riskCarouselIndex = safeIndex;
-        els.riskCarouselTrack.style.transform = `translateX(-${safeIndex * 100}%)`;
-        renderedSlides.forEach((slide, index) => slide.classList.toggle('is-active', index === safeIndex));
+        `;
     }
 
-    function goToRiskCarouselSlide(index) {
-        const slides = getRiskSlides();
-        if (!slides.length) return;
-        riskCarouselIndex = (index + slides.length) % slides.length;
-        renderRiskCarousel(lastRiskCarouselData);
+    function renderRiskDots(count, activeIndex) {
+        if (!els.riskCarouselDots) return;
+        els.riskCarouselDots.innerHTML = Array.from({ length: count }, (_, i) =>
+            `<span class="lwx-risk-carousel__dot${i === activeIndex ? ' is-active' : ''}" data-dot-index="${i}"></span>`
+        ).join('');
     }
 
-    function startRiskCarouselAutoPlay() {
-        clearInterval(riskCarouselTimer);
-        const slides = getRiskSlides();
-        if (slides.length <= 1) return;
-        riskCarouselTimer = setInterval(() => {
-            goToRiskCarouselSlide(riskCarouselIndex + 1);
-        }, 9000);
+    // FIX: this used to rebuild els.riskCarouselTrack.innerHTML from
+    // buildRiskSlides() directly and jump the transform to
+    // `-${index * 100}%` via modulo — which is exactly what produced
+    // the ugly instant snap-back once the last card looped to the
+    // first. Slide rendering now goes through the shared
+    // createLoopCarousel() helper (see home.js, loaded before this
+    // file), which clones the first/last slide so the loop animates
+    // seamlessly instead of jumping.
+    function renderRiskCarousel(data) {
+        if (!els.riskCarouselTrack || !riskCarousel) return;
+        lastRiskCarouselData = data || lastRiskCarouselData || {};
+        const slides = buildRiskSlides(lastRiskCarouselData);
+        riskCarousel.render(slides.map(riskSlideHtml));
     }
 
     function initRiskCarousel() {
-        if (!els.riskCarousel) return;
+        if (!els.riskCarousel || typeof window.createLoopCarousel !== 'function') return;
+
+        riskCarousel = window.createLoopCarousel({
+            viewport: els.riskCarouselViewport,
+            track: els.riskCarouselTrack,
+            autoplayMs: 9000,
+            onChange: renderRiskDots
+        });
 
         renderRiskCarousel();
-        startRiskCarouselAutoPlay();
+        riskCarousel.startAutoplay();
 
-        if (els.riskCarouselViewport) {
-            els.riskCarouselViewport.addEventListener('touchstart', (event) => {
-                riskCarouselTouchStartX = event.touches[0].clientX;
-            }, { passive: true });
-
-            els.riskCarouselViewport.addEventListener('touchend', (event) => {
-                const delta = event.changedTouches[0].clientX - riskCarouselTouchStartX;
-                if (Math.abs(delta) < 50) return;
-                goToRiskCarouselSlide(delta < 0 ? riskCarouselIndex + 1 : riskCarouselIndex - 1);
-                startRiskCarouselAutoPlay();
-            }, { passive: true });
-        }
+        els.riskCarouselDots?.addEventListener('click', (event) => {
+            const dot = event.target.closest('[data-dot-index]');
+            if (!dot || !riskCarousel) return;
+            riskCarousel.goTo(Number(dot.dataset.dotIndex));
+            riskCarousel.startAutoplay();
+        });
     }
 
     initRiskCarousel();
@@ -546,6 +541,45 @@
         }
     }
 
+    function buildForecastItems(data) {
+        const hourly = Array.isArray(data?.hourly) ? data.hourly : [];
+        const riskLevel = data?.risk?.level || 'low';
+        return hourly.slice(0, 6).map((hour, index) => {
+            const temp = hour?.temperatureC != null ? `${Math.round(hour.temperatureC)}°C` : '—';
+            const label = hour?.time ? formatHourLabel(hour.time) : `+${index + 1}h`;
+            let dotClass = 'lwx-forecast-list__dot--stable';
+            let labelText = 'Stable';
+            let riskText = 'Stable';
+
+            if (riskLevel === 'high') {
+                dotClass = 'lwx-forecast-list__dot--outage';
+                labelText = 'Storm Risk';
+                riskText = 'Storm Risk';
+            } else if (riskLevel === 'medium' || (hour?.rainChance != null && hour.rainChance >= 40)) {
+                dotClass = 'lwx-forecast-list__dot--mixed';
+                labelText = 'Rain Likely';
+                riskText = 'Rain Likely';
+            }
+
+            return `
+                <li>
+                  <span class="lwx-forecast-list__time">${label}</span>
+                  <span class="lwx-forecast-list__dot ${dotClass}"></span>
+                  <span class="lwx-forecast-list__label${riskLevel === 'high' ? ' lwx-forecast-list__label--danger' : ''}">${riskText}</span>
+                  <span class="lwx-forecast-list__temp">${temp}</span>
+                </li>
+            `;
+        });
+    }
+
+    function renderForecastList(data) {
+        if (!els.forecastList) return;
+        const forecastItems = buildForecastItems(data);
+        els.forecastList.innerHTML = forecastItems.length
+            ? forecastItems.join('')
+            : '<li><span class="lwx-forecast-list__time">Now</span><span class="lwx-forecast-list__dot lwx-forecast-list__dot--stable"></span><span class="lwx-forecast-list__label">Stable</span></li>';
+    }
+
     function render(data) {
         const { current, risk, location, approximate } = data;
 
@@ -613,7 +647,87 @@
             }
         }
 
+        renderForecastList(data);
         renderRiskCarousel(data);
+        renderWeatherAlert(data);
+    }
+
+    // FIX: #lwxWeatherAlert used to be permanently hardcoded to
+    // "Thunderstorm Warning" / "5:10 PM" / a fixed 3-item impacts
+    // list — no file anywhere ever wrote to #lwxWeatherAlertTitle,
+    // #lwxWeatherAlertTime, or #lwxWeatherAlertImpacts, so it showed
+    // the exact same storm warning on a clear, calm day. Driven now
+    // from the same risk/current data the risk carousel already
+    // uses, and hidden outright on a low-risk read instead of always
+    // claiming a thunderstorm is coming.
+    function renderWeatherAlert(data) {
+        if (!els.alertCard) return;
+        const { current, risk } = data || {};
+        if (!risk || risk.level === 'low') {
+            els.alertCard.hidden = true;
+            return;
+        }
+
+        els.alertCard.hidden = false;
+        els.alertCard.dataset.risk = risk.level;
+
+        const condition = String(current?.condition || '').toLowerCase();
+        const temp = current?.temperatureC != null ? `${Math.round(current.temperatureC)}°C` : 'mild';
+        const wind = current?.windKph != null ? `${Math.round(current.windKph)} km/h` : 'light';
+        const isThunder = condition.includes('storm') || condition.includes('thunder');
+        const isRain = condition.includes('rain') || condition.includes('drizzle') || condition.includes('shower');
+        const isFog = condition.includes('fog') || condition.includes('mist');
+        const isWindy = Number(current?.windKph || 0) >= 30;
+        const eta = risk.eta || 'soon';
+
+        let title = 'Weather outlook';
+        let subtitle = `Conditions are steady ${eta === 'Now' ? 'right now' : `for ${eta.toLowerCase()}`}`;
+        let impacts = [];
+
+        if (risk.level === 'high') {
+            if (isThunder) {
+                title = 'Storm risk';
+                subtitle = `Thunderstorms could arrive ${eta === 'Now' ? 'right now' : eta.toLowerCase()}`;
+                impacts = ['Brief outages and flickering lights possible', 'Roads can become slick and slow', 'Keep devices charged and plan an indoor fallback'];
+            } else if (isRain) {
+                title = 'Heavy rain watch';
+                subtitle = `Rain is building ${eta === 'Now' ? 'right now' : eta.toLowerCase()}`;
+                impacts = ['Flood-prone roads may become slow', `Expect ${temp} air and ${wind} winds`, 'Charge devices and keep essentials ready'];
+            } else if (isFog || isWindy) {
+                title = 'Visibility risk';
+                subtitle = `Conditions may turn rough ${eta === 'Now' ? 'right now' : eta.toLowerCase()}`;
+                impacts = ['Reduced visibility near low-lying areas', 'Outdoor movement may feel less stable', `Current feel is about ${temp}`];
+            } else {
+                title = 'Severe weather watch';
+                subtitle = `Conditions may change ${eta === 'Now' ? 'right now' : eta.toLowerCase()}`;
+                impacts = ['Keep an eye on the forecast', 'Plan for brief service interruptions', 'Carry backup power if you rely on it'];
+            }
+        } else {
+            if (isRain) {
+                title = 'Rain advisory';
+                subtitle = `Showers are expected ${eta === 'Now' ? 'right now' : eta.toLowerCase()}`;
+                impacts = ['Travel may take a little longer', `Expect ${temp} conditions with ${wind} winds`, 'A light layer will help'];
+            } else if (isFog) {
+                title = 'Low-visibility advisory';
+                subtitle = `Mornings may stay hazy ${eta === 'Now' ? 'right now' : eta.toLowerCase()}`;
+                impacts = ['Drivers should slow down near low areas', `Current conditions feel like ${temp}`, 'Plan extra margin for travel'];
+            } else if (isWindy) {
+                title = 'Wind advisory';
+                subtitle = `Winds are picking up ${eta === 'Now' ? 'right now' : eta.toLowerCase()}`;
+                impacts = ['Loose items may shift outdoors', `Expect ${wind} winds with ${temp} air`, 'Keep chargers and backup lights ready'];
+            } else {
+                title = 'Weather outlook';
+                subtitle = `Conditions remain manageable ${eta === 'Now' ? 'right now' : eta.toLowerCase()}`;
+                impacts = ['No major disruptions expected', `Current feel is ${temp}`, 'Stay ready for small changes through the day'];
+            }
+        }
+
+        if (els.alertTitle) els.alertTitle.textContent = title;
+        if (els.alertTime) els.alertTime.textContent = subtitle;
+
+        if (els.alertImpacts) {
+            els.alertImpacts.innerHTML = impacts.map((item) => `<li>${item}</li>`).join('');
+        }
     }
 
     let pollTimer = null;

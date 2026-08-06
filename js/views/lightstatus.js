@@ -73,6 +73,11 @@ const statusPillTextEl = document.getElementById('statusPillText');
 const statusBadgeEl = document.getElementById('statusBadge');
 const lastVerifiedEl = document.getElementById('lastVerified');
 const statusPulseEl = document.getElementById('statusPulse');
+// The generated city background behind this card (see .lwx-hero-bg /
+// .lw-hero-city in home.css) — its window/street/glow/fog/particle
+// layers fade in or out via [data-power] on this element, kept in
+// sync with currentReportedStatus below.
+const heroCityEl = document.querySelector('.lw-hero-city');
 
 // -- Tap-to-report confirm overlay (see .home-reminder-overlay markup
 //    reused for #lightConfirmOverlay in index.html) --
@@ -352,6 +357,11 @@ const STATUS_ICON_SVG = {
 };
 
 function applyPrimaryStatusIconState(status) {
+    // Unknown status has no lit-windows evidence either way, so the city
+    // renders dark/off — same as a confirmed outage — rather than adding
+    // a third visual state nothing else in this card has.
+    if (heroCityEl) heroCityEl.setAttribute('data-power', status === 'on' ? 'on' : 'off');
+
     if (!statusIconEl) return;
     statusIconEl.classList.remove('status-hero__icon--on', 'status-hero__icon--off', 'status-hero__icon--unknown');
     const key = status === 'on' ? 'on' : status === 'off' ? 'off' : 'unknown';
@@ -934,12 +944,18 @@ function renderHeroMiniCard() {
 // knowing about if the community grows a lot.
 // -----------------------------------------------------
 async function loadAchievements() {
-    if (!currentUserId || !achievementCard) return;
+    if (!achievementCard) return;
+
+    const resolvedUserId = resolveCurrentUserId();
+    if (!resolvedUserId) {
+        achievementCard.hidden = true;
+        return;
+    }
 
     try {
         const [userRes, myReportsRes] = await Promise.all([
-            fetch(`${API_BASE}/user/${currentUserId}`),
-            fetch(`${API_BASE}/reports?userId=${encodeURIComponent(currentUserId)}&limit=100`)
+            fetch(`${API_BASE}/user/${resolvedUserId}`),
+            fetch(`${API_BASE}/reports?userId=${encodeURIComponent(resolvedUserId)}&limit=100`)
         ]);
 
         if (!userRes.ok) throw new Error('user fetch failed');
@@ -957,7 +973,7 @@ async function loadAchievements() {
         if (achievementWeekReports) achievementWeekReports.textContent = String(reportsThisWeek);
         if (achievementTotalReports) achievementTotalReports.textContent = user.reportCount != null ? String(user.reportCount) : '—';
     } catch (err) {
-        // Leave the card hidden rather than show broken/zeroed numbers.
+        achievementCard.hidden = true;
     }
 }
 
