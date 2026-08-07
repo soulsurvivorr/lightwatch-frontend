@@ -844,8 +844,6 @@
   min-width: 0;
 }
 
-.loc-heatmap { display:none; }
-
 html[data-theme="light"] .loc-header__title {
   color: #111318;
 }
@@ -1031,36 +1029,6 @@ html[data-theme="light"] .loc-header__title {
   color: white;
 }
 
-/* ---- Map / Heat Map tabs ----
-   Picks which of #locMap / #locHeatMap is shown — see index.html's
-   comment and views/location.js's setMapTab(). Styled like the
-   existing .loc-filter pills so it reads as part of the same
-   control family. */
-
-.loc-map-tabs {
-  display: flex;
-  gap: 8px;
-}
-
-.loc-map-tab {
-  flex: 1;
-  border: 1px solid var(--border-soft);
-  background: var(--card-bg, transparent);
-  color: var(--text-muted);
-  font-size: 0.82rem;
-  font-weight: 700;
-  padding: 10px 14px;
-  border-radius: var(--radius-md, 10px);
-  cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
-}
-
-.loc-map-tab.is-active {
-  background: var(--brand2, #4A90D9);
-  border-color: var(--brand2, #4A90D9);
-  color: white;
-}
-
 /* ---- Map ---- */
 
 .loc-map {
@@ -1195,112 +1163,16 @@ html[data-theme="light"] .loc-header__title {
   color: var(--bg-deep, #0b1512);
 }
 
-/* ---- Live Heat Map — the abstract status panel (heat-panel.js),
-   shown in the Heat Map / Map tab above instead of stacked below the
-   pin map (see views/location.js's initHeatMap() and setMapTab()).
-   Same tab-level footprint as the pin map, so .loc-heatmap__canvas
-   below is deliberately sized to match .loc-map's width/height at
-   every breakpoint (350px mobile-first / 58vh+min 320px under 768px /
-   min(64vh,620px) 769-980px / fixed 350px at 981px+) rather than the
-   smaller fixed preview size it used when it rendered as a secondary
-   card underneath the map. ---- */
-
-.loc-heatmap {
-  margin-top: 0;
-  padding: 14px;
-}
-
-.loc-heatmap__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-
-.loc-heatmap__legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px 12px;
-  font-size: 0.7rem;
-  color: var(--map-text-muted);
-}
-
-@media (max-width: 400px) {
-  .loc-heatmap__legend {
-    gap: 6px 10px;
-    font-size: 0.66rem;
-  }
-}
-
-.loc-heatmap__legend-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.loc-heatmap__legend-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-}
-
-.loc-heatmap__legend-dot--stable { background: #0b6b3a; }
-.loc-heatmap__legend-dot--mixed { background: #d6a24a; }
-.loc-heatmap__legend-dot--outage { background: #e5484d; }
-
-/* Matches .lw-heat-point--approx's dashed-dot treatment (home.css) —
-   an open/dashed ring instead of a filled swatch, so the legend key
-   itself explains what the dashed points on the panel mean. */
-.loc-heatmap__legend-dot--approx {
-  background: transparent;
-  border: 1.5px dashed var(--map-text-muted, #8C97AE);
-  box-sizing: border-box;
-}
-
-.loc-heatmap__canvas {
-  position: relative;
-  width: 100%;
-  /* Mobile-first base — same as .loc-map's own base height, since this
-     panel now occupies the same tab-level slot the pin map does
-     rather than a smaller secondary preview. */
-  height: 350px;
-  border-radius: var(--radius-lg);
+.loc-map__heat-host {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
   overflow: hidden;
-  border: 1px solid var(--border-soft);
-  background: var(--map-surface, var(--dark-bg, #1C1F26));
+  isolation: isolate;
 }
 
-/* Location's panel is bigger than Home's preview — points can afford
-   slightly larger labels. Base .lw-heat-point styles live in home.css
-   (loaded on every view — see its own comment on why they're shared
-   there rather than duplicated per view). */
-.loc-heatmap__canvas .lw-heat-point__label {
-  font-size: 0.66rem;
-}
-
-/* ---- Width/height tiers below deliberately mirror .loc-map's own
-   breakpoints exactly (see that rule's comments), so switching
-   between the Map and Heat Map tabs never changes the panel's
-   footprint on the page. ---- */
-@media (min-width: 769px) {
-  .loc-heatmap__canvas {
-    height: min(64vh, 620px);
-  }
-}
-
-@media (max-width: 768px) {
-  .loc-heatmap__canvas {
-    height: 58vh;
-    min-height: 320px;
-  }
-}
-
-@media (min-width: 981px) {
-  .loc-heatmap__canvas {
-    height: 350px;
-  }
+.loc-map__heat-host[hidden] {
+  display: none !important;
 }
 
 /* ---- Custom markers (rendered as maplibregl.Marker DOM elements by

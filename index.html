@@ -691,7 +691,7 @@
          and since <header class="topbar"> is a full-width block-level
          element, this shimmer bar automatically spans the exact same
          full width the real topbar does. -->
-    
+
   </header>
 
   <!-- Full-screen skeleton, shown while .page-data-loading is on <body>
@@ -2829,22 +2829,11 @@
         </button>
       </div>
 
-      <!-- ==== Map / Heat Map tabs ====
-           Pin map and Live Heat Map used to render stacked on top of
-           each other; now only one shows at a time, so the user picks
-           which one they want. Heat Map is the default open tab (see
-           `hidden` on #locMap below) — see views/location.js's
-           setMapTab() for the switch + resize-on-reveal logic. -->
-      <!-- Map tabs removed; style toggle now includes a Heat Map option -->
-
       <!-- ==== Map ====
            MapLibre GL renders into #locMapCanvas. Everything else here is
            overlay chrome views/location.js positions on top of it —
            the loading/permission states, and a template for the marker
-           info card (cloned per-marker, never shown directly).
-           `hidden` by default — Heat Map tab opens first; setMapTab()
-           toggles this and nudges MapLibre with .resize() when it's
-           revealed, since it was laid out at 0×0 while hidden. -->
+         info card (cloned per-marker, never shown directly). -->
       <div class="loc-map" id="locMap">
         <div class="loc-map__canvas" id="locMapCanvas" role="application" aria-label="Map of monitored locations"></div>
 
@@ -2859,16 +2848,8 @@
           <button type="button" class="loc-map__style-btn" data-style="heatmap">Heat Map</button>
         </div>
 
-        <!-- Host for the full-page heat panel replicated from Home's small card -->
-        <div id="locMapHeatPanel" class="loc-map__heat-panel" hidden></div>
+        <div id="locMapHeatPanel" class="loc-map__heat-host" hidden aria-label="Live heat map of monitored locations"></div>
       </div>
-
-      <!-- ==== Live Heat Map ====
-           Custom red/amber/green status panel (views/location.js,
-           see initHeatMap()) — NOT a MapLibre map, see utils/heat-panel.js's
-           header. Fed by the same GET /locations/map data #locMap's pins
-           use. Open by default — see the tabs above. -->
-      <!-- Heat Map removed per request -->
 
       <!-- Info-card template for a clicked marker — cloned into a MapLibre
            popup by views/location.js, never rendered on its own. -->
@@ -3642,12 +3623,6 @@
        scripts, each depends on globals the previous one defined) ==== -->
   <script src="./js/utils/validators.js"></script>
   <script src="./js/utils/helpers.js"></script>
-  <!-- Shared red/amber/green status panel (NOT a map) — still used by
-       the Location view's own Live Heat Map panel. The Home "Live Map
-       Heat" card no longer uses this (see views/map-heat-home.js, now a
-       real Leaflet map); loaded early regardless so location.js can rely
-       on window.LWHeatPanel already existing. See the file header. -->
-  <script src="./js/utils/heat-panel.js"></script>
   <script src="./js/utils/location-picker.js"></script>
   <script src="./js/services/auth.js"></script>
   <script src="./js/services/storage.js"></script>

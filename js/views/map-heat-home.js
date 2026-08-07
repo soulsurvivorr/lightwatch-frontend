@@ -53,13 +53,15 @@
     const DEFAULT_CENTER = [7.9465, -1.0232];
     const DEFAULT_ZOOM = 6;
 
-    const visual = document.getElementById('lwxMapVisual');
-    if (!visual) return; // Home view isn't on screen, or this markup changed
-
     if (typeof L === 'undefined' || typeof L.heatLayer !== 'function') {
         console.error('[map-heat-home] Leaflet or Leaflet.heat failed to load');
         return;
     }
+
+    function createLiveHeatMap(visual, options = {}) {
+        if (!visual || visual.dataset.liveHeatMapBound === '1') return null;
+        visual.dataset.liveHeatMapBound = '1';
+        const isFullMap = options.full === true;
 
     function statusKey(rawStatus) {
         return String(rawStatus || 'unknown').toLowerCase();
@@ -96,20 +98,20 @@
     // beats an external stylesheet regardless of link order.
     visual.classList.add('lwx-heat-map-host');
     visual.innerHTML = `
-        <div class="lwx-heat-map" id="lwxHeatMapCanvas" style="background:#0b0e14"></div>
+        <div class="lwx-heat-map" style="background:#0b0e14"></div>
         <div class="lwx-map-live-badge"><span class="pulse pulse--on" aria-hidden="true"></span>Live</div>
         <div class="lwx-map-stats" id="lwxMapStatsBar">
-            <span id="lwxMapReportCount">Loading…</span>
+            <span class="lwx-map-report-count">Loading…</span>
             <span class="lwx-map-stats__sep" aria-hidden="true">•</span>
-            <span id="lwxMapUpdatedAt">—</span>
+            <span class="lwx-map-updated-at">—</span>
         </div>
         <div class="lwx-map-status" id="lwxMapStatus" hidden></div>
     `;
 
-    const mapEl = visual.querySelector('#lwxHeatMapCanvas');
-    const reportCountEl = visual.querySelector('#lwxMapReportCount');
-    const updatedAtEl = visual.querySelector('#lwxMapUpdatedAt');
-    const statusEl = visual.querySelector('#lwxMapStatus');
+    const mapEl = visual.querySelector('.lwx-heat-map');
+    const reportCountEl = visual.querySelector('.lwx-map-report-count');
+    const updatedAtEl = visual.querySelector('.lwx-map-updated-at');
+    const statusEl = visual.querySelector('.lwx-map-status');
 
     // ---- Map — built lazily, the first time the card is actually
     // visible (see ensureMapBuilt() below), and then exactly once after
@@ -140,8 +142,8 @@
             center: DEFAULT_CENTER,
             zoom: DEFAULT_ZOOM,
             maxZoom: MAX_ZOOM,
-            zoomControl: false,        // small preview card — keep it clean
-            attributionControl: false, // "Hide Leaflet attribution on the homepage"
+            zoomControl: isFullMap,
+            attributionControl: isFullMap,
             scrollWheelZoom: false,    // don't fight page scroll
             touchZoom: true,           // pinch-zoom stays on for mobile
             tap: true,
@@ -158,9 +160,11 @@
         // Tapping the open map background (not a marker, not a drag)
         // opens the full map — same "this is just a preview, tap through
         // for detail" behavior the old per-point status panel had.
-        map.on('click', () => {
-            document.getElementById('lwxViewFullMapBtn')?.click();
-        });
+        if (!isFullMap) {
+            map.on('click', () => {
+                document.getElementById('lwxViewFullMapBtn')?.click();
+            });
+        }
 
         // ---- Layer registry (future-ready) ----
         // Additional live overlays — weather radar, lightning strikes,
@@ -308,9 +312,11 @@
                 marker.bindTooltip(`${loc.name || 'Unknown area'}: ${statusLabel}`, { direction: 'top', offset: [0, -6] });
                 // Tapping a specific location behaves the same as tapping
                 // the map background — opens the full map for detail.
-                marker.on('click', () => {
-                    document.getElementById('lwxViewFullMapBtn')?.click();
-                });
+                if (!isFullMap) {
+                    marker.on('click', () => {
+                        document.getElementById('lwxViewFullMapBtn')?.click();
+                    });
+                }
                 markersLayer.addLayer(marker);
             });
 
@@ -401,4 +407,17 @@
             if (pendingLocations) refresh();
         }
     }, 150);
+
+        return {
+            refresh,
+            invalidateSize() {
+                if (map) map.invalidateSize();
+            }
+        };
+    }
+
+    window.LWLiveHeatMap = { create: createLiveHeatMap };
+
+    const homeVisual = document.getElementById('lwxMapVisual');
+    if (homeVisual) createLiveHeatMap(homeVisual);
 })();

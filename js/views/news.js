@@ -347,6 +347,22 @@
     let activeNewsFilter = 'all';
     let lwHomeNewsCarousel = null;
 
+    // ---- "Load older news" pagination -------------------------------
+    // The initial/poll fetch only ever asks for the newest page
+    // (?limit=30), so on a busy news day the oldest item on screen
+    // could be just a few days old even though events live in the DB
+    // for the full retention window. This lets the Report page's full
+    // feed page further back on demand using the backend's existing
+    // ?before= param (GET /news already supports it — see the
+    // backend's andClauses.push({ lastUpdatedAt: { $lt: beforeDate } })).
+    // publishedAt on a rendered article is the event's lastUpdatedAt
+    // (see the backend's GET /news response body), which is exactly
+    // the field ?before= filters on — no mismatch between what we
+    // display and what we page against.
+    let oldestArticleDate = null;
+    let isLoadingOlder = false;
+    let hasMoreOlder = true;
+
     // ------------------------------------------------------------
     // HOME NEWS CAROUSEL — #homeNewsFeed used to just render a single
     // static compact card (data-news-feed-limit was 1, and even at a
@@ -424,11 +440,30 @@
         return `<article class="news-item news-item--empty"><p class="news-item__preview">${messages[filter] || messages.all}</p></article>`;
     }
 
-    function renderNews(articles) {
+    // Combines two article lists by id, letting the incoming (fresher)
+    // copy of any article win — this is what lets a periodic poll
+    // (which only ever re-fetches the newest page) refresh items
+    // in-place without discarding whatever the user has already paged
+    // back through via "Load older news".
+    function mergeArticleLists(existing, incoming) {
+        const byId = new Map(existing.map(a => [String(a.id), a]));
+        incoming.forEach((a) => byId.set(String(a.id), a));
+        return sortNewsForDisplay(Array.from(byId.values()));
+    }
+
+    // `replace: true` (first load, or a fresh poll's cache priming)
+    // resets the list — that's the correct behavior for "this is the
+    // current truth". `replace: false` (periodic polls, and "load
+    // older" pages) merges into whatever's already on screen instead,
+    // so paged-in history and freshly-arrived items both survive.
+    function renderNews(articles, { replace = false } = {}) {
         const feeds = getFeedContainers();
         if (!feeds.length) return;
 
-        latestArticles = sortNewsForDisplay(articles);
+        latestArticles = replace ? sortNewsForDisplay(articles) : mergeArticleLists(latestArticles, articles);
+        if (latestArticles.length) {
+            oldestArticleDate = latestArticles[latestArticles.length - 1].publishedAt;
+        }
         renderFullFeeds();
 
         feeds.forEach((feed) => {
@@ -464,12 +499,59 @@
     function renderFullFeeds() {
         const filtered = filterArticlesByCategory(latestArticles, activeNewsFilter);
         const html = filtered.length ? filtered.map(renderNewsItem).join('') : emptyStateHtml(activeNewsFilter);
+        // Only offer to page back further when there's actually
+        // something on screen to page back FROM, and only on the "all"
+        // filter — category filters run entirely client-side against
+        // whatever's already loaded, so "load more" there would fetch
+        // unfiltered pages that mostly get thrown away, confusing the
+        // "no more" end-state per filter. Switching back to "all"
+        // still has the real control.
+        const loadMoreHtml = (latestArticles.length && activeNewsFilter === 'all') ? loadMoreButtonHtml() : '';
 
         getFeedContainers().forEach((feed) => {
             const limit = parseInt(feed.dataset.newsFeedLimit, 10);
             if (limit > 0) return; // compact containers handled in renderNews()
-            feed.innerHTML = html;
+            feed.innerHTML = html + loadMoreHtml;
         });
+    }
+
+    function loadMoreButtonHtml() {
+        if (!hasMoreOlder) {
+            return '<div class="news-load-more news-load-more--end">You\'re all caught up — no older news to show.</div>';
+        }
+        return `
+        <div class="news-load-more">
+          <button type="button" class="news-load-more__btn" data-action="load-older-news" ${isLoadingOlder ? 'disabled' : ''}>
+            ${isLoadingOlder ? 'Loading…' : 'Load older news'}
+          </button>
+        </div>`;
+    }
+
+    // Pages further back using the backend's ?before= param, seeded
+    // with the publishedAt (== the event's lastUpdatedAt) of whatever
+    // is currently the oldest item on screen. Merges rather than
+    // replaces (see renderNews) so this only ever adds to the list.
+    function loadOlderNews() {
+        if (isLoadingOlder || !hasMoreOlder) return;
+        isLoadingOlder = true;
+        renderFullFeeds(); // show the disabled/"Loading…" button immediately
+
+        const beforeParam = oldestArticleDate ? `&before=${encodeURIComponent(oldestArticleDate)}` : '';
+        fetch(`${API_URL}/news?limit=30${beforeParam}`)
+            .then(r => r.json())
+            .then(data => {
+                const list = Array.isArray(data) ? data : [];
+                if (!list.length) hasMoreOlder = false;
+                renderNews(list, { replace: false });
+            })
+            .catch(err => {
+                console.error('Could not load older news:', err);
+                window.lwToast?.('Could not load older news — try again.');
+            })
+            .finally(() => {
+                isLoadingOlder = false;
+                renderFullFeeds();
+            });
     }
 
     // ---- Category tabs ---------------------------------------------
@@ -563,7 +645,7 @@
     function loadNews(isFirstLoad) {
         const cached = isFirstLoad ? LWCache.read(NEWS_CACHE_KEY, NEWS_CACHE_MAX_AGE_MS) : null;
         if (cached) {
-            renderNews(cached);
+            renderNews(cached, { replace: true });
         } else if (isFirstLoad) {
             showNewsLoading();
         }
@@ -572,17 +654,24 @@
             .then(r => r.json())
             .then(data => {
                 const list = Array.isArray(data) ? data : [];
-                renderNews(list);
+                // A true first load starts a fresh session — any older
+                // pages from a previous session shouldn't carry over,
+                // and "load older" should be available again. Periodic
+                // polls only ever re-fetch the newest page, so they
+                // merge into whatever's already on screen (see
+                // renderNews) instead of blowing away paged-in history.
+                if (isFirstLoad) hasMoreOlder = true;
+                renderNews(list, { replace: isFirstLoad });
                 LWCache.write(NEWS_CACHE_KEY, list);
             })
             .catch(err => {
                 console.error('Could not load news:', err);
-                if (!cached) renderNews([]);
+                if (!cached) renderNews([], { replace: true });
             });
     }
 
     function startNewsPolling() {
-        loadNews(!newsLoadedOnce);
+        if (!newsLoadedOnce) loadNews(true);
         newsLoadedOnce = true;
         clearInterval(newsPollTimer);
         newsPollTimer = setInterval(() => loadNews(false), NEWS_POLL_INTERVAL_MS);
@@ -600,6 +689,14 @@
             feed.dataset.interactionsBound = '1';
 
             feed.addEventListener('click', (e) => {
+                const loadMoreBtn = e.target.closest('[data-action="load-older-news"]');
+                if (loadMoreBtn && feed.contains(loadMoreBtn)) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    loadOlderNews();
+                    return;
+                }
+
                 const bookmarkBtn = e.target.closest('[data-action="toggle-bookmark"]');
                 if (bookmarkBtn && feed.contains(bookmarkBtn)) {
                     e.preventDefault();

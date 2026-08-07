@@ -107,8 +107,6 @@
     // ── State ──────────────────────────────────────────────────
     let map = null;
     let mapReady = false;
-    let heatMapReady = false;
-    let heatMapInitStarted = false; // heat map removed, keep flags for safety
     let clusterIndex = null;
     let markerEls = new Map();          // cluster/point id -> maplibregl.Marker
     let openPopup = null;
@@ -123,8 +121,8 @@
     let mapInitStarted = false;
     let nearbyCollapsed = false;
     let currentMapStyle = 'street';
-    let activeMapTab = 'heatmap'; // 'heatmap' | 'map' — see setMapTab()
     let geocoderDebounceTimer = null;
+    let liveHeatMap = null;
 
     // ── Favorites (unchanged localStorage contract) ───────────
     function readFavorites() {
@@ -142,6 +140,14 @@
         } catch (err) {
             // Storage unavailable — favorites just won't persist this session.
         }
+    }
+
+    function ensureLiveHeatMap() {
+        if (liveHeatMap) return liveHeatMap;
+        const host = document.getElementById('locMapHeatPanel');
+        if (!host || !window.LWLiveHeatMap || typeof window.LWLiveHeatMap.create !== 'function') return null;
+        liveHeatMap = window.LWLiveHeatMap.create(host, { full: true });
+        return liveHeatMap;
     }
 
     function isFavorited(name) {
@@ -269,62 +275,6 @@
             // survive a style swap untouched and don't need re-adding.
             applyBrandPalette();
         });
-    }
-
-    // ============================================================
-    //  Live Heat Map (#locHeatMap / #locHeatMapCanvas)
-    //  NOT a second MapLibre instance — a custom red/amber/green status
-    //  panel (shared with Home's smaller version — see
-    //  utils/heat-panel.js's header for why this reads more clearly at
-    //  a glance than a heatmap layer on the same street tiles the pin
-    //  map above already uses). Fed by the same locations dataset,
-    //  updated every time renderLocations() runs (see below).
-    // ============================================================
-
-    let heatPanel = null;
-
-    function ensureHeatPanel() {
-        if (heatPanel) return;
-        const host = document.getElementById('locMapHeatPanel');
-        if (!host || !window.LWHeatPanel) return;
-        heatPanel = window.LWHeatPanel.create(host, {
-            onSelect(loc) {
-                if (loc && loc.lat != null && loc.lng != null) {
-                    openLocationPopup(loc, [loc.lng, loc.lat]);
-                    if (map) map.flyTo({ center: [loc.lng, loc.lat], zoom: Math.max(map.getZoom(), DEFAULT_ZOOM) });
-                }
-            }
-        });
-        heatMapReady = true;
-    }
-
-    function updateHeatMap(locations) {
-        if (heatPanel && typeof heatPanel.update === 'function') heatPanel.update(locations);
-    }
-
-    // ============================================================
-    //  Map / Heat Map tabs (#locMapTabs)
-    //  #locMap and #locHeatMap used to render stacked on top of each
-    //  other; now only one is shown at a time and the user picks
-    //  which. Heat Map opens by default (see `hidden` on #locMap in
-    //  index.html). Whichever panel gets revealed was laid out at
-    //  0×0 while `hidden` (same reason show() below nudges the pin
-    //  map with .resize() on view-level show) — so switching TO a
-    //  tab re-triggers that panel's own layout pass now that its
-    //  container has real dimensions.
-    // ============================================================
-
-    function setMapTab(tab) {
-        if (tab !== 'map') return;
-        activeMapTab = 'map';
-        const mapEl = document.getElementById('locMap');
-        if (mapEl) mapEl.hidden = false;
-        document.querySelectorAll('#locMapTabs .loc-map-tab').forEach(btn => {
-            const isActive = btn.dataset.tab === 'map';
-            btn.classList.toggle('is-active', isActive);
-            btn.setAttribute('aria-selected', String(isActive));
-        });
-        if (map) setTimeout(() => map.resize(), 60);
     }
 
     // Pulls LightWatch's own design tokens (variables.css) and pushes
@@ -699,11 +649,6 @@
         }
 
         applyFilters();
-        // Heat map always reflects the full unfiltered dataset (density
-        // of outages overall), unlike the pin map's mapSet above, which
-        // narrows to the active filter — a "Favorites"-filtered heat map
-        // would misrepresent citywide risk.
-        updateHeatMap(latestLocations);
     }
 
     // ============================================================
@@ -973,30 +918,19 @@
             });
         }
 
-        // Map / Heat Map tabs
-        const mapTabs = document.getElementById('locMapTabs');
-        if (mapTabs) {
-            mapTabs.addEventListener('click', (event) => {
-                const btn = event.target.closest('.loc-map-tab');
-                if (!btn) return;
-                setMapTab(btn.dataset.tab);
-            });
-        }
-
         // Street / Satellite / Heat Map toggle
         const styleToggle = document.getElementById('locMapStyleToggle');
         function setMapStyle(style) {
             const canvas = document.getElementById('locMapCanvas');
-            const host = document.getElementById('locMapHeatPanel');
+            const heatHost = document.getElementById('locMapHeatPanel');
             if (style === 'heatmap') {
                 if (canvas) canvas.hidden = true;
-                if (host) host.hidden = false;
-                ensureHeatPanel();
-                updateHeatMap(latestLocations);
+                if (heatHost) heatHost.hidden = false;
                 currentMapStyle = 'heatmap';
+                ensureLiveHeatMap()?.invalidateSize();
             } else {
                 if (canvas) canvas.hidden = false;
-                if (host) host.hidden = true;
+                if (heatHost) heatHost.hidden = true;
                 const wantsSatellite = style === 'satellite';
                 currentMapStyle = wantsSatellite ? 'satellite' : 'street';
                 if (map) map.setStyle(wantsSatellite ? STYLE_SATELLITE : STYLE_STREET);
@@ -1022,7 +956,6 @@
     function mount() {
         bindControls();
         initMap();
-        // heat panel is created on-demand via the style toggle
         loadLocations(true);
     }
 
@@ -1030,22 +963,18 @@
         document.body.classList.add('view-location-active');
         clearInterval(locationPollTimer);
         locationPollTimer = setInterval(() => loadLocations(false), POLL_INTERVAL_STANDARD_MS);
-        // If the router requested a specific map mode (e.g. from the Home card), honor it on reveal
-        if (window.__lwPendingMapMode) {
-            const mode = window.__lwPendingMapMode;
-            window.__lwPendingMapMode = null;
-            const styleToggle = document.getElementById('locMapStyleToggle');
-            if (styleToggle) {
-                const btn = styleToggle.querySelector(`.loc-map__style-btn[data-style="${mode}"]`);
-                if (btn) btn.click();
-            }
-        } else {
-            if (currentMapStyle === 'heatmap') {
-                ensureHeatPanel();
-                updateHeatMap(latestLocations);
-            } else if (map) {
-                setTimeout(() => map.resize(), 60);
-            }
+        const requestedMode = window.__lwPendingMapMode;
+        window.__lwPendingMapMode = null;
+        const styleToggle = document.getElementById('locMapStyleToggle');
+        const requestedButton = requestedMode && styleToggle
+            ? styleToggle.querySelector(`.loc-map__style-btn[data-style="${requestedMode}"]`)
+            : null;
+        if (requestedButton) {
+            requestedButton.click();
+        } else if (currentMapStyle === 'heatmap') {
+            ensureLiveHeatMap()?.invalidateSize();
+        } else if (map) {
+            setTimeout(() => map.resize(), 60);
         }
     }
 

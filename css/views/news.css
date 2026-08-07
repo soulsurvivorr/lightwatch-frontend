@@ -284,6 +284,42 @@
   background: linear-gradient(135deg, color-mix(in srgb, var(--brand2) 78%, #08131f), color-mix(in srgb, var(--brand) 62%, #061019));
 }
 
+/* "Load older news" control at the bottom of the full feed — see
+   loadOlderNews()/loadMoreButtonHtml() in views/news.js. */
+.news-load-more {
+  display: flex;
+  justify-content: center;
+  padding: 14px 4px 6px;
+}
+
+.news-load-more__btn {
+  border: 1px solid var(--border-soft);
+  background: var(--bg-panel);
+  color: var(--text-bright);
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 10px 20px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background-color 0.18s ease, border-color 0.18s ease, opacity 0.18s ease;
+}
+
+.news-load-more__btn:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--brand2) 60%, var(--border-soft));
+  color: #fff;
+}
+
+.news-load-more__btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.news-load-more--end {
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
 .news-page-header {
   background: linear-gradient(140deg, color-mix(in srgb, var(--brand2) 24%, #091423), color-mix(in srgb, var(--brand) 18%, #0b1420));
   border: 1px solid color-mix(in srgb, var(--brand2) 34%, var(--border-soft));
