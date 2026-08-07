@@ -356,7 +356,7 @@ function getOrCreateHandle() {
 
 function renderAvatarIntoEl(targetEl, seed, avatarImage) {
     if (!targetEl) return;
-    if (avatarImage && /^data:image\//i.test(avatarImage)) {
+    if (avatarImage && /^(?:data:image\/|https?:\/\/)/i.test(avatarImage)) {
         targetEl.innerHTML = '';
         const img = document.createElement('img');
         img.src = avatarImage;
@@ -682,8 +682,7 @@ let chatScope = (() => {
     if (targetChatIdFromNotification) {
         return targetChatScope;
     }
-    const saved = localStorage.getItem(CHAT_SCOPE_KEY);
-    return saved === CHAT_SCOPE_GLOBAL ? CHAT_SCOPE_GLOBAL : CHAT_SCOPE_LOCAL;
+    return CHAT_SCOPE_GLOBAL;
 })();
 
 if (targetChatIdFromNotification) {
@@ -2529,6 +2528,9 @@ window.addEventListener('lw:route-changed', (e) => {
     if (isChatView) {
         const hasDeepLinkedMessage = !!new URLSearchParams(e.detail.search || window.location.search).get('chatId');
         const pendingPanel = window.__lwPendingReportPanel;
+        if (isFreshEntry && !hasDeepLinkedMessage) {
+            setChatScope(CHAT_SCOPE_GLOBAL);
+        }
         if (pendingPanel === 'community' || pendingPanel === 'news') {
             console.debug('[chat] pending report panel:', pendingPanel);
             activateReportTab(pendingPanel);

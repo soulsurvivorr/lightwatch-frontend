@@ -884,7 +884,7 @@ function renderTrendBannerAvatar(target, chat) {
     const avatarImage = chat?.avatarImage || chat?.user?.avatarImage || '';
     const seed = chat?.userId || chat?.user?._id || chat?.user?.id || chat?.handle || chat?.user?.handle || chat?.chatHandle || chat?._id || chat?.id || '';
 
-    if (avatarImage && /^data:image\//i.test(avatarImage)) {
+    if (avatarImage && /^(?:data:image\/|https?:\/\/)/i.test(avatarImage)) {
         const img = document.createElement('img');
         img.src = avatarImage;
         img.alt = '';

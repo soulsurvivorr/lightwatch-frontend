@@ -163,7 +163,7 @@ function applyAvatarToTargets(user) {
     const targets = [el('profileAvatar'), el('sidebarAvatar'), el('navAccountAvatar')].filter(Boolean);
 
     targets.forEach((target) => {
-        if (avatarImage && /^data:image\//i.test(avatarImage)) {
+        if (avatarImage && /^(?:data:image\/|https?:\/\/)/i.test(avatarImage)) {
             target.innerHTML = '';
             const img = document.createElement('img');
             img.src = avatarImage;

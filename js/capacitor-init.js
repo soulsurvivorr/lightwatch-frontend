@@ -1,5 +1,9 @@
 const Keyboard = Capacitor.Plugins.Keyboard;
 
+try {
+    if (screen.orientation?.lock) screen.orientation.lock('portrait').catch(() => {});
+} catch {}
+
 document.documentElement.style.setProperty(
     '--login-keyboard-offset',
     '-120px'

@@ -1315,6 +1315,25 @@
   font-size: 0.82rem;
 }
 
+.report-history__toggle {
+  align-self: flex-start;
+  margin: 2px 14px 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--brand2, #4A90D9);
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.report-history__toggle:hover,
+.report-history__toggle:focus-visible {
+  text-decoration: underline;
+  outline: none;
+}
+
 /* Narrow-to-mid phones (e.g. iPhone 12/13/14, Galaxy S21) */
 @media (max-width: 480px) {
   .report-item {

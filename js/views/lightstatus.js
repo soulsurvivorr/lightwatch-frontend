@@ -603,9 +603,21 @@ function closeLightConfirm() {
 // -----------------------------------------------------
 async function fetchLocationReports(location) {
     try {
-        const res = await fetch(`${API_BASE}/reports?location=${encodeURIComponent(location)}&limit=50`);
-        if (!res.ok) throw new Error('bad response');
-        return await res.json();
+        const res = await fetch(`${API_BASE}/lightstatus/history?location=${encodeURIComponent(location)}`);
+        if (res.ok) return await res.json();
+    } catch (err) {
+        // Older deployments do not have /lightstatus/history yet.
+    }
+    try {
+        const fallback = await fetch(`${API_BASE}/reports?location=${encodeURIComponent(location)}&limit=100`);
+        if (!fallback.ok) throw new Error('fallback history unavailable');
+        const reports = await fallback.json();
+        return Array.isArray(reports) ? reports.filter(r => r.status === 'on' || r.status === 'off').map(r => ({
+            id: r.id,
+            status: r.status,
+            reportedAt: r.reportedAt,
+            source: r.text || 'A volunteer'
+        })) : [];
     } catch (err) {
         return [];
     }
@@ -770,12 +782,12 @@ function renderTimeline() {
 
 
 // -----------------------------------------------------
-// RECENT REPORTS: latest 5 for this location, checkmark style.
+// LOCATION HISTORY: every on/off event for Home, newest first.
 // -----------------------------------------------------
 function renderRecentReports() {
     if (!recentReportsListEl) return;
 
-    const recent = locationReports.slice(0, 5);
+    const recent = locationReports;
     recentReportsListEl.innerHTML = "";
 
     if (recent.length === 0) {
@@ -798,10 +810,14 @@ function renderRecentReports() {
         const body = document.createElement('div');
         body.className = "report-item__body";
         const name = document.createElement('strong');
-        name.textContent = nameForReportId(entry.id);
+        const eventDate = new Date(entry.reportedAt);
+        const eventTime = Number.isNaN(eventDate.getTime())
+            ? '—'
+            : eventDate.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+        name.textContent = isOn ? `Light came on at ${eventTime}` : `Light went off at ${eventTime}`;
         const text = document.createElement('p');
         text.className = "report-item__text";
-        text.textContent = isOn ? "Light ON" : "Light OFF";
+        text.textContent = `Source: ${entry.source || 'A volunteer'}`;
         body.appendChild(name);
         body.appendChild(text);
 
@@ -814,6 +830,30 @@ function renderRecentReports() {
         item.appendChild(time);
         recentReportsListEl.appendChild(item);
     });
+
+    const historyItems = recentReportsListEl.querySelectorAll('.report-item');
+    if (historyItems.length > 4) {
+        historyItems.forEach((item, index) => {
+            if (index >= 4) item.hidden = true;
+        });
+
+        const expandButton = document.createElement('button');
+        expandButton.type = 'button';
+        expandButton.className = 'report-history__toggle';
+        expandButton.textContent = `Show all history (${historyItems.length})`;
+        expandButton.setAttribute('aria-expanded', 'false');
+        expandButton.addEventListener('click', () => {
+            const expanded = expandButton.getAttribute('aria-expanded') === 'true';
+            historyItems.forEach((item, index) => {
+                if (index >= 4) item.hidden = expanded;
+            });
+            expandButton.setAttribute('aria-expanded', String(!expanded));
+            expandButton.textContent = expanded
+                ? `Show all history (${historyItems.length})`
+                : 'Show less history';
+        });
+        recentReportsListEl.appendChild(expandButton);
+    }
 }
 
 

@@ -114,6 +114,8 @@
     let currentMapStyle = 'street';
     let geocoderDebounceTimer = null;
     let liveHeatMap = null;
+    const locationHistoryCache = new Map();
+    const locationHistoryLoading = new Set();
 
     // ── Favorites (unchanged localStorage contract) ───────────
     function readFavorites() {
@@ -575,6 +577,8 @@
           </div>
           <p class="loc-row__status loc-row__status--${meta.cls}">${meta.label}</p>
           <p class="loc-row__meta">Updated ${timeText} · ${area.confirmations || 0} reports</p>
+                    <button type="button" class="loc-row__history-toggle" data-action="toggle-history" aria-expanded="false">History</button>
+                    <div class="loc-row__history" data-history-for="${area.locationKey}" hidden></div>
         </div>
         <div class="loc-row__aside">
           <button type="button" class="loc-row__star ${favorited ? 'is-active' : ''}" aria-label="${favorited ? 'Remove from favorites' : 'Add to favorites'}" aria-pressed="${favorited ? 'true' : 'false'}">
@@ -585,6 +589,70 @@
         </div>
       </div>
     `;
+    }
+
+    function renderLocationHistory(host, events) {
+        if (!host) return;
+        if (!events.length) {
+            host.innerHTML = '<span class="loc-row__history-empty">No status changes in the last 7 days.</span>';
+            return;
+        }
+        const escapeHistoryText = (value) => String(value || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+        host.innerHTML = events.map(event => {
+            const isOn = event.status === 'on';
+                        const eventDate = new Date(event.reportedAt);
+                        const eventTime = Number.isNaN(eventDate.getTime())
+                                ? '—'
+                                : eventDate.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+            const time = event.reportedAt && window.LWHelpers
+                ? LWHelpers.formatRelativeTimeFromDate(event.reportedAt)
+                : '—';
+            return `<div class="loc-row__history-item loc-row__history-item--${isOn ? 'on' : 'off'}">
+              <span class="loc-row__history-dot" aria-hidden="true"></span>
+                            <span class="loc-row__history-state">${isOn ? `Light came on at ${eventTime}` : `Light went off at ${eventTime}`}</span>
+              <span class="loc-row__history-time">${time}</span>
+              <span class="loc-row__history-source">${escapeHistoryText(event.source || 'A volunteer')}</span>
+            </div>`;
+        }).join('');
+    }
+
+    async function toggleLocationHistory(button) {
+        const row = button?.closest('.loc-row');
+        const host = row?.querySelector('.loc-row__history');
+        if (!row || !host) return;
+        const willOpen = host.hidden;
+        host.hidden = !willOpen;
+        button.setAttribute('aria-expanded', String(willOpen));
+        if (!willOpen || locationHistoryCache.has(row.dataset.area) || locationHistoryLoading.has(row.dataset.area)) return;
+
+        locationHistoryLoading.add(row.dataset.area);
+        host.innerHTML = '<span class="loc-row__history-empty">Loading history…</span>';
+        try {
+            const res = await fetch(`${LWHelpers.apiBase()}/lightstatus/history?location=${encodeURIComponent(row.dataset.area)}&days=7&limit=20`);
+            let events;
+            if (res.ok) {
+                events = await res.json();
+            } else {
+                const fallback = await fetch(`${LWHelpers.apiBase()}/reports?location=${encodeURIComponent(row.dataset.area)}&limit=20`);
+                const reports = fallback.ok ? await fallback.json() : [];
+                events = Array.isArray(reports) ? reports.filter(event => event.status === 'on' || event.status === 'off').map(event => ({
+                    status: event.status,
+                    reportedAt: event.reportedAt,
+                    source: event.text || 'A volunteer'
+                })) : [];
+            }
+            locationHistoryCache.set(row.dataset.area, Array.isArray(events) ? events : []);
+            renderLocationHistory(host, locationHistoryCache.get(row.dataset.area));
+        } catch {
+            host.innerHTML = '<span class="loc-row__history-empty">History unavailable right now.</span>';
+        } finally {
+            locationHistoryLoading.delete(row.dataset.area);
+        }
     }
 
     function matchesActiveFilter(area) {
@@ -869,6 +937,13 @@
                     if (!row) return;
                     toggleFavorite(row.dataset.area);
                     renderLocations(latestLocations);
+                    return;
+                }
+                const historyToggle = event.target.closest('[data-action="toggle-history"]');
+                if (historyToggle) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    toggleLocationHistory(historyToggle);
                     return;
                 }
                 const icon = event.target.closest('[data-action="toggle-area-status"]');

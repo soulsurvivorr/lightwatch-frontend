@@ -120,6 +120,51 @@
         }
     }
 
+    function setupConnectionGuard() {
+        const overlay = document.getElementById('lwOfflineLock');
+        const retryButton = document.getElementById('lwOfflineRetryBtn');
+        const status = document.getElementById('lwOfflineStatus');
+        if (!overlay || !retryButton || overlay.dataset.bound === '1') return;
+        overlay.dataset.bound = '1';
+
+        let checkInFlight = false;
+        let retryTimer = null;
+
+        function setLocked(locked, message = '') {
+            overlay.hidden = !locked;
+            document.documentElement.classList.toggle('lw-offline-locked', locked);
+            document.body.classList.toggle('lw-offline-locked', locked);
+            if (message && status) status.textContent = message;
+        }
+
+        async function checkConnection() {
+            if (checkInFlight) return;
+            checkInFlight = true;
+            if (status) status.textContent = 'Checking connection…';
+            try {
+                if (!navigator.onLine) throw new Error('offline');
+                const response = await fetch(`${window.API_URL || ''}/`, {
+                    cache: 'no-store',
+                    headers: { Accept: 'application/json' }
+                });
+                if (!response.ok) throw new Error('backend unavailable');
+                setLocked(false);
+                if (retryTimer) clearInterval(retryTimer);
+                retryTimer = null;
+            } catch {
+                setLocked(true, 'Waiting for internet access…');
+                if (!retryTimer) retryTimer = setInterval(checkConnection, 15000);
+            } finally {
+                checkInFlight = false;
+            }
+        }
+
+        window.addEventListener('offline', () => setLocked(true, 'Waiting for internet access…'));
+        window.addEventListener('online', checkConnection);
+        retryButton.addEventListener('click', checkConnection);
+        checkConnection();
+    }
+
     // The actual work of switching views. `push` controls whether we
     // add a new history entry (normal navigation) or just replace the
     // current one (boot, and redirects like "no session -> login").
@@ -303,6 +348,7 @@
 
     // ---- Boot ----
     function boot() {
+        setupConnectionGuard();
         if (typeof LWNav !== 'undefined') LWNav.initNav();
         if (typeof initToastComponent === 'function') initToastComponent();
         if (typeof initAppBoot === 'function') initAppBoot();

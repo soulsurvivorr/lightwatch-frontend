@@ -996,6 +996,7 @@ html[data-theme="light"] .chat-message__text {
    panel is open on small screens — see the .topbar display:none
    rule further up this file) ---- */
 #view-chat .community-banner {
+  position: relative;
   color: white;
   padding: max(env(safe-area-inset-top, 0px), 6px) max(24px, env(safe-area-inset-right, 24px)) 18px max(24px, env(safe-area-inset-left, 24px));
   background: linear-gradient(135deg, #06111c 0%, #0e203a 52%, #163654 100%);
@@ -1005,11 +1006,8 @@ html[data-theme="light"] .chat-message__text {
 }
 
 #view-chat .community-banner__row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  display: block;
   width: 100%;
-  gap: 12px;
 }
 
 #view-chat .community-banner__title {
@@ -1021,7 +1019,7 @@ html[data-theme="light"] .chat-message__text {
 
 #view-chat .community-banner__text {
   min-width: 0;
-  padding-right: 10px;
+  padding-right: 92px;
 }
 
 #view-chat .community-banner__sub {
@@ -1033,9 +1031,12 @@ html[data-theme="light"] .chat-message__text {
 #view-chat .community-banner__actions {
   display: flex;
   align-items: center;
-  gap: 11px;
-  flex-shrink: 0;
-  margin-left: 10px;
+  gap: 8px;
+  position: absolute;
+  top: max(env(safe-area-inset-top, 0px), 16px);
+  right: max(env(safe-area-inset-right, 0px), 18px);
+  z-index: 2;
+  margin: 0;
 }
 
 #view-chat .community-pull-refresh {
@@ -1100,8 +1101,8 @@ html[data-theme="light"] .chat-message__text {
 
 #view-chat .community-banner__icon-btn {
   position: relative;
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   display: inline-flex;
   align-items: center;

@@ -181,7 +181,7 @@ function renderUserEverywhere(user) {
     // actual identity (id or name present).
     const hasIdentity = Boolean(user.id || user.name);
     const avatarMarkup = hasIdentity ? getAvatarSVG(user.id || user.name) : getGuestAvatarSVG();
-    const uploadedAvatar = typeof user.avatarImage === 'string' && /^data:image\//i.test(user.avatarImage)
+    const uploadedAvatar = typeof user.avatarImage === 'string' && /^(?:data:image\/|https?:\/\/)/i.test(user.avatarImage)
         ? user.avatarImage
         : null;
 

@@ -986,3 +986,32 @@
     font-size: 0.86rem;
   }
 }
+
+/* The mobile notification palette above is intentionally dark for the
+   default presentation, but an explicit light theme must still be able
+   to override it. Keep the header and tabs readable against the light
+   page instead of inheriting the forced dark values. */
+html[data-theme="light"] #view-notifications {
+  --notif-bg: #f4f6fb;
+  --notif-panel: #ffffff;
+  --notif-border: #dfe4ee;
+  --notif-text: #121318;
+  --notif-text-muted: #394255;
+  --notif-text-faint: #647086;
+  --notif-blue: #3574b0;
+}
+
+html[data-theme="light"] #view-notifications .notif-header,
+html[data-theme="light"] #view-notifications .notif-tabs {
+  color: #121318;
+}
+
+html[data-theme="light"] #view-notifications .notif-header__title,
+html[data-theme="light"] #view-notifications .notif-tab.is-active {
+  color: #121318;
+}
+
+html[data-theme="light"] #view-notifications .notif-header__subtitle,
+html[data-theme="light"] #view-notifications .notif-tab {
+  color: #394255;
+}

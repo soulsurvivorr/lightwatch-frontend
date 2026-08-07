@@ -144,6 +144,18 @@
 
   <div id="lw-toast"></div>
 
+  <div class="lw-offline-lock" id="lwOfflineLock" hidden role="alertdialog" aria-modal="true" aria-labelledby="lwOfflineTitle" aria-describedby="lwOfflineMessage">
+    <div class="lw-offline-lock__card">
+      <span class="lw-offline-lock__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 8.5a13.4 13.4 0 0 1 18 0M6.5 12a8.2 8.2 0 0 1 11 0M10 15.5a3.1 3.1 0 0 1 4 0M12 20h.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="m4 4 16 16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </span>
+      <h1 id="lwOfflineTitle">Connection interrupted</h1>
+      <p id="lwOfflineMessage">LightWatch needs an internet connection to keep your live power updates accurate. Reconnect to continue.</p>
+      <button type="button" class="btn btn--primary" id="lwOfflineRetryBtn">Try again</button>
+      <span class="lw-offline-lock__status" id="lwOfflineStatus" aria-live="polite"></span>
+    </div>
+  </div>
+
   <!-- ============================================================
        AUTH SHELL — login / signup / verification. No topbar/sidebar/
        bottom-nav here; shown whenever there's no session.
@@ -2235,16 +2247,9 @@
         <!-- Community activity: who reported / chatted from your area -->
         <div class="lw-section">
           <div class="lw-section__head">
-            <span class="lw-section__title">Community activity</span>
+            <span class="lw-section__title">Light status history</span>
           </div>
           <div class="lw-community-card">
-            <div class="community-activity" id="communityActivity">
-              <span class="community-activity__headline" id="communityActivityHeadline">Gathering today's activity…</span>
-              <div class="community-activity__meta">
-                <span id="communityActivityLastReport">Last report —</span>
-                <span id="communityActivityNow"><span class="community-activity__live-dot"></span> —</span>
-              </div>
-            </div>
             <div class="report-list report-list--compact" id="recentReportsList"></div>
           </div>
         </div>

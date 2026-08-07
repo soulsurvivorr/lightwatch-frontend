@@ -70,6 +70,84 @@
 
 /* Auth visibility gates + general utility classes, shared across every view. */
 
+.lw-offline-lock {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(7, 12, 20, 0.82);
+  backdrop-filter: blur(14px);
+}
+
+.lw-offline-lock[hidden] {
+  display: none;
+}
+
+.lw-offline-lock__card {
+  width: min(100%, 390px);
+  padding: 30px 26px 26px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 18px;
+  background: linear-gradient(145deg, #14243a, #0d1727);
+  color: #f4f7fb;
+  text-align: center;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.42);
+}
+
+.lw-offline-lock__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  margin-bottom: 16px;
+  border: 1px solid rgba(242, 179, 61, 0.42);
+  border-radius: 50%;
+  color: #f2b33d;
+  background: rgba(242, 179, 61, 0.12);
+}
+
+.lw-offline-lock__icon svg {
+  width: 26px;
+  height: 26px;
+}
+
+.lw-offline-lock h1 {
+  margin: 0;
+  color: inherit;
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.lw-offline-lock p {
+  margin: 10px auto 0;
+  max-width: 31ch;
+  color: rgba(244, 247, 251, 0.72);
+  font-size: 0.86rem;
+  line-height: 1.55;
+}
+
+.lw-offline-lock button {
+  margin-top: 20px;
+  min-width: 132px;
+}
+
+.lw-offline-lock__status {
+  display: block;
+  min-height: 1.2em;
+  margin-top: 10px;
+  color: rgba(244, 247, 251, 0.58);
+  font-size: 0.72rem;
+}
+
+html.lw-offline-locked,
+body.lw-offline-locked {
+  overflow: hidden !important;
+}
+
 /* ============================================================
    Auth visibility gates — shared across every page (auth.js).
 
