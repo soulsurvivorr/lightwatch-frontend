@@ -23,6 +23,11 @@
    display:none) and adds .lw-content-reveal to #locationRealContent for
    its entrance animation — mirroring profile.js's
    showProfileLoader()/hideProfileLoader() timing for Home. */
+
+   #view-location {
+    padding-bottom: 10px;
+   }
+
 #locationSkeleton {
   display: none;
   opacity: 1;

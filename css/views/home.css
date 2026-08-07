@@ -2611,7 +2611,7 @@ body.lw-location-panel-open {
   }
 
   body:has(#appShell:not([hidden])) {
-    padding-bottom: calc(110px + env(safe-area-inset-bottom));
+    padding-bottom: calc(70px + env(safe-area-inset-bottom));
   }
 
   /* Respect the bottom nav's declared height variable when present. */
