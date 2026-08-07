@@ -46,17 +46,8 @@
     // these URLs for a MapTiler style (https://api.maptiler.com/...
     // ?key=YOUR_KEY, free tier, no card) if you outgrow OpenFreeMap's
     // fair-use limits — the rest of this file doesn't change either way.
-    function getThemeMode() {
-        const explicit = document.documentElement.getAttribute('data-theme');
-        if (explicit === 'light') return 'light';
-        if (explicit === 'dark') return 'dark';
-        return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
-    }
-
     function getStreetMapStyle() {
-        return getThemeMode() === 'light'
-            ? 'https://tiles.openfreemap.org/styles/positron'
-            : 'https://tiles.openfreemap.org/styles/dark';
+        return 'https://tiles.openfreemap.org/styles/dark';
     }
 
     const STYLE_STREET = getStreetMapStyle();
@@ -291,17 +282,16 @@
     function applyBrandPalette() {
         if (currentMapStyle !== 'street' || !map) return;
         const css = getComputedStyle(document.documentElement);
-        const isLight = getThemeMode() === 'light';
-        const darkBg = css.getPropertyValue('--dark-bg').trim() || '#1C1F26';
-        const darkBgMid = css.getPropertyValue('--dark-bg-mid').trim() || '#2A2E38';
+        const darkBg = '#1C1F26';
+        const darkBgMid = '#2A2E38';
         const teal = css.getPropertyValue('--teal').trim() || '#3DD9C2';
-        const border = css.getPropertyValue('--border-strong').trim() || '#3a3a44';
-        const textBright = css.getPropertyValue('--text-bright').trim() || '#eef3fb';
-        const textMuted = css.getPropertyValue('--text-muted').trim() || '#bdc8da';
-        const surface = isLight ? (css.getPropertyValue('--map-surface').trim() || '#ffffff') : darkBg;
-        const surfaceMuted = isLight ? (css.getPropertyValue('--map-surface-muted').trim() || '#f3f6fb') : darkBgMid;
+        const border = '#3a4759';
+        const textBright = '#eef3fb';
+        const textMuted = '#bdc8da';
+        const surface = darkBg;
+        const surfaceMuted = darkBgMid;
         const waterColor = color_mix(teal, surface, 0.16);
-        const roadColor = isLight ? '#d7dde8' : darkBgMid;
+        const roadColor = darkBgMid;
 
         const safeSet = (layer, prop, value) => {
             try {
@@ -324,8 +314,8 @@
         safeSet('place_city', 'text-color', textBright);
         safeSet('place_town', 'text-color', textMuted);
         safeSet('place_village', 'text-color', textMuted);
-        safeSet('poi_label', 'text-color', isLight ? '#5b6474' : 'rgba(255,255,255,0.5)');
-        safeSet('road_label', 'text-color', isLight ? '#5b6474' : 'rgba(255,255,255,0.45)');
+        safeSet('poi_label', 'text-color', 'rgba(255,255,255,0.5)');
+        safeSet('road_label', 'text-color', 'rgba(255,255,255,0.45)');
     }
 
     // Cheap hex-ish blend so applyBrandPalette() doesn't need a full

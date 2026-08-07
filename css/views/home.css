@@ -6916,6 +6916,37 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
   100% { transform: scale(1); }
 }
 
+/* Weather illustrations, risk cards, and alerts keep their dark scenic
+   backgrounds in light mode, so their reading text must stay light too. */
+html[data-theme="light"] #view-home .lwx-weather-card__head,
+html[data-theme="light"] #view-home .lwx-weather-card__temp,
+html[data-theme="light"] #view-home .lwx-weather-card__desc,
+html[data-theme="light"] #view-home .lwx-weather-card__meta,
+html[data-theme="light"] #view-home .lwx-weather-card__meta svg,
+html[data-theme="light"] #view-home .lwx-weather-card__banner div,
+html[data-theme="light"] #view-home .lwx-weather-card__banner strong,
+html[data-theme="light"] #view-home .lwx-weather-card__live,
+html[data-theme="light"] #view-home .lwx-weather-card__updated,
+html[data-theme="light"] #view-home .lwx-risk-card__title,
+html[data-theme="light"] #view-home .lwx-risk-card__text p,
+html[data-theme="light"] #view-home .lwx-risk-card__foot-label,
+html[data-theme="light"] #view-home .lwx-risk-card__foot-value,
+html[data-theme="light"] #view-home .lwx-alert__title,
+html[data-theme="light"] #view-home .lwx-alert__sub,
+html[data-theme="light"] #view-home .lwx-alert__sub strong,
+html[data-theme="light"] #view-home .lwx-alert__impacts,
+html[data-theme="light"] #view-home .lwx-alert__impacts-title,
+html[data-theme="light"] #view-home .lwx-alert__impacts li {
+  color: #fff !important;
+}
+
+html[data-theme="light"] #view-home .lwx-row--risk .lwx-risk-card__title,
+html[data-theme="light"] #view-home .lwx-row--risk .lwx-risk-card__text p,
+html[data-theme="light"] #view-home .lwx-row--risk .lwx-risk-card__foot-label,
+html[data-theme="light"] #view-home .lwx-row--risk .lwx-risk-card__foot-value {
+  color: #000 !important;
+}
+
 /* ---- 5th stat card colour — additive icon modifier ---- */
 #view-home .lw-stat-card__icon--maroon { background: #7A3B4A; }
 

@@ -7,10 +7,9 @@
 //  Leaflet.heat heat layer, driven by the existing GET /locations/map
 //  endpoint. Each entry in that response is one monitored place's
 //  latest community-reported status (lat, lng, status, reportedAt) —
-//  exactly the "report" shape this card heats: on/unknown/off convert
-//  to a 0.2 / 0.5 / 1.0 intensity so stable areas glow green, mixed
-//  areas glow yellow, and outages glow red, blending naturally where
-//  reports sit close together.
+// exactly the "report" shape this card heats. Stable, unknown, and outage
+// points use separate color-isolated heat layers so dense stable areas
+// cannot accumulate into the outage/red gradient when zoomed out.
 //
 //  Tapping anywhere on the preview still just routes to the Map tab
 //  (data-route="location"), where the real full pin map lives — same
@@ -33,15 +32,7 @@
     const HEAT_BLUR = 30;   // 25-35px
     const MAX_MARKERS = 8;  // small card — cap labeled points so they don't crowd each other
 
-    // ON / UNKNOWN / OFF -> heat intensity. Keys are lowercase since
-    // GET /locations/map already returns lowercase status strings
-    // ('on' | 'off' | 'unknown'); normalized defensively below anyway.
-    const STATUS_INTENSITY = { on: 0.2, unknown: 0.5, off: 1.0 };
-
-    // Same statuses, as marker dot colors — kept in sync with the
-    // gradient stops passed to L.heatLayer below and with the card's own
-    // legend (🟢 Stable / 🟡 Mixed / 🔴 Outages) so a location's dot
-    // always matches the heat glow underneath it.
+    // Same statuses, as marker dot colors and isolated heat-layer colors.
     const STATUS_COLOR = {
         on: { fill: '#0B914E', glow: 'rgba(11, 145, 78, 0.55)' },
         unknown: { fill: '#D6A24A', glow: 'rgba(214, 162, 74, 0.55)' },
@@ -125,7 +116,7 @@
     // invalidateSize() later can't fully recover from. Deferring
     // construction until there's real layout avoids that entirely. ----
     let map = null;
-    let heatLayer = null;
+    let heatLayers = {};
     let markersLayer = null;
     let mapBuilt = false;
     let pendingLocations = null; // data that arrived before the map could be built
@@ -180,20 +171,21 @@
             return leafletLayer;
         }
 
-        heatLayer = registerLayer('heat', L.heatLayer([], {
-            radius: HEAT_RADIUS,
-            blur: HEAT_BLUR,
-            maxZoom: MAX_ZOOM,
-            max: 1.0,
-            minOpacity: 0.35,
-            gradient: {
-                0.0: 'rgba(11, 145, 78, 0)',
-                0.2: STATUS_COLOR.on.fill,      // stable
-                0.5: STATUS_COLOR.unknown.fill, // mixed / unknown
-                1.0: STATUS_COLOR.off.fill      // outage
-            }
-        }));
-        heatLayer.addTo(map);
+        Object.entries(STATUS_COLOR).forEach(([status, color]) => {
+            const layer = L.heatLayer([], {
+                radius: HEAT_RADIUS,
+                blur: HEAT_BLUR,
+                maxZoom: MAX_ZOOM,
+                max: 1.0,
+                minOpacity: 0.35,
+                gradient: {
+                    0.0: 'rgba(0, 0, 0, 0)',
+                    1.0: color.fill
+                }
+            });
+            heatLayers[status] = registerLayer(`heat-${status}`, layer);
+            layer.addTo(map);
+        });
 
         // Per-location colored dot + name label, layered on top of the
         // heat blur — one per plotted place, colored to match its
@@ -231,11 +223,6 @@
     let hasFitBoundsOnce = false;
     let hasLoadedOnce = false;
     let pollTimer = null;
-
-    function statusIntensity(rawStatus) {
-        const key = String(rawStatus || 'unknown').toLowerCase();
-        return STATUS_INTENSITY[key] != null ? STATUS_INTENSITY[key] : STATUS_INTENSITY.unknown;
-    }
 
     function setStatus(message, variant) {
         if (!statusEl) return;
@@ -278,18 +265,22 @@
         }
     }
 
-    // Smoothly swaps the heat layer's data in place — reuses the same
-    // Leaflet.heat instance/canvas every poll (setLatLngs() replaces the
-    // old point set wholesale, so nothing from a previous poll lingers),
-    // rather than tearing down and recreating a layer each refresh. The
-    // colored location markers are rebuilt the same way: clearLayers()
+    // Smoothly swaps each isolated status layer's data in place. Keeping
+    // statuses separate prevents Leaflet.heat's density accumulation from
+    // changing a stable green area into an outage red area at low zoom.
+    // Colored location markers are rebuilt the same way: clearLayers()
     // first removes every marker from the previous poll before the new
     // batch is added, so nothing stale is ever left on the map.
     function renderHeat(locations) {
         const plottable = locations.filter(loc => Number.isFinite(loc.lat) && Number.isFinite(loc.lng));
 
-        const points = plottable.map(loc => [loc.lat, loc.lng, statusIntensity(loc.status)]);
-        heatLayer.setLatLngs(points);
+        const points = plottable.map(loc => [loc.lat, loc.lng]);
+        Object.keys(heatLayers).forEach((status) => {
+            const statusPoints = plottable
+                .filter(loc => statusKey(loc.status) === status)
+                .map(loc => [loc.lat, loc.lng, 1]);
+            heatLayers[status].setLatLngs(statusPoints);
+        });
 
         markersLayer.clearLayers();
         plottable
