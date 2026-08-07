@@ -579,7 +579,9 @@
           </div>
           <p class="loc-row__status loc-row__status--${meta.cls}">${meta.label}</p>
           <p class="loc-row__meta">Updated ${timeText} · ${area.confirmations || 0} reports</p>
+                    <button type="button" class="loc-row__history-toggle" data-action="toggle-weather" aria-expanded="false">Weather</button>
                     <button type="button" class="loc-row__history-toggle" data-action="toggle-history" aria-expanded="false">History</button>
+                    <div class="loc-row__history" data-weather-for="${area.locationKey}" hidden></div>
                     <div class="loc-row__history" data-history-for="${area.locationKey}" hidden></div>
         </div>
         <div class="loc-row__aside">
@@ -625,7 +627,7 @@
 
     async function toggleLocationHistory(button) {
         const row = button?.closest('.loc-row');
-        const host = row?.querySelector('.loc-row__history');
+        const host = row?.querySelector('.loc-row__history[data-history-for]');
         if (!row || !host) return;
         const willOpen = host.hidden;
         host.hidden = !willOpen;
@@ -654,6 +656,64 @@
             host.innerHTML = '<span class="loc-row__history-empty">History unavailable right now.</span>';
         } finally {
             locationHistoryLoading.delete(row.dataset.area);
+        }
+    }
+
+    // ── Per-location weather (new) ────────────────────────────
+    // Same lazy-load-on-first-expand pattern as toggleLocationHistory
+    // above, hitting the same GET /weather?location=<name> endpoint
+    // weather-home.js already uses for the user's own primary spot —
+    // that route works for any monitored location name, so this just
+    // gives every row in the nearby list the same access, not only
+    // the user's own area.
+    const locationWeatherCache = new Map();
+    const locationWeatherLoading = new Set();
+
+    function renderLocationWeather(host, data) {
+        if (!host) return;
+        const current = data?.current || {};
+        const temp = typeof current.temperatureC === 'number' ? `${Math.round(current.temperatureC)}°C` : '—';
+        const rain = typeof current.rainChance === 'number' ? `${current.rainChance}% rain` : null;
+        const wind = typeof current.windKph === 'number' ? `${Math.round(current.windKph)} km/h wind` : null;
+        const condition = current.description || 'Conditions unavailable';
+        const risk = data?.risk?.label;
+        const parts = [rain, wind].filter(Boolean).join(' · ');
+        host.innerHTML = `
+          <div class="loc-row__history-item">
+            <span class="loc-row__history-state">${escapeForWeather(temp)} — ${escapeForWeather(condition)}</span>
+            ${parts ? `<span class="loc-row__history-time">${escapeForWeather(parts)}</span>` : ''}
+            ${risk ? `<span class="loc-row__history-source">Outage risk: ${escapeForWeather(risk)}</span>` : ''}
+          </div>
+        `;
+    }
+
+    function escapeForWeather(value) {
+        return String(value || '').replace(/[&<>"']/g, (ch) => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[ch]));
+    }
+
+    async function toggleLocationWeather(button) {
+        const row = button?.closest('.loc-row');
+        const host = row?.querySelector('.loc-row__history[data-weather-for]');
+        if (!row || !host) return;
+        const willOpen = host.hidden;
+        host.hidden = !willOpen;
+        button.setAttribute('aria-expanded', String(willOpen));
+        if (!willOpen || locationWeatherCache.has(row.dataset.area) || locationWeatherLoading.has(row.dataset.area)) return;
+
+        locationWeatherLoading.add(row.dataset.area);
+        host.innerHTML = '<span class="loc-row__history-empty">Loading weather…</span>';
+        try {
+            const res = await fetch(`${LWHelpers.apiBase()}/weather?location=${encodeURIComponent(row.dataset.area)}`);
+            if (!res.ok) throw new Error(`Bad response (${res.status})`);
+            const data = await res.json();
+            locationWeatherCache.set(row.dataset.area, data);
+            renderLocationWeather(host, data);
+        } catch {
+            host.innerHTML = '<span class="loc-row__history-empty">Weather unavailable right now.</span>';
+        } finally {
+            locationWeatherLoading.delete(row.dataset.area);
         }
     }
 
@@ -799,6 +859,10 @@
         const resultsEl = document.getElementById('locSearchResults');
         if (!resultsEl) return;
         if (!query) { resultsEl.setAttribute('hidden', ''); resultsEl.innerHTML = ''; return; }
+        // Feeds the admin dashboard's "Most Searched Locations" widget
+        // (see getTopSearchedAreas() in server.js) — best-effort, never
+        // blocks the actual search below if it fails.
+        window.LWAnalytics?.track('search', { query });
 
         const q = query.toLowerCase();
         const backendMatches = latestLocations
@@ -946,6 +1010,13 @@
                     event.preventDefault();
                     event.stopPropagation();
                     toggleLocationHistory(historyToggle);
+                    return;
+                }
+                const weatherToggle = event.target.closest('[data-action="toggle-weather"]');
+                if (weatherToggle) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    toggleLocationWeather(weatherToggle);
                     return;
                 }
                 const icon = event.target.closest('[data-action="toggle-area-status"]');

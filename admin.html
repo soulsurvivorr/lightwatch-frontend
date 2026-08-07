@@ -367,6 +367,55 @@
   .loc-filter-tab:hover { border-color:var(--border2); color:var(--txt); transform: translateY(-1px); }
   .loc-filter-tab.is-active { background:linear-gradient(135deg, var(--brand), #d99a26); border-color:transparent; color:var(--brand-ink); box-shadow: 0 4px 14px rgba(242,179,61,0.22); }
 
+  /* ======= Locations panel: split list/map layout (current markup —
+     .location-list-item etc. had no rules at all before this block,
+     which is why the panel rendered as unstyled text). ======= */
+  .locations-panel__split { display:grid; grid-template-columns: minmax(320px, 420px) 1fr; gap:18px; align-items:start; }
+  .locations-panel__list { display:flex; flex-direction:column; gap:10px; max-height:600px; overflow-y:auto; padding-right:4px; }
+  .locations-panel__map {
+    position:sticky; top:0; border:1px solid var(--border); border-radius:var(--r-xl);
+    background:linear-gradient(165deg, var(--panel-raised), var(--panel));
+    padding:16px; box-shadow:0 18px 40px rgba(2,6,16,0.35);
+  }
+  @media (max-width: 980px) {
+    .locations-panel__split { grid-template-columns: 1fr; }
+    .locations-panel__map { position:static; }
+    .locations-panel__list { max-height:none; }
+  }
+
+  .location-list-item {
+    position:relative; border:1px solid var(--border); border-left:3px solid var(--border2); border-radius:var(--r-lg);
+    padding:14px 16px; background:linear-gradient(165deg, var(--panel-raised), var(--panel));
+    transition: transform 0.25s var(--ease-spring), border-color 0.2s, box-shadow 0.25s var(--ease-smooth);
+    animation: cardSlideIn 0.4s var(--ease-spring) both;
+  }
+  .location-list-item:hover { transform:translateY(-2px); border-color:var(--border2); box-shadow:0 14px 32px rgba(2,6,16,0.4); }
+  .location-item__heading { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+  .location-item__title { font-family:var(--display); font-weight:700; font-size:0.94rem; letter-spacing:-0.01em; color:var(--txt); }
+  .location-item__meta { font-size:0.72rem; color:var(--faint); margin-top:4px; line-height:1.5; }
+  .location-status-badge {
+    font-size:0.68rem; font-weight:800; padding:4px 11px; border-radius:999px; white-space:nowrap;
+    text-transform:uppercase; letter-spacing:0.04em; flex-shrink:0; margin-top:1px;
+  }
+  .location-status-badge--on { background:var(--green-dim); color:var(--green); }
+  .location-status-badge--off { background:var(--red-dim); color:#FF8087; }
+  .location-status-badge--unknown { background:var(--panel2); color:var(--faint); border:1px solid var(--border2); }
+
+  /* Leaflet marker dots + popup, restyled to match the dark theme
+     instead of Leaflet's default light chrome. */
+  .admin-loc-marker-icon { background:none; border:none; }
+  .admin-loc-marker__dot {
+    display:block; width:12px; height:12px; border-radius:50%;
+    border:2px solid rgba(255,255,255,0.85);
+    background:var(--marker-fill, #9CA3AF);
+    box-shadow: 0 0 0 2px rgba(255,255,255,0.08), 0 0 10px 4px var(--marker-glow, rgba(156,163,175,0.5));
+  }
+  .leaflet-popup-content-wrapper, .leaflet-popup-tip { background:var(--panel-raised); color:var(--txt); box-shadow:0 12px 32px rgba(0,0,0,0.5); }
+  .leaflet-popup-content { font-family:var(--font); font-size:0.8rem; line-height:1.5; margin:10px 12px; }
+  .leaflet-container a.leaflet-popup-close-button { color:var(--muted); }
+  .leaflet-control-zoom a { background:var(--panel-raised) !important; color:var(--txt) !important; border-color:var(--border2) !important; }
+  .leaflet-control-zoom a:hover { background:var(--panel2) !important; }
+
   .locations-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:14px; }
   .loc-card {
     position:relative; border:1px solid var(--border); border-left:3px solid var(--border2); border-radius:var(--r-lg);
@@ -610,8 +659,9 @@
     .health-grid { grid-template-columns: 1fr; }
   }
 </style>
-  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@3.4.1/dist/maplibre-gl.css" />
-  <script src="https://unpkg.com/maplibre-gl@3.4.1/dist/maplibre-gl.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
   <script src="https://cdn.tailwindcss.com/3.4.17" type="text/javascript"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js" type="text/javascript"></script>
   <script src="/_sdk/0179d719c431a79e.data_sdk.js" type="text/javascript" integrity="sha512-OsRvJkI5GkC3MJQcgotQYotpzrMSX415GiKKgvYdxQEEkzD/fdchShO2FMSy0PJr/tiINMXOk5Vl2zAgg6bUiA=="></script>
@@ -674,7 +724,7 @@
        </svg> Users </button> <button class="nav-btn" data-tab="chats" type="button">
        <svg class="nav-btn__icon" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M4 5h16v11H8l-4 4V5z" />
-       </svg> Chat Messages </button> <button class="nav-btn" data-tab="news" type="button">
+       </svg> Community Reports </button> <button class="nav-btn" data-tab="news" type="button">
        <svg class="nav-btn__icon" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M4 4h16v13a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V4z" /><path d="M8 8h8M8 12h8M8 16h4" />
        </svg> Official News </button>
@@ -725,7 +775,7 @@
         <div class="s-card__top">
          <div>
           <div class="s-card__label" data-template-id="sc-label-chats">
-           Admin Posts
+           Community Reports
           </div>
          </div>
          <div class="s-card__icon s-card__icon--blue">
@@ -948,7 +998,7 @@
       <div class="panel" id="chatsPanel">
        <div class="page-head">
         <div class="page-head__left">
-         <h2 data-template-id="chats-title" class="canva-text">Admin Posts</h2>
+         <h2 data-template-id="chats-title" class="canva-text">Community Reports</h2>
         </div>
        </div>
        <div class="broadcast-card">
@@ -965,12 +1015,12 @@
        </div>
        <div class="toolbar">
         <div class="toolbar__left"><span class="status-msg" id="chatsStatus">Loading…</span> <button class="btn-ghost" id="deleteChatsBtn" type="button" disabled>Delete selected</button>
-        </div><input class="search-input" type="text" id="chatSearch" placeholder="Search posts or location…">
+        </div><input class="search-input" type="text" id="chatSearch" placeholder="Search community reports or location…">
        </div>
        <table id="chatsTable" style="display:none;">
         <thead>
          <tr>
-          <th class="select-col"><input type="checkbox" id="chatsSelectAll" class="select-checkbox" aria-label="Select all chats"></th>
+          <th class="select-col"><input type="checkbox" id="chatsSelectAll" class="select-checkbox" aria-label="Select all community reports"></th>
           <th>Handle</th>
           <th>Message</th>
           <th>Location</th>
@@ -982,8 +1032,8 @@
        </table>
        <div id="chatsEmpty" class="empty-state" style="display:none;">
         <div class="empty-state__icon">
-         �
-        </div>No admin posts yet.
+         💬
+        </div>No community reports yet.
        </div>
       </div><!-- Official News panel -->
       <div class="panel" id="newsPanel">
@@ -1172,7 +1222,7 @@
      </svg> Users </button> <button class="bottom-nav__btn" data-tab="chats" type="button">
      <svg viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <path d="M4 5h16v11H8l-4 4V5z" />
-     </svg> Chats </button> <button class="bottom-nav__btn" data-tab="news" type="button">
+     </svg> Community Reports </button> <button class="bottom-nav__btn" data-tab="news" type="button">
      <svg viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <path d="M4 4h16v13a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V4z" /><path d="M8 8h8M8 12h8M8 16h4" />
      </svg> News </button>
@@ -1511,7 +1561,7 @@
   // ===== TAB SWITCHING =====
   const TAB_LABELS = {
     activity: "Live Activity", analytics: "Analytics", locations: "Locations",
-    reports: "Reports", users: "Users", chats: "Admin Posts", news: "Official News", health: "System Health"
+    reports: "Reports", users: "Users", chats: "Community Reports", news: "Official News", health: "System Health"
   };
 
   function switchTab(tab) {
@@ -1523,6 +1573,11 @@
     if (title) title.textContent = TAB_LABELS[tab] || tab;
     window.scrollTo({ top: 0, behavior: "smooth" });
     if (tab === "health") updateHealthPanel();
+    // Leaflet sizes itself off the container's dimensions at build time;
+    // if the Locations tab wasn't the active one yet, #locationsMap was
+    // still display:none (0×0) when initLocationMap() ran, so nudge it
+    // to remeasure now that it's actually visible.
+    if (tab === "locations" && locationsMap) setTimeout(() => locationsMap.invalidateSize(), 0);
   }
 
   document.querySelectorAll(".nav-btn, .bottom-nav__btn").forEach(btn => {
@@ -1579,100 +1634,90 @@
   }
 
   let locationsMap = null;
+  let locationsHeatLayers = null;
+  let locationsMarkersLayer = null;
   let locationFlyAnchor = null;
   let activeLocFilter = "all";
+  let locationsMapHasFit = false;
+
+  // Same status → color mapping as the public app's Leaflet.heat map
+  // (see views/map-heat-home.js) so the admin view reads the same way.
+  const LOC_STATUS_COLOR = {
+    on: { fill: '#35D07F', glow: 'rgba(53,208,127,0.55)' },
+    unknown: { fill: '#9CA3AF', glow: 'rgba(156,163,175,0.5)' },
+    off: { fill: '#FF5C66', glow: 'rgba(255,92,102,0.6)' }
+  };
+  function locStatusKey(raw) { return String(raw || 'unknown').toLowerCase(); }
 
   function initLocationMap() {
-    if (locationsMap || typeof maplibregl === 'undefined') return;
-    maplibregl.accessToken = null;
-    locationsMap = new maplibregl.Map({
-      container: "locationsMap",
-      style: "https://demotiles.maplibre.org/style.json",
-      center: [0.0, 6.7],
+    if (locationsMap || typeof L === 'undefined' || typeof L.heatLayer !== 'function') return;
+    locationsMap = L.map('locationsMap', {
+      center: [6.7, 0.0],
       zoom: 5.2,
-      attributionControl: false
+      zoomControl: true,
+      attributionControl: false,
+      scrollWheelZoom: true
     });
-    locationsMap.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
-    locationsMap.on('load', () => {
-      locationsMap.addSource('locations', {
-        type: 'geojson',
-        data: { type: 'FeatureCollection', features: [] }
-      });
-      locationsMap.addLayer({
-        id: 'locations-heatmap',
-        type: 'heatmap',
-        source: 'locations',
-        maxzoom: 15,
-        paint: {
-          'heatmap-weight': ['interpolate', ['linear'], ['get', 'weight'], 0, 0, 1, 1],
-          'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 0, 1, 9, 3],
-          'heatmap-color': ['interpolate', ['linear'], ['heatmap-density'], 0, 'rgba(59,130,246,0)', 0.2, 'rgba(59,130,246,0.25)', 0.4, 'rgba(79,70,229,0.35)', 0.6, 'rgba(234,88,12,0.4)', 1, 'rgba(220,38,38,0.65)'],
-          'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 0, 12, 9, 24],
-          'heatmap-opacity': 0.75
-        }
-      });
-      locationsMap.addLayer({
-        id: 'location-circles',
-        type: 'circle',
-        source: 'locations',
-        minzoom: 0,
-        paint: {
-          'circle-radius': ['interpolate', ['linear'], ['zoom'], 3, 6, 9, 12],
-          'circle-color': ['match', ['get', 'status'], 'on', '#22C55E', 'off', '#EF4444', '#9CA3AF'],
-          'circle-stroke-color': '#111827',
-          'circle-stroke-width': 1.5,
-          'circle-opacity': 0.9
-        }
-      });
-      locationsMap.on('click', 'location-circles', (e) => {
-        const feature = e.features && e.features[0];
-        if (!feature) return;
-        const key = feature.properties?.locationKey;
-        if (!key) return;
-        const loc = allLocations.find(l => l.locationKey === key);
-        if (!loc) return;
-        const label = loc.label || feature.properties.label || key;
-        new maplibregl.Popup({ closeButton: false, closeOnClick: true })
-          .setLngLat(feature.geometry.coordinates)
-          .setHTML(`<strong>${esc(label)}</strong><br>${esc(loc.status || 'unknown').toUpperCase()}`)
-          .addTo(locationsMap);
-      });
-      locationsMap.on('mouseenter', 'location-circles', () => { locationsMap.getCanvas().style.cursor = 'pointer'; });
-      locationsMap.on('mouseleave', 'location-circles', () => { locationsMap.getCanvas().style.cursor = ''; });
+
+    // Dark OSM basemap (CARTO's free dark_all tiles) — matches the dark
+    // theme used everywhere else in the admin console.
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      subdomains: 'abcd',
+      maxZoom: 19
+    }).addTo(locationsMap);
+
+    // One isolated Leaflet.heat layer per status, same reasoning as the
+    // home view: keeps a dense cluster of stable ("on") points from
+    // bleeding into the outage/red gradient at low zoom.
+    locationsHeatLayers = {};
+    Object.entries(LOC_STATUS_COLOR).forEach(([status, color]) => {
+      locationsHeatLayers[status] = L.heatLayer([], {
+        radius: 34,
+        blur: 26,
+        maxZoom: 12,
+        gradient: { 0.25: 'transparent', 0.55: color.fill, 1: color.fill }
+      }).addTo(locationsMap);
     });
+    locationsMarkersLayer = L.layerGroup().addTo(locationsMap);
   }
 
   async function updateLocationMap(locations) {
     initLocationMap();
     if (!locationsMap) return;
-    if (!locationsMap.isStyleLoaded()) {
-      locationsMap.once('load', () => updateLocationMap(locations));
-      return;
-    }
     try {
       const response = await apiFetch('/locations/map');
       const mapLocations = Array.isArray(response.locations) ? response.locations : [];
       const visibleKeys = new Set((locations || allLocations).map(l => l.locationKey));
-      const features = mapLocations
+      const plottable = mapLocations
         .filter(loc => visibleKeys.has(loc.locationKey))
-        .filter(loc => Number(loc.lat) || Number(loc.lng))
-        .map(loc => ({
-          type: 'Feature',
-          geometry: { type: 'Point', coordinates: [Number(loc.lng) || 0, Number(loc.lat) || 0] },
-          properties: {
-            locationKey: loc.locationKey,
-            label: loc.name || loc.locationKey,
-            status: loc.status || 'unknown',
-            weight: loc.status === 'on' ? 1 : loc.status === 'off' ? 0.75 : 0.25
-          }
-        }));
-      const source = locationsMap.getSource('locations');
-      if (source) {
-        source.setData({ type: 'FeatureCollection', features });
-      }
-      if (features.length) {
-        const bounds = features.reduce((b, f) => b.extend(f.geometry.coordinates), new maplibregl.LngLatBounds(features[0].geometry.coordinates, features[0].geometry.coordinates));
-        locationsMap.fitBounds(bounds, { padding: 40, maxZoom: 11, duration: 800 });
+        .filter(loc => Number.isFinite(Number(loc.lat)) && Number.isFinite(Number(loc.lng)) && (Number(loc.lat) || Number(loc.lng)));
+
+      Object.keys(locationsHeatLayers).forEach(status => {
+        const points = plottable
+          .filter(loc => locStatusKey(loc.status) === status)
+          .map(loc => [Number(loc.lat), Number(loc.lng), 1]);
+        locationsHeatLayers[status].setLatLngs(points);
+      });
+
+      locationsMarkersLayer.clearLayers();
+      plottable.forEach(loc => {
+        const color = LOC_STATUS_COLOR[locStatusKey(loc.status)] || LOC_STATUS_COLOR.unknown;
+        const label = loc.name || loc.locationKey;
+        const icon = L.divIcon({
+          className: 'admin-loc-marker-icon',
+          iconSize: [14, 14],
+          iconAnchor: [7, 7],
+          html: `<span class="admin-loc-marker__dot" style="--marker-fill:${color.fill};--marker-glow:${color.glow}"></span>`
+        });
+        const marker = L.marker([Number(loc.lat), Number(loc.lng)], { icon, keyboard: false });
+        marker.bindPopup(`<strong>${esc(label)}</strong><br>${esc(locStatusKey(loc.status)).toUpperCase()}`);
+        locationsMarkersLayer.addLayer(marker);
+      });
+
+      if (plottable.length && !locationsMapHasFit) {
+        const bounds = L.latLngBounds(plottable.map(loc => [Number(loc.lat), Number(loc.lng)]));
+        locationsMap.fitBounds(bounds.pad(0.3), { maxZoom: 11, animate: true });
+        locationsMapHasFit = true;
       }
     } catch (err) {
       console.warn('Could not update locations map', err);

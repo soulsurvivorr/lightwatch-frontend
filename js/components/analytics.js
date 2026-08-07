@@ -223,3 +223,166 @@ function initFirstLaunchNotificationPrompt() {
         }, 3000);
     }
 }
+
+// ============================================================
+//  USAGE ANALYTICS TRACKING
+//  Restores what this file's name always promised. The admin
+//  dashboard's Analytics tab (GET /admin/analytics/overview) and the
+//  "who's active" flag on the Users tab (GET /admin/users) both read
+//  from the AnalyticsEvent collection, and the server already has a
+//  working POST /analytics/track endpoint for it (see server.js) —
+//  but nothing on the client ever called it. That endpoint call must
+//  have lived here originally, given this file's name, and got lost
+//  when this file was repurposed for app-boot plumbing during the
+//  SPA rewrite. This adds it back, sending the same event shape the
+//  server already expects: app_open, screen_view, exit.
+// ============================================================
+
+(function initUsageTracking() {
+    const DEVICE_ID_KEY = 'lw_device_id';
+    const SESSION_ID_KEY = 'lw_session_id';
+
+    function uuid() {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+            const r = (Math.random() * 16) | 0;
+            const v = c === 'x' ? r : (r & 0x3) | 0x8;
+            return v.toString(16);
+        });
+    }
+
+    function getDeviceId() {
+        try {
+            let id = localStorage.getItem(DEVICE_ID_KEY);
+            if (!id) {
+                id = uuid();
+                localStorage.setItem(DEVICE_ID_KEY, id);
+            }
+            return id;
+        } catch (err) {
+            return null;
+        }
+    }
+
+    function getSessionId() {
+        try {
+            let id = sessionStorage.getItem(SESSION_ID_KEY);
+            if (!id) {
+                id = uuid();
+                sessionStorage.setItem(SESSION_ID_KEY, id);
+            }
+            return id;
+        } catch (err) {
+            return null;
+        }
+    }
+
+    // Same lookup order home.js's currentUserIdForReports() uses, so a
+    // signed-in user's events line up with their account either way.
+    function getUserId() {
+        try {
+            return (typeof getSession === 'function' && getSession()?.user?.id)
+                || localStorage.getItem('currentUserId')
+                || null;
+        } catch (err) {
+            return null;
+        }
+    }
+
+    function apiBase() {
+        if (typeof API_URL !== 'undefined' && API_URL) return API_URL;
+        if (window.API_URL) return window.API_URL;
+        return '';
+    }
+
+    // Best-effort, fire-and-forget — a dropped analytics call should
+    // never affect the actual product experience (matches the server
+    // comment on /analytics/track).
+    function send(payload, useBeacon) {
+        const url = `${apiBase()}/analytics/track`;
+        const body = JSON.stringify(payload);
+        try {
+            if (useBeacon && navigator.sendBeacon) {
+                navigator.sendBeacon(url, new Blob([body], { type: 'application/json' }));
+                return;
+            }
+            fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body,
+                keepalive: true
+            }).catch(() => {});
+        } catch (err) {
+            // swallow — see comment above
+        }
+    }
+
+    function track(type, extra, useBeacon) {
+        send(Object.assign({
+            type,
+            userId: getUserId(),
+            deviceId: getDeviceId(),
+            sessionId: getSessionId()
+        }, extra || {}), !!useBeacon);
+    }
+
+    // The router (app.js) shows/hides <section data-view="..."> and
+    // toggles the `hidden` attribute — reading the DOM directly here
+    // avoids depending on any router internals. Used as a fallback for
+    // the very first paint, before the router has fired its own event.
+    function currentScreen() {
+        const el = document.querySelector('section[data-view]:not([hidden])');
+        return el ? el.dataset.view : null;
+    }
+
+    let activeScreen = null;
+    let screenStartedAt = 0;
+
+    function enterScreen(screen) {
+        if (!screen || screen === activeScreen) return;
+        activeScreen = screen;
+        screenStartedAt = Date.now();
+        track('screen_view', { screen });
+    }
+
+    function sendExit() {
+        if (!activeScreen) return;
+        const durationMs = Date.now() - screenStartedAt;
+        track('exit', { screen: activeScreen, durationMs }, true);
+    }
+
+    function boot() {
+        track('app_open');
+        enterScreen(currentScreen());
+    }
+
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        boot();
+    } else {
+        window.addEventListener('DOMContentLoaded', boot, { once: true });
+    }
+
+    // Fired by the router (app.js's activate()) on every real view
+    // change, with the new view name right on the event — no DOM
+    // re-query needed. NOTE: this is 'lw:route-changed', not
+    // 'lw-page-revealed' — home.js listens for the latter but app.js
+    // never actually dispatches it, so that particular listener is
+    // dead code today. Using the event the router really fires here so
+    // screen_view tracking works on every navigation, not just boot.
+    window.addEventListener('lw:route-changed', (e) => {
+        enterScreen(e.detail?.view || currentScreen());
+    });
+
+    // "exit" per the server's screen-time/drop-off model: tab hidden or
+    // page actually unloading, whichever comes first, via sendBeacon so
+    // it still reaches the server as the page is torn down.
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') sendExit();
+    });
+    window.addEventListener('pagehide', sendExit);
+
+    // Exposed so other view scripts (e.g. wherever the real location
+    // search lives) can fire a 'search' event the same way — see
+    // getTopSearchedAreas() in server.js, which already expects it:
+    //   window.LWAnalytics.track('search', { locationKey: '...' })
+    window.LWAnalytics = { track };
+})();
