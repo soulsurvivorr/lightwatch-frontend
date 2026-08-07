@@ -345,6 +345,64 @@
     // can re-render instantly from memory instead of refetching.
     let latestArticles = [];
     let activeNewsFilter = 'all';
+    let lwHomeNewsCarousel = null;
+
+    // ------------------------------------------------------------
+    // HOME NEWS CAROUSEL — #homeNewsFeed used to just render a single
+    // static compact card (data-news-feed-limit was 1, and even at a
+    // higher limit the container was a plain flex column with nothing
+    // to advance between). Now backed by the same shared
+    // createLoopCarousel() helper the Trending Stories / Did You Know
+    // Home cards use, so it loops through the top few articles instead
+    // of freezing on one.
+    // ------------------------------------------------------------
+    function initHomeNewsCarousel() {
+        const host = document.getElementById('homeNewsFeed');
+        const viewport = document.getElementById('homeNewsFeedViewport');
+        const track = document.getElementById('homeNewsFeedTrack');
+        const dotsHost = document.getElementById('homeNewsFeedDots');
+        if (!host || !viewport || !track || typeof window.createLoopCarousel !== 'function') return null;
+
+        function renderDots(count, activeIndex) {
+            if (!dotsHost) return;
+            if (count <= 1) { dotsHost.innerHTML = ''; return; }
+            dotsHost.innerHTML = Array.from({ length: count }, (_, i) =>
+                `<span class="lw-home-news-feed__dot${i === activeIndex ? ' lw-home-news-feed__dot--active' : ''}" data-dot-index="${i}"></span>`
+            ).join('');
+        }
+
+        const carousel = window.createLoopCarousel({
+            viewport,
+            track,
+            autoplayMs: 6500,
+            onChange: renderDots
+        });
+
+        dotsHost?.addEventListener('click', (event) => {
+            const dot = event.target.closest('[data-dot-index]');
+            if (!dot) return;
+            carousel.goTo(Number(dot.dataset.dotIndex));
+            carousel.startAutoplay();
+        });
+
+        // Pause the auto-advance while a mouse user is reading; touch/
+        // drag pausing is already handled inside createLoopCarousel.
+        host.addEventListener('mouseenter', () => carousel.stopAutoplay());
+        host.addEventListener('mouseleave', () => carousel.startAutoplay());
+
+        return carousel;
+    }
+
+    function renderHomeNewsCarousel(articles) {
+        if (!lwHomeNewsCarousel) return;
+        if (!articles.length) {
+            lwHomeNewsCarousel.render(['<div class="lw-home-news-feed__slide"><p class="lw-news-card__empty">No electricity-related news right now.</p></div>']);
+            lwHomeNewsCarousel.stopAutoplay();
+            return;
+        }
+        lwHomeNewsCarousel.render(articles.map((article, index) => `<div class="lw-home-news-feed__slide">${renderCompactNewsCard(article, index)}</div>`));
+        lwHomeNewsCarousel.startAutoplay();
+    }
 
     function filterArticlesByCategory(articles, filter) {
         if (filter === 'all') return articles;
@@ -378,10 +436,20 @@
             const limit = parseInt(feed.dataset.newsFeedLimit, 10);
             if (!(limit > 0)) return; // full containers handled by renderFullFeeds()
 
-            // Limited container (Home): just the newest article(s) as
-            // compact cards, always unfiltered. The "View more news"
-            // doorway into the full News tab lives once, in the section
-            // header (.lw-section__viewall) — no longer duplicated here.
+            // Home's #homeNewsFeed is now a looping carousel (see
+            // initHomeNewsCarousel()/renderHomeNewsCarousel() above) —
+            // route it there instead of flat-rendering into the
+            // container. Any other limited container without the
+            // carousel wired up falls back to the old flat rendering.
+            if (feed.id === 'homeNewsFeed' && lwHomeNewsCarousel) {
+                renderHomeNewsCarousel(latestArticles.slice(0, limit));
+                return;
+            }
+
+            // Limited container: just the newest article(s) as compact
+            // cards, always unfiltered. The "View more news" doorway
+            // into the full News tab lives once, in the section header
+            // (.lw-section__viewall) — no longer duplicated here.
             if (!latestArticles.length) {
                 feed.innerHTML = '<p class="lw-news-card__empty">No electricity-related news right now.</p>';
                 return;
@@ -470,6 +538,20 @@
         feeds.forEach((feed) => {
             feed.classList.add('loading');
             const limit = parseInt(feed.dataset.newsFeedLimit, 10);
+
+            // Home's #homeNewsFeed is a carousel now (see
+            // initHomeNewsCarousel() above) — skeleton slides have to go
+            // through the carousel's own render(), not a raw innerHTML
+            // wipe, which would tear out the carousel's viewport/track/
+            // dots nodes and leave it pointed at a detached element for
+            // the rest of the session.
+            if (feed.id === 'homeNewsFeed' && lwHomeNewsCarousel) {
+                const count = limit > 0 ? limit : 4;
+                lwHomeNewsCarousel.render(Array.from({ length: count }, () => `<div class="lw-home-news-feed__slide">${newsSkeletonCompactHtml()}</div>`));
+                lwHomeNewsCarousel.stopAutoplay();
+                return;
+            }
+
             const count = limit > 0 ? limit : 4;
             const isCompact = limit > 0;
             feed.innerHTML = Array.from({ length: count })
@@ -586,8 +668,13 @@
         bindCategoryTabs();
         observeVisibility();
 
-        if (isNewsPanelVisible()) startNewsPolling();
-        else stopNewsPolling();
+        if (isNewsPanelVisible()) {
+            startNewsPolling();
+            lwHomeNewsCarousel?.startAutoplay();
+        } else {
+            stopNewsPolling();
+            lwHomeNewsCarousel?.stopAutoplay();
+        }
     }
 
     function setupNewsPullRefresh() {
@@ -641,6 +728,7 @@
     window.addEventListener('lw:route-changed', syncPollingToVisibility);
 
     document.addEventListener('DOMContentLoaded', () => {
+        lwHomeNewsCarousel = initHomeNewsCarousel();
         bindCardInteractions();
         bindCategoryTabs();
         observeVisibility();

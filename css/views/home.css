@@ -5543,15 +5543,11 @@ body:not(.page-data-loading) #view-home #realPageContent {
 
 #view-home .trend-banner {
   position: relative;
-  display: flex;
-  align-items: center;
-  gap: 12px;
   background: var(--lw-panel);
   border: 1px solid var(--lw-border);
   border-left: 3px solid var(--lw-amber);
   border-radius: 16px;
   padding: 12px 14px;
-  cursor: pointer;
   overflow: hidden;
   isolation: isolate;
   transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease;
@@ -5562,6 +5558,62 @@ body:not(.page-data-loading) #view-home #realPageContent {
   transform: translateY(-1px);
   border-color: color-mix(in srgb, var(--lw-border) 72%, var(--lw-amber) 28%);
   background: color-mix(in srgb, var(--lw-panel) 92%, white 8%);
+}
+
+/* Trending Stories carousel — loops through the top few trending
+   posts the same way the Did You Know card loops through facts
+   (same seamless-loop createLoopCarousel() helper, see home.js). */
+#view-home .trend-banner__viewport {
+  overflow: hidden;
+  touch-action: pan-y;
+}
+
+#view-home .trend-banner__track {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 100%;
+  transition: transform 0.7s cubic-bezier(.22, 1, .36, 1);
+  will-change: transform;
+}
+
+#view-home .trend-banner__slide {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  cursor: pointer;
+}
+
+#view-home .trend-banner__dots {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  margin-top: 10px;
+}
+
+#view-home .trend-banner__dots:empty {
+  margin-top: 0;
+}
+
+#view-home .trend-banner__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--border-strong);
+  opacity: 0.4;
+  cursor: pointer;
+  transition: opacity 0.2s ease, transform 0.2s ease, background 0.2s ease;
+}
+
+#view-home .trend-banner__dot:hover {
+  opacity: 0.7;
+}
+
+#view-home .trend-banner__dot--active {
+  background: var(--lw-amber);
+  opacity: 1;
+  transform: scale(1.2);
 }
 
 #view-home .trend-banner__avatar {
@@ -6060,9 +6112,61 @@ body:not(.page-data-loading) #view-home #realPageContent {
    with the same .news-item classes the Report page's News tab
    already uses. */
 #view-home #officialUpdatesPanel .lw-home-news-feed {
+  display: block;
+}
+
+/* Home "Latest power news" carousel — loops through the top few
+   articles the same way the Trending Stories / Did You Know cards
+   loop (same seamless-loop createLoopCarousel() helper, see
+   home.js + news.js's initHomeNewsCarousel()). Previously this only
+   ever showed a single static article with nothing to loop into. */
+#view-home .lw-home-news-feed__viewport {
+  overflow: hidden;
+  touch-action: pan-y;
+}
+
+#view-home .lw-home-news-feed__track {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 100%;
+  transition: transform 0.7s cubic-bezier(.22, 1, .36, 1);
+  will-change: transform;
+}
+
+#view-home .lw-home-news-feed__slide {
+  min-width: 0;
+}
+
+#view-home .lw-home-news-feed__dots {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  margin-top: 10px;
+}
+
+#view-home .lw-home-news-feed__dots:empty {
+  margin-top: 0;
+}
+
+#view-home .lw-home-news-feed__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--border-strong);
+  opacity: 0.4;
+  cursor: pointer;
+  transition: opacity 0.2s ease, transform 0.2s ease, background 0.2s ease;
+}
+
+#view-home .lw-home-news-feed__dot:hover {
+  opacity: 0.7;
+}
+
+#view-home .lw-home-news-feed__dot--active {
+  background: var(--lw-blue);
+  opacity: 1;
+  transform: scale(1.2);
 }
 
 /* ---- 3. Community activity gets its own clearly separate card

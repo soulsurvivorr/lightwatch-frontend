@@ -16,6 +16,20 @@
 // ============================================================
 
 (function () {
+// FIX (background jank / stale carousel state on return to Home):
+// this view never told the router's LWViews contract about its
+// autoplaying "Did You Know" carousel, unlike every other view
+// (see location.js / chat.js, which pause their own polling in
+// hide() and resume it in show()). With nothing pausing it, the
+// carousel's 7s setInterval kept firing forever — including the
+// entire time you were on Location/Chat/Notifications/Account —
+// continuously rewriting its dots/illustration DOM and driving
+// slide transitions on a `display:none` subtree, none of which
+// ever got a chance to settle before you came back. Hoisted here
+// so the LWViews.home hooks near the bottom of this file can reach
+// it.
+let lwDidYouKnowCarousel = null;
+
 // ------------------------------------------------------------
 // SHARED: createLoopCarousel() — a small seamless infinite-loop
 // carousel helper. Built for the risk carousel and the Did You Know
@@ -441,25 +455,44 @@ async function loadSecondaryLocationStatus(sec) {
 // popup (see setMobileScrollLock in chat.js), but applied at every
 // viewport width — this panel opens as a centered modal on desktop too,
 // and the page behind it shouldn't scroll there either.
+//
+// FIX (Home-only scroll lock/jump bug): this used to set
+// `position: fixed` on document.body and read/restore window.scrollY.
+// That's the classic iOS-Safari body-freeze trick, but it assumes BODY
+// is the element that actually scrolls. In this app it isn't — see
+// global.css's #appShell/html rules, which deliberately make <html>
+// document.scrollingElement the one and only scroll owner, with body
+// only ever getting height rules, never overflow. Freezing body did
+// nothing to stop the real scroll container (html) from moving, so:
+// while the panel was "locked," html could still be scrolled by touch
+// underneath the visually-frozen body, and on close, window.scrollTo()
+// snapped back to whatever scrollY was captured at open time — discarding
+// any scrolling that happened while the modal was open. That mismatch
+// (frozen body + still-scrollable html + a scroll position restore that
+// ignores it) is what read as Home "locking up" / fighting the user's
+// scroll input. This view is the only one that opens this modal, which
+// is why the bug never showed up on Location/Chat/Notifications/Account.
+//
+// Fixed to operate on the real scroll owner (document.documentElement)
+// instead, and to set overflow via `!important` from JS so it reliably
+// wins over global.css's own unconditional `html { overflow-y: auto
+// !important }` rule (an inline `!important` always beats a stylesheet
+// `!important` at the same origin) regardless of what home.css's
+// `.lw-location-panel-open` rule does or doesn't already handle.
 let lwLocationPanelLockedScrollY = 0;
 function setLocationPanelScrollLock(locked) {
+    const root = document.documentElement;
+    const scroller = document.scrollingElement || root;
     if (locked) {
-        lwLocationPanelLockedScrollY = window.scrollY || window.pageYOffset || 0;
-        document.documentElement.classList.add('lw-location-panel-open');
+        lwLocationPanelLockedScrollY = scroller.scrollTop || window.scrollY || window.pageYOffset || 0;
+        root.classList.add('lw-location-panel-open');
         document.body.classList.add('lw-location-panel-open');
-        document.body.style.position = 'fixed';
-        document.body.style.top = `-${lwLocationPanelLockedScrollY}px`;
-        document.body.style.left = '0';
-        document.body.style.right = '0';
-        document.body.style.width = '100%';
+        root.style.setProperty('overflow', 'hidden', 'important');
     } else {
-        document.documentElement.classList.remove('lw-location-panel-open');
+        root.classList.remove('lw-location-panel-open');
         document.body.classList.remove('lw-location-panel-open');
-        document.body.style.position = '';
-        document.body.style.top = '';
-        document.body.style.left = '';
-        document.body.style.right = '';
-        document.body.style.width = '';
+        root.style.removeProperty('overflow');
+        scroller.scrollTop = lwLocationPanelLockedScrollY;
         window.scrollTo(0, lwLocationPanelLockedScrollY);
     }
 }
@@ -540,6 +573,28 @@ function closeSecondaryLocationPanel() {
     overlay.setAttribute('aria-hidden', 'true');
     setLocationPanelScrollLock(false);
 }
+
+// Safety net: the only two ways the lock was ever meant to release are
+// the close button and tapping the overlay backdrop (see the listeners
+// below). Anything else that leaves Home while the panel is open —
+// tapping a bottom-nav/topbar/hamburger link, or the Android hardware
+// back button — bypassed closeSecondaryLocationPanel() entirely, so
+// <html> stayed stuck with overflow:hidden and Home read as "locked"
+// even after the user thought they'd left it behind. This closes the
+// panel (which also releases the lock) on any of those paths, so a
+// stuck lock can't outlive the panel it belongs to.
+document.addEventListener('click', (e) => {
+    if (!document.documentElement.classList.contains('lw-location-panel-open')) return;
+    if (e.target.closest('[data-route]') || e.target.closest('[data-nav]')) {
+        closeSecondaryLocationPanel();
+    }
+}, true);
+
+document.addEventListener('pagehide', () => {
+    if (document.documentElement.classList.contains('lw-location-panel-open')) {
+        setLocationPanelScrollLock(false);
+    }
+});
 
 // -----------------------------------------------------
 // NOTIFY-ME-HERE — lets the user opt in to a push alert whenever
@@ -784,12 +839,21 @@ addLocationForm?.addEventListener('submit', (e) => {
 
 initHomeReminder();
 // -----------------------------------------------------
-// TRENDING POST — fills the "Trending Stories" lw-live-card
-// (#trendBanner / #trendBannerTitle / #trendBannerSub) with the
-// most-engaged community report (likes + reposts + quotes +
-// replies). If nothing has engagement yet, falls back to the
-// latest post.
+// TRENDING POSTS — fills the "Trending Stories" lw-live-card
+// (#trendBanner) with the top few most-engaged community reports
+// (likes + reposts + quotes + replies), falling back to the latest
+// posts when nothing has engagement yet.
+//
+// FIX: this used to freeze on a single post forever — the banner
+// was one static row, so there was nothing for a second/third post
+// to loop into. It's now a real slide track driven by the same
+// shared createLoopCarousel() helper the Did You Know card uses
+// (see the top of this file), so it keeps auto-advancing through
+// the top trending posts instead of showing one and stopping.
 // -----------------------------------------------------
+let lwTrendBannerCarousel = null;
+let lwTrendBannerPosts = [];
+
 function normalizeHomeLocationText(rawText) {
     const text = String(rawText || '').trim();
     if (!text) return '';
@@ -798,6 +862,18 @@ function normalizeHomeLocationText(rawText) {
         return '';
     }
     return text;
+}
+
+// Slides are built as HTML strings for createLoopCarousel's render(),
+// so any post text/handle going into markup has to be escaped by hand
+// here (the old single-slide version could just use .textContent).
+function escapeHomeHtml(value) {
+    return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 
 function renderTrendBannerAvatar(target, chat) {
@@ -828,13 +904,121 @@ function renderTrendBannerAvatar(target, chat) {
     target.classList.add('is-empty');
 }
 
+function trendBannerSlideHtml(post, index) {
+    if (!post) {
+        return `<div class="trend-banner__slide" data-slide-index="${index}">
+            <span class="report-card__avatar trend-banner__avatar is-empty" aria-hidden="true">↗</span>
+            <div class="trend-banner__body">
+                <div class="trend-banner__meta-row"><span class="trend-banner__pill">Trending now</span></div>
+                <div class="lw-live-card__title">No community posts yet</div>
+                <div class="lw-live-card__meta">—</div>
+            </div>
+            <span class="trend-banner__icon" aria-hidden="true">
+                <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5.75 15.25h8.5M11.5 5.25l3 3-3 3M14.5 8.25H7.25" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+        </div>`;
+    }
+
+    const text = (post.text || '').replace(/\s+/g, ' ').trim() || 'Shared an update';
+    const short = text.length > 90 ? text.slice(0, 87).trim() + '...' : text;
+    const handle = (post.handle || 'Community').trim();
+    const time = new Date(post.createdAt || Date.now()).toLocaleString([], { hour: 'numeric', minute: '2-digit', month: 'short', day: 'numeric' });
+    const postId = String(post._id || post.id || '');
+
+    return `<div class="trend-banner__slide" data-slide-index="${index}" data-chat-id="${escapeHomeHtml(postId)}" data-chat-scope="${escapeHomeHtml(post.scope || 'global')}" data-chat-location="${escapeHomeHtml(post.location || '')}" role="button" tabindex="0">
+        <span class="report-card__avatar trend-banner__avatar" aria-hidden="true"></span>
+        <div class="trend-banner__body">
+            <div class="trend-banner__meta-row"><span class="trend-banner__pill">Trending now</span></div>
+            <div class="lw-live-card__title">${escapeHomeHtml(short)}</div>
+            <div class="lw-live-card__meta">${escapeHomeHtml(handle)} • ${escapeHomeHtml(time)}</div>
+        </div>
+        <span class="trend-banner__icon" aria-hidden="true">
+            <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5.75 15.25h8.5M11.5 5.25l3 3-3 3M14.5 8.25H7.25" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+    </div>`;
+}
+
+function initTrendBannerCarousel() {
+    const banner = document.getElementById('trendBanner');
+    const viewport = document.getElementById('trendBannerViewport');
+    const track = document.getElementById('trendBannerTrack');
+    const dotsHost = document.getElementById('trendBannerDots');
+    if (!banner || !viewport || !track || typeof window.createLoopCarousel !== 'function') return null;
+
+    function applyAvatars() {
+        track.querySelectorAll('[data-slide-index]').forEach((slideEl) => {
+            const idx = Number(slideEl.dataset.slideIndex);
+            const avatarEl = slideEl.querySelector('.trend-banner__avatar');
+            renderTrendBannerAvatar(avatarEl, lwTrendBannerPosts[idx] || null);
+        });
+    }
+
+    function renderDots(count, activeIndex) {
+        if (!dotsHost) return;
+        if (count <= 1) { dotsHost.innerHTML = ''; return; }
+        dotsHost.innerHTML = Array.from({ length: count }, (_, i) =>
+            `<span class="trend-banner__dot${i === activeIndex ? ' trend-banner__dot--active' : ''}" data-dot-index="${i}"></span>`
+        ).join('');
+    }
+
+    function handleSlideChange(activeIndex, count) {
+        applyAvatars();
+        renderDots(count, activeIndex);
+    }
+
+    const carousel = window.createLoopCarousel({
+        viewport,
+        track,
+        autoplayMs: 6000,
+        onChange: handleSlideChange
+    });
+
+    dotsHost?.addEventListener('click', (event) => {
+        const dot = event.target.closest('[data-dot-index]');
+        if (!dot) return;
+        carousel.goTo(Number(dot.dataset.dotIndex));
+        carousel.startAutoplay();
+    });
+
+    const openTrendingSlide = (slideEl) => {
+        if (!slideEl?.dataset.chatId) return;
+        try {
+            const params = new URLSearchParams({
+                chatId: slideEl.dataset.chatId,
+                chatScope: slideEl.dataset.chatScope || 'global',
+                chatLocation: slideEl.dataset.chatLocation || ''
+            });
+            window.LWRouter?.navigate('chat', { search: `?${params.toString()}` });
+        } catch (e) { console.error('[home] navigate to trending post failed', e); }
+    };
+
+    track.addEventListener('click', (event) => {
+        const slideEl = event.target.closest('.trend-banner__slide');
+        if (!slideEl) return;
+        openTrendingSlide(slideEl);
+    });
+
+    track.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        const slideEl = event.target.closest('.trend-banner__slide');
+        if (!slideEl) return;
+        event.preventDefault();
+        openTrendingSlide(slideEl);
+    });
+
+    // Pause the auto-advance while a mouse user is reading; touch/drag
+    // pausing is already handled inside createLoopCarousel.
+    banner.addEventListener('mouseenter', () => carousel.stopAutoplay());
+    banner.addEventListener('mouseleave', () => carousel.startAutoplay());
+
+    return carousel;
+}
+lwTrendBannerCarousel = initTrendBannerCarousel();
+
 async function initHomeTrending() {
     try {
         const banner = document.getElementById('trendBanner');
-        const titleEl = document.getElementById('trendBannerTitle');
-        const subEl = document.getElementById('trendBannerSub');
-        const avatarEl = document.getElementById('trendBannerAvatar');
-        if (!banner || !titleEl || !subEl) return;
+        if (!banner || !lwTrendBannerCarousel) return;
 
         // Build the fetch params (scope to current visible location when possible).
         // Ignore placeholder labels like "your area" so the feed query isn't
@@ -842,9 +1026,9 @@ async function initHomeTrending() {
         const rawLoc = document.getElementById('locationSubtitleArea')?.textContent || '';
         const loc = window.currentChatLocation || normalizeHomeLocationText(rawLoc);
         banner.dataset.homeTrending = '1';
-        // For home trending we want the top community post across everyone,
+        // For home trending we want the top community posts across everyone,
         // not just the visitor's selected location. Request the backend's
-        // trending aggregation which returns the best post for the scope.
+        // trending aggregation which returns the best posts for the scope.
         const res = await fetch(`${API_URL}/chats?trending=1&scope=global`, { cache: 'no-store' });
         if (!res.ok) throw new Error('chats fetch failed');
         const chats = await res.json();
@@ -854,9 +1038,9 @@ async function initHomeTrending() {
         const posts = Array.isArray(chats) ? chats.filter(c => !c.isAdmin) : [];
 
         if (posts.length === 0) {
-            titleEl.textContent = 'No community posts yet';
-            subEl.textContent = '—';
-            renderTrendBannerAvatar(avatarEl, null);
+            lwTrendBannerPosts = [];
+            lwTrendBannerCarousel.render([trendBannerSlideHtml(null, 0)]);
+            lwTrendBannerCarousel.stopAutoplay();
             banner.classList.remove('trend-banner--stable', 'trend-banner--warning');
             banner.dataset.homeTrending = '1';
             return;
@@ -871,75 +1055,36 @@ async function initHomeTrending() {
             }
         });
 
-        // score = likes + reposts + quotes + replies
-        let best = null;
-        let bestScore = -1;
-        posts.forEach(c => {
+        // score = likes + reposts + quotes + replies. Sorting (rather than
+        // just picking a single "best") is what lets the carousel loop
+        // through more than one trending post — highest score first, ties
+        // broken by most recent (GET /chats already returns newest-first,
+        // so this also naturally falls back to "latest posts" when nothing
+        // has engagement yet, without a separate branch for that case).
+        const scored = posts.map(c => {
             const id = String(c._id || c.id || '');
             const score = (Number(c.likeCount || 0) + Number(c.repostCount || 0) + Number(c.quoteCount || 0) + Number(repliedCounts.get(id) || 0));
-            const createdAt = new Date(c.createdAt || 0).getTime();
-            const currentBestCreatedAt = best ? new Date(best.createdAt || 0).getTime() : 0;
-            if (score > bestScore || (score === bestScore && createdAt > currentBestCreatedAt)) {
-                bestScore = score;
-                best = c;
-            }
+            return { post: c, score };
+        });
+        scored.sort((a, b) => {
+            if (b.score !== a.score) return b.score - a.score;
+            return new Date(b.post.createdAt || 0) - new Date(a.post.createdAt || 0);
         });
 
-        // If no post has any engagement yet, fall back to the latest post
-        // (GET /chats returns newest-first).
-        if (!best || bestScore <= 0) best = posts[0];
+        // Keep the carousel to a manageable handful of slides.
+        const top = scored.slice(0, 6).map(s => s.post);
 
-        if (best) {
-            console.debug('[home] trending selected post', {
-                id: String(best._id || best.id || ''),
-                score: bestScore,
-                createdAt: best.createdAt,
-                likes: best.likeCount,
-                reposts: best.repostCount,
-                quotes: best.quoteCount,
-                replies: repliedCounts.get(String(best._id || best.id || '')) || 0,
-                text: String(best.text || '').slice(0, 100)
-            });
-        }
+        console.debug('[home] trending selected posts', top.map(p => ({
+            id: String(p._id || p.id || ''),
+            createdAt: p.createdAt,
+            text: String(p.text || '').slice(0, 100)
+        })));
 
-        const text = (best.text || '').replace(/\s+/g, ' ').trim() || 'Shared an update';
-        const short = text.length > 90 ? text.slice(0, 87).trim() + '...' : text;
-        const handle = (best.handle || 'Community').trim();
-        const time = new Date(best.createdAt || Date.now()).toLocaleString([], { hour: 'numeric', minute: '2-digit', month: 'short', day: 'numeric' });
-
-        // .textContent (not innerHTML) — no manual escaping needed and none
-        // of this can be interpreted as markup.
-        titleEl.textContent = short;
-        subEl.textContent = `${handle} • ${time}`;
-        renderTrendBannerAvatar(avatarEl, best);
+        lwTrendBannerPosts = top;
+        lwTrendBannerCarousel.render(top.map((post, index) => trendBannerSlideHtml(post, index)));
         banner.classList.remove('trend-banner--stable', 'trend-banner--warning');
-
-        // Attach metadata and click behavior so tapping the banner opens
-        // the full post in the Reports (Community) view.
-        const postId = String(best._id || best.id || '');
         banner.dataset.homeTrending = '1';
-        banner.dataset.chatId = postId;
-        banner.dataset.chatScope = best.scope || 'global';
-        banner.dataset.chatLocation = best.location || '';
-
-        banner.setAttribute('role', 'button');
-        banner.setAttribute('tabindex', '0');
-
-        const openTrendingPost = (event) => {
-            if (!banner.dataset.chatId) return;
-            event?.preventDefault?.();
-            try {
-                const params = new URLSearchParams({
-                    chatId: banner.dataset.chatId,
-                    chatScope: banner.dataset.chatScope || 'global',
-                    chatLocation: banner.dataset.chatLocation || ''
-                });
-                window.LWRouter?.navigate('chat', { search: `?${params.toString()}` });
-            } catch (e) { console.error('[home] navigate to trending post failed', e); }
-        };
-
-        banner.onclick = openTrendingPost;
-        banner.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openTrendingPost(e); } };
+        lwTrendBannerCarousel.startAutoplay();
 
     } catch (err) {
         console.error('[home] trending init failed', err);
@@ -969,14 +1114,14 @@ if (!window.currentChatLocation) {
 // this file) so it auto-advances slowly, responds to the refresh
 // button and dots, and is swipeable/draggable.
 // ============================================================
-(function initDidYouKnowCard() {
+function initDidYouKnowCard() {
     const card = document.getElementById('lwxDidYouKnowCard');
     const viewport = document.getElementById('lwxDidYouKnowViewport');
     const track = document.getElementById('lwxDidYouKnowTrack');
     const dotsHost = document.getElementById('lwxDidYouKnowDots');
     const refreshBtn = document.getElementById('lwxDidYouKnowRefresh');
     const illustration = card?.querySelector('.lwx-didyouknow-card__illustration');
-    if (!card || !viewport || !track || typeof window.createLoopCarousel !== 'function') return;
+    if (!card || !viewport || !track || typeof window.createLoopCarousel !== 'function') return null;
 
     // Small icon set, same 2-color style as the card's existing storm
     // illustration (gray #8C97AE base, amber #F2B33D accent) so a new
@@ -1060,6 +1205,29 @@ if (!window.currentChatLocation) {
     // touch/drag pausing is already handled inside createLoopCarousel.
     card.addEventListener('mouseenter', () => carousel.stopAutoplay());
     card.addEventListener('mouseleave', () => carousel.startAutoplay());
-})();
+
+    return carousel;
+}
+lwDidYouKnowCarousel = initDidYouKnowCard();
+
+// ============================================================
+// ROUTER LIFECYCLE — same contract every other view uses (see
+// location.js / chat.js): stop background work in hide(), resume it
+// in show(). mount() is intentionally omitted — everything above
+// already runs once, synchronously, when this script first loads
+// (matching how this view always worked before being routed), so
+// there's nothing extra to do the first time Home is shown.
+// ============================================================
+window.LWViews = window.LWViews || {};
+window.LWViews.home = {
+    show() {
+        lwDidYouKnowCarousel?.startAutoplay();
+        lwTrendBannerCarousel?.startAutoplay();
+    },
+    hide() {
+        lwDidYouKnowCarousel?.stopAutoplay();
+        lwTrendBannerCarousel?.stopAutoplay();
+    }
+};
 
 })();

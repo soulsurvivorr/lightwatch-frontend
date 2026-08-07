@@ -60,39 +60,36 @@
             window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     }
 
-    // Play a small enter animation for incoming views. For app-shell
-    // views we use a horizontal swipe determined by a canonical
-    // ordering (so nav feels like sliding between tabs). Non-app
-    // transitions fall back to a subtle rise/fade.
-    const APP_VIEW_ORDER = ['home', 'location', 'chat', 'notifications', 'account'];
+    // Play a small enter animation for incoming views.
+    //
+    // FIX (scroll breaks on re-entering a view, worst on Home/native
+    // Android): this used to animate `transform` (translateX slide for
+    // app-shell views, translateY+scale for others) on `el`, which is
+    // the view <section> itself — i.e. the element that directly
+    // contains the app's real scrollable content (html is the scroll
+    // owner; this section is what html's scrollHeight is built from).
+    // Starting a transform animation on that element promotes it to
+    // its own compositor layer right as the view reappears; on Android
+    // WebView, beginning (or resuming) a touch-scroll gesture while
+    // that promotion/sync is happening is a known trigger for scroll
+    // going sticky/non-momentum/janky — which matched the report
+    // exactly: fine on cold boot (this animation is skipped then, see
+    // callers), broken specifically after switching away and back,
+    // and never an issue on desktop/browser testing where DevTools
+    // device emulation doesn't reproduce the WebView-specific stutter.
+    //
+    // Animating opacity alone avoids ever touching layout/paint
+    // geometry of the scroll container, so it can't interfere with
+    // the scroll gesture no matter when the user starts scrolling.
     function playViewEnterAnimation(el, fromView, toView) {
         if (prefersReducedMotion() || typeof el.animate !== 'function') return;
+        if (fromView === toView) return;
         try {
             el.getAnimations().forEach((a) => a.cancel());
-            // If both views are in our app order list we animate a
-            // horizontal slide. Direction is based on their index.
-            const fromIdx = APP_VIEW_ORDER.indexOf(fromView);
-            const toIdx = APP_VIEW_ORDER.indexOf(toView);
-            const bothInOrder = fromIdx >= 0 && toIdx >= 0 && fromView !== toView;
-
-            if (bothInOrder) {
-                const dir = toIdx >= fromIdx ? 1 : -1;
-                el.animate(
-                    [
-                        { opacity: 0, transform: `translateX(${20 * dir}%)` },
-                        { opacity: 1, transform: 'translateX(0)' }
-                    ],
-                    { duration: 260, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', fill: 'both' }
-                );
-            } else {
-                el.animate(
-                    [
-                        { opacity: 0, transform: 'translateY(14px) scale(0.985)' },
-                        { opacity: 1, transform: 'translateY(0) scale(1)' }
-                    ],
-                    { duration: 240, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', fill: 'both' }
-                );
-            }
+            el.animate(
+                [{ opacity: 0 }, { opacity: 1 }],
+                { duration: 200, easing: 'ease-out', fill: 'both' }
+            );
         } catch (err) { /* Web Animations unsupported — view just appears instantly */ }
     }
 
@@ -170,6 +167,19 @@
         if (currentView) {
             const outgoingSection = viewSectionEl(currentView);
             if (outgoingSection) {
+                // FIX: only the incoming section's animations were ever
+                // canceled. If you navigate away again while this
+                // section's own 200ms enter-fade was still running, the
+                // animation kept running (fill:'both') on a now-hidden
+                // element instead of being torn down — harmless to look
+                // at, but it's an animation that outlives its section
+                // and could still be "finished-but-attached" the next
+                // time this section becomes the incoming one, ahead of
+                // the fresh cancel() in playViewEnterAnimation. Cancel
+                // here too so hiding a view always leaves it clean.
+                if (typeof outgoingSection.getAnimations === 'function') {
+                    outgoingSection.getAnimations().forEach((a) => a.cancel());
+                }
                 scrollPositions[currentView] = scrollEl.scrollTop || window.scrollY || 0;
                 outgoingSection.hidden = true;
             }
@@ -386,4 +396,3 @@
         enableHeaderScroll();
     }
 })();
-

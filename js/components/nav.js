@@ -296,11 +296,25 @@ function syncNavBadgesToSession() {
     refreshPushPromptDot();
 }
 
-// ── Desktop topbar: hide on scroll down, reveal on scroll up ────
-// Only meaningful at >=1024px — that's the same tier the rest of
-// this file treats as "desktop" (bottom nav is display:none there,
-// see home.css). Below that the topbar is display:none anyway (see
-// the 768px tier in home.css), so this is a no-op on phones.
+// ── Topbar: hide on scroll down, reveal on scroll up ────────────
+// FIX: this used to bail out below 1024px (`if (window.innerWidth <
+// 1024) { ...; return; }`), on the assumption that this behavior was
+// desktop-only — .topbar is display:none below home.css's mobile
+// breakpoint, and the bottom nav takes over. That's exactly why this
+// never did anything on the native app: at phone widths the class
+// toggling below still ran (or, in the old code, was skipped and
+// forced-visible before returning), but had nothing to act on.
+// Removed the width branch — the same scroll-direction math now runs
+// at every width, and just toggles `lw-topbar--hidden` unconditionally.
+//
+// NOTE: this only produces a visible effect once `.topbar` (or
+// whatever header markup you're using at phone widths) is actually
+// shown and positioned `fixed`/`sticky` there, with
+// `.lw-topbar--hidden { transform: translateY(-100%); }` (or similar)
+// defined for that breakpoint too. That CSS lives in home.css/
+// header.css, which weren't available here to check/edit — if
+// `.topbar` is still `display: none` on mobile, send those over and
+// I'll wire the mobile-breakpoint styles up to match this exactly.
 const TOPBAR_REVEAL_MIN_SCROLL = 72; // stay put near the very top instead of hiding immediately
 let topbarLastScrollY = window.scrollY;
 let topbarScrollTicking = false;
@@ -309,12 +323,6 @@ function updateTopbarVisibility() {
     topbarScrollTicking = false;
     const topbar = document.querySelector('.topbar');
     if (!topbar) return;
-
-    if (window.innerWidth < 1024) {
-        topbar.classList.remove('lw-topbar--hidden');
-        topbarLastScrollY = window.scrollY;
-        return;
-    }
 
     const currentY = window.scrollY;
     if (currentY <= TOPBAR_REVEAL_MIN_SCROLL || currentY < topbarLastScrollY) {

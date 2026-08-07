@@ -18,12 +18,26 @@
     function resetScrollLock() {
         const html = document.documentElement;
         const body = document.body;
-        
+
         html.classList.remove('lw-location-panel-open');
         body.classList.remove('lw-location-panel-open');
         body.classList.remove('modal-open');
+
+        // New-style lock (home.js's setLocationPanelScrollLock, fixed to
+        // target the real scroll owner): overflow is set on <html> via
+        // !important, not on body — see global.css, which deliberately
+        // makes <html> the app's one and only scroll owner.
+        html.style.removeProperty('overflow');
+
+        // Legacy body-position-fixed lock — still used elsewhere (e.g.
+        // chat.js's setMobileScrollLock for the mobile chat popup), so
+        // this stays as a fallback in case that's what got stuck.
+        body.style.position = '';
         body.style.top = '';
-        
+        body.style.left = '';
+        body.style.right = '';
+        body.style.width = '';
+
         try {
             window.scrollTo(0, 0);
         } catch (err) {

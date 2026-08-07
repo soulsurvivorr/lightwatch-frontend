@@ -814,7 +814,7 @@
           <div class="lw-section__head">
             <span class="skel skel-line" style="width:160px;height:13px;"></span>
           </div>
-          <div class="lw-live-card trend-banner">
+          <div class="lw-live-card trend-banner" style="display:flex;align-items:center;gap:12px;">
             <div style="flex:1;">
               <span class="skel skel-line" style="width:80px;height:10px;"></span>
               <span class="skel skel-line" style="width:70%;height:15px;margin-top:8px;"></span>
@@ -1970,17 +1970,28 @@
             <span class="lw-section__title">Trending Stories</span>
           </div>
           <div class="lw-live-card trend-banner" id="trendBanner" data-home-trending="1">
-            <span class="report-card__avatar trend-banner__avatar" id="trendBannerAvatar" aria-hidden="true"></span>
-            <div class="trend-banner__body">
-              <div class="trend-banner__meta-row">
-                <span class="trend-banner__pill">Trending now</span>
+            <div class="trend-banner__viewport" id="trendBannerViewport">
+              <div class="trend-banner__track" id="trendBannerTrack">
+                <!-- Slides injected by home.js's trending-posts carousel
+                     (see initTrendBannerCarousel/refreshHomeTrending) —
+                     one per top trending post, auto-looping the same way
+                     the Did You Know card does. -->
+                <div class="trend-banner__slide">
+                  <span class="report-card__avatar trend-banner__avatar" aria-hidden="true"></span>
+                  <div class="trend-banner__body">
+                    <div class="trend-banner__meta-row">
+                      <span class="trend-banner__pill">Trending now</span>
+                    </div>
+                    <div class="lw-live-card__title">Checking today's trend…</div>
+                    <div class="lw-live-card__meta">—</div>
+                  </div>
+                  <span class="trend-banner__icon" aria-hidden="true">
+                    <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5.75 15.25h8.5M11.5 5.25l3 3-3 3M14.5 8.25H7.25" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </span>
+                </div>
               </div>
-              <div class="lw-live-card__title" id="trendBannerTitle">Checking today's trend…</div>
-              <div class="lw-live-card__meta" id="trendBannerSub">—</div>
             </div>
-            <span class="trend-banner__icon" id="trendBannerIcon" aria-hidden="true">
-              <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5.75 15.25h8.5M11.5 5.25l3 3-3 3M14.5 8.25H7.25" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </span>
+            <span class="trend-banner__dots" id="trendBannerDots" aria-hidden="true"></span>
           </div>
         </div>
 
@@ -2074,7 +2085,12 @@
             <span class="lw-section__title">Latest power news</span>
             <a href="#" class="lw-section__viewall" data-route="chat" data-panel="news" aria-label="Open Official News">View more news</a>
           </div>
-          <div class="news-feed lw-home-news-feed" id="homeNewsFeed" data-news-feed data-news-feed-limit="1"></div>
+          <div class="news-feed lw-home-news-feed" id="homeNewsFeed" data-news-feed data-news-feed-limit="5">
+            <div class="lw-home-news-feed__viewport" id="homeNewsFeedViewport">
+              <div class="lw-home-news-feed__track" id="homeNewsFeedTrack"></div>
+            </div>
+            <span class="lw-home-news-feed__dots" id="homeNewsFeedDots" aria-hidden="true"></span>
+          </div>
         </div>
 
         <!-- Did You Know card. FIX: this used to be 100% inert —
@@ -2183,11 +2199,19 @@
               <ellipse cx="30" cy="10" rx="14" ry="7" fill="#ffffff" opacity="0.35"/>
             </g>
 
-            <!-- Lightning — read as a flash glowing out from under the cloud,
-                 not a drawn bolt: a soft diffuse halo plus a brighter,
-                 tighter hot core right at the cloud's underside. -->
+            <!-- Lightning — a soft diffuse halo glowing out from under the
+                 cloud, plus an actual zigzag bolt striking down out of it. -->
             <ellipse cx="272" cy="72" rx="74" ry="42" fill="url(#lwxFlashGlow)" filter="url(#lwxSoftBlur)" opacity="0.85"/>
             <ellipse cx="270" cy="64" rx="24" ry="12" fill="#fff8df" opacity="0.9" filter="url(#lwxBoltGlow)"/>
+
+            <!-- Bolt glow (soft blurred duplicate sitting behind the crisp
+                 bolt below, same trick as the rest of this scene) -->
+            <path d="M280 62 L258 100 L271 100 L250 138 L292 96 L273 96 Z"
+                  fill="#ffe184" opacity="0.75" filter="url(#lwxBoltGlow)"/>
+
+            <!-- Crisp bolt on top -->
+            <path d="M280 62 L258 100 L271 100 L250 138 L292 96 L273 96 Z"
+                  fill="#fff8df" stroke="#F2B33D" stroke-width="1" stroke-linejoin="round"/>
           </svg>
           <div class="lwx-alert__text">
             <div class="lwx-alert__eyebrow">

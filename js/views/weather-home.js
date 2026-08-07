@@ -763,11 +763,59 @@
         pollTimer = setInterval(refresh, REFRESH_INTERVAL_MS);
     }
 
+    function stopPolling() {
+        clearInterval(pollTimer);
+        pollTimer = null;
+        clearTimeout(retryTimer);
+        retryTimer = null;
+    }
+
     startPolling();
     // Home's own data (location name, etc.) may still be loading from
     // cache on first paint — re-run once the real page data is in, same
     // signal home.js already listens for elsewhere in this view.
     window.addEventListener('lw-page-revealed', refresh);
     window.addEventListener('locationReady', refresh);
+
+    // FIX (background jank / stale carousel state on return to Home —
+    // the same bug class documented at the top of home.js and already
+    // fixed there for the Did You Know / Trending Stories cards): this
+    // file never told the router's LWViews contract about its own
+    // 9s-autoplaying risk carousel, its 10-minute weather poll, or its
+    // 1s "Updated Xs ago" ticker — none of which are Home-specific work
+    // there's any reason to keep running while some other view (Map,
+    // Report, Account...) is on screen. Left unpaused, the risk
+    // carousel keeps auto-advancing (and, once every 10 minutes,
+    // getting a full slide-track rebuild from a fresh poll) the entire
+    // time you're away, so by the time you come back to Home its
+    // position/animation state no longer has anything to do with what
+    // you last saw — the most visible symptom being a card that's
+    // mid-transition or on a stale/duplicate clone slide, i.e. reads as
+    // the carousel having "disappeared".
+    //
+    // home.js (loaded before this file) already created
+    // window.LWViews.home with its own show()/hide() — merge into the
+    // existing hooks here rather than overwriting them outright, or
+    // this would silently break the pause/resume that already fixed
+    // the same problem for the Did You Know and Trending Stories cards.
+    window.LWViews = window.LWViews || {};
+    const existingHomeHooks = window.LWViews.home || {};
+    const prevShow = typeof existingHomeHooks.show === 'function' ? existingHomeHooks.show : null;
+    const prevHide = typeof existingHomeHooks.hide === 'function' ? existingHomeHooks.hide : null;
+    window.LWViews.home = {
+        show() {
+            prevShow?.();
+            riskCarousel?.startAutoplay();
+            startUpdatedTicker();
+            startPolling();
+        },
+        hide() {
+            prevHide?.();
+            riskCarousel?.stopAutoplay();
+            clearInterval(updatedTickTimer);
+            updatedTickTimer = null;
+            stopPolling();
+        }
+    };
 
 })();
