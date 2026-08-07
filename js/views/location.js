@@ -152,7 +152,9 @@
         const idx = list.indexOf(name);
         if (idx === -1) list.push(name); else list.splice(idx, 1);
         writeFavorites(list);
-        return list.includes(name);
+        const favorite = list.includes(name);
+        Promise.resolve(window.setFavoriteLocationPreference?.(name, favorite)).catch(() => {});
+        return favorite;
     }
 
     function statusMeta(status) {

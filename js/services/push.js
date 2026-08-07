@@ -752,6 +752,25 @@ async function setGlobalChatMutePreference(muteGlobalChat) {
 
 window.setGlobalChatMutePreference = setGlobalChatMutePreference;
 
+async function setFavoriteLocationPreference(location, favorite) {
+    const session = typeof getSession === 'function' ? getSession() : null;
+    const userId = session?.user?.id || localStorage.getItem('currentUserId') || sessionStorage.getItem('currentUserId');
+    if (!userId || !location) return { success: false, error: 'No signed-in user or location' };
+    try {
+        const res = await fetch(`${API_URL}/subscribe/favorites`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId, location, favorite: Boolean(favorite) })
+        });
+        const data = await res.json().catch(() => ({}));
+        return res.ok ? { success: true } : { success: false, error: data.error || 'Could not save favorite location' };
+    } catch (err) {
+        return { success: false, error: err.message || 'Could not save favorite location' };
+    }
+}
+
+window.setFavoriteLocationPreference = setFavoriteLocationPreference;
+
 async function setChatMentionsPreference(chatMentionsEnabled) {
     const session = typeof getSession === 'function' ? getSession() : null;
     const userId = session?.user?.id || localStorage.getItem('currentUserId');

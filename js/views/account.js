@@ -258,13 +258,16 @@ function initProfileIdentityForm() {
         if (!userId || !handleInput) return;
 
         const nextHandle = String(handleInput.value || '').trim().toLowerCase().replace(/^@+/, '');
-        if (!isValidHandleFormat(nextHandle)) {
+        const hasAvatarChange = pendingAvatarImageDataUrl !== undefined;
+        const hasValidHandle = isValidHandleFormat(nextHandle);
+        if (!hasValidHandle && !hasAvatarChange) {
             if (messageEl) messageEl.textContent = 'Use 3-24 chars: letters, numbers, - or _ (no symbols/spaces).';
             return;
         }
 
-        const body = { chatHandle: nextHandle };
-        if (pendingAvatarImageDataUrl !== undefined) {
+        const body = {};
+        if (hasValidHandle) body.chatHandle = nextHandle;
+        if (hasAvatarChange) {
             body.avatarImage = pendingAvatarImageDataUrl;
         }
 
@@ -288,7 +291,7 @@ function initProfileIdentityForm() {
             const cached = getCurrentUserData();
             const merged = {
                 ...cached,
-                chatHandle: data.user?.chatHandle || nextHandle,
+                chatHandle: data.user?.chatHandle || cached.chatHandle || nextHandle,
                 avatarImage: Object.prototype.hasOwnProperty.call(data.user || {}, 'avatarImage')
                     ? data.user.avatarImage
                     : cached.avatarImage
