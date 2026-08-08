@@ -6,13 +6,19 @@
 //  so the two forms work identically instead of drifting apart.
 //
 //  Wires up:
-//   - Search-as-you-type against Nominatim (same OSM geocoder
-//     location.js's own search dropdown uses), scoped to Ghana and
-//     biased by a region select/value when one is supplied — this is
-//     what lets someone typing "Esereso" or "Mmim" pick the ACTUAL
-//     map match instead of typing a bare name that later gets
-//     geocoded server-side and might land on the wrong same-named
-//     town.
+//   - Instant, local prefix search against a pre-built town/city
+//     gazetteer (data/gh-towns.json, produced offline by
+//     scripts/build_gh_towns.py from OpenStreetMap) — this is what
+//     makes "Nk" pop up Nkawie/Nkoranza/etc. before the user finishes
+//     typing, with zero network round-trip. Scoped to whatever region
+//     is selected, same as the live search below.
+//   - Nominatim search-as-you-type as a slower background layer
+//     underneath the instant local one — same OSM geocoder
+//     location.js's own search dropdown uses, biased by the selected
+//     region — which fills in anything the local gazetteer doesn't
+//     have (a town added to OSM after the gazetteer was last built,
+//     an unusual spelling, etc.). Debounced, since this one *is* a
+//     real network call.
 //   - "Use my location" (navigator.geolocation), which both reverse-
 //     geocodes a friendly city name (via GET /geocode/reverse) AND
 //     keeps the raw GPS fix — the fix is what actually gets saved,
@@ -26,6 +32,7 @@
 
 (function () {
     const PIN_ICON = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 21s7-7.02 7-12a7 7 0 1 0-14 0c0 4.98 7 12 7 12Z" stroke="currentColor" stroke-width="1.8"/></svg>';
+    const DEFAULT_GAZETTEER_URL = '/data/gh-towns.json';
 
     function resultRow(label, sub) {
         return `<button type="button" class="loc-search__result">
@@ -34,10 +41,79 @@
     </button>`;
     }
 
+    // ---- Local gazetteer (instant, no network) -------------------------
+    // Loaded once per page (module-level, not per-input) and shared by
+    // every attach()'d field. build_gh_towns.py produces this file as
+    // { "<region key>": [{ name, lat, lon }, ...], ... }.
+    let gazetteerPromise = null;
+    function loadGazetteer(url) {
+        if (!gazetteerPromise) {
+            gazetteerPromise = fetch(url)
+                .then((res) => (res.ok ? res.json() : {}))
+                .catch((err) => {
+                    console.error('Town gazetteer failed to load, falling back to live search only:', err.message);
+                    return {};
+                });
+        }
+        return gazetteerPromise;
+    }
+
+    // Shapes a gazetteer entry into the same { display_name, lat, lon,
+    // address } shape a Nominatim result comes in, so downstream
+    // rendering/merging doesn't need to know which source a match came
+    // from.
+    function toSuggestionShape(town, regionKey) {
+        const regionLabel = regionKey
+            ? regionKey.replace(/\b\w/g, (c) => c.toUpperCase())
+            : '';
+        return {
+            display_name: regionLabel ? `${town.name}, ${regionLabel} Region, Ghana` : `${town.name}, Ghana`,
+            lat: town.lat,
+            lon: town.lon,
+            address: regionKey ? { state: regionKey } : undefined
+        };
+    }
+
+    function prefixMatchLocal(gazetteer, region, query, limit) {
+        const q = query.toLowerCase();
+        const regionKey = normalizeRegionKey(region);
+        const pools = regionKey && gazetteer[regionKey]
+            ? [[regionKey, gazetteer[regionKey]]]
+            : Object.entries(gazetteer || {});
+
+        const out = [];
+        for (const [key, towns] of pools) {
+            for (const t of towns || []) {
+                if (t.name && t.name.toLowerCase().startsWith(q)) {
+                    out.push(toSuggestionShape(t, key));
+                    if (out.length >= limit) return out;
+                }
+            }
+        }
+        return out;
+    }
+
+    // Merges the instant local matches with whatever Nominatim came back
+    // with, local-first, deduped by name so the same town found in both
+    // sources doesn't show up twice.
+    function mergeSuggestions(localMatches, liveMatches, limit) {
+        const seen = new Set();
+        const merged = [];
+        for (const m of [...localMatches, ...liveMatches]) {
+            const label = (m.display_name || '').split(',')[0].trim().toLowerCase();
+            if (!label || seen.has(label)) continue;
+            seen.add(label);
+            merged.push(m);
+            if (merged.length >= limit) break;
+        }
+        return merged;
+    }
+
     // ---- Region scoping -----------------------------------------------
     // Approximate bounding boxes for Ghana's 16 regions, [minLon, minLat,
     // maxLon, maxLat]. These are intentionally generous/padded rather than
     // precise administrative polygons — their only job is to bias Nominatim
+
     // toward the right part of the country (via viewbox+bounded) so a
     // partial town name resolves to matches near where the user actually
     // is, instead of a same-named town three regions away. The real
@@ -96,21 +172,31 @@
     }
 
     // options:
-    //   input       — the city text <input> (required)
+    //   input        — the city text <input> (required)
     //   resultsEl    — container to render the dropdown into (optional —
     //                  search-as-you-type is skipped without one)
     //   locateBtn    — "use my location" button (optional)
     //   hintEl       — status text element (optional)
     //   getRegion    — () => current region string, for biasing/query
     //                  disambiguation (optional)
+    //   gazetteerUrl — path to the pre-built local town list (optional —
+    //                  defaults to '/data/gh-towns.json'; pass `null` to
+    //                  disable the instant-local layer and use Nominatim
+    //                  alone, e.g. if that build step isn't set up yet)
     //   onPick       — ({ label, lat, lng }) => void, called on any
     //                  confirmed pick (search result or GPS fix)
-    function attach({ input, resultsEl, locateBtn, hintEl, getRegion, onPick }) {
+    function attach({ input, resultsEl, locateBtn, hintEl, getRegion, gazetteerUrl, onPick }) {
         if (!input) return { getCoords: () => null, reset: () => {} };
+
+        const gazetteerSrc = gazetteerUrl === null ? null : (gazetteerUrl || DEFAULT_GAZETTEER_URL);
 
         let coords = null;
         let debounceTimer = null;
         let abortController = null;
+        // Whatever the instant local layer found for the CURRENT query —
+        // kept around so the slower Nominatim response, when it lands,
+        // can be merged on top instead of overwriting it.
+        let localMatches = [];
         // Per-input result cache, keyed on region+query. Ghana's town list
         // doesn't change mid-session, so a repeated or backspaced-then-
         // retyped query can be answered instantly instead of re-hitting
@@ -156,6 +242,16 @@
             });
 
             resultsEl.removeAttribute('hidden');
+        }
+
+        function runLocalPass(query) {
+            if (!gazetteerSrc) { localMatches = []; return; }
+            loadGazetteer(gazetteerSrc).then((data) => {
+                if (input.value.trim() !== query) return; // superseded already
+                const region = typeof getRegion === 'function' ? getRegion() : '';
+                localMatches = prefixMatchLocal(data, region, query, 8);
+                if (localMatches.length) renderResults(localMatches, query);
+            });
         }
 
         async function search(query) {
@@ -231,13 +327,33 @@
             // request was out — don't paint a stale answer over it.
             if (input.value.trim() !== query) return;
 
-            renderResults(matches, query);
+            // Merge on top of whatever the instant local layer already
+            // showed, rather than replacing it — the local list answered
+            // in milliseconds; Nominatim is here to add anything that
+            // list didn't have, not to make the box flicker.
+            renderResults(mergeSuggestions(localMatches, matches, 8), query);
         }
 
         input.addEventListener('input', () => {
             coords = null; // typed text no longer matches whatever was last confirmed
+            const query = input.value.trim();
             clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(() => search(input.value.trim()), 200);
+
+            if (!query || query.length < 2) {
+                localMatches = [];
+                clearResults();
+                return;
+            }
+
+            // Instant local pass first — no network, no debounce. This is
+            // what lets "Nk" surface Nkawie/Nkoranza/etc. before the user
+            // has finished typing, instead of waiting on a live request.
+            runLocalPass(query);
+
+            // Nominatim underneath, debounced as before — fills in typo-
+            // tolerant/fuzzy matches and anything missing from the local
+            // list.
+            debounceTimer = setTimeout(() => search(query), 200);
         });
         input.addEventListener('blur', () => {
             setTimeout(clearResults, 150); // let a result's mousedown register first
@@ -321,7 +437,12 @@
             // Call this when the caller's region select changes after the
             // city field already has text, so results narrow to the newly
             // chosen region instead of waiting for the next keystroke.
-            refresh: () => search(input.value.trim())
+            refresh: () => {
+                const query = input.value.trim();
+                if (!query || query.length < 2) return;
+                runLocalPass(query);
+                search(query);
+            }
         };
     }
 
