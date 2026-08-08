@@ -34,6 +34,67 @@
     </button>`;
     }
 
+    // ---- Region scoping -----------------------------------------------
+    // Approximate bounding boxes for Ghana's 16 regions, [minLon, minLat,
+    // maxLon, maxLat]. These are intentionally generous/padded rather than
+    // precise administrative polygons — their only job is to bias Nominatim
+    // toward the right part of the country (via viewbox+bounded) so a
+    // partial town name resolves to matches near where the user actually
+    // is, instead of a same-named town three regions away. The real
+    // precision comes from regionMatches() below, which checks each
+    // result's own reverse-geocoded region once results come back.
+    const GHANA_REGION_BBOX = {
+        'greater accra': [-0.55, 5.35, 0.65, 6.20],
+        'ashanti': [-2.50, 5.60, -0.60, 7.60],
+        'central': [-3.30, 4.70, -0.50, 6.20],
+        'western': [-3.30, 4.70, -1.80, 6.20],
+        'western north': [-3.30, 5.80, -2.20, 7.00],
+        'eastern': [-1.50, 5.50, 0.20, 7.30],
+        'volta': [-0.20, 5.80, 1.30, 8.50],
+        'oti': [-0.10, 7.00, 0.90, 8.80],
+        'northern': [-2.00, 8.00, 0.50, 10.60],
+        'north east': [-1.50, 9.90, -0.10, 11.00],
+        'savannah': [-2.70, 8.00, -0.30, 10.20],
+        'upper east': [-1.20, 10.50, 0.30, 11.20],
+        'upper west': [-2.90, 9.60, -1.60, 11.00],
+        'bono': [-3.00, 7.00, -1.40, 8.20],
+        'bono east': [-1.80, 7.20, -0.10, 8.70],
+        'ahafo': [-2.90, 6.70, -2.20, 7.60],
+        // Pre-2019 name that split into Bono / Bono East / Ahafo — kept as
+        // an alias since older data (and some users) still use it.
+        'brong ahafo': [-3.00, 6.70, -0.10, 8.70]
+    };
+
+    function normalizeRegionKey(region) {
+        return String(region || '')
+            .toLowerCase()
+            .replace(/\bregion\b/g, '')
+            .trim()
+            .replace(/\s+/g, ' ');
+    }
+
+    function regionViewbox(region) {
+        const box = GHANA_REGION_BBOX[normalizeRegionKey(region)];
+        if (!box) return null;
+        const [minLon, minLat, maxLon, maxLat] = box;
+        // Nominatim's viewbox param order is left,top,right,bottom, i.e.
+        // minLon,maxLat,maxLon,minLat — not the [minLon,minLat,maxLon,maxLat]
+        // order the table above is written in.
+        return `${minLon},${maxLat},${maxLon},${minLat}`;
+    }
+
+    // Loose match rather than exact: Nominatim's address.state comes back
+    // as "Ashanti Region", "Ashanti", or occasionally the pre-2019
+    // "Brong-Ahafo" for a town in one of the three regions split out of it
+    // in 2019 — so either name containing the other counts as a match.
+    function regionMatches(selectedRegion, addressState) {
+        if (!selectedRegion || !addressState) return true;
+        const a = normalizeRegionKey(selectedRegion);
+        const b = normalizeRegionKey(addressState);
+        if (!a || !b) return true;
+        return a.includes(b) || b.includes(a);
+    }
+
     // options:
     //   input       — the city text <input> (required)
     //   resultsEl    — container to render the dropdown into (optional —
@@ -49,6 +110,13 @@
 
         let coords = null;
         let debounceTimer = null;
+        let abortController = null;
+        // Per-input result cache, keyed on region+query. Ghana's town list
+        // doesn't change mid-session, so a repeated or backspaced-then-
+        // retyped query can be answered instantly instead of re-hitting
+        // Nominatim. Capped below rather than left to grow unbounded over
+        // a long-lived session.
+        const resultCache = new Map();
 
         const setHint = (text) => { if (hintEl) hintEl.textContent = text; };
         const clearResults = () => {
@@ -57,24 +125,8 @@
             resultsEl.innerHTML = '';
         };
 
-        async function search(query) {
+        function renderResults(matches, query) {
             if (!resultsEl) return;
-            if (!query || query.length < 2) { clearResults(); return; }
-
-            const region = typeof getRegion === 'function' ? getRegion() : '';
-            const q = region ? `${query}, ${region}, Ghana` : `${query}, Ghana`;
-            let matches = [];
-            try {
-                const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&countrycodes=gh&limit=6&q=${encodeURIComponent(q)}`;
-                const res = await fetch(url, { headers: { 'Accept-Language': 'en' } });
-                if (res.ok) {
-                    const data = await res.json();
-                    matches = Array.isArray(data) ? data : [];
-                }
-            } catch (err) {
-                console.error('Location search failed:', err.message);
-            }
-
             if (!matches.length) {
                 resultsEl.innerHTML = '<div class="loc-search__result" style="cursor:default">No matches found — you can still type it in</div>';
                 resultsEl.removeAttribute('hidden');
@@ -106,10 +158,86 @@
             resultsEl.removeAttribute('hidden');
         }
 
+        async function search(query) {
+            if (!resultsEl) return;
+            if (!query || query.length < 2) { clearResults(); return; }
+
+            const region = typeof getRegion === 'function' ? getRegion() : '';
+            const cacheKey = `${region.toLowerCase()}|${query.toLowerCase()}`;
+
+            if (resultCache.has(cacheKey)) {
+                renderResults(resultCache.get(cacheKey), query);
+                return;
+            }
+
+            // A newer keystroke supersedes whatever's still in flight —
+            // abort it outright instead of letting it resolve late and
+            // (occasionally, since fetches don't always resolve in the
+            // order they were sent) paint an older, less-specific result
+            // set over a newer one. This is most of what "sometimes takes
+            // a little long" actually was: not the request itself being
+            // slow, but a slower in-flight request from an earlier
+            // keystroke landing after a faster later one.
+            if (abortController) abortController.abort();
+            abortController = new AbortController();
+            const { signal } = abortController;
+
+            const q = region ? `${query}, ${region}, Ghana` : `${query}, Ghana`;
+            const viewbox = regionViewbox(region);
+            const params = new URLSearchParams({
+                format: 'jsonv2',
+                countrycodes: 'gh',
+                limit: '8',
+                addressdetails: '1',
+                q
+            });
+            if (viewbox) {
+                // Bias + hard-bound the search to the selected region's
+                // bounding box, so "Esereso" while Ashanti is selected
+                // surfaces the Ashanti Esereso first instead of a
+                // same-named town elsewhere in the country.
+                params.set('viewbox', viewbox);
+                params.set('bounded', '1');
+            }
+
+            let matches = [];
+            try {
+                const url = `https://nominatim.openstreetmap.org/search?${params.toString()}`;
+                const res = await fetch(url, { headers: { 'Accept-Language': 'en' }, signal });
+                if (res.ok) {
+                    const data = await res.json();
+                    matches = Array.isArray(data) ? data : [];
+                }
+            } catch (err) {
+                if (err.name === 'AbortError') return; // superseded — just drop it
+                console.error('Location search failed:', err.message);
+            }
+
+            // Prefer matches whose own reverse-geocoded region lines up
+            // with what the user picked. If that empties the list (the
+            // bounding box is deliberately approximate, and OSM's state
+            // field doesn't always agree with our region list), fall back
+            // to the unfiltered set rather than showing "no matches" for
+            // what's still a real, findable result.
+            if (region && matches.length) {
+                const scoped = matches.filter((m) => regionMatches(region, m.address && m.address.state));
+                if (scoped.length) matches = scoped;
+            }
+
+            if (resultCache.size > 200) resultCache.clear();
+            resultCache.set(cacheKey, matches);
+
+            // The box may have moved on to a different value while this
+            // request was out — don't paint a stale answer over it.
+            if (input.value.trim() !== query) return;
+
+            renderResults(matches, query);
+        }
+
         input.addEventListener('input', () => {
             coords = null; // typed text no longer matches whatever was last confirmed
             clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(() => search(input.value.trim()), 350);
+            debounceTimer = setTimeout(() => search(input.value.trim()), 200);
         });
         input.addEventListener('blur', () => {
             setTimeout(clearResults, 150); // let a result's mousedown register first
@@ -188,7 +316,12 @@
 
         return {
             getCoords: () => coords,
-            reset: () => { coords = null; clearResults(); }
+            reset: () => { coords = null; clearResults(); },
+            // Re-run search-as-you-type against whatever's already typed.
+            // Call this when the caller's region select changes after the
+            // city field already has text, so results narrow to the newly
+            // chosen region instead of waiting for the next keystroke.
+            refresh: () => search(input.value.trim())
         };
     }
 

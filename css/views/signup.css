@@ -53,6 +53,13 @@ body:has(#view-signup:not([hidden])) {
     position: relative;
     min-height: 100svh;
     min-height: 100dvh;
+    /* Keyboard-aware fallback for iOS standalone PWA — see
+       bindViewportHeightSync() in signup.js. 100dvh alone doesn't
+       reliably track the on-screen keyboard in standalone display mode,
+       which is what let this edge-to-edge background get cut short the
+       instant an input was focused. Falls back to 100dvh above until the
+       JS has run. */
+    min-height: var(--lw-viewport-height, 100dvh);
     background-color: var(--dark-bg);
     color: white;
     font-family: var(--font-body);
@@ -73,6 +80,7 @@ body:has(#view-signup:not([hidden])) #authShell {
     flex: 1;
     min-height: 100svh;
     min-height: 100dvh;
+    min-height: var(--lw-viewport-height, 100dvh); /* see body's own rule above */
     width: 100%;
     /* Matches login-form-side's background exactly (login.css) — same
        radial highlights + diagonal gradient — instead of a flat
@@ -95,7 +103,14 @@ body:has(#view-signup:not([hidden])) #view-signup {
 /* ===== Ambient background (shared motif with verification) ===== */
 .lw-ambient {
     position: fixed;
-    inset: 0;
+    top: 0;
+    left: 0;
+    right: 0;
+    /* Explicit height (not `inset: 0`, which pins the bottom edge to the
+       old, pre-keyboard layout viewport) so this stays synced to the real
+       visible height, including once the keyboard is up — see
+       bindViewportHeightSync() in signup.js. */
+    height: var(--lw-viewport-height, 100dvh);
     overflow: hidden;
     z-index: 0;
     pointer-events: none;

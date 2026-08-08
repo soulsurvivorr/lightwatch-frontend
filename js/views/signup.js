@@ -35,6 +35,41 @@
         );
     }
 
+    // Capacitor-wrapped app OR a homescreen-installed PWA (iOS "Add to
+    // Home Screen", or any browser's own standalone install) — both run
+    // with no browser chrome, so both need the same keyboard-aware
+    // handling. isNativeApp() alone used to gate this, which is why it
+    // never ran for anyone using the installed PWA rather than the native
+    // shell: a regular in-tab browser gets native scroll-into-view
+    // behavior, but a standalone PWA doesn't reliably get the same
+    // treatment on iOS, and used to fall through with nothing at all.
+    function isStandaloneOrNative() {
+        if (isNativeApp()) return true;
+        if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) return true;
+        if (window.navigator.standalone) return true; // legacy iOS Safari flag
+        return false;
+    }
+
+    // ---- Keyboard-aware viewport height, for the full-bleed backgrounds.
+    // 100dvh alone doesn't reliably shrink with the on-screen keyboard in
+    // iOS standalone display mode, which is what left the edge-to-edge
+    // background (.lw-ambient, #authShell) with a gap/cut at the bottom
+    // the instant any input was focused — the full-bleed elements stayed
+    // sized to the old, pre-keyboard height. visualViewport.height does
+    // track the real, keyboard-aware visible height, so this pipes it
+    // into a CSS var those elements read instead. Runs everywhere (not
+    // just standalone) since it's a no-op improvement in a normal tab. ----
+    function bindViewportHeightSync() {
+        if (!window.visualViewport) return;
+        const root = document.documentElement;
+        const sync = () => {
+            root.style.setProperty('--lw-viewport-height', `${window.visualViewport.height}px`);
+        };
+        sync();
+        window.visualViewport.addEventListener('resize', sync);
+        window.visualViewport.addEventListener('scroll', sync);
+    }
+
     function prefillFromPriorAttempt() {
         try {
             const saved = JSON.parse(localStorage.getItem('signupUser') || 'null');
@@ -268,7 +303,12 @@
         // as "seen" — no need to keep nagging once they've engaged.
         locateBtn.addEventListener('click', dismiss, { once: true });
         cityInput.addEventListener('input', dismiss, { once: true });
-        regionInput?.addEventListener('change', () => { /* keep coach visible through region pick */ });
+        regionInput?.addEventListener('change', () => {
+            /* keep coach visible through region pick */
+            // Re-scope any already-typed city text to the newly chosen
+            // region instead of waiting for the next keystroke to pick it up.
+            locationPicker?.refresh();
+        });
     }
 
     // ---- Back button + "Log in" link: both use data-route-custom, same
@@ -296,7 +336,7 @@
     // own. Skipped entirely outside the native app — a regular mobile
     // browser already scrolls the focused field into view itself. ----
     function bindCityKeyboardShift() {
-        if (!cityInput || !isNativeApp() || !window.visualViewport) return;
+        if (!cityInput || !isStandaloneOrNative() || !window.visualViewport) return;
         const wrap = document.querySelector('.signup-wrap');
         if (!wrap) return;
 
@@ -372,6 +412,7 @@
         bindLocationCoachmark();
         bindCustomRouteLinks();
         bindCityKeyboardShift();
+        bindViewportHeightSync();
 
         form.addEventListener("submit", (e) => {
             e.preventDefault();
