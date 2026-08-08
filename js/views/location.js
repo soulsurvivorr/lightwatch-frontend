@@ -536,6 +536,7 @@
         });
 
         node.querySelector('[data-action="popup-report"]').addEventListener('click', () => {
+            window.currentChatLocation = props.name;
             if (window.LWRouter) window.LWRouter.navigate('report');
         });
         node.querySelector('[data-action="popup-news"]').addEventListener('click', () => {
@@ -679,7 +680,8 @@
         const risk = data?.risk?.label;
         const parts = [rain, wind].filter(Boolean).join(' · ');
         host.innerHTML = `
-          <div class="loc-row__history-item">
+          <div class="loc-row__history-item loc-row__history-item--weather">
+            <span class="loc-row__history-dot" style="background: var(--amber, #D6A24A);"></span>
             <span class="loc-row__history-state">${escapeForWeather(temp)} — ${escapeForWeather(condition)}</span>
             ${parts ? `<span class="loc-row__history-time">${escapeForWeather(parts)}</span>` : ''}
             ${risk ? `<span class="loc-row__history-source">Outage risk: ${escapeForWeather(risk)}</span>` : ''}
@@ -929,13 +931,17 @@
 
     async function toggleAreaStatus(row) {
         if (!row || areaToggleInFlight || !window.LWLightStatus) return;
+        
+        const currentlyOn = row.dataset.status === 'on';
+        // Don't allow toggling when light is already ON — users can only report outages (OFF)
+        if (currentlyOn) return;
+        
         areaToggleInFlight = true;
 
         const areaName = row.dataset.area;
         const icon = row.querySelector('[data-action="toggle-area-status"]');
         const statusEl = row.querySelector('.loc-row__status');
-        const currentlyOn = row.dataset.status === 'on';
-        const nextStatus = currentlyOn ? 'off' : 'on';
+        const nextStatus = 'off';
 
         icon?.setAttribute('aria-busy', 'true');
         window.LWLightStatus.animateIcon(icon, nextStatus);

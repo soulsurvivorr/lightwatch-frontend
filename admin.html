@@ -495,6 +495,13 @@
   .add-location-row button { padding:10px 18px; border-radius:var(--r-md); border:none; background:linear-gradient(135deg, var(--brand2), #3767d6); color:#fff; font-weight:700; font-size:0.82rem; font-family: var(--font); cursor:pointer; transition: filter 0.15s, transform 0.2s var(--ease-spring); white-space: nowrap; }
   .add-location-row button:hover { filter:brightness(1.1); transform: translateY(-1px); }
 
+  /* ======= Bulk select/turn-off toolbar above the locations list ======= */
+  .loc-bulk-toolbar { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:14px; padding:10px 14px; border:1px solid var(--border); border-radius:var(--r-md); background:var(--panel2); }
+  .loc-bulk-toolbar__select { display:flex; align-items:center; gap:7px; font-size:0.78rem; font-weight:700; color:var(--muted); cursor:pointer; user-select:none; }
+  .loc-bulk-toolbar__select input { accent-color:var(--brand2); width:15px; height:15px; cursor:pointer; }
+  .loc-bulk-toolbar__count { font-size:0.75rem; color:var(--faint); margin-right:auto; }
+  .loc-card__select { accent-color:var(--brand2); width:16px; height:16px; cursor:pointer; flex-shrink:0; }
+
   /* ============ BROADCAST ============ */
   .broadcast-card {
     background: linear-gradient(165deg, var(--panel-raised), var(--panel));
@@ -925,6 +932,13 @@
        </div>
        <div class="add-location-row"><input type="text" id="newLocationInput" placeholder="Add a location not listed yet (e.g. Bantama, Ashanti)"> <button id="addLocationBtn" type="button">+ Add Location</button>
        </div>
+       <div class="loc-bulk-toolbar" id="locBulkToolbar" hidden>
+        <label class="loc-bulk-toolbar__select"><input type="checkbox" id="locSelectAll" /> Select all</label>
+        <span class="loc-bulk-toolbar__count" id="locSelectedCount"></span>
+        <button class="btn-ghost" id="locBulkOffBtn" type="button" disabled>Turn OFF selected</button>
+        <button class="btn-ghost" id="locBulkOnBtn" type="button" disabled>Turn ON selected</button>
+        <button class="btn-ghost btn-ghost--danger" id="locBulkAllOffBtn" type="button">Turn all OFF</button>
+       </div>
        <div class="locations-panel__split">
          <div class="locations-panel__list">
            <div id="locationsList"></div>
@@ -1101,13 +1115,13 @@
        </div>
        <div class="health-grid">
         <div class="health-card">
-         <div class="health-card__head"><span class="health-card__title">API Server</span> <span class="health-card__indicator health-card__indicator--ok" id="hApiIndicator"></span>
+         <div class="health-card__head"><span class="health-card__title">Network Round-Trip</span> <span class="health-card__indicator health-card__indicator--ok" id="hApiIndicator"></span>
          </div>
          <div class="health-card__value" id="hApiLatency">
           —
          </div>
          <div class="health-card__label">
-          Response latency
+          This browser → server → back (includes your connection)
          </div>
         </div>
         <div class="health-card">
@@ -1141,13 +1155,13 @@
          </div>
         </div>
         <div class="health-card">
-         <div class="health-card__head"><span class="health-card__title">Avg API Latency</span> <span class="health-card__indicator health-card__indicator--ok" id="hAvgApiIndicator"></span>
+         <div class="health-card__head"><span class="health-card__title">Server Processing</span> <span class="health-card__indicator health-card__indicator--ok" id="hAvgApiIndicator"></span>
          </div>
          <div class="health-card__value" id="hAvgApiLatency">
           —
          </div>
          <div class="health-card__label">
-          Recent requests average
+          Measured on the server — recent requests average
          </div>
         </div>
         <div class="health-card" style="grid-column: span 2;">
@@ -1575,9 +1589,15 @@
     if (tab === "health") updateHealthPanel();
     // Leaflet sizes itself off the container's dimensions at build time;
     // if the Locations tab wasn't the active one yet, #locationsMap was
-    // still display:none (0×0) when initLocationMap() ran, so nudge it
-    // to remeasure now that it's actually visible.
-    if (tab === "locations" && locationsMap) setTimeout(() => locationsMap.invalidateSize(), 0);
+    // still display:none (0×0) when initLocationMap() first tried to run.
+    // On reveal: try to build it now if it hasn't been built at all yet
+    // (this also renders+fits any pending data from the last
+    // updateLocationMap() call), and either way nudge Leaflet to
+    // remeasure now that it's actually on screen.
+    if (tab === "locations") {
+      if (!locationsMap) initLocationMap();
+      if (locationsMap) setTimeout(() => locationsMap.invalidateSize(), 0);
+    }
   }
 
   document.querySelectorAll(".nav-btn, .bottom-nav__btn").forEach(btn => {
@@ -1639,6 +1659,15 @@
   let locationFlyAnchor = null;
   let activeLocFilter = "all";
   let locationsMapHasFit = false;
+  // Data from the most recent updateLocationMap() call that arrived while
+  // #locationsMap was still hidden (Locations isn't the active tab on
+  // load) — held here so the very first reveal can render+fit against it
+  // immediately instead of waiting for the next loadLocations() poll.
+  let locationsMapPendingLocations = null;
+
+  function isElVisible(el) {
+    return !!(el && (el.offsetWidth || el.offsetHeight || el.getClientRects().length));
+  }
 
   // Same status → color mapping as the public app's Leaflet.heat map
   // (see views/map-heat-home.js) so the admin view reads the same way.
@@ -1651,6 +1680,22 @@
 
   function initLocationMap() {
     if (locationsMap || typeof L === 'undefined' || typeof L.heatLayer !== 'function') return;
+    // FIX (root cause of the map opening on the wrong/broken view): this
+    // used to build unconditionally the moment loadLocations() first ran
+    // — which happens on page load via loadAll(), well before anyone has
+    // switched to the Locations tab. Leaflet reads its container's actual
+    // pixel size at construction time; #locationsMap is still
+    // display:none (0×0) under the default-active tab at that point, so
+    // fitBounds() below was computing a fit against a nonsensical 0×0
+    // viewport. invalidateSize() on tab-switch (see switchTab()) fixes
+    // the container's rendered size but does NOT recompute a fit that
+    // was already wrong, and locationsMapHasFit being true by then meant
+    // it never got a second chance. Waiting for real layout here — and
+    // letting updateLocationMap()/switchTab() retry once it's visible —
+    // means the first fit Leaflet ever computes is against a real size.
+    const mapEl = document.getElementById('locationsMap');
+    if (!isElVisible(mapEl)) return;
+
     locationsMap = L.map('locationsMap', {
       center: [6.7, 0.0],
       zoom: 5.2,
@@ -1679,11 +1724,31 @@
       }).addTo(locationsMap);
     });
     locationsMarkersLayer = L.layerGroup().addTo(locationsMap);
+
+    // Belt-and-braces: force a size recheck shortly after construction in
+    // case build + reveal landed in the same tick, before the browser
+    // actually painted the new (now-visible) layout.
+    requestAnimationFrame(() => locationsMap.invalidateSize());
+    setTimeout(() => locationsMap.invalidateSize(), 250);
+
+    // Now that the map genuinely exists, render whatever the most recent
+    // updateLocationMap() call was holding onto while we waited.
+    if (locationsMapPendingLocations) {
+      const pending = locationsMapPendingLocations;
+      locationsMapPendingLocations = null;
+      updateLocationMap(pending);
+    }
   }
 
   async function updateLocationMap(locations) {
     initLocationMap();
-    if (!locationsMap) return;
+    if (!locationsMap) {
+      // Still hidden (Locations isn't the active tab yet) — hold onto
+      // this batch so initLocationMap() can render it the moment the
+      // container is actually visible, instead of it just being dropped.
+      locationsMapPendingLocations = locations;
+      return;
+    }
     try {
       const response = await apiFetch('/locations/map');
       const mapLocations = Array.isArray(response.locations) ? response.locations : [];
@@ -1724,12 +1789,20 @@
     }
   }
 
+  const selectedLocationKeys = new Set();
+
   function renderLocations(locations) {
     const list = document.getElementById("locationsList");
     const empty = document.getElementById("locationsEmpty");
     const filtered = activeLocFilter === "all"
       ? locations
       : locations.filter(l => (l.status || "unknown") === activeLocFilter);
+
+    // Keep selection limited to locations that still exist at all (not
+    // just the current filter view — switching filters shouldn't silently
+    // drop a selection made under a different one).
+    const allKeys = new Set((allLocations.length ? allLocations : locations).map(l => l.locationKey));
+    Array.from(selectedLocationKeys).forEach(k => { if (!allKeys.has(k)) selectedLocationKeys.delete(k); });
 
     if (!filtered.length) {
       list.innerHTML = "";
@@ -1738,6 +1811,7 @@
       const messageNode = empty.querySelector('.empty-state__icon')?.nextSibling;
       if (messageNode) messageNode.textContent = locations.length ? "No locations match that filter." : "No locations yet — add one above.";
       updateLocationMap(filtered);
+      updateLocBulkToolbar(filtered);
       return;
     }
     empty.style.display = "none";
@@ -1749,31 +1823,50 @@
         ? `Last updated by <strong>${esc(loc.reportedBy || "—")}</strong> · ${fmtRel(loc.reportedAt)}`
         : "No status set yet";
       const isOn = status === "on";
+      const isSelected = selectedLocationKeys.has(loc.locationKey);
       return `
-        <div class="location-list-item" data-location-key="${esc(loc.locationKey)}" style="animation-delay:${idx * 0.04}s">
-          <div class="location-item__heading">
-            <div>
-              <div class="location-item__title">${esc(loc.label)}</div>
-              <div class="location-item__meta">${meta}</div>
+        <div class="loc-card loc-card--${status}" data-location-key="${esc(loc.locationKey)}" style="animation-delay:${idx * 0.04}s">
+          <div class="loc-card__body">
+            <div class="loc-card__top">
+              <label class="loc-card__name" style="cursor:pointer;">
+                <input type="checkbox" class="loc-card__select" data-select-key="${esc(loc.locationKey)}" ${isSelected ? "checked" : ""} aria-label="Select ${esc(loc.label)}" />
+                <span class="loc-card__dot loc-card__dot--${status}"></span>
+                ${esc(loc.label)}
+              </label>
+              <span class="status-chip ${chipClass}">${chipLabel}</span>
             </div>
-            <span class="location-status-badge ${status === 'on' ? 'location-status-badge--on' : status === 'off' ? 'location-status-badge--off' : 'location-status-badge--unknown'}">${chipLabel}</span>
+            <div class="loc-card__meta">${meta}</div>
           </div>
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:8px;">
-            <button class="btn-ghost" type="button" data-action="toggle" data-loc-key="${esc(loc.locationKey)}">${isOn ? 'Turn OFF' : 'Turn ON'}</button>
-            <button class="btn-ghost btn-ghost--danger" type="button" data-action="delete" data-loc-key="${esc(loc.locationKey)}">Remove</button>
+          <div class="loc-card__footer">
+            <div class="loc-toggle-group">
+              <label class="loc-toggle-switch">
+                <input type="checkbox" data-action="toggle" data-loc-key="${esc(loc.locationKey)}" ${isOn ? "checked" : ""} />
+                <span class="loc-toggle-track"></span>
+                <span class="loc-toggle-thumb"></span>
+              </label>
+              <span class="loc-toggle-state-label loc-toggle-state-label--${status}">${isOn ? "ON" : "OFF"}</span>
+            </div>
+            <button class="loc-card__action-btn" type="button" data-action="delete" data-loc-key="${esc(loc.locationKey)}" title="Remove ${esc(loc.label)}" aria-label="Remove ${esc(loc.label)}">✕</button>
           </div>
         </div>
       `;
     }).join("");
 
-    list.querySelectorAll("button[data-action='toggle']").forEach(btn => {
-      btn.addEventListener("click", async (e) => {
+    list.querySelectorAll("input[data-select-key]").forEach(cb => {
+      cb.addEventListener("change", (e) => {
+        const key = e.currentTarget.dataset.selectKey;
+        if (e.currentTarget.checked) selectedLocationKeys.add(key);
+        else selectedLocationKeys.delete(key);
+        updateLocBulkToolbar(filtered);
+      });
+    });
+
+    list.querySelectorAll("input[data-action='toggle']").forEach(input => {
+      input.addEventListener("change", async (e) => {
         const key = e.currentTarget.dataset.locKey;
-        const loc = allLocations.find(l => l.locationKey === key);
-        const newStatus = loc?.status === "on" ? "off" : "on";
-        btn.disabled = true;
-        await pushLocationStatus(key, newStatus, btn);
-        btn.disabled = false;
+        const newStatus = e.currentTarget.checked ? "on" : "off";
+        e.currentTarget.disabled = true;
+        await pushLocationStatus(key, newStatus);
       });
     });
 
@@ -1790,6 +1883,7 @@
         try {
           await apiDelete('/admin/locations', { locationKeys: [key] });
           allLocations = allLocations.filter(l => l.locationKey !== key);
+          selectedLocationKeys.delete(key);
           renderLocations(allLocations);
           updateLocationQuickStats();
           logSystemEvent(`Removed location: ${loc?.label || key}`, "warn");
@@ -1801,6 +1895,29 @@
     });
 
     updateLocationMap(filtered);
+    updateLocBulkToolbar(filtered);
+  }
+
+  // Keeps the bulk toolbar (select-all state, selected count, enabled
+  // state of the selection-scoped buttons) in sync with
+  // selectedLocationKeys — called after every render and every
+  // checkbox change rather than re-rendering the whole list for that.
+  function updateLocBulkToolbar(filtered) {
+    const toolbar = document.getElementById("locBulkToolbar");
+    if (!toolbar) return;
+    toolbar.hidden = !filtered.length;
+    if (!filtered.length) return;
+
+    const selectAllCb = document.getElementById("locSelectAll");
+    const countEl = document.getElementById("locSelectedCount");
+    const offBtn = document.getElementById("locBulkOffBtn");
+    const onBtn = document.getElementById("locBulkOnBtn");
+
+    const selectedInView = filtered.filter(l => selectedLocationKeys.has(l.locationKey)).length;
+    if (selectAllCb) selectAllCb.checked = selectedInView > 0 && selectedInView === filtered.length;
+    if (countEl) countEl.textContent = selectedLocationKeys.size ? `${selectedLocationKeys.size} selected` : "";
+    if (offBtn) offBtn.disabled = selectedLocationKeys.size === 0;
+    if (onBtn) onBtn.disabled = selectedLocationKeys.size === 0;
   }
 
   document.getElementById("locFilterTabs")?.addEventListener("click", (e) => {
@@ -1812,12 +1929,11 @@
     renderLocations(q ? allLocations.filter(l => l.label.toLowerCase().includes(q)) : allLocations);
   });
 
-  async function pushLocationStatus(locationKey, status, triggerEl) {
-    const card = triggerEl?.closest(".loc-card");
+  async function pushLocationStatus(locationKey, status) {
     try {
       await apiPost("/admin/lightstatus", { location: locationKey, status });
       await Promise.all([loadLocations(), loadSummary(), loadActivity()]);
-      const refreshedItem = document.querySelector(`.location-list-item[data-location-key="${CSS.escape(locationKey)}"]`);
+      const refreshedItem = document.querySelector(`.loc-card[data-location-key="${CSS.escape(locationKey)}"]`);
       if (refreshedItem) {
         refreshedItem.classList.add("loc-card--pushed");
         setTimeout(() => refreshedItem.classList.remove("loc-card--pushed"), 1200);
@@ -1827,10 +1943,53 @@
       showToast(`${loc?.label || locationKey} set to ${status.toUpperCase()}`, "ok");
     } catch (e) {
       if (e.message !== "auth") showToast(e.message || "Could not update location status.", "err");
+      // Re-render so a failed toggle snaps back to its actual last-known
+      // state instead of sitting on the flipped-but-not-saved position.
+      renderLocations(allLocations);
+    }
+  }
+
+  // Same POST /admin/lightstatus contract as pushLocationStatus, fired for
+  // every key in one batch (used by the bulk toolbar's "selected"/"all"
+  // actions) — one combined refresh + toast at the end rather than one
+  // per location.
+  async function pushLocationStatusMany(locationKeys, status) {
+    if (!locationKeys.length) return;
+    try {
+      await Promise.all(locationKeys.map(key => apiPost("/admin/lightstatus", { location: key, status })));
+      await Promise.all([loadLocations(), loadSummary(), loadActivity()]);
+      logSystemEvent(`Set ${locationKeys.length} location${locationKeys.length === 1 ? "" : "s"} → ${status.toUpperCase()}`, "ok");
+      showToast(`${locationKeys.length} location${locationKeys.length === 1 ? "" : "s"} set to ${status.toUpperCase()}`, "ok");
+    } catch (e) {
+      if (e.message !== "auth") showToast(e.message || "Could not update some locations.", "err");
+      renderLocations(allLocations);
     }
   }
 
   document.getElementById("refreshLocations")?.addEventListener("click", loadLocations);
+  document.getElementById("locSelectAll")?.addEventListener("change", (e) => {
+    const q = (document.getElementById("locationSearch")?.value || "").toLowerCase();
+    const filtered = q ? allLocations.filter(l => l.label.toLowerCase().includes(q)) : allLocations;
+    const inView = activeLocFilter === "all" ? filtered : filtered.filter(l => (l.status || "unknown") === activeLocFilter);
+    if (e.target.checked) inView.forEach(l => selectedLocationKeys.add(l.locationKey));
+    else inView.forEach(l => selectedLocationKeys.delete(l.locationKey));
+    renderLocations(allLocations);
+  });
+  document.getElementById("locBulkOffBtn")?.addEventListener("click", () => {
+    pushLocationStatusMany(Array.from(selectedLocationKeys), "off");
+  });
+  document.getElementById("locBulkOnBtn")?.addEventListener("click", () => {
+    pushLocationStatusMany(Array.from(selectedLocationKeys), "on");
+  });
+  document.getElementById("locBulkAllOffBtn")?.addEventListener("click", async () => {
+    const confirmed = await showConfirm({
+      icon: "⚠️", title: "Turn all locations OFF",
+      desc: `Push a live OFF status to all <strong>${allLocations.length}</strong> tracked location${allLocations.length === 1 ? "" : "s"}? This updates what every user sees on their home screen.`,
+      confirmText: "Turn all OFF", danger: true
+    });
+    if (!confirmed) return;
+    pushLocationStatusMany(allLocations.map(l => l.locationKey), "off");
+  });
   document.getElementById("locationSearch")?.addEventListener("input", (e) => {
     const q = e.target.value.toLowerCase();
     renderLocations(q ? allLocations.filter(l => l.label.toLowerCase().includes(q)) : allLocations);
@@ -2456,7 +2615,7 @@
       const hApiIndicator = document.getElementById("hApiIndicator");
       if (hApiLatency) hApiLatency.textContent = latency + "ms";
       if (hApiIndicator) hApiIndicator.className = "health-card__indicator " + (latency < 400 ? "health-card__indicator--ok" : latency < 1200 ? "health-card__indicator--warn" : "health-card__indicator--err");
-      if (status) status.textContent = `API: ${latency}ms`;
+      if (status) status.textContent = `Round-trip: ${latency}ms`;
 
       const hDbLatency = document.getElementById("hDbLatency");
       const hDbIndicator = document.getElementById("hDbIndicator");

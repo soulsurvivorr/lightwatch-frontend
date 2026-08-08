@@ -1697,6 +1697,7 @@ html[data-theme="light"] .loc-header__title {
 
 .loc-row__history-item--on .loc-row__history-dot { background: var(--teal, #3DD9C2); }
 .loc-row__history-item--off .loc-row__history-dot { background: var(--red, #E5484D); }
+.loc-row__history-item--weather .loc-row__history-dot { background: var(--amber, #D6A24A); }
 
 .loc-row__history-state { font-weight: 700; color: var(--text-bright); }
 .loc-row__history-time,
