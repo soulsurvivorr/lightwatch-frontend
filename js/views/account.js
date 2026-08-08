@@ -160,7 +160,16 @@ let pendingAvatarImageDataUrl = undefined;
 function applyAvatarToTargets(user) {
     const avatarSeed = user._id || user.id || user.chatHandle || localStorage.getItem('chatHandle');
     const avatarImage = user.avatarImage || null;
-    const targets = [el('profileAvatar'), el('sidebarAvatar'), el('navAccountAvatar')].filter(Boolean);
+    // "profileAvatar" exists in TWO places in the document (Home's compact
+    // card + Account's bigger hero avatar) — el()/getElementById only ever
+    // returns the first one (Home's), so the visible avatar on the account
+    // page itself never got updated here. Use querySelectorAll so every
+    // match gets painted, same fix profile.js already applies elsewhere.
+    const targets = [
+        ...document.querySelectorAll('#profileAvatar'),
+        el('sidebarAvatar'),
+        el('navAccountAvatar')
+    ].filter(Boolean);
 
     targets.forEach((target) => {
         if (avatarImage && /^(?:data:image\/|https?:\/\/)/i.test(avatarImage)) {
@@ -284,6 +293,20 @@ function initProfileIdentityForm() {
 
             if (!res.ok) {
                 if (messageEl) messageEl.textContent = data.error || 'Could not save identity right now.';
+                // The avatarInput 'change' handler above paints the picked
+                // file straight into the DOM before it's ever sent to the
+                // server (so the picker feels instant). If the server then
+                // rejects the save, that optimistic preview was left in
+                // place with nothing to correct it — the page kept showing
+                // a "new" avatar that was never actually persisted, while
+                // every other device (reading the real saved value) still
+                // showed the old one. Roll the preview back to the last
+                // confirmed avatar so this device never lies about what's
+                // actually saved.
+                if (hasAvatarChange) {
+                    pendingAvatarImageDataUrl = undefined;
+                    applyAvatarToTargets(getCurrentUserData());
+                }
                 saveBtn.disabled = false;
                 return;
             }
@@ -308,6 +331,10 @@ function initProfileIdentityForm() {
             if (messageEl) messageEl.textContent = 'Saved.';
         } catch {
             if (messageEl) messageEl.textContent = 'Could not reach server. Try again.';
+            if (hasAvatarChange) {
+                pendingAvatarImageDataUrl = undefined;
+                applyAvatarToTargets(getCurrentUserData());
+            }
         } finally {
             saveBtn.disabled = false;
         }
