@@ -171,8 +171,8 @@
     }
 
     const NEWS_CACHE_KEY = 'lw_cache_news_feed';
-    const NEWS_CACHE_MAX_AGE_MS = 3 * 60 * 1000;   // 3 min — articles refresh server-side every 15-30 min anyway
-    const NEWS_POLL_INTERVAL_MS = 5 * 60 * 1000;   // re-check while the tab is open
+    const NEWS_CACHE_MAX_AGE_MS = 1 * 60 * 1000;   // 1 min — refresh quickly to show fresh articles
+    const NEWS_POLL_INTERVAL_MS = 2 * 60 * 1000;   // poll every 2 min while tab is open for faster updates
 
     let newsPollTimer = null;
     let newsLoadedOnce = false;

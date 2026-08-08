@@ -158,7 +158,7 @@ function bindRouteLinks() {
     // either — that's the actual reason tapping them didn't open
     // Notifications/Account, not their tag name. Added below.
     document.querySelectorAll(
-        '.bottom-nav-link[data-nav], #primaryNav .nav__link[data-nav], .lw-icon-btn[data-nav], .community-banner__icon-btn[data-nav], .lw-header-avatar-btn[data-nav], .lw-section__viewall[data-route], .topbar__hamburger-link[data-route], .topbar__hamburger-link[data-action]'
+        '.bottom-nav-link[data-nav], #primaryNav .nav__link[data-nav], .lw-icon-btn[data-nav], .community-banner__icon-btn[data-nav], .lw-header-avatar-btn[data-nav], .lw-section__viewall[data-route], .topbar__hamburger-link[data-route], .topbar__hamburger-link[data-action], [data-route][data-map-mode]'
     ).forEach(link => {
         if (link.dataset.navBound === '1') return;
         link.dataset.navBound = '1';
