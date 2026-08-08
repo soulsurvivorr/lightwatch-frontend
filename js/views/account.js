@@ -254,7 +254,16 @@ function initProfileIdentityForm() {
         pendingAvatarImageDataUrl = String(dataUrl);
         const cached = getCurrentUserData();
         applyAvatarToTargets({ ...cached, avatarImage: pendingAvatarImageDataUrl });
-        if (messageEl) messageEl.textContent = 'New profile picture selected. Save your handle to apply it.';
+
+        const toggleBtn = el('chatHandleRowToggle');
+        const panel = el('chatHandleExpand');
+        if (toggleBtn) toggleBtn.setAttribute('aria-expanded', 'true');
+        if (panel) panel.hidden = false;
+
+        const saveBtn = el('chatHandleEditSaveBtn');
+        if (saveBtn) saveBtn.textContent = 'Save changes';
+
+        if (messageEl) messageEl.textContent = 'New profile picture selected. Save changes to apply it.';
     });
 
     if (!form) return;
@@ -282,7 +291,7 @@ function initProfileIdentityForm() {
         }
 
         saveBtn.disabled = true;
-        if (messageEl) messageEl.textContent = 'Saving identity...';
+        if (messageEl) messageEl.textContent = 'Saving changes...';
 
         try {
             const res = await fetch(`${API_URL}/user/${userId}/profile`, {
@@ -308,6 +317,7 @@ function initProfileIdentityForm() {
                     pendingAvatarImageDataUrl = undefined;
                     applyAvatarToTargets(getCurrentUserData());
                 }
+                if (saveBtn) saveBtn.textContent = 'Save handle';
                 saveBtn.disabled = false;
                 return;
             }
@@ -328,14 +338,16 @@ function initProfileIdentityForm() {
             hydrateIdentityForm(merged);
             paintAccountExtras(merged);
             window.dispatchEvent(new CustomEvent('lw-session-changed'));
-            window.lwToast?.('Identity updated.');
-            if (messageEl) messageEl.textContent = 'Saved.';
+            if (saveBtn) saveBtn.textContent = 'Save handle';
+            window.lwToast?.('Profile changed.');
+            if (messageEl) messageEl.textContent = 'Profile changed.';
         } catch {
             if (messageEl) messageEl.textContent = 'Could not reach server. Try again.';
             if (hasAvatarChange) {
                 pendingAvatarImageDataUrl = undefined;
                 applyAvatarToTargets(getCurrentUserData());
             }
+            if (saveBtn) saveBtn.textContent = 'Save handle';
         } finally {
             saveBtn.disabled = false;
         }

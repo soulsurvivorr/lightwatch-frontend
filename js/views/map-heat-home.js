@@ -26,7 +26,7 @@
 // ============================================================
 
 (function () {
-    const POLL_INTERVAL_MS = 30 * 1000; // "Refresh every 30 seconds"
+    const POLL_INTERVAL_MS = Number(window.LW_HEATMAP_POLL_MS) || 10 * 1000; // Default: refresh every 10 seconds (override via LW_HEATMAP_POLL_MS)
     const MAX_ZOOM = 16;
     const HEAT_RADIUS = 40; // 35-45px
     const HEAT_BLUR = 30;   // 25-35px
@@ -232,6 +232,8 @@
     }
 
     async function fetchReports() {
+        if (fetchReports.__inFlight) return null;
+        fetchReports.__inFlight = true;
         try {
             const base = (typeof LWHelpers !== 'undefined' && typeof LWHelpers.apiBase === 'function')
                 ? LWHelpers.apiBase()
@@ -247,6 +249,8 @@
         } catch (err) {
             console.error('[map-heat-home] fetch failed:', err?.message || err);
             return null;
+        } finally {
+            fetchReports.__inFlight = false;
         }
     }
 
@@ -356,6 +360,32 @@
         refresh();
         clearInterval(pollTimer);
         pollTimer = setInterval(refresh, POLL_INTERVAL_MS);
+    }
+
+    // ---- SSE: listen for server-sent location updates and trigger a refresh ----
+    function setupSse() {
+        try {
+            const base = (typeof LWHelpers !== 'undefined' && typeof LWHelpers.apiBase === 'function')
+                ? LWHelpers.apiBase()
+                : (window.API_URL || '');
+            const url = `${base}/locations/stream`;
+            const es = new EventSource(url);
+            es.addEventListener('location:update', (ev) => {
+                try {
+                    // lightweight: re-fetch the full list (refresh has in-flight guard)
+                    refresh();
+                } catch (e) {
+                    console.error('[map-heat-home] SSE update handling error', e);
+                }
+            });
+            es.onopen = () => console.log('[map-heat-home] SSE connected');
+            es.onerror = () => {
+                // EventSource auto-reconnects; log occasionally
+                console.warn('[map-heat-home] SSE connection error');
+            };
+        } catch (err) {
+            console.warn('[map-heat-home] SSE not available', err);
+        }
     }
 
     // Fires on every reveal of the card's view (including, per home.js's
