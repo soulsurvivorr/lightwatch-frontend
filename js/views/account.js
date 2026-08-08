@@ -259,7 +259,8 @@ function initProfileIdentityForm() {
 
     if (!form) return;
 
-    form.addEventListener('submit', async () => {
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
         const userId = getCurrentUserId();
         const handleInput = el('chatHandleEditInput');
         const messageEl = el('chatHandleEditMessage');
