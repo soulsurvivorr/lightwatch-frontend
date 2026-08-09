@@ -155,8 +155,6 @@ function getCurrentUserData() {
     }
 }
 
-let pendingAvatarImageDataUrl = undefined;
-
 function applyAvatarToTargets(user) {
     const avatarSeed = user._id || user.id || user.chatHandle || localStorage.getItem('chatHandle');
     const avatarImage = user.avatarImage || null;
@@ -193,13 +191,56 @@ function hydrateIdentityForm(user) {
     if (handleInput) {
         handleInput.value = String(user.chatHandle || '').replace(/^@+/, '');
     }
-    pendingAvatarImageDataUrl = undefined;
     const messageEl = el('chatHandleEditMessage');
     if (messageEl) messageEl.textContent = '';
 }
 
 function isValidHandleFormat(value) {
     return /^[a-z0-9](?:[a-z0-9_-]{1,22}[a-z0-9])$/.test(value);
+}
+
+// Shared PATCH /user/:id/profile call, used by BOTH the avatar picker
+// (which now saves itself immediately — see avatarInput 'change' below)
+// and the chat-handle form. Merges the confirmed server response into
+// currentUserData (both storages, so it works whether or not "Remember
+// me" is on) and repaints every avatar target. Returns { ok, data }.
+async function saveProfileFields(body) {
+    const userId = getCurrentUserId();
+    if (!userId) return { ok: false, error: 'Not signed in.' };
+
+    try {
+        const res = await fetch(`${API_URL}/user/${userId}/profile`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+            return { ok: false, error: data.error || 'Could not save right now.' };
+        }
+
+        const cached = getCurrentUserData();
+        const merged = {
+            ...cached,
+            chatHandle: Object.prototype.hasOwnProperty.call(body, 'chatHandle')
+                ? (data.user?.chatHandle || cached.chatHandle)
+                : cached.chatHandle,
+            avatarImage: Object.prototype.hasOwnProperty.call(data.user || {}, 'avatarImage')
+                ? data.user.avatarImage
+                : cached.avatarImage
+        };
+        localStorage.setItem('currentUserData', JSON.stringify(merged));
+        sessionStorage.setItem('currentUserData', JSON.stringify(merged));
+        if (merged.chatHandle) {
+            localStorage.setItem('chatHandle', merged.chatHandle);
+            sessionStorage.setItem('chatHandle', merged.chatHandle);
+        }
+
+        return { ok: true, merged };
+    } catch {
+        return { ok: false, error: 'Could not reach server. Try again.' };
+    }
 }
 
 function initProfileIdentityForm() {
@@ -222,6 +263,16 @@ function initProfileIdentityForm() {
         hydrateIdentityForm(getCurrentUserData());
     });
 
+    // FIX: picking a photo used to only paint it into the DOM and stash it
+    // in pendingAvatarImageDataUrl, waiting for the person to separately
+    // submit the chat-handle form's "Save changes" button before anything
+    // reached the server. If they never did that (easy to miss — that
+    // button lives inside the handle-edit panel, not next to the avatar),
+    // the picture looked saved on Account but was never persisted: it
+    // reverted on refresh and never appeared on posts in Community
+    // Reports (POST /chats reads the user's avatarImage straight from the
+    // DB when a post is made). The avatar picker now saves itself the
+    // moment a valid image is picked, independent of the handle form.
     avatarInput?.addEventListener('change', async () => {
         const messageEl = el('chatHandleEditMessage');
         const [file] = avatarInput.files || [];
@@ -232,8 +283,14 @@ function initProfileIdentityForm() {
             avatarInput.value = '';
             return;
         }
-        if (file.size > 4_000_000) {
-            if (messageEl) messageEl.textContent = 'Image is too large. Use one under 4MB.';
+        // Capped below the old 4MB: this is the RAW file size, but the
+        // server validates the base64-ENCODED data URL length, which runs
+        // ~4/3 larger than the raw bytes. 3MB raw keeps the encoded string
+        // safely under the server's cap (see sanitizeAvatarImageDataUrl in
+        // server.js) so a photo that passes here never gets silently
+        // rejected server-side.
+        if (file.size > 3_000_000) {
+            if (messageEl) messageEl.textContent = 'Image is too large. Use one under 3MB.';
             avatarInput.value = '';
             return;
         }
@@ -251,106 +308,66 @@ function initProfileIdentityForm() {
             return;
         }
 
-        pendingAvatarImageDataUrl = String(dataUrl);
+        // Optimistic paint so the picker feels instant...
         const cached = getCurrentUserData();
-        applyAvatarToTargets({ ...cached, avatarImage: pendingAvatarImageDataUrl });
+        applyAvatarToTargets({ ...cached, avatarImage: dataUrl });
+        if (messageEl) messageEl.textContent = 'Saving profile picture...';
+        editBtn?.setAttribute('aria-busy', 'true');
 
-        const toggleBtn = el('chatHandleRowToggle');
-        const panel = el('chatHandleExpand');
-        if (toggleBtn) toggleBtn.setAttribute('aria-expanded', 'true');
-        if (panel) panel.hidden = false;
+        // ...then save it for real, right away.
+        const { ok, merged, error } = await saveProfileFields({ avatarImage: dataUrl });
 
-        const saveBtn = el('chatHandleEditSaveBtn');
-        if (saveBtn) saveBtn.textContent = 'Save changes';
+        editBtn?.removeAttribute('aria-busy');
+        avatarInput.value = '';
 
-        if (messageEl) messageEl.textContent = 'New profile picture selected. Save changes to apply it.';
+        if (!ok) {
+            // Roll the optimistic preview back — this device must never
+            // show an avatar that isn't actually what's saved.
+            applyAvatarToTargets(getCurrentUserData());
+            if (messageEl) messageEl.textContent = error || 'Could not save profile picture.';
+            return;
+        }
+
+        applyAvatarToTargets(merged);
+        paintAccountExtras(merged);
+        window.dispatchEvent(new CustomEvent('lw-session-changed'));
+        window.lwToast?.('Profile picture updated.');
+        if (messageEl) messageEl.textContent = 'Profile picture updated.';
     });
 
     if (!form) return;
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const userId = getCurrentUserId();
         const handleInput = el('chatHandleEditInput');
         const messageEl = el('chatHandleEditMessage');
         const saveBtn = el('chatHandleEditSaveBtn');
-        if (!userId || !handleInput) return;
+        if (!handleInput) return;
 
         const nextHandle = String(handleInput.value || '').trim().toLowerCase().replace(/^@+/, '');
-        const hasAvatarChange = pendingAvatarImageDataUrl !== undefined;
         const hasValidHandle = isValidHandleFormat(nextHandle);
-        if (!hasValidHandle && !hasAvatarChange) {
+        if (!hasValidHandle) {
             if (messageEl) messageEl.textContent = 'Use 3-24 chars: letters, numbers, - or _ (no symbols/spaces).';
             return;
-        }
-
-        const body = {};
-        if (hasValidHandle) body.chatHandle = nextHandle;
-        if (hasAvatarChange) {
-            body.avatarImage = pendingAvatarImageDataUrl;
         }
 
         saveBtn.disabled = true;
         if (messageEl) messageEl.textContent = 'Saving changes...';
 
-        try {
-            const res = await fetch(`${API_URL}/user/${userId}/profile`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body)
-            });
-            const data = await res.json().catch(() => ({}));
+        const { ok, merged, error } = await saveProfileFields({ chatHandle: nextHandle });
 
-            if (!res.ok) {
-                if (messageEl) messageEl.textContent = data.error || 'Could not save identity right now.';
-                // The avatarInput 'change' handler above paints the picked
-                // file straight into the DOM before it's ever sent to the
-                // server (so the picker feels instant). If the server then
-                // rejects the save, that optimistic preview was left in
-                // place with nothing to correct it — the page kept showing
-                // a "new" avatar that was never actually persisted, while
-                // every other device (reading the real saved value) still
-                // showed the old one. Roll the preview back to the last
-                // confirmed avatar so this device never lies about what's
-                // actually saved.
-                if (hasAvatarChange) {
-                    pendingAvatarImageDataUrl = undefined;
-                    applyAvatarToTargets(getCurrentUserData());
-                }
-                if (saveBtn) saveBtn.textContent = 'Save handle';
-                saveBtn.disabled = false;
-                return;
-            }
-
-            const cached = getCurrentUserData();
-            const merged = {
-                ...cached,
-                chatHandle: data.user?.chatHandle || cached.chatHandle || nextHandle,
-                avatarImage: Object.prototype.hasOwnProperty.call(data.user || {}, 'avatarImage')
-                    ? data.user.avatarImage
-                    : cached.avatarImage
-            };
-            localStorage.setItem('currentUserData', JSON.stringify(merged));
-            sessionStorage.setItem('currentUserData', JSON.stringify(merged));
-            localStorage.setItem('chatHandle', merged.chatHandle || nextHandle);
-            sessionStorage.setItem('chatHandle', merged.chatHandle || nextHandle);
-
-            hydrateIdentityForm(merged);
-            paintAccountExtras(merged);
-            window.dispatchEvent(new CustomEvent('lw-session-changed'));
-            if (saveBtn) saveBtn.textContent = 'Save handle';
-            window.lwToast?.('Profile changed.');
-            if (messageEl) messageEl.textContent = 'Profile changed.';
-        } catch {
-            if (messageEl) messageEl.textContent = 'Could not reach server. Try again.';
-            if (hasAvatarChange) {
-                pendingAvatarImageDataUrl = undefined;
-                applyAvatarToTargets(getCurrentUserData());
-            }
-            if (saveBtn) saveBtn.textContent = 'Save handle';
-        } finally {
+        if (!ok) {
+            if (messageEl) messageEl.textContent = error || 'Could not save identity right now.';
             saveBtn.disabled = false;
+            return;
         }
+
+        hydrateIdentityForm(merged);
+        paintAccountExtras(merged);
+        window.dispatchEvent(new CustomEvent('lw-session-changed'));
+        window.lwToast?.('Profile changed.');
+        if (messageEl) messageEl.textContent = 'Profile changed.';
+        saveBtn.disabled = false;
     });
 }
 
