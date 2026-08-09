@@ -593,11 +593,15 @@ function initChatPreviewPopup() {
 function initNotificationPrefToggles() {
     const muteGlobalToggle = el('prefMuteGlobalChat');
     const chatMentionsToggle = el('prefChatMentions');
+    const checkInToggle = el('prefCheckInAlerts');
+    const outageNewsToggle = el('prefOutageNewsAlerts');
 
     // Seed from localStorage immediately (fast paint), then reconcile
     // with the server's saved state once the push subscription is ready.
     if (muteGlobalToggle) muteGlobalToggle.checked = localStorage.getItem('lw_mute_global_chat') === '1';
     if (chatMentionsToggle) chatMentionsToggle.checked = localStorage.getItem('lw_chat_mentions') !== '0'; // default ON
+    if (checkInToggle) checkInToggle.checked = localStorage.getItem('lw_checkin_alerts') !== '0'; // default ON
+    if (outageNewsToggle) outageNewsToggle.checked = localStorage.getItem('lw_outage_news_alerts') !== '0'; // default ON
 
     (async () => {
         if (typeof window.getChatPushPreferences !== 'function') return;
@@ -610,6 +614,14 @@ function initNotificationPrefToggles() {
         if (chatMentionsToggle) {
             chatMentionsToggle.checked = prefs.chatMentionsEnabled !== false;
             localStorage.setItem('lw_chat_mentions', chatMentionsToggle.checked ? '1' : '0');
+        }
+        if (checkInToggle) {
+            checkInToggle.checked = prefs.checkInAlertsEnabled !== false;
+            localStorage.setItem('lw_checkin_alerts', checkInToggle.checked ? '1' : '0');
+        }
+        if (outageNewsToggle) {
+            outageNewsToggle.checked = prefs.outageNewsAlertsEnabled !== false;
+            localStorage.setItem('lw_outage_news_alerts', outageNewsToggle.checked ? '1' : '0');
         }
     })();
 
@@ -648,7 +660,72 @@ function initNotificationPrefToggles() {
             ? 'You will be notified when someone replies to you or @mentions you, even with Everyone chat muted.'
             : 'Replies and @mentions will no longer send notifications.');
     });
+
+    checkInToggle?.addEventListener('change', async () => {
+        if (typeof window.setCheckInAlertsPreference !== 'function') {
+            window.lwToast?.('Notification service is not ready yet.');
+            checkInToggle.checked = !checkInToggle.checked;
+            return;
+        }
+        const result = await window.setCheckInAlertsPreference(checkInToggle.checked);
+        if (!result.success) {
+            checkInToggle.checked = !checkInToggle.checked;
+            window.lwToast?.(result.error || 'Could not save check-in reminder setting.');
+            return;
+        }
+        localStorage.setItem('lw_checkin_alerts', checkInToggle.checked ? '1' : '0');
+        window.lwToast?.(checkInToggle.checked
+            ? 'You\u2019ll get a once-a-day "still got light?" reminder.'
+            : 'Daily check-in reminders are off.');
+    });
+
+    outageNewsToggle?.addEventListener('change', async () => {
+        if (typeof window.setOutageNewsAlertsPreference !== 'function') {
+            window.lwToast?.('Notification service is not ready yet.');
+            outageNewsToggle.checked = !outageNewsToggle.checked;
+            return;
+        }
+        const result = await window.setOutageNewsAlertsPreference(outageNewsToggle.checked);
+        if (!result.success) {
+            outageNewsToggle.checked = !outageNewsToggle.checked;
+            window.lwToast?.(result.error || 'Could not save outage news setting.');
+            return;
+        }
+        localStorage.setItem('lw_outage_news_alerts', outageNewsToggle.checked ? '1' : '0');
+        window.lwToast?.(outageNewsToggle.checked
+            ? 'You\u2019ll be pushed when official news reports an outage anywhere in Ghana.'
+            : 'Outage news alerts are off — you\u2019ll still get alerts for your own location.');
+    });
 }
+
+// ------------------------------------------------------------
+// PUSH PERMISSION STATUS ROW — small live indicator above the
+// "Enable notifications" button so it's obvious at a glance whether
+// this device can actually receive anything the toggles below
+// promise. Re-checked whenever push state changes (enabling push,
+// or the browser permission itself changing) via the same
+// lw:push-state-changed event nav.js's badge dot already listens for.
+// ------------------------------------------------------------
+function refreshPushStatusRow() {
+    const row = el('pushStatusRow');
+    const text = el('pushStatusText');
+    if (!row || !text) return;
+
+    const enabled = typeof window.isLightWatchPushEnabled === 'function'
+        ? window.isLightWatchPushEnabled()
+        : false;
+
+    row.classList.remove('pref-status--on', 'pref-status--off');
+    if (enabled) {
+        row.classList.add('pref-status--on');
+        text.textContent = 'Notifications are on for this device.';
+    } else {
+        row.classList.add('pref-status--off');
+        text.textContent = 'Notifications are off — tap below to enable them on this device.';
+    }
+}
+
+
 
 // ------------------------------------------------------------
 // CITY / TOWN EDIT — one-time only, with a real locked state
@@ -1433,6 +1510,44 @@ function initKeyboardAwareInputs() {
 }
 
 // ------------------------------------------------------------
+// DEEP LINK: the settings-gear icon on the Notifications view (top
+// right corner there) routes here with data-panel="notifications" —
+// nav.js stashes that in window.__lwPendingAccountPanel right before
+// navigating (same pattern chat.js's report-panel deep link already
+// uses). show() below checks for it on every visit to this view
+// (not just the first) and scrolls straight to the Notifications
+// settings card instead of leaving the user to hunt for it from the
+// top of the account page.
+// ------------------------------------------------------------
+function scrollToNotificationSettings() {
+    const card = document.getElementById('accountNotificationsCard');
+    if (!card) return;
+
+    // Make sure the card is actually expanded before scrolling to it —
+    // no point landing on a collapsed panel.
+    const collapseBtn = document.getElementById('notificationsCollapseBtn');
+    if (collapseBtn && collapseBtn.getAttribute('aria-expanded') === 'false') {
+        collapseBtn.click();
+    }
+
+    card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    card.classList.remove('card--highlight');
+    // Force reflow so re-triggering the animation on a second visit
+    // (class was never removed in time) actually restarts it.
+    void card.offsetWidth;
+    card.classList.add('card--highlight');
+    setTimeout(() => card.classList.remove('card--highlight'), 2200);
+}
+
+function consumePendingAccountPanel() {
+    if (window.__lwPendingAccountPanel !== 'notifications') return;
+    window.__lwPendingAccountPanel = null;
+    // Give the view a beat to finish being un-hidden/laid out before
+    // measuring scrollIntoView positions.
+    requestAnimationFrame(() => setTimeout(scrollToNotificationSettings, 50));
+}
+
+// ------------------------------------------------------------
 // INIT — called once by the router on first visit to this view.
 // ------------------------------------------------------------
 function mount() {
@@ -1449,6 +1564,9 @@ function mount() {
     initKeyboardAwareInputs();
     loadAccountExtras();
 
+    refreshPushStatusRow();
+    window.addEventListener('lw:push-state-changed', refreshPushStatusRow);
+
     // mount() only runs once per page-load (see app.js's router), but a
     // person can sign out and a different person can sign in without the
     // page ever reloading. Re-run the data load whenever that happens so
@@ -1456,7 +1574,18 @@ function mount() {
     window.addEventListener('lw-session-changed', () => {
         loadAccountExtras();
     });
+
+    // Covers landing directly on /account with the panel already
+    // pending (e.g. a very fast click before mount() finished).
+    consumePendingAccountPanel();
+}
+
+// show() runs on every visit after the first (see app.js's router
+// callHook(name, 'show')), which is what makes the deep link work on
+// the 2nd/3rd/etc. tap of the gear icon, not just the first.
+function show() {
+    consumePendingAccountPanel();
 }
 
 window.LWViews = window.LWViews || {};
-window.LWViews.account = { mount };
+window.LWViews.account = { mount, show };

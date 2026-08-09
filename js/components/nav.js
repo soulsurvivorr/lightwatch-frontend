@@ -183,6 +183,15 @@ function bindRouteLinks() {
                     if (panel && view === 'chat') {
                         window.__lwPendingReportPanel = panel;
                     }
+                    // Same pattern as the report-panel one above: the
+                    // Notifications view's settings-gear icon carries
+                    // data-panel="notifications" so account.js's show()
+                    // hook knows to scroll to and highlight the
+                    // Notifications settings card instead of just landing
+                    // at the top of the account page.
+                    if (panel && view === 'account') {
+                        window.__lwPendingAccountPanel = panel;
+                    }
                     const mapMode = link.dataset.mapMode;
                     if (mapMode && view === 'location') {
                         window.__lwPendingMapMode = mapMode;

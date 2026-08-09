@@ -581,6 +581,71 @@
       color: var(--text-faint);
     }
 
+    /* ---- Notification settings redesign: grouped sections + intro
+       copy + live push-permission status, added so the card reads as
+       "here's what each alert actually does" instead of a bare list
+       of switches. ---- */
+    .pref-group__intro {
+      font-size: 0.82rem;
+      color: var(--text-faint);
+      line-height: 1.5;
+      margin: 0 0 14px;
+    }
+
+    .pref-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.78rem;
+      color: var(--text-faint);
+      margin-bottom: 10px;
+    }
+
+    .pref-status__dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--text-faint);
+      flex-shrink: 0;
+    }
+
+    .pref-status--on .pref-status__dot { background: #3DD9C2; }
+    .pref-status--off .pref-status__dot { background: #E2664A; }
+
+    .pref-group {
+      margin-top: 18px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border-soft);
+    }
+
+    .pref-group:first-of-type {
+      margin-top: 4px;
+      padding-top: 0;
+      border-top: none;
+    }
+
+    .pref-group__title {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--text-faint);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 4px;
+    }
+
+    /* Brief highlight when the Notifications settings gear (top-right
+       of the Notifications view) deep-links here — see account.js's
+       scrollToNotificationSettings(). Purely visual, no layout shift. */
+    .card--highlight {
+      animation: lw-pref-card-flash 2.2s ease-out;
+    }
+
+    @keyframes lw-pref-card-flash {
+      0%   { box-shadow: 0 0 0 2px var(--brand); }
+      70%  { box-shadow: 0 0 0 2px var(--brand); }
+      100% { box-shadow: 0 0 0 0 transparent; }
+    }
+
     /* Toggle switch */
     .toggle {
       position: relative;
@@ -1299,7 +1364,7 @@
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  min-height: 132px;
+  min-height: 110px;
   background-image:
     linear-gradient(100deg, rgba(8, 13, 24, 0.92) 0%, rgba(8, 13, 24, 0.72) 42%, rgba(8, 13, 24, 0.15) 100%),
     url("../../images/admin-city.png");

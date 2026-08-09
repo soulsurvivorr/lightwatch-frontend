@@ -1914,7 +1914,7 @@ html[data-theme="device"] #view-chat .community-banner__icon-btn {
    photo as a small inset next to the text, not stacked full-width). ---- */
 #view-chat .report-card__content-row {
   display: flex;
-  align-items: stretch;
+  align-items: center;
   gap: 10px;
 }
 
@@ -1932,7 +1932,8 @@ html[data-theme="device"] #view-chat .community-banner__icon-btn {
   position: relative;
   flex-shrink: 0;
   width: 84px;
-  height: 84px;
+  height: auto;
+  min-height: 72px;
   padding: 0;
   border-radius: 10px;
   overflow: hidden;

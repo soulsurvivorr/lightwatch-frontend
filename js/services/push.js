@@ -865,6 +865,49 @@ async function setChatMentionsPreference(chatMentionsEnabled) {
 
 window.setChatMentionsPreference = setChatMentionsPreference;
 
+// ── Generic setter for the two newer boolean notification prefs
+//    (checkInAlertsEnabled, outageNewsAlertsEnabled) — same
+//    userId+endpoint+PATCH /subscribe/preferences round trip as
+//    setGlobalChatMutePreference/setChatMentionsPreference above, just
+//    parameterized on the field name so those two don't need their
+//    own near-duplicate functions.
+async function setNotificationPreference(field, value) {
+    const session = typeof getSession === 'function' ? getSession() : null;
+    const userId = session?.user?.id || localStorage.getItem('currentUserId');
+    if (!userId) return { success: false, error: 'No signed-in user' };
+
+    const endpoint = await getCurrentPushEndpoint();
+    if (!endpoint) {
+        return { success: false, error: 'No active push subscription on this device' };
+    }
+
+    try {
+        const res = await fetch(`${API_URL}/subscribe/preferences`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId, endpoint, [field]: Boolean(value) })
+        });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            return { success: false, error: data.error || `Could not save ${field}` };
+        }
+        const data = await res.json();
+        return { success: true, [field]: Boolean(data[field]) };
+    } catch (err) {
+        return { success: false, error: err.message || `Could not save ${field}` };
+    }
+}
+
+function setCheckInAlertsPreference(enabled) {
+    return setNotificationPreference('checkInAlertsEnabled', enabled);
+}
+window.setCheckInAlertsPreference = setCheckInAlertsPreference;
+
+function setOutageNewsAlertsPreference(enabled) {
+    return setNotificationPreference('outageNewsAlertsEnabled', enabled);
+}
+window.setOutageNewsAlertsPreference = setOutageNewsAlertsPreference;
+
 // ── Secondary-location "notify me here" preference ───────────────────
 // Stores which second location (if any) this device's push subscription
 // should be alerted about when its status changes. Server-side, the

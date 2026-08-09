@@ -3033,7 +3033,7 @@
         <button type="button" class="notif-icon-btn" id="notifSearchToggle" aria-label="Search notifications" aria-expanded="false">
           <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="11" cy="11" r="6.4" stroke="currentColor" stroke-width="1.8"/><path d="M20 20l-4.3-4.3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
         </button>
-        <a href="#" class="notif-icon-btn" data-nav="account" data-route="account" aria-label="Notification settings">
+        <a href="#" class="notif-icon-btn" data-nav="account" data-route="account" data-panel="notifications" aria-label="Notification settings">
           <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Z" stroke="currentColor" stroke-width="1.6"/><path d="M19.4 13.6c.04-.53.04-1.06 0-1.6l1.6-1.24-1.6-2.76-1.9.5a7.6 7.6 0 0 0-1.38-.8L17.2 5.6h-3.2l-.3 1.9a7.6 7.6 0 0 0-1.38.8l-1.9-.5-1.6 2.76 1.6 1.24c-.04.54-.04 1.07 0 1.6l-1.6 1.24 1.6 2.76 1.9-.5a7.6 7.6 0 0 0 1.38.8l.3 1.9h3.2l.3-1.9a7.6 7.6 0 0 0 1.38-.8l1.9.5 1.6-2.76-1.6-1.24Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
         </a>
       </div>
@@ -3394,7 +3394,7 @@
           </div>
         </div>
 
-        <div class="card">
+        <div class="card" id="accountNotificationsCard">
           <div class="card__head">
             <span class="card__icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 2.5A4.2 4.2 0 0 0 5.8 6.7v2.2c0 .9-.35 1.77-.98 2.42L4 12.2V13h12v-.8l-.82-.86a3.42 3.42 0 0 1-.98-2.42V6.7A4.2 4.2 0 0 0 10 2.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M8.2 15.6a1.9 1.9 0 0 0 3.6 0" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span>
             <span class="card__head-text">
@@ -3406,48 +3406,87 @@
             </button>
           </div>
           <div class="card__collapse-body" id="notificationsCollapseBody">
-            <button type="button" data-enable-push-btn onclick="enableLightWatchPush()" class="btn btn--ghost btn--block" style="margin-bottom: 12px; border-color: var(--brand); color: var(--brand);">
+            <p class="pref-group__intro">
+              LightWatch only alerts you about what changes below — nothing else. Push must be enabled once per device; each toggle then controls exactly what's allowed to reach you.
+            </p>
+            <div class="pref-status" id="pushStatusRow">
+              <span class="pref-status__dot" id="pushStatusDot" aria-hidden="true"></span>
+              <span class="pref-status__text" id="pushStatusText">Checking notification permission…</span>
+            </div>
+            <button type="button" data-enable-push-btn onclick="enableLightWatchPush()" class="btn btn--ghost btn--block" style="margin-bottom: 4px; border-color: var(--brand); color: var(--brand);">
               Enable notifications
             </button>
-            <div class="pref-row">
-              <div class="pref-row__info">
-                <div class="pref-row__title">Outage alerts in my area</div>
-                <div class="pref-row__sub">Get notified when light goes off at your location</div>
+
+            <div class="pref-group">
+              <div class="pref-group__title">Your location</div>
+              <div class="pref-row">
+                <div class="pref-row__info">
+                  <div class="pref-row__title">Outage alerts in my area</div>
+                  <div class="pref-row__sub">Get notified the moment light goes off at your saved location — this is the core alert LightWatch exists for.</div>
+                </div>
+                <label class="toggle">
+                  <input type="checkbox" checked id="prefOutageAlerts">
+                  <span class="toggle__track"></span>
+                </label>
               </div>
-              <label class="toggle">
-                <input type="checkbox" checked id="prefOutageAlerts">
-                <span class="toggle__track"></span>
-              </label>
+              <div class="pref-row">
+                <div class="pref-row__info">
+                  <div class="pref-row__title">Power restored alerts</div>
+                  <div class="pref-row__sub">Know the moment power comes back on, without needing to keep checking the app yourself.</div>
+                </div>
+                <label class="toggle">
+                  <input type="checkbox" checked id="prefRestoredAlerts">
+                  <span class="toggle__track"></span>
+                </label>
+              </div>
+              <div class="pref-row">
+                <div class="pref-row__info">
+                  <div class="pref-row__title">Daily check-in reminder</div>
+                  <div class="pref-row__sub">A once-a-day "Do you still have light?" nudge, sent at a random time, so your last report doesn't go stale for days.</div>
+                </div>
+                <label class="toggle">
+                  <input type="checkbox" checked id="prefCheckInAlerts">
+                  <span class="toggle__track"></span>
+                </label>
+              </div>
             </div>
-            <div class="pref-row">
-              <div class="pref-row__info">
-                <div class="pref-row__title">Power restored alerts</div>
-                <div class="pref-row__sub">Know the moment power comes back on</div>
+
+            <div class="pref-group">
+              <div class="pref-group__title">News &amp; official updates</div>
+              <div class="pref-row">
+                <div class="pref-row__info">
+                  <div class="pref-row__title">Outage news alerts</div>
+                  <div class="pref-row__sub">When an official/news source reports a power outage — anywhere in Ghana, not just your area — you'll get pushed immediately.</div>
+                </div>
+                <label class="toggle">
+                  <input type="checkbox" checked id="prefOutageNewsAlerts">
+                  <span class="toggle__track"></span>
+                </label>
               </div>
-              <label class="toggle">
-                <input type="checkbox" checked id="prefRestoredAlerts">
-                <span class="toggle__track"></span>
-              </label>
             </div>
-            <div class="pref-row">
-              <div class="pref-row__info">
-                <div class="pref-row__title">Community reports mentions</div>
-                <div class="pref-row__sub">When someone replies to a message in your location</div>
+
+            <div class="pref-group">
+              <div class="pref-group__title">Community Report chat</div>
+              <div class="pref-row">
+                <div class="pref-row__info">
+                  <div class="pref-row__title">Replies &amp; @mentions</div>
+                  <div class="pref-row__sub">When someone replies to your message or @mentions you, even with Everyone chat muted below.</div>
+                </div>
+                <label class="toggle">
+                  <input type="checkbox" id="prefChatMentions">
+                  <span class="toggle__track"></span>
+                </label>
               </div>
-              <label class="toggle">
-                <input type="checkbox" id="prefChatMentions">
-                <span class="toggle__track"></span>
-              </label>
-            </div>
-            <div class="pref-row">
-              <div class="pref-row__info">
-                <div class="pref-row__title">Mute everyone-audience chat alerts</div>
-                <div class="pref-row__sub">Stops push notifications from messages sent to Everyone audience</div>
+              <div class="pref-row">
+                <div class="pref-row__info">
+                  <div class="pref-row__title">Mute Everyone-audience chat</div>
+                  <div class="pref-row__sub">Stops push notifications from ordinary messages sent to the Everyone audience. Replies and @mentions still come through if the toggle above is on.</div>
+                </div>
+                <label class="toggle">
+                  <input type="checkbox" id="prefMuteGlobalChat">
+                  <span class="toggle__track"></span>
+                </label>
               </div>
-              <label class="toggle">
-                <input type="checkbox" id="prefMuteGlobalChat">
-                <span class="toggle__track"></span>
-              </label>
             </div>
           </div>
         </div>
