@@ -998,11 +998,11 @@ html[data-theme="light"] .chat-message__text {
 #view-chat .community-banner {
   position: relative;
   color: white;
-  padding: max(env(safe-area-inset-top, 0px), 10px) max(18px, env(safe-area-inset-right, 18px)) 12px max(18px, env(safe-area-inset-left, 18px));
-  background: linear-gradient(135deg, #06111c 0%, #0e203a 52%, #163654 100%);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: var(--radius-lg);
-  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.2);
+  padding: max(env(safe-area-inset-top, 0px), 12px) max(18px, env(safe-area-inset-right, 18px)) 14px max(18px, env(safe-area-inset-left, 18px));
+  background: #0e1520;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-md);
+  box-shadow: none;
 }
 
 #view-chat .community-banner__row {
@@ -1011,9 +1011,10 @@ html[data-theme="light"] .chat-message__text {
 }
 
 #view-chat .community-banner__title {
-  font-size: 1.28rem;
+  font-size: 1.15rem;
   line-height: 1.15;
   font-weight: 800;
+  letter-spacing: -0.01em;
   color: white;
   margin: 0;
 }
@@ -1026,8 +1027,44 @@ html[data-theme="light"] .chat-message__text {
 #view-chat .community-banner__sub {
   font-size: 0.76rem;
   line-height: 1.35;
-  color: rgba(255, 255, 255, 0.68);
+  color: rgba(255, 255, 255, 0.6);
   margin: 4px 0 0;
+}
+
+/* ---- Stats strip ----
+   A row of live counters (reports logged, active areas, verified
+   sources) under the banner subtitle — the "this is a real, active
+   reporting system" signal that a plain hero banner doesn't give. */
+#view-chat .community-banner__stats {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  flex-wrap: wrap;
+}
+
+#view-chat .community-banner__stat {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+#view-chat .community-banner__stat-value {
+  font-size: 0.98rem;
+  font-weight: 800;
+  color: white;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+#view-chat .community-banner__stat-label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.5);
 }
 
 #view-chat .community-banner__actions {
@@ -1180,10 +1217,10 @@ html[data-theme="device"] #view-chat .community-banner__icon-btn {
   flex-direction: column;
   align-items: stretch;
   gap: 6px;
-  background: var(--bg-panel-raised);
+  background: var(--bg-panel);
   border: 1px solid var(--border-soft);
-  border-radius: var(--radius-lg);
-  padding: 8px 10px;
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
   margin-top: 0;
 }
 
@@ -1311,9 +1348,28 @@ html[data-theme="device"] #view-chat .community-banner__icon-btn {
 #view-chat .community-composer__status {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   flex-wrap: wrap;
   min-width: 0;
+}
+
+/* ON/OFF read as one segmented control (a status selector, like a
+   form field) with Add Media set apart as its own plain icon action —
+   rather than three interchangeable pill buttons of equal weight. */
+#view-chat .community-status-btn--on,
+#view-chat .community-status-btn--off {
+  border-radius: var(--radius-sm);
+}
+
+#view-chat .community-status-btn--on {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+#view-chat .community-status-btn--off {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  border-left: none;
 }
 
 #view-chat .community-status-btn {
@@ -1321,10 +1377,9 @@ html[data-theme="device"] #view-chat .community-banner__icon-btn {
   align-items: center;
   gap: 5px;
   padding: 7px 11px;
-  border-radius: 999px;
   border: 1px solid var(--border-soft);
-  background: transparent;
-  font-size: 0.74rem;
+  background: var(--bg-panel);
+  font-size: 0.72rem;
   font-weight: 700;
   font-family: var(--font-body);
   color: var(--text-muted);
@@ -1334,40 +1389,33 @@ html[data-theme="device"] #view-chat .community-banner__icon-btn {
 }
 
 #view-chat .community-status-btn:active {
-  transform: scale(0.96);
+  transform: scale(0.97);
 }
 
 #view-chat .community-status-btn svg {
-  width: 14px;
-  height: 14px;
+  width: 13px;
+  height: 13px;
   flex-shrink: 0;
 }
 
-/* "Light is ON" — bright green, matching the reference screenshot
-   (previously the branded teal, which reads more cyan than green). */
-#view-chat .community-status-btn--on {
+#view-chat .community-status-btn--on.is-active {
+  background: color-mix(in srgb, var(--status-green, #2fbf6e) 14%, transparent);
+  border-color: color-mix(in srgb, var(--status-green, #2fbf6e) 45%, transparent);
   color: var(--status-green, #2fbf6e);
 }
-#view-chat .community-status-btn--on.is-active {
-  background: color-mix(in srgb, var(--status-green, #2fbf6e) 16%, transparent);
-  border-color: color-mix(in srgb, var(--status-green, #2fbf6e) 45%, transparent);
-}
 
-/* "Light is OFF" — orange/amber rather than alert-red, matching the
-   reference screenshot's warmer tone. */
-#view-chat .community-status-btn--off {
+#view-chat .community-status-btn--off.is-active {
+  background: color-mix(in srgb, var(--status-orange, #f2874d) 14%, transparent);
+  border-color: color-mix(in srgb, var(--status-orange, #f2874d) 45%, transparent);
   color: var(--status-orange, #f2874d);
 }
-#view-chat .community-status-btn--off.is-active {
-  background: color-mix(in srgb, var(--status-orange, #f2874d) 16%, transparent);
-  border-color: color-mix(in srgb, var(--status-orange, #f2874d) 45%, transparent);
-}
 
-/* Add Media — now a full pill matching its siblings (icon + label),
-   not a shrunk icon-only square. */
+/* Add Media — a plain outlined icon action, visually separate from
+   the ON/OFF status control. */
 #view-chat .community-status-btn--media {
   color: var(--text-muted);
   flex-shrink: 0;
+  border-radius: var(--radius-sm);
 }
 
 #view-chat .community-status-btn--media.is-active {
@@ -1431,16 +1479,18 @@ html[data-theme="device"] #view-chat .community-banner__icon-btn {
 }
 
 #view-chat .community-reports-head__title {
-  font-size: 1.05rem;
+  font-size: 0.94rem;
   font-weight: 800;
-  color: var(--text-bright);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
   margin: 0;
 }
 
 #view-chat .community-reports-head__actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 #view-chat .community-sort-btn,
@@ -1448,18 +1498,18 @@ html[data-theme="device"] #view-chat .community-banner__icon-btn {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 6px 12px;
-  border-radius: 999px;
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border-soft);
   background: var(--bg-panel);
   color: var(--text-muted);
-  font-size: 0.76rem;
+  font-size: 0.72rem;
   font-weight: 700;
   cursor: pointer;
 }
 
 #view-chat .community-sort-btn {
-  border-color: color-mix(in srgb, var(--brand2) 45%, var(--border-soft));
+  border-color: color-mix(in srgb, var(--brand2) 40%, var(--border-soft));
   color: var(--brand2);
 }
 
@@ -1476,21 +1526,38 @@ html[data-theme="device"] #view-chat .community-banner__icon-btn {
 }
 
 /* ---- Report cards ---- */
+/* ---- Report card shell ----
+   Moved off the rounded "chat bubble" look toward a structured
+   record/ticket: squarer corners, a thin status-coded rail on the
+   left edge (green = ON, amber = OFF, neutral = no status attached),
+   and a flat 1px border instead of a floating shadow. Reads as a
+   logged report rather than a social post. */
 #view-chat .chat-message.report-card {
+  --report-accent: var(--border-strong);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   width: 100%;
   max-width: 100%;
   margin-left: 0;
-  padding: 14px;
-  border-radius: var(--radius-md);
+  padding: 16px 16px 14px 15px;
+  border-radius: var(--radius-sm);
   background: var(--bg-panel);
   border: 1px solid var(--border-soft);
+  border-left: 3px solid var(--report-accent);
   box-shadow: none;
   position: relative;
   overflow: visible;
   z-index: 1;
+  transition: border-color 0.15s ease;
+}
+
+#view-chat .chat-message.report-card.report-card--on {
+  --report-accent: var(--status-green, #2fbf6e);
+}
+
+#view-chat .chat-message.report-card.report-card--off {
+  --report-accent: var(--status-orange, #f2874d);
 }
 
 #view-chat .chat-message.report-card.report-card--menu-open {
@@ -1507,49 +1574,50 @@ html[data-theme="device"] #view-chat .community-banner__icon-btn {
 }
 
 #view-chat .chat-message.report-card.chat-message--own {
-  border-left: none;
+  border-left: 3px solid var(--report-accent, var(--brand2));
 }
 
 #view-chat .chat-message.report-card.chat-message--admin {
-  border-color: rgba(242, 179, 61, 0.55);
-  background: rgba(242, 179, 61, 0.06);
+  --report-accent: var(--brand, #D6A24A);
+  border-color: color-mix(in srgb, var(--brand, #D6A24A) 38%, var(--border-soft));
+  background: color-mix(in srgb, var(--brand, #D6A24A) 4%, var(--bg-panel));
 }
 
 #view-chat .report-card__head {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 10px;
 }
 
 #view-chat .report-card__avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--bg-panel-raised);
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--border-soft);
   color: var(--text-muted);
 }
 
 #view-chat .chat-message.report-card.chat-message--tinted .report-card__avatar {
-  background: color-mix(in srgb, var(--msg-accent) 20%, var(--bg-panel-raised));
+  background: color-mix(in srgb, var(--msg-accent) 14%, var(--bg-panel-raised));
   color: var(--msg-accent);
-  border-color: color-mix(in srgb, var(--msg-accent) 40%, var(--border-strong));
+  border-color: color-mix(in srgb, var(--msg-accent) 32%, var(--border-soft));
 }
 
 #view-chat .report-card__avatar svg {
-  width: 18px;
-  height: 18px;
+  width: 17px;
+  height: 17px;
 }
 
 #view-chat .report-card__avatar img {
   width: 100%;
   height: 100%;
-  border-radius: 50%;
+  border-radius: 7px;
   object-fit: cover;
   display: block;
 }
@@ -1557,39 +1625,51 @@ html[data-theme="device"] #view-chat .community-banner__icon-btn {
 #view-chat .report-card__who {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
   min-width: 0;
   flex: 1 1 auto;
 }
 
 #view-chat .report-card__name {
-  font-size: 0.92rem;
+  font-size: 0.88rem;
   font-weight: 700;
-  color: var(--msg-accent, var(--text-bright));
+  color: var(--text-bright);
   font-family: var(--font-display);
+  letter-spacing: -0.01em;
 }
 
 #view-chat .report-card__meta {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.82rem;
+  gap: 0;
+  font-size: 0.74rem;
+  font-weight: 600;
   color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
 }
 
 #view-chat .report-card__meta-location {
-  color: var(--brand2);
+  color: var(--text-muted);
   font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-size: 0.68rem;
 }
 
 #view-chat .report-card__meta-time {
-  font-size: 0.82rem;
+  font-size: 0.74rem;
+  color: var(--text-faint);
 }
 
 #view-chat .report-card__meta-time::before {
-  content: "•";
-  margin-right: 6px;
-  color: var(--text-faint);
+  content: "";
+  display: inline-block;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--text-faint);
+  margin: 0 7px;
+  vertical-align: middle;
 }
 
 #view-chat .report-card__head-actions {
@@ -1602,30 +1682,32 @@ html[data-theme="device"] #view-chat .community-banner__icon-btn {
 #view-chat .report-card__status-badge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 5px 10px;
-  border-radius: 999px;
-  font-size: 0.7rem;
-  font-weight: 700;
+  gap: 5px;
+  padding: 4px 9px;
+  border-radius: var(--radius-sm);
+  font-size: 0.64rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   border: 1px solid transparent;
   white-space: nowrap;
 }
 
 #view-chat .report-card__status-badge svg {
-  width: 12px;
-  height: 12px;
+  width: 11px;
+  height: 11px;
 }
 
 #view-chat .report-card__status-badge--on {
-  background: color-mix(in srgb, var(--status-green, #2fbf6e) 16%, transparent);
+  background: color-mix(in srgb, var(--status-green, #2fbf6e) 14%, transparent);
   color: var(--status-green, #2fbf6e);
-  border-color: color-mix(in srgb, var(--status-green, #2fbf6e) 40%, transparent);
+  border-color: color-mix(in srgb, var(--status-green, #2fbf6e) 38%, transparent);
 }
 
 #view-chat .report-card__status-badge--off {
-  background: color-mix(in srgb, var(--status-orange, #f2874d) 16%, transparent);
+  background: color-mix(in srgb, var(--status-orange, #f2874d) 14%, transparent);
   color: var(--status-orange, #f2874d);
-  border-color: color-mix(in srgb, var(--status-orange, #f2874d) 40%, transparent);
+  border-color: color-mix(in srgb, var(--status-orange, #f2874d) 38%, transparent);
 }
 
 #view-chat .report-card__menu-btn {
@@ -1724,10 +1806,11 @@ html[data-theme="device"] #view-chat .community-banner__icon-btn {
 }
 
 #view-chat .report-card__text {
-  font-size: 0.86rem;
-  line-height: 1.45;
-  color: rgb(240, 240, 240);
+  font-size: 0.87rem;
+  line-height: 1.5;
+  color: var(--text-bright);
   margin: 0;
+  letter-spacing: -0.001em;
 }
 
 #view-chat .report-card__text .mention {
@@ -1816,7 +1899,7 @@ html[data-theme="device"] #view-chat .community-banner__icon-btn {
 
 #view-chat .report-card__media {
   margin: 2px 0 0;
-  border-radius: 12px;
+  border-radius: var(--radius-sm);
   overflow: hidden;
   border: 1px solid var(--border-soft);
   background: var(--bg-panel-raised);
@@ -1833,14 +1916,17 @@ html[data-theme="device"] #view-chat .community-banner__icon-btn {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 10px;
   flex-wrap: nowrap;
+  padding-top: 10px;
+  margin-top: 2px;
+  border-top: 1px solid var(--border-soft);
 }
 
 #view-chat .report-card__tags {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: nowrap;
   min-width: 0;
 }
@@ -1849,25 +1935,32 @@ html[data-theme="device"] #view-chat .community-banner__icon-btn {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 4px 8px;
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--bg-panel-raised) 90%, black 10%);
-  border: 1px solid color-mix(in srgb, var(--brand2) 32%, var(--border-soft));
-  color: var(--text-muted);
-  font-size: 0.72rem;
+  padding: 3px 7px;
+  border-radius: 6px;
+  background: transparent;
+  border: 1px solid var(--border-soft);
+  color: var(--text-faint);
+  font-size: 0.68rem;
   font-weight: 700;
   white-space: nowrap;
 }
 
 #view-chat .report-card__tag svg {
-  width: 12px;
-  height: 12px;
+  width: 11px;
+  height: 11px;
 }
 
+/* ---- Metrics bar ----
+   Every stat (reply, repost, like, share, views) now sits in one flat
+   row with its number always visible and tabular so totals don't
+   jitter the layout as they change — reads like a stats strip on a
+   report/analytics record rather than social "engagement" buttons.
+   A hairline divider separates the interactive left cluster (reply,
+   repost, like, share) from the read-only view count on the right. */
 #view-chat .report-card__stats {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 2px;
   flex-shrink: 0;
   margin-left: auto;
 }
@@ -1876,38 +1969,39 @@ html[data-theme="device"] #view-chat .community-banner__icon-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  width: 30px;
-  height: 30px;
+  gap: 5px;
+  height: 28px;
+  padding: 0 8px;
   border: 1px solid transparent;
-  border-radius: 999px;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--text-faint);
-  font-size: 0.68rem;
+  font-size: 0.72rem;
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
   cursor: pointer;
-  padding: 0;
-  transition: border-color 0.18s ease, background-color 0.18s ease, transform 0.12s ease;
+  transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
 }
 
 #view-chat .report-card__stat svg {
-  width: 16px;
-  height: 16px;
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
 }
 
 #view-chat .report-card__stat .report-card__stat-count {
-  display: none;
+  display: inline-block;
+  min-width: 0.6em;
 }
 
 #view-chat .report-card__stat:hover,
 #view-chat .report-card__stat:focus-visible {
-  border-color: var(--border-soft);
   background: color-mix(in srgb, var(--bg-panel-raised) 88%, transparent);
+  color: var(--text-muted);
 }
 
 #view-chat .report-card__stat.is-pressed {
-  transform: scale(0.92);
-  border-color: color-mix(in srgb, var(--brand2) 52%, var(--border-soft));
+  transform: scale(0.94);
 }
 
 #view-chat .report-card__stat--like {
@@ -1923,55 +2017,17 @@ html[data-theme="device"] #view-chat .community-banner__icon-btn {
   fill: var(--red);
 }
 
-/* Radiating ring that bursts outward from the heart on like — gives
-   the tap a bit more life than a plain scale pop. */
-#view-chat .report-card__stat--like::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  margin: auto;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--red) 55%, transparent) 0%, transparent 72%);
-  opacity: 0;
-  transform: scale(0.4);
-  pointer-events: none;
-}
-
-#view-chat .report-card__stat--like.is-liked-pop::before {
-  animation: report-card-like-burst 0.5s ease-out;
-}
-
-@keyframes report-card-like-burst {
-  0%   { opacity: 0.65; transform: scale(0.3); }
-  100% { opacity: 0; transform: scale(2); }
-}
-
+/* Restrained "confirmed" pulse on like — a brief scale rather than a
+   radiating burst, to keep the feedback informative instead of
+   celebratory. */
 @keyframes report-card-like-pop {
-  0% {
-    transform: scale(1);
-    filter: drop-shadow(0 0 0 rgba(239, 84, 84, 0));
-  }
-  30% {
-    transform: scale(0.82);
-    filter: drop-shadow(0 0 0 rgba(239, 84, 84, 0));
-  }
-  55% {
-    transform: scale(1.35);
-    filter: drop-shadow(0 0 8px rgba(239, 84, 84, 0.6));
-  }
-  78% {
-    transform: scale(0.94);
-  }
-  100% {
-    transform: scale(1);
-    filter: drop-shadow(0 0 0 rgba(239, 84, 84, 0));
-  }
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.16); }
+  100% { transform: scale(1); }
 }
 
 #view-chat .report-card__stat--like.is-liked-pop svg {
-  animation: report-card-like-pop 0.46s cubic-bezier(0.2, 0.9, 0.2, 1.2);
+  animation: report-card-like-pop 0.28s ease-out;
 }
 
 /* ---- Repost / Quote ---- */
@@ -1984,15 +2040,6 @@ html[data-theme="device"] #view-chat .community-banner__icon-btn {
   z-index: 40;
 }
 
-#view-chat .report-card__stat--repost {
-  width: auto;
-  padding: 0 10px 0 8px;
-}
-
-#view-chat .report-card__stat--repost .report-card__stat-count {
-  display: inline-block;
-}
-
 #view-chat .report-card__stat--repost:hover {
   color: var(--status-green, #2fbf6e);
 }
@@ -2001,15 +2048,36 @@ html[data-theme="device"] #view-chat .community-banner__icon-btn {
   color: var(--status-green, #2fbf6e);
 }
 
-/* Quick "pop" the repost icon plays once when toggled on, echoing the
-   status-hero icon-pop pattern already used elsewhere in the app. */
 @keyframes report-card-repost-pop {
   0%   { transform: scale(1) rotate(0deg); }
-  45%  { transform: scale(1.25) rotate(-14deg); }
+  50%  { transform: scale(1.12) rotate(-8deg); }
   100% { transform: scale(1) rotate(0deg); }
 }
 #view-chat .report-card__stat--repost.is-reposted svg {
-  animation: report-card-repost-pop 0.36s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: report-card-repost-pop 0.3s ease-out;
+}
+
+/* ---- Share ---- */
+#view-chat .report-card__stat--share:hover {
+  color: var(--brand2);
+}
+
+/* ---- Views ----
+   Read-only — no hover/press affordance, no cursor change, set off
+   from the interactive cluster by a hairline divider. */
+#view-chat .report-card__stat--views {
+  cursor: default;
+  color: var(--text-faint);
+  border-left: 1px solid var(--border-soft);
+  border-radius: 0;
+  margin-left: 4px;
+  padding-left: 12px;
+}
+
+#view-chat .report-card__stat--views:hover,
+#view-chat .report-card__stat--views:focus-visible {
+  background: transparent;
+  color: var(--text-faint);
 }
 
 /* The Repost/Quote picker — same visual language as .report-card__menu
@@ -2087,10 +2155,10 @@ html[data-theme="device"] #view-chat .community-banner__icon-btn {
   flex-direction: column;
   gap: 6px;
   padding: 10px 11px;
-  border-radius: 12px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border-soft);
-  border-left: 3px solid color-mix(in srgb, var(--brand2) 60%, var(--border-soft));
-  background: color-mix(in srgb, var(--bg-panel-raised) 88%, black 12%);
+  border-left: 3px solid var(--border-strong);
+  background: var(--bg-panel-raised);
   margin-top: 6px;
 }
 
@@ -2121,9 +2189,11 @@ html[data-theme="device"] #view-chat .community-banner__icon-btn {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 0.74rem;
+  font-size: 0.68rem;
   font-weight: 700;
-  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-faint);
 }
 
 #view-chat .report-card__quoted-text {
@@ -2356,6 +2426,6 @@ body.lw-chat-community-mode #view-chat .community-fab {
     font-size: 0.86rem;
   }
   #view-chat .community-banner__title {
-    font-size: 1.28rem;
+    font-size: 1.15rem;
   }
 }

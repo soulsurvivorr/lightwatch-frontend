@@ -232,6 +232,34 @@ function flashIconRing(btn) {
     setTimeout(() => btn.classList.remove('is-pressed'), 220);
 }
 
+// ---- View counting ----
+// One shared observer for every report card in the feed rather than
+// one per card. Each card is counted at most once (unobserved right
+// after it fires) the first time at least 60% of it has been on
+// screen for half a second — long enough to rule out a fast scroll-
+// past. The bump is optimistic in the UI and mirrored to the server
+// with a fire-and-forget POST; if that endpoint isn't deployed yet
+// the request just fails silently and the count still holds locally
+// for the session.
+const reportCardViewObserver = ('IntersectionObserver' in window)
+    ? new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+            const el = entry.target;
+            if (!entry.isIntersecting) {
+                if (el._lwViewTimer) {
+                    clearTimeout(el._lwViewTimer);
+                    el._lwViewTimer = null;
+                }
+                return;
+            }
+            el._lwViewTimer = setTimeout(() => {
+                reportCardViewObserver.unobserve(el);
+                el.dispatchEvent(new CustomEvent('lw-report-viewed'));
+            }, 500);
+        });
+    }, { threshold: 0.6 })
+    : null;
+
 // ---- Light status quick-tag ----
 // There's no separate "status" field on a chat message server-side, so
 // the ON/OFF quick-select in the composer is encoded as a small plain-
@@ -1514,9 +1542,76 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
         }
     });
 
+    // Share — a direct, one-tap trigger in the metrics bar rather than
+    // buried in the "..." menu (which still keeps its own "Share post
+    // link" item too, for anyone used to finding it there). Reuses the
+    // same Web Share / clipboard fallback the menu action already
+    // used, and bumps a visible share count optimistically.
+    const initialShareCount = Math.max(0, Number(chat.shareCount || 0));
+    const shareStat = document.createElement('button');
+    shareStat.type = 'button';
+    shareStat.className = 'report-card__stat report-card__stat--share';
+    shareStat.setAttribute('aria-label', 'Share');
+    shareStat.innerHTML = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="18" cy="5" r="2.6" stroke="currentColor" stroke-width="1.7"/><circle cx="6" cy="12" r="2.6" stroke="currentColor" stroke-width="1.7"/><circle cx="18" cy="19" r="2.6" stroke="currentColor" stroke-width="1.7"/><path d="m8.3 10.7 7.4-4.2M8.3 13.3l7.4 4.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><span class="report-card__stat-count">${initialShareCount}</span>`;
+
+    shareStat.addEventListener('click', async (ev) => {
+        ev.stopPropagation();
+        flashIconRing(shareStat);
+        const base = new URL(window.location.href);
+        const shareUrl = new URL('/chat', base.origin || window.location.origin);
+        if (reportId) shareUrl.searchParams.set('chatId', reportId);
+        if (chat.scope) shareUrl.searchParams.set('chatScope', chat.scope);
+        if (chat.location && chat.scope !== 'global') shareUrl.searchParams.set('chatLocation', chat.location);
+        const urlText = shareUrl.toString();
+        let shared = false;
+        try {
+            if (navigator.share) {
+                await navigator.share({ title: 'LightWatch community report', text: (cleanText || '').slice(0, 120), url: urlText });
+                shared = true;
+            } else if (navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(urlText);
+                window.lwToast?.('Post URL copied.');
+                shared = true;
+            }
+        } catch {}
+        if (shared) {
+            const countEl = shareStat.querySelector('.report-card__stat-count');
+            if (countEl) countEl.textContent = String(Math.max(0, Number(countEl.textContent || 0) + 1));
+            // Best-effort: mirror the bump server-side so the count is
+            // shared across viewers/devices once the backend exposes a
+            // matching route. Fails silently if it doesn't exist yet.
+            if (reportId) {
+                fetch(`${API_URL}/chats/${encodeURIComponent(reportId)}/share`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: myUserId }) }).catch(() => {});
+            }
+        }
+    });
+
+    // Views — read-only counter, seeded from the server's count if
+    // provided and bumped once client-side the first time this card
+    // is actually scrolled into view (see reportCardViewObserver
+    // above), rather than counting every render.
+    const initialViewCount = Math.max(0, Number(chat.viewCount || 0));
+    const viewStat = document.createElement('span');
+    viewStat.className = 'report-card__stat report-card__stat--views';
+    viewStat.setAttribute('aria-label', 'Views');
+    viewStat.innerHTML = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="12" r="2.6" stroke="currentColor" stroke-width="1.6"/></svg><span class="report-card__stat-count">${initialViewCount}</span>`;
+
+    if (reportCardViewObserver) {
+        el.addEventListener('lw-report-viewed', () => {
+            const countEl = viewStat.querySelector('.report-card__stat-count');
+            if (countEl) countEl.textContent = String(Math.max(0, Number(countEl.textContent || 0) + 1));
+            if (reportId) {
+                fetch(`${API_URL}/chats/${encodeURIComponent(reportId)}/view`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: myUserId }) }).catch(() => {});
+            }
+        }, { once: true });
+        reportCardViewObserver.observe(el);
+    }
+
     stats.appendChild(commentStat);
     stats.appendChild(repostWrap);
     stats.appendChild(likeStat);
+    stats.appendChild(shareStat);
+    stats.appendChild(viewStat);
 
     footer.appendChild(tags);
     footer.appendChild(stats);
@@ -2042,6 +2137,43 @@ function setChatThreadLoading(isLoading) {
     chatThreadWrap?.classList.toggle('is-loading', isLoading);
 }
 
+// ---- Community banner activity stats ----
+// Purely derived from whatever page of chats loadChatHistory just
+// fetched for the current scope — no extra request. Gives the
+// banner a "this is a live, active system" read instead of a static
+// tagline, without needing a dedicated stats endpoint.
+const communityStatEls = {
+    reports: document.getElementById('communityStatReports'),
+    areas: document.getElementById('communityStatAreas'),
+    reporters: document.getElementById('communityStatReporters')
+};
+
+function updateCommunityBannerStats(chats) {
+    if (!communityStatEls.reports && !communityStatEls.areas && !communityStatEls.reporters) return;
+    if (!Array.isArray(chats)) return;
+
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const startOfTodayMs = startOfToday.getTime();
+
+    let reportsToday = 0;
+    const areas = new Set();
+    const reporters = new Set();
+
+    chats.forEach((chat) => {
+        if (shouldHideReport(chat)) return;
+        const createdMs = chat.createdAt ? new Date(chat.createdAt).getTime() : NaN;
+        if (!Number.isNaN(createdMs) && createdMs >= startOfTodayMs) reportsToday += 1;
+        if (chat.location) areas.add(chat.location);
+        const reporterKey = resolveUserId(chat) || chat.handle;
+        if (reporterKey) reporters.add(reporterKey);
+    });
+
+    if (communityStatEls.reports) communityStatEls.reports.textContent = String(reportsToday);
+    if (communityStatEls.areas) communityStatEls.areas.textContent = String(areas.size);
+    if (communityStatEls.reporters) communityStatEls.reporters.textContent = String(reporters.size);
+}
+
 function loadChatHistory() {
     const loc = (targetChatLocation && pendingFocusChatId)
         ? targetChatLocation
@@ -2094,6 +2226,7 @@ function loadChatHistory() {
             setChatThreadLoading(false);
             markChatReady();
             startPolling();
+            updateCommunityBannerStats(chats);
         })
         .catch(err => {
             console.error("Could not load chat history:", err);
