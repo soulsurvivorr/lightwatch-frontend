@@ -929,3 +929,11 @@ function initProfileChrome() {
 }
 
 window.LWProfile = { init: initProfileChrome };
+
+// The router never had an 'account' entry in window.LWViews at all, so
+// callHook('account', ...) — including pull-to-refresh's refresh/show
+// fallback — was a silent no-op on this view. loadCurrentUserProfile() is
+// already safe to call repeatedly (it's re-run today on 'online' and
+// 'lw-session-changed'), so it's wired straight in as the refresh hook.
+window.LWViews = window.LWViews || {};
+window.LWViews.account = { refresh: loadCurrentUserProfile };

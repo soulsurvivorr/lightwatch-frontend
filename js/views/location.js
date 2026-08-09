@@ -1128,6 +1128,15 @@
         locationPollTimer = null;
     }
 
+    // show() only restarts the polling interval — it doesn't fetch
+    // immediately, so data wouldn't actually change until that interval
+    // next ticked (up to POLL_INTERVAL_STANDARD_MS later). refresh() calls
+    // the same loadLocations(false) the interval itself calls, so a pull
+    // gets an immediate network refetch instead of a wait.
+    function refresh() {
+        loadLocations(false);
+    }
+
     window.LWViews = window.LWViews || {};
-    window.LWViews.location = { mount, show, hide };
+    window.LWViews.location = { mount, show, hide, refresh };
 })();

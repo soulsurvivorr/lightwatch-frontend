@@ -1227,6 +1227,16 @@ window.LWViews.home = {
     hide() {
         lwDidYouKnowCarousel?.stopAutoplay();
         lwTrendBannerCarousel?.stopAutoplay();
+    },
+    // show() never refetched anything (it only restarts carousels), so
+    // pull-to-refresh previously fell back to it and nothing on screen
+    // actually updated. This re-runs the two network-backed pieces Home
+    // owns directly. NOTE: the primary location status hero card is
+    // lightstatus.js's, not this file's — it isn't refreshed here.
+    refresh() {
+        initHomeTrending();
+        const sec = getCachedUserForSecondaryLocation().secondaryLocation;
+        if (sec?.city) loadSecondaryLocationStatus(sec);
     }
 };
 

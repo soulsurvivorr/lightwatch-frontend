@@ -417,6 +417,13 @@
         function isEligible() {
             const appShell = shellEl('app');
             if (!appShell || appShell.hidden) return false; // auth views (login/signup/etc.) are excluded
+            // report.js already implements its own pull-to-refresh on this
+            // view (scoped to isCommunityPanelActive()), wired directly to
+            // the same global touchstart/touchmove/touchend events. Running
+            // both at once means two competing gestures/indicators on a
+            // single touch sequence, so this handler stays out of the way
+            // entirely while Reports is the active view.
+            if (currentView === 'chat') return false;
             const scrollTop = window.pageYOffset || document.documentElement.scrollTop || 0;
             return scrollTop <= 0;
         }
