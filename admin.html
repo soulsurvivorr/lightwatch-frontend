@@ -1000,7 +1000,7 @@
           <th>Email / Phone</th>
           <th>Region</th>
           <th>City</th>
-          <th>Status</th>
+          <th>Last seen</th>
           <th>Joined</th>
           <th>Actions</th>
          </tr>
@@ -2201,7 +2201,7 @@
         <td data-label="Contact" class="gold">${esc(u.emailPhone)}</td>
         <td data-label="Region">${esc(u.region)}</td>
         <td data-label="City">${esc(u.city)}</td>
-        <td data-label="Status" class="${statusClass}">${esc(statusLabel)}</td>
+        <td data-label="Last seen" class="${statusClass}">${esc(statusLabel)}</td>
         <td data-label="Joined" class="faint">${fmtDate(u.createdAt)}</td>
         <td data-label="Actions"><button type="button" class="btn-ghost row-edit-btn" data-user-edit="${esc(u._id)}">Edit</button> <button type="button" class="row-del-btn user-row-delete" data-user-del="${esc(u._id)}">Delete</button></td>
       </tr>`;

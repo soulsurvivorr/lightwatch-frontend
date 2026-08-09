@@ -1552,7 +1552,8 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
     avatar.className = 'report-card__avatar';
     avatar.setAttribute('aria-hidden', 'true');
     const avatarSeed = resolveUserId(chat) || displayHandle || chat.handle;
-    renderAvatarIntoEl(avatar, avatarSeed, chat.avatarImage || null);
+    const avatarImage = chat.isAdmin ? '/images/dev-logo.png' : (chat.avatarImage || null);
+    renderAvatarIntoEl(avatar, avatarSeed, avatarImage);
     if (chat.handle) knownHandles.add(chat.handle);
     if (displayHandle) knownHandles.add(displayHandle);
 
