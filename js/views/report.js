@@ -47,6 +47,8 @@ const chatScopeGlobalBtn = document.getElementById('chatScopeGlobalBtn');
 const statusOnBtn = document.getElementById('statusOnBtn');
 const statusOffBtn = document.getElementById('statusOffBtn');
 const statusMediaBtn = document.getElementById('statusMediaBtn');
+const statusLabelBtn = document.getElementById('statusLabelBtn');
+const composerLabelPicker = document.getElementById('composerLabelPicker');
 const communityFabBtn = document.getElementById('communityFabBtn');
 const communitySearchBtn = document.getElementById('communitySearchBtn');
 // #communitySortBtn now lives in the new report-feed head (see below);
@@ -54,10 +56,10 @@ const communitySearchBtn = document.getElementById('communitySearchBtn');
 // both can exist in the DOM at once without clashing.
 const communitySortBtn = document.getElementById('communitySortBtn');
 const communityLegacySortBtn = document.getElementById('communityLegacySortBtn');
+const communityHeadLatestBtn = document.getElementById('communityHeadLatestBtn');
+const communityHeadTrendingBtn = document.getElementById('communityHeadTrendingBtn');
 const communityNearbyBtn = document.getElementById('communityNearbyBtn');
 const communityFilterTabsEl = document.getElementById('communityFilterTabs');
-const communityReportListEl = document.getElementById('communityReportList');
-const communityReportEmptyEl = document.getElementById('communityReportEmpty');
 const communitySortLabelEl = document.getElementById('communitySortLabel');
 const communityLocationFilterBtn = document.getElementById('communityLocationFilterBtn');
 const communityLocationMenuEl = document.getElementById('communityLocationMenu');
@@ -91,6 +93,37 @@ const communityComposerTop = document.querySelector('#chatForm .community-compos
 if (communityComposerTop && chatSendBtn && chatSendBtn.parentElement !== communityComposerTop) {
     communityComposerTop.appendChild(chatSendBtn);
 }
+
+// ---- Composer now opens inline beneath the community feed ----
+// The composer is kept in place inside #communityComposerContainer
+// and revealed by the FAB instead of lifted into a separate modal.
+const communityComposerContainer = document.getElementById('communityComposerContainer');
+if (communityComposerContainer && chatForm && chatForm.parentElement !== communityComposerContainer) {
+    communityComposerContainer.appendChild(chatForm);
+}
+
+function openCommunityComposer() {
+    if (!communityComposerContainer) {
+        chatInput?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        chatInput?.focus();
+        return;
+    }
+    if (communityComposerContainer.hidden) communityComposerContainer.hidden = false;
+    requestAnimationFrame(() => communityComposerContainer.classList.add('is-visible'));
+    chatInput?.focus();
+}
+function closeCommunityComposer() {
+    if (!communityComposerContainer) return;
+    communityComposerContainer.classList.remove('is-visible');
+    setTimeout(() => {
+        if (communityComposerContainer) communityComposerContainer.hidden = true;
+    }, 180);
+}
+document.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Escape' && communityComposerContainer && !communityComposerContainer.hidden) {
+        closeCommunityComposer();
+    }
+});
 
 const CHAT_SCOPE_KEY = 'lw_chat_scope_pref';
 const CHAT_SCOPE_LOCAL = 'local';
@@ -282,16 +315,50 @@ const reportCardViewObserver = ('IntersectionObserver' in window)
 // stripped back off before the text is shown.
 const LIGHT_STATUS_PREFIX = { on: '[Light is ON] ', off: '[Light is OFF] ' };
 let selectedLightStatus = null; // 'on' | 'off' | null
+let selectedReportCategory = null; // 'outage' | 'restored' | 'review' | 'maintenance' | null
 
-function parseLightStatus(rawText) {
+const REPORT_CATEGORY_MESSAGE_PREFIX = {
+    outage: '[Report:Outage] ',
+    restored: '[Report:Restored] ',
+    review: '[Report:Under Review] ',
+    maintenance: '[Report:Maintenance] '
+};
+
+function parseReportCategoryPrefix(rawText) {
     const text = rawText || '';
-    for (const key of ['on', 'off']) {
-        const prefix = LIGHT_STATUS_PREFIX[key];
-        if (text.startsWith(prefix)) {
-            return { status: key, text: text.slice(prefix.length).replace(/\u200B/g, '') };
+    const match = text.match(/^\[Report:(Outage|Restored|Under Review|Maintenance)\]\s*/i);
+    if (!match) return { category: null, text };
+    const label = match[1];
+    const category = label === 'Under Review' ? 'review' : String(label).toLowerCase();
+    return { category, text: text.slice(match[0].length) };
+}
+
+function parseMessageMetadata(rawText) {
+    let text = rawText || '';
+    let status = null;
+    let category = null;
+    let keepParsing = true;
+
+    while (keepParsing) {
+        keepParsing = false;
+        for (const key of ['on', 'off']) {
+            if (!status && text.startsWith(LIGHT_STATUS_PREFIX[key])) {
+                status = key;
+                text = text.slice(LIGHT_STATUS_PREFIX[key].length);
+                keepParsing = true;
+            }
+        }
+        if (!category) {
+            const parsed = parseReportCategoryPrefix(text);
+            if (parsed.category) {
+                category = parsed.category;
+                text = parsed.text;
+                keepParsing = true;
+            }
         }
     }
-    return { status: null, text: text.replace(/\u200B/g, '') };
+
+    return { status, category, text: text.replace(/\u200B/g, '').trim() };
 }
 
 function setSelectedLightStatus(next) {
@@ -302,14 +369,63 @@ function setSelectedLightStatus(next) {
     statusOffBtn?.setAttribute('aria-pressed', selectedLightStatus === 'off' ? 'true' : 'false');
 }
 
+function setSelectedReportCategory(next) {
+    selectedReportCategory = selectedReportCategory === next ? null : next;
+    if (!composerLabelPicker) return;
+    composerLabelPicker.querySelectorAll('[data-report-category]').forEach((button) => {
+        const category = button.getAttribute('data-report-category');
+        const active = category === selectedReportCategory;
+        button.classList.toggle('is-active', active);
+        button.setAttribute('aria-pressed', active ? 'true' : 'false');
+        button.setAttribute('aria-selected', active ? 'true' : 'false');
+    });
+    statusLabelBtn?.classList.toggle('is-active', Boolean(selectedReportCategory));
+    statusLabelBtn?.setAttribute('aria-pressed', Boolean(selectedReportCategory) ? 'true' : 'false');
+}
+
 statusOnBtn?.addEventListener('click', () => setSelectedLightStatus('on'));
 statusOffBtn?.addEventListener('click', () => setSelectedLightStatus('off'));
 
 communityFabBtn?.addEventListener('click', () => {
-    openCommunityLegacyChat();
-    chatInput?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    chatInput?.focus();
+    openCommunityComposer();
 });
+
+statusLabelBtn?.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    if (!composerLabelPicker || !statusLabelBtn) return;
+    const isVisible = composerLabelPicker.hidden === false;
+    composerLabelPicker.hidden = isVisible;
+    statusLabelBtn.setAttribute('aria-expanded', String(!isVisible));
+});
+
+composerLabelPicker?.addEventListener('click', (ev) => {
+    const button = ev.target && ev.target.closest('[data-report-category]');
+    if (!button) return;
+    const category = button.getAttribute('data-report-category');
+    if (!category) return;
+    setSelectedReportCategory(category);
+    composerLabelPicker.hidden = true;
+    statusLabelBtn?.setAttribute('aria-expanded', 'false');
+});
+
+document.addEventListener('click', (ev) => {
+    if (!composerLabelPicker || composerLabelPicker.hidden) return;
+    if (composerLabelPicker.contains(ev.target) || statusLabelBtn?.contains(ev.target)) return;
+    composerLabelPicker.hidden = true;
+    statusLabelBtn?.setAttribute('aria-expanded', 'false');
+});
+
+function resetComposerLabelPicker() {
+    selectedReportCategory = null;
+    if (!composerLabelPicker) return;
+    composerLabelPicker.querySelectorAll('[data-report-category]').forEach((button) => {
+        button.classList.remove('is-active');
+        button.setAttribute('aria-pressed', 'false');
+    });
+    statusLabelBtn?.classList.remove('is-active');
+    statusLabelBtn?.setAttribute('aria-pressed', 'false');
+    if (composerLabelPicker) composerLabelPicker.hidden = true;
+}
 
 function applyPostSearchFilter(rawQuery) {
     activePostSearchQuery = String(rawQuery || '').trim().toLowerCase();
@@ -349,10 +465,48 @@ communitySearchBtn?.addEventListener('click', () => {
     communitySearchBtn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
 });
 
-communityLegacySortBtn?.addEventListener('click', () => {
-    const isOpen = communityLegacySortBtn.getAttribute('aria-expanded') === 'true';
-    communityLegacySortBtn.setAttribute('aria-expanded', String(!isOpen));
-});
+// "Latest" sorts top-level report cards by post time (newest first);
+// "Trending" sorts them by engagement (replies + likes, highest
+// first). Only reorders the top-level cards already in #chatThread —
+// each card's own nested replies stay inside it untouched.
+let communityHeadSort = 'latest';
+
+function readStatCount(cardEl, statSelector) {
+    const span = cardEl.querySelector(`${statSelector} span`) || cardEl.querySelector(statSelector);
+    const n = parseInt((span?.textContent || '0').replace(/[^0-9]/g, ''), 10);
+    return Number.isFinite(n) ? n : 0;
+}
+
+function applyCommunityHeadSort() {
+    if (!chatThread) return;
+    const cards = Array.from(chatThread.children).filter((el) => el.classList.contains('report-card'));
+    if (!cards.length) return;
+
+    const sorted = cards.slice().sort((a, b) => {
+        if (communityHeadSort === 'trending') {
+            const scoreA = readStatCount(a, '.report-card__stat--comment') + readStatCount(a, '.report-card__stat--like');
+            const scoreB = readStatCount(b, '.report-card__stat--comment') + readStatCount(b, '.report-card__stat--like');
+            if (scoreB !== scoreA) return scoreB - scoreA;
+        }
+        const timeA = new Date(a.dataset.createdAt || 0).getTime();
+        const timeB = new Date(b.dataset.createdAt || 0).getTime();
+        return timeB - timeA;
+    });
+
+    sorted.forEach((card) => chatThread.appendChild(card));
+}
+
+function setCommunityHeadSort(next) {
+    communityHeadSort = next === 'trending' ? 'trending' : 'latest';
+    communityHeadLatestBtn?.classList.toggle('is-active', communityHeadSort === 'latest');
+    communityHeadLatestBtn?.setAttribute('aria-selected', String(communityHeadSort === 'latest'));
+    communityHeadTrendingBtn?.classList.toggle('is-active', communityHeadSort === 'trending');
+    communityHeadTrendingBtn?.setAttribute('aria-selected', String(communityHeadSort === 'trending'));
+    applyCommunityHeadSort();
+}
+
+communityHeadLatestBtn?.addEventListener('click', () => setCommunityHeadSort('latest'));
+communityHeadTrendingBtn?.addEventListener('click', () => setCommunityHeadSort('trending'));
 
 communityNearbyBtn?.addEventListener('click', () => {
     const isActive = communityNearbyBtn.getAttribute('aria-pressed') === 'true';
@@ -391,74 +545,29 @@ const COMMUNITY_REPORT_BADGE_LABEL = {
 // system instead of two different vocabularies for "reply"/"like"/etc.
 const COMMUNITY_STAT_ICONS = {
     comment: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M6 17L3.5 20V6a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 9H16M8 13H13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
-    like: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 20.2s-7.6-4.7-9.9-9.3A5.7 5.7 0 0 1 12 5.6a5.7 5.7 0 0 1 9.9 5.3c-2.3 4.6-9.9 9.3-9.9 9.3Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>',
+    like: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M7 20V10M2 11v8a1 1 0 0 0 1 1h3M7 10l4.4-6.6a1.5 1.5 0 0 1 2.6 1v3.1h4.6a2 2 0 0 1 2 2.3l-1.1 6.5A2 2 0 0 1 17.5 19H7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>',
     share: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="18" cy="5" r="2.6" stroke="currentColor" stroke-width="1.7"/><circle cx="6" cy="12" r="2.6" stroke="currentColor" stroke-width="1.7"/><circle cx="18" cy="19" r="2.6" stroke="currentColor" stroke-width="1.7"/><path d="m8.3 10.7 7.4-4.2M8.3 13.3l7.4 4.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>',
     views: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="12" r="2.6" stroke="currentColor" stroke-width="1.6"/></svg>',
     pin: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 21s7-7.02 7-12a7 7 0 1 0-14 0c0 4.98 7 12 7 12Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="12" cy="9" r="2.2" stroke="currentColor" stroke-width="1.7"/></svg>'
 };
 
 let communityReportFilter = 'all';
-let communityReportSort = 'latest'; // 'latest' | 'active'
-let communityLocationFilter = null; // null = every location in the current feed
-// Raw chat docs backing the feed — kept in sync with whatever
-// loadChatHistory/pollChatsOnce just fetched for the active scope, so
-// the summary cards and the live thread below are always looking at
-// the exact same reports, never a separate/stale copy.
+let communityReportSort = 'latest';
+let communityLocationFilter = null;
 let communityFeedChats = [];
 
 function setCommunityFeedChats(chats) {
     communityFeedChats = Array.isArray(chats) ? chats.filter((c) => !shouldHideReport(c)) : [];
-    renderCommunityReportFeed();
 }
 
-function deriveReportCategory(chat, lightStatus) {
-    if (lightStatus === 'on') return 'restored';
-    if (lightStatus === 'off') return 'outage';
-    if (chat.isAdmin) return 'maintenance';
-    return 'review';
-}
-
-function communityFeedItemFromChat(chat, repliedCounts) {
-    const { status, text } = parseLightStatus(chat.text || '');
-    const id = String(chat._id || chat.id || '');
-    const myUserId = getCurrentUserId();
-    return {
-        id,
-        chat,
-        category: deriveReportCategory(chat, status),
-        location: chat.location || 'Unknown area',
-        text: text || (chat.media ? 'Shared a photo/video update.' : '(no details added)'),
-        timestamp: chat.createdAt ? new Date(chat.createdAt).getTime() : Date.now(),
-        author: chat.isAdmin ? `📢 ${chat.handle || 'LightWatch'}` : (chat.handle || 'Community member'),
-        avatarSeed: resolveUserId(chat) || chat.handle || id,
-        avatarImage: chat.avatarImage || null,
-        replyCount: (repliedCounts && repliedCounts.get(id)) || 0,
-        likeCount: Math.max(0, Number(chat.likeCount || 0)),
-        likedByMe: Boolean(myUserId) && Array.isArray(chat.likedBy) && chat.likedBy.some((x) => String(x) === String(myUserId)),
-        shareCount: Math.max(0, Number(chat.shareCount || 0)),
-        viewCount: Math.max(0, Number(chat.viewCount || 0))
-    };
-}
-
-// Jump from a summary card into the matching bubble in the live thread
-// below, opening it if needed — reuses the same highlight treatment
-// the "View quotes" repost action already uses, rather than
-// duplicating a reply/like UI a second time on the summary card.
-function jumpToChatMessage(chatId) {
-    openCommunityLegacyChat();
-    requestAnimationFrame(() => {
-        const target = chatId ? chatThread?.querySelector(`[data-chat-id="${CSS.escape(chatId)}"]`) : null;
-        if (!target) return;
-        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        target.classList.add('report-card--quote-highlight');
-        setTimeout(() => target.classList.remove('report-card--quote-highlight'), 2200);
-    });
+function deriveReportCategory(chat, lightStatus, explicitReportCategory) {
+    if (explicitReportCategory) return explicitReportCategory;
+    return null;
 }
 
 function setCommunityLocationFilter(nextLocation) {
     communityLocationFilter = nextLocation || null;
     renderCommunityLocationFilterChip();
-    renderCommunityReportFeed();
 }
 
 function renderCommunityLocationFilterChip() {
@@ -472,10 +581,6 @@ function renderCommunityLocationFilterChip() {
     }
 }
 
-// Small popover listing every distinct location currently present in
-// the feed, so tapping the location tag on the head row (or on any
-// individual card) lets someone narrow the feed down to just their
-// own area instead of always seeing everywhere at once.
 function toggleCommunityLocationMenu(forceOpen) {
     if (!communityLocationMenuEl) return;
     const nextOpen = typeof forceOpen === 'boolean' ? forceOpen : communityLocationMenuEl.hidden;
@@ -507,212 +612,6 @@ function toggleCommunityLocationMenu(forceOpen) {
     communityLocationFilterBtn?.setAttribute('aria-expanded', String(nextOpen));
 }
 
-function buildCommunityReportCardEl(item) {
-    const badgeLabel = COMMUNITY_REPORT_BADGE_LABEL[item.category] || item.category;
-    const thumbIcon = COMMUNITY_REPORT_ICONS[item.category] || '';
-
-    const card = document.createElement('div');
-    card.className = 'community-report-card';
-    card.dataset.reportId = item.id;
-    card.setAttribute('role', 'button');
-    card.tabIndex = 0;
-
-    // ---- Head: avatar + author + tappable location tag, badge + time ----
-    const top = document.createElement('div');
-    top.className = 'community-report-card__top';
-
-    const titleRow = document.createElement('div');
-    titleRow.className = 'community-report-card__title-row';
-
-    const avatar = document.createElement('span');
-    avatar.className = 'community-report-card__avatar';
-    avatar.setAttribute('aria-hidden', 'true');
-    renderAvatarIntoEl(avatar, item.avatarSeed, item.avatarImage);
-
-    const who = document.createElement('div');
-    who.className = 'community-report-card__who';
-    const authorEl = document.createElement('span');
-    authorEl.className = 'community-report-card__author';
-    authorEl.textContent = item.author;
-
-    // Location is now a selectable tag (not fixed page copy) — tapping
-    // it narrows the whole feed to that area via the same filter the
-    // head-row location control uses (setCommunityLocationFilter).
-    const locTag = document.createElement('button');
-    locTag.type = 'button';
-    locTag.className = 'community-report-card__location-tag';
-    locTag.setAttribute('aria-label', `Filter reports by ${item.location}`);
-    locTag.innerHTML = `${COMMUNITY_STAT_ICONS.pin}<span></span>`;
-    locTag.querySelector('span').textContent = item.location;
-    locTag.addEventListener('click', (ev) => { ev.stopPropagation(); setCommunityLocationFilter(item.location); });
-
-    who.append(authorEl, locTag);
-    titleRow.append(avatar, who);
-
-    const topRight = document.createElement('div');
-    topRight.className = 'community-report-card__top-right';
-    const badge = document.createElement('span');
-    badge.className = `community-report-card__badge community-report-card__badge--${item.category}`;
-    badge.textContent = badgeLabel;
-    const time = document.createElement('span');
-    time.className = 'community-report-card__time';
-    time.textContent = formatRelativeTime(new Date(item.timestamp).toISOString());
-    topRight.append(badge, time);
-
-    top.append(titleRow, topRight);
-
-    // ---- Body: message text + status thumbnail ----
-    const body = document.createElement('div');
-    body.className = 'community-report-card__body';
-    const bubble = document.createElement('div');
-    bubble.className = 'community-report-card__bubble';
-    bubble.innerHTML = formatMessageTextWithMentions(item.text);
-    const thumb = document.createElement('div');
-    thumb.className = `community-report-card__thumb community-report-card__thumb--${item.category}`;
-    thumb.innerHTML = thumbIcon;
-    body.append(bubble, thumb);
-
-    // ---- Stats: reply / like / share / views, same icon language as
-    // the live thread's buildMessageEl stats row ----
-    const stats = document.createElement('div');
-    stats.className = 'community-report-card__stats';
-
-    const commentBtn = document.createElement('button');
-    commentBtn.type = 'button';
-    commentBtn.className = 'community-report-card__stat community-report-card__stat--comment';
-    commentBtn.setAttribute('aria-label', 'View replies');
-    commentBtn.innerHTML = `${COMMUNITY_STAT_ICONS.comment}<span>${item.replyCount}</span>`;
-    commentBtn.addEventListener('click', (ev) => { ev.stopPropagation(); jumpToChatMessage(item.id); });
-
-    const likeBtn = document.createElement('button');
-    likeBtn.type = 'button';
-    likeBtn.className = 'community-report-card__stat community-report-card__stat--like';
-    if (item.likedByMe) likeBtn.classList.add('is-liked');
-    likeBtn.setAttribute('aria-label', 'Like');
-    likeBtn.innerHTML = `${COMMUNITY_STAT_ICONS.like}<span>${item.likeCount}</span>`;
-    let likeInFlight = false;
-    likeBtn.addEventListener('click', async (ev) => {
-        ev.stopPropagation();
-        if (likeInFlight) return;
-        const myUserId = getCurrentUserId();
-        if (!myUserId) { window.lwToast?.('Sign in to like posts.'); return; }
-        flashIconRing(likeBtn);
-        const countEl = likeBtn.querySelector('span');
-        const previous = Math.max(0, Number(countEl.textContent || 0));
-        const wasLiked = likeBtn.classList.contains('is-liked');
-        likeBtn.classList.toggle('is-liked', !wasLiked);
-        countEl.textContent = String(Math.max(0, previous + (wasLiked ? -1 : 1)));
-        likeInFlight = true;
-        try {
-            const res = await fetch(`${API_URL}/chats/${encodeURIComponent(item.id)}/like`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId: myUserId, notify: true })
-            });
-            if (!res.ok) throw new Error('like-failed');
-            const data = await res.json();
-            likeBtn.classList.toggle('is-liked', Boolean(data.liked));
-            countEl.textContent = String(Math.max(0, Number(data.likeCount || 0)));
-        } catch {
-            likeBtn.classList.toggle('is-liked', wasLiked);
-            countEl.textContent = String(previous);
-            window.lwToast?.('Could not update like. Try again.');
-        } finally {
-            likeInFlight = false;
-        }
-    });
-
-    const shareBtn = document.createElement('button');
-    shareBtn.type = 'button';
-    shareBtn.className = 'community-report-card__stat community-report-card__stat--share';
-    shareBtn.setAttribute('aria-label', 'Share');
-    shareBtn.innerHTML = `${COMMUNITY_STAT_ICONS.share}<span>${item.shareCount}</span>`;
-    shareBtn.addEventListener('click', async (ev) => {
-        ev.stopPropagation();
-        flashIconRing(shareBtn);
-        const base = new URL(window.location.href);
-        const shareUrl = new URL('/chat', base.origin || window.location.origin);
-        shareUrl.searchParams.set('chatId', item.id);
-        if (item.chat.scope) shareUrl.searchParams.set('chatScope', item.chat.scope);
-        if (item.chat.location && item.chat.scope !== 'global') shareUrl.searchParams.set('chatLocation', item.chat.location);
-        const urlText = shareUrl.toString();
-        let shared = false;
-        try {
-            if (navigator.share) {
-                await navigator.share({ title: 'LightWatch community report', text: item.text.slice(0, 120), url: urlText });
-                shared = true;
-            } else if (navigator.clipboard?.writeText) {
-                await navigator.clipboard.writeText(urlText);
-                window.lwToast?.('Post URL copied.');
-                shared = true;
-            }
-        } catch {}
-        if (shared) {
-            const countEl = shareBtn.querySelector('span');
-            countEl.textContent = String(Math.max(0, Number(countEl.textContent || 0) + 1));
-            fetch(`${API_URL}/chats/${encodeURIComponent(item.id)}/share`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId: getCurrentUserId() })
-            }).catch(() => {});
-        }
-    });
-
-    const viewSpan = document.createElement('span');
-    viewSpan.className = 'community-report-card__stat community-report-card__stat--views';
-    viewSpan.setAttribute('aria-label', 'Views');
-    viewSpan.innerHTML = `${COMMUNITY_STAT_ICONS.views}<span>${item.viewCount}</span>`;
-    if (reportCardViewObserver) {
-        card.addEventListener('lw-report-viewed', () => {
-            const countEl = viewSpan.querySelector('span');
-            countEl.textContent = String(Math.max(0, Number(countEl.textContent || 0) + 1));
-            fetch(`${API_URL}/chats/${encodeURIComponent(item.id)}/view`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId: getCurrentUserId() })
-            }).catch(() => {});
-        }, { once: true });
-        reportCardViewObserver.observe(card);
-    }
-
-    stats.append(commentBtn, likeBtn, shareBtn, viewSpan);
-
-    card.append(top, body, stats);
-    card.addEventListener('click', () => jumpToChatMessage(item.id));
-    card.addEventListener('keydown', (ev) => {
-        if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); jumpToChatMessage(item.id); }
-    });
-
-    return card;
-}
-
-function renderCommunityReportFeed() {
-    if (!communityReportListEl) return;
-
-    const myId = getCurrentUserId();
-    const repliedCounts = computeRepliedToIds(communityFeedChats);
-    let items = communityFeedChats.map((chat) => communityFeedItemFromChat(chat, repliedCounts));
-
-    if (communityReportFilter !== 'all') {
-        items = items.filter((item) => item.category === communityReportFilter);
-    }
-    if (communityLocationFilter) {
-        items = items.filter((item) => item.location === communityLocationFilter);
-    }
-
-    items.sort((a, b) => {
-        if (communityReportSort === 'active') {
-            const scoreA = a.replyCount + a.likeCount + a.shareCount;
-            const scoreB = b.replyCount + b.likeCount + b.shareCount;
-            return scoreB - scoreA;
-        }
-        return b.timestamp - a.timestamp;
-    });
-
-    communityReportListEl.innerHTML = '';
-    items.forEach((item) => communityReportListEl.appendChild(buildCommunityReportCardEl(item)));
-    if (communityReportEmptyEl) communityReportEmptyEl.hidden = items.length > 0;
-    void myId; // kept for parity with the live thread's own-message handling, no distinct UI here yet
-}
-
 communityFilterTabsEl?.addEventListener('click', (event) => {
     const btn = event.target.closest('.community-filter-tab');
     if (!btn) return;
@@ -723,7 +622,6 @@ communityFilterTabsEl?.addEventListener('click', (event) => {
     btn.classList.add('is-active');
     btn.setAttribute('aria-selected', 'true');
     communityReportFilter = btn.dataset.reportFilter || 'all';
-    renderCommunityReportFeed();
 });
 
 communityLocationFilterBtn?.addEventListener('click', (ev) => {
@@ -743,47 +641,26 @@ communitySortBtn?.addEventListener('click', () => {
     communityReportSort = communityReportSort === 'latest' ? 'active' : 'latest';
     if (communitySortLabelEl) communitySortLabelEl.textContent = communityReportSort === 'latest' ? 'Latest' : 'Most Active';
     communitySortBtn.setAttribute('aria-expanded', communityReportSort === 'active' ? 'true' : 'false');
-    renderCommunityReportFeed();
 });
 
 function openCommunityLegacyChat() {
     if (!communityLegacyChatEl) return;
     communityLegacyChatEl.hidden = false;
     communityLegacyToggleBtn?.setAttribute('aria-expanded', 'true');
-    if (communityLegacyToggleBtn) communityLegacyToggleBtn.firstChild.textContent = 'Hide live discussion ';
 }
 
 function closeCommunityLegacyChat() {
     if (!communityLegacyChatEl) return;
-    communityLegacyChatEl.hidden = true;
-    communityLegacyToggleBtn?.setAttribute('aria-expanded', 'false');
-    if (communityLegacyToggleBtn) communityLegacyToggleBtn.firstChild.textContent = 'Open live discussion ';
+    communityLegacyChatEl.hidden = false;
+    communityLegacyToggleBtn?.setAttribute('aria-expanded', 'true');
 }
 
 communityLegacyToggleBtn?.addEventListener('click', () => {
-    const isOpen = communityLegacyToggleBtn.getAttribute('aria-expanded') === 'true';
-    if (isOpen) {
-        closeCommunityLegacyChat();
-    } else {
-        openCommunityLegacyChat();
-        communityLegacyChatEl?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+    openCommunityLegacyChat();
+    communityLegacyChatEl?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
 
-// Tapping a card's "thread" link jumps straight into the live
-// discussion, same as the FAB — a report card doesn't have its own
-// standalone thread yet, so this is the closest real destination.
-communityReportListEl?.addEventListener('click', (event) => {
-    if (event.target.closest('[data-report-author]')) {
-        event.preventDefault();
-    }
-    if (event.target.closest('.community-report-card')) {
-        openCommunityLegacyChat();
-        communityLegacyChatEl?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-});
-
-renderCommunityReportFeed();
+renderCommunityLocationFilterChip();
 
 const initialChatParams = new URLSearchParams(window.location.search);
 const targetChatIdFromNotification = initialChatParams.get('chatId') || '';
@@ -1279,6 +1156,36 @@ function getLatestOwnMessageId(chats, myId) {
 // messages that are already rendered — someone else replying to or
 // liking a post you're currently looking at should update live,
 // exactly the same way your own click already does optimistically.
+function setStatButtonCount(statButton, count) {
+    if (!statButton) return;
+    const countEl = statButton.querySelector('.report-card__stat-count');
+    const normalized = Math.max(0, Number(count || 0));
+    if (normalized > 0) {
+        if (countEl) {
+            countEl.textContent = String(normalized);
+        } else {
+            const span = document.createElement('span');
+            span.className = 'report-card__stat-count';
+            span.textContent = String(normalized);
+            statButton.appendChild(span);
+        }
+    } else if (countEl) {
+        countEl.remove();
+    }
+}
+
+function setCountTextSpan(container, selector, count) {
+    if (!container) return;
+    const countEl = container.querySelector(selector);
+    if (!countEl) return;
+    const normalized = Math.max(0, Number(count || 0));
+    if (normalized > 0) {
+        countEl.textContent = String(normalized);
+    } else {
+        countEl.remove();
+    }
+}
+
 function syncLiveStatCounts(chats) {
     const repliedCounts = computeRepliedToIds(chats);
     const byId = new Map(chats.map(c => [String(c._id || c.id || ''), c]));
@@ -1287,16 +1194,13 @@ function syncLiveStatCounts(chats) {
         const id = el.dataset.chatId;
         if (!id) return;
 
-        const commentCountEl = el.querySelector('.report-card__stat--comment .report-card__stat-count');
-        if (commentCountEl) commentCountEl.textContent = String(repliedCounts.get(id) || 0);
+        const commentStatButton = el.querySelector('.report-card__stat--comment');
+        setStatButtonCount(commentStatButton, repliedCounts.get(id) || 0);
 
         const chat = byId.get(id);
         if (!chat) return;
         const likeStatEl = el.querySelector('.report-card__stat--like');
-        const likeCountEl = likeStatEl?.querySelector('.report-card__stat-count');
-        if (likeCountEl) {
-            likeCountEl.textContent = String(Math.max(0, Number(chat.likeCount || 0)));
-        }
+        setStatButtonCount(likeStatEl, Math.max(0, Number(chat.likeCount || 0)));
         if (likeStatEl) {
             const myUserId = getCurrentUserId();
             const isLiked = Boolean(myUserId) && Array.isArray(chat.likedBy) &&
@@ -1304,11 +1208,8 @@ function syncLiveStatCounts(chats) {
             likeStatEl.classList.toggle('is-liked', isLiked);
         }
 
-        const shareCountEl = el.querySelector('.report-card__stat--share .report-card__stat-count');
-        if (shareCountEl) shareCountEl.textContent = String(Math.max(0, Number(chat.shareCount || 0)));
-
-        const viewCountEl = el.querySelector('.report-card__stat--views .report-card__stat-count');
-        if (viewCountEl) viewCountEl.textContent = String(Math.max(0, Number(chat.viewCount || 0)));
+        const shareStatButton = el.querySelector('.report-card__stat--share');
+        setStatButtonCount(shareStatButton, Math.max(0, Number(chat.shareCount || 0)));
     });
 
     // Same freshen pass for the summary cards' stats row.
@@ -1316,14 +1217,9 @@ function syncLiveStatCounts(chats) {
         const id = el.dataset.reportId;
         const chat = id ? byId.get(id) : null;
         if (!chat) return;
-        const commentCountEl = el.querySelector('.community-report-card__stat--comment span');
-        if (commentCountEl) commentCountEl.textContent = String(repliedCounts.get(id) || 0);
-        const likeCountEl = el.querySelector('.community-report-card__stat--like span');
-        if (likeCountEl) likeCountEl.textContent = String(Math.max(0, Number(chat.likeCount || 0)));
-        const shareCountEl = el.querySelector('.community-report-card__stat--share span');
-        if (shareCountEl) shareCountEl.textContent = String(Math.max(0, Number(chat.shareCount || 0)));
-        const viewCountEl = el.querySelector('.community-report-card__stat--views span');
-        if (viewCountEl) viewCountEl.textContent = String(Math.max(0, Number(chat.viewCount || 0)));
+        setCountTextSpan(el, '.community-report-card__stat--comment span', repliedCounts.get(id) || 0);
+        setCountTextSpan(el, '.community-report-card__stat--like span', Math.max(0, Number(chat.likeCount || 0)));
+        setCountTextSpan(el, '.community-report-card__stat--share span', Math.max(0, Number(chat.shareCount || 0)));
     });
 }
 
@@ -1519,6 +1415,93 @@ chatInput?.addEventListener('keydown', (e) => {
 });
 
 // -------------------------------------------------------
+// MEDIA LIGHTBOX — shared by every image/video thumbnail in the feed.
+// Thumbnails render small (report-card__media-thumb); tapping one
+// opens the real image/video full-size here instead of navigating
+// away.
+// -------------------------------------------------------
+const mediaLightboxEl = document.createElement('div');
+mediaLightboxEl.className = 'report-media-lightbox';
+mediaLightboxEl.hidden = true;
+mediaLightboxEl.innerHTML =
+    '<div class="report-media-lightbox__backdrop" data-lightbox-close></div>' +
+    '<button type="button" class="report-media-lightbox__close" data-lightbox-close aria-label="Close">' +
+        '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>' +
+    '</button>' +
+    '<div class="report-media-lightbox__stage"></div>';
+document.body.appendChild(mediaLightboxEl);
+const mediaLightboxStage = mediaLightboxEl.querySelector('.report-media-lightbox__stage');
+
+function openMediaLightbox(media) {
+    if (!media || !media.url) return;
+    mediaLightboxStage.innerHTML = '';
+    if (media.kind === 'video') {
+        const video = document.createElement('video');
+        video.src = media.url;
+        video.controls = true;
+        video.autoplay = true;
+        video.playsInline = true;
+        mediaLightboxStage.appendChild(video);
+    } else {
+        const img = document.createElement('img');
+        img.src = media.url;
+        img.alt = '';
+        mediaLightboxStage.appendChild(img);
+    }
+    mediaLightboxEl.hidden = false;
+    document.body.classList.add('lw-lightbox-open');
+}
+
+function closeMediaLightbox() {
+    if (mediaLightboxEl.hidden) return;
+    mediaLightboxEl.hidden = true;
+    mediaLightboxStage.innerHTML = ''; // stop any playing video
+    document.body.classList.remove('lw-lightbox-open');
+}
+
+mediaLightboxEl.addEventListener('click', (ev) => {
+    if (ev.target.closest('[data-lightbox-close]')) closeMediaLightbox();
+});
+document.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Escape') closeMediaLightbox();
+});
+
+// Small clickable thumbnail for a report's image/video — used both
+// when it sits beside message text and when it's the only content on
+// a post. Videos show a muted preview frame with a play glyph rather
+// than native controls, since native controls inside a tap target
+// fight the "tap opens lightbox" behavior.
+function buildMediaThumb(media, altHandle) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'report-card__media-thumb';
+    btn.setAttribute('aria-label', media.kind === 'video' ? 'Play video' : 'View image');
+    if (media.kind === 'video') {
+        const video = document.createElement('video');
+        video.src = media.url;
+        video.muted = true;
+        video.playsInline = true;
+        video.preload = 'metadata';
+        btn.appendChild(video);
+        const play = document.createElement('span');
+        play.className = 'report-card__media-thumb-play';
+        play.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';
+        btn.appendChild(play);
+    } else {
+        const img = document.createElement('img');
+        img.src = media.url;
+        img.alt = `Image shared by ${altHandle || 'community member'}`;
+        img.loading = 'lazy';
+        btn.appendChild(img);
+    }
+    btn.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        openMediaLightbox(media);
+    });
+    return btn;
+}
+
+// -------------------------------------------------------
 // BUILD A MESSAGE ELEMENT
 // -------------------------------------------------------
 function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOwn) {
@@ -1539,7 +1522,7 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
     }
     if (chat.isAdmin) el.classList.add('chat-message--admin');
 
-    const { status: lightStatus, text: cleanText } = parseLightStatus(chat.text);
+    const { status: lightStatus, category: explicitReportCategory, text: cleanText } = parseMessageMetadata(chat.text);
     if (lightStatus) el.classList.add(`report-card--${lightStatus}`);
 
     // ---- Repost strapline, if this card is a repost of someone else's
@@ -1557,7 +1540,11 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
     }
     const displayHandle = (repost && repost.handle) ? repost.handle : chat.handle;
 
-    // ---- Head row: avatar, name + location/time, status badge, menu ----
+    // ---- Head row: poster's avatar + handle on the left, time + menu
+    // on the right (matches report-UI-layout.png's card header shape,
+    // but with the reporter's identity in the slots the mock uses for
+    // the status badge/location — those move into their own row just
+    // below instead, see report-card__type-row). ----
     const head = document.createElement('div');
     head.className = 'report-card__head';
 
@@ -1573,36 +1560,37 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
     who.className = 'report-card__who';
 
     const author = document.createElement('span');
-    author.className   = "report-card__name";
+    author.className = 'report-card__name';
     author.textContent = chat.isAdmin ? `📢 ${displayHandle}` : displayHandle;
-
-    const meta = document.createElement('span');
-    meta.className = 'report-card__meta';
-    const locLabel = chatScope === CHAT_SCOPE_GLOBAL ? (chat.location || 'Everyone') : (chat.location || getLocationNameOnly());
-    const metaLoc = document.createElement('span');
-    metaLoc.className = 'report-card__meta-location';
-    metaLoc.textContent = locLabel;
-    const time = document.createElement('span');
-    time.className   = "chat-message__time report-card__meta-time";
-    time.textContent = formatRelativeTime(chat.createdAt);
-    meta.appendChild(metaLoc);
-    meta.appendChild(time);
-
     who.appendChild(author);
-    who.appendChild(meta);
+
+    const reportCategory = deriveReportCategory(chat, lightStatus, explicitReportCategory);
+    if (reportCategory) {
+        const statusTag = document.createElement('span');
+        statusTag.className = `report-card__status-badge report-card__status-badge--${reportCategory}`;
+        statusTag.innerHTML = COMMUNITY_REPORT_ICONS[reportCategory] || '';
+        const statusTagLabel = document.createElement('span');
+        statusTagLabel.textContent = COMMUNITY_REPORT_BADGE_LABEL[reportCategory] || '';
+        statusTag.appendChild(statusTagLabel);
+        who.appendChild(statusTag);
+    }
 
     const headActions = document.createElement('div');
     headActions.className = 'report-card__head-actions';
 
-    if (lightStatus) {
-        const badge = document.createElement('span');
-        badge.className = `report-card__status-badge report-card__status-badge--${lightStatus}`;
-        badge.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>';
-        const badgeLabel = document.createElement('span');
-        badgeLabel.textContent = lightStatus === 'on' ? 'Light is ON' : 'Light is OFF';
-        badge.appendChild(badgeLabel);
-        headActions.appendChild(badge);
-    }
+    const locLabel = chatScope === CHAT_SCOPE_GLOBAL ? (chat.location || 'Everyone') : (chat.location || getLocationNameOnly());
+    const locTag = document.createElement('span');
+    locTag.className = 'report-card__tag report-card__tag--location';
+    locTag.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 21s7-7.02 7-12a7 7 0 1 0-14 0c0 4.98 7 12 7 12Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="12" cy="9" r="2.2" stroke="currentColor" stroke-width="1.7"/></svg>';
+    const locTagLabel = document.createElement('span');
+    locTagLabel.className = 'report-card__meta-location';
+    locTagLabel.textContent = locLabel;
+    locTag.appendChild(locTagLabel);
+
+    const time = document.createElement('span');
+    time.className = 'report-card__head-time';
+    time.textContent = formatRelativeTime(chat.createdAt);
+    headActions.appendChild(time);
 
     // "More options" only now — actually replying lives in the Reply
     // stat button below (see commentStat), which opens an inline box
@@ -1750,26 +1738,13 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
     body.className   = "chat-message__text report-card__text";
     body.innerHTML = formatMessageTextWithMentions(cleanText);
 
-    let mediaEl = null;
+    // Small clickable thumbnail (report-UI-layout.png shows media as a
+    // compact inset next to the message, not full-width) — opens the
+    // media lightbox on tap. See buildMediaThumb / openMediaLightbox.
+    let mediaThumbEl = null;
     const media = chat.media && chat.media.url ? chat.media : null;
     if (media && (media.kind === 'image' || media.kind === 'video')) {
-        mediaEl = document.createElement('figure');
-        mediaEl.className = 'report-card__media';
-        if (media.kind === 'video') {
-            const mediaVideo = document.createElement('video');
-            mediaVideo.src = media.url;
-            mediaVideo.controls = true;
-            mediaVideo.playsInline = true;
-            mediaVideo.preload = 'metadata';
-            mediaVideo.loading = 'lazy';
-            mediaEl.appendChild(mediaVideo);
-        } else {
-            const mediaImg = document.createElement('img');
-            mediaImg.src = media.url;
-            mediaImg.alt = `Image shared by ${displayHandle || 'community member'}`;
-            mediaImg.loading = 'lazy';
-            mediaEl.appendChild(mediaImg);
-        }
+        mediaThumbEl = buildMediaThumb(media, displayHandle);
     }
 
     const reply = chat.replyTo;
@@ -1819,20 +1794,14 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
         }
     }
 
-    // ---- Footer row: location/area tags on the left, comment/like stats on the right ----
+    // ---- Footer row: comment/repost/like/share stats. Location + type
+    // now live in report-card__type-row above (see head row), so the
+    // footer is just the stats strip. ----
     const footer = document.createElement('div');
     footer.className = 'report-card__footer';
 
     const tags = document.createElement('div');
     tags.className = 'report-card__tags';
-
-    const locTag = document.createElement('span');
-    locTag.className = 'report-card__tag report-card__tag--location';
-    locTag.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 21s7-7.02 7-12a7 7 0 1 0-14 0c0 4.98 7 12 7 12Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="12" cy="9" r="2.2" stroke="currentColor" stroke-width="1.7"/></svg>';
-    const locTagLabel = document.createElement('span');
-    locTagLabel.textContent = locLabel;
-    locTag.appendChild(locTagLabel);
-
     tags.appendChild(locTag);
 
     const stats = document.createElement('div');
@@ -1842,7 +1811,13 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
     commentStat.type = 'button';
     commentStat.className = 'report-card__stat report-card__stat--comment';
     commentStat.setAttribute('aria-label', 'Reply');
-    commentStat.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M6 17L3.5 20V6a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 9H16M8 13H13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span class="report-card__stat-count">' + (replyCount || 0) + '</span>';
+    commentStat.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M6 17L3.5 20V6a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 9H16M8 13H13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+    if (replyCount) {
+        const countSpan = document.createElement('span');
+        countSpan.className = 'report-card__stat-count';
+        countSpan.textContent = String(replyCount);
+        commentStat.appendChild(countSpan);
+    }
     // Reply now opens a small composer right under THIS card instead of
     // scrolling up to the page's main input (see toggleInlineReplyBox).
     commentStat.addEventListener('click', () => toggleInlineReplyBox(el, chat, cleanText, { mode: 'reply' }));
@@ -1875,7 +1850,13 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
     repostStat.setAttribute('aria-label', 'Repost or quote');
     repostStat.setAttribute('aria-haspopup', 'true');
     repostStat.setAttribute('aria-expanded', 'false');
-    repostStat.innerHTML = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><polyline points="17 1 21 5 17 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 11V9a4 4 0 0 1 4-4h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="7 23 3 19 7 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 13v2a4 4 0 0 1-4 4H3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="report-card__stat-count">${initialRepostCount}</span>`;
+    repostStat.innerHTML = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><polyline points="17 1 21 5 17 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 11V9a4 4 0 0 1 4-4h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="7 23 3 19 7 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 13v2a4 4 0 0 1-4 4H3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+    if (initialRepostCount) {
+        const countSpan = document.createElement('span');
+        countSpan.className = 'report-card__stat-count';
+        countSpan.textContent = String(initialRepostCount);
+        repostStat.appendChild(countSpan);
+    }
 
     const repostMenu = document.createElement('div');
     repostMenu.className = 'report-card__repost-menu';
@@ -1896,11 +1877,16 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
         if (saved) {
             flashIconRing(repostStat);
             repostStat.classList.add('is-reposted');
-            // Optimistic bump — the server persists the real count (see
-            // POST /chats' repostCount/repostedBy update) so a refresh
-            // or another user's feed will show the true, shared total.
             const countEl = repostStat.querySelector('.report-card__stat-count');
-            if (countEl) countEl.textContent = String(Number(countEl.textContent || 0) + 1);
+            const nextCount = Math.max(0, Number(countEl?.textContent || 0) + 1);
+            if (countEl) {
+                countEl.textContent = String(nextCount);
+            } else {
+                const newCount = document.createElement('span');
+                newCount.className = 'report-card__stat-count';
+                newCount.textContent = String(nextCount);
+                repostStat.appendChild(newCount);
+            }
         }
     }
 
@@ -1954,7 +1940,13 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
     likeStat.type = 'button';
     likeStat.className = 'report-card__stat report-card__stat--like';
     if (alreadyLiked) likeStat.classList.add('is-liked');
-    likeStat.innerHTML = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 20.2s-7.6-4.7-9.9-9.3A5.7 5.7 0 0 1 12 5.6a5.7 5.7 0 0 1 9.9 5.3c-2.3 4.6-9.9 9.3-9.9 9.3Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span class="report-card__stat-count">${initialLikeCount}</span>`;
+    likeStat.innerHTML = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M7 20V10M2 11v8a1 1 0 0 0 1 1h3M7 10l4.4-6.6a1.5 1.5 0 0 1 2.6 1v3.1h4.6a2 2 0 0 1 2 2.3l-1.1 6.5A2 2 0 0 1 17.5 19H7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+    if (initialLikeCount) {
+        const countSpan = document.createElement('span');
+        countSpan.className = 'report-card__stat-count';
+        countSpan.textContent = String(initialLikeCount);
+        likeStat.appendChild(countSpan);
+    }
 
     let likeRequestInFlight = false;
     likeStat.addEventListener('click', async () => {
@@ -1979,7 +1971,7 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
             likeStat.classList.add('is-liked-pop');
             setTimeout(() => likeStat.classList.remove('is-liked-pop'), 460);
         }
-        if (countEl) countEl.textContent = String(Math.max(0, previousCount + (nextLiked ? 1 : -1)));
+        setStatButtonCount(likeStat, Math.max(0, previousCount + (nextLiked ? 1 : -1)));
 
         likeRequestInFlight = true;
         try {
@@ -1991,10 +1983,10 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
             if (!res.ok) throw new Error('like-request-failed');
             const data = await res.json();
             likeStat.classList.toggle('is-liked', Boolean(data.liked));
-            if (countEl) countEl.textContent = String(Math.max(0, Number(data.likeCount || 0)));
+            setStatButtonCount(likeStat, Math.max(0, Number(data.likeCount || 0)));
         } catch {
             likeStat.classList.toggle('is-liked', wasLiked);
-            if (countEl) countEl.textContent = String(previousCount);
+            setStatButtonCount(likeStat, previousCount);
             window.lwToast?.('Could not update like. Try again.');
         } finally {
             likeRequestInFlight = false;
@@ -2006,71 +1998,9 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
     // link" item too, for anyone used to finding it there). Reuses the
     // same Web Share / clipboard fallback the menu action already
     // used, and bumps a visible share count optimistically.
-    const initialShareCount = Math.max(0, Number(chat.shareCount || 0));
-    const shareStat = document.createElement('button');
-    shareStat.type = 'button';
-    shareStat.className = 'report-card__stat report-card__stat--share';
-    shareStat.setAttribute('aria-label', 'Share');
-    shareStat.innerHTML = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="18" cy="5" r="2.6" stroke="currentColor" stroke-width="1.7"/><circle cx="6" cy="12" r="2.6" stroke="currentColor" stroke-width="1.7"/><circle cx="18" cy="19" r="2.6" stroke="currentColor" stroke-width="1.7"/><path d="m8.3 10.7 7.4-4.2M8.3 13.3l7.4 4.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><span class="report-card__stat-count">${initialShareCount}</span>`;
-
-    shareStat.addEventListener('click', async (ev) => {
-        ev.stopPropagation();
-        flashIconRing(shareStat);
-        const base = new URL(window.location.href);
-        const shareUrl = new URL('/chat', base.origin || window.location.origin);
-        if (reportId) shareUrl.searchParams.set('chatId', reportId);
-        if (chat.scope) shareUrl.searchParams.set('chatScope', chat.scope);
-        if (chat.location && chat.scope !== 'global') shareUrl.searchParams.set('chatLocation', chat.location);
-        const urlText = shareUrl.toString();
-        let shared = false;
-        try {
-            if (navigator.share) {
-                await navigator.share({ title: 'LightWatch community report', text: (cleanText || '').slice(0, 120), url: urlText });
-                shared = true;
-            } else if (navigator.clipboard && navigator.clipboard.writeText) {
-                await navigator.clipboard.writeText(urlText);
-                window.lwToast?.('Post URL copied.');
-                shared = true;
-            }
-        } catch {}
-        if (shared) {
-            const countEl = shareStat.querySelector('.report-card__stat-count');
-            if (countEl) countEl.textContent = String(Math.max(0, Number(countEl.textContent || 0) + 1));
-            // Best-effort: mirror the bump server-side so the count is
-            // shared across viewers/devices once the backend exposes a
-            // matching route. Fails silently if it doesn't exist yet.
-            if (reportId) {
-                fetch(`${API_URL}/chats/${encodeURIComponent(reportId)}/share`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: myUserId }) }).catch(() => {});
-            }
-        }
-    });
-
-    // Views — read-only counter, seeded from the server's count if
-    // provided and bumped once client-side the first time this card
-    // is actually scrolled into view (see reportCardViewObserver
-    // above), rather than counting every render.
-    const initialViewCount = Math.max(0, Number(chat.viewCount || 0));
-    const viewStat = document.createElement('span');
-    viewStat.className = 'report-card__stat report-card__stat--views';
-    viewStat.setAttribute('aria-label', 'Views');
-    viewStat.innerHTML = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="12" r="2.6" stroke="currentColor" stroke-width="1.6"/></svg><span class="report-card__stat-count">${initialViewCount}</span>`;
-
-    if (reportCardViewObserver) {
-        el.addEventListener('lw-report-viewed', () => {
-            const countEl = viewStat.querySelector('.report-card__stat-count');
-            if (countEl) countEl.textContent = String(Math.max(0, Number(countEl.textContent || 0) + 1));
-            if (reportId) {
-                fetch(`${API_URL}/chats/${encodeURIComponent(reportId)}/view`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: myUserId }) }).catch(() => {});
-            }
-        }, { once: true });
-        reportCardViewObserver.observe(el);
-    }
-
     stats.appendChild(commentStat);
     stats.appendChild(repostWrap);
     stats.appendChild(likeStat);
-    stats.appendChild(shareStat);
-    stats.appendChild(viewStat);
 
     footer.appendChild(tags);
     footer.appendChild(stats);
@@ -2105,10 +2035,28 @@ function buildMessageEl(chat, isOwn, enterAnimationClass, replyCount, isLatestOw
 
     el.appendChild(head);
     if (repostTagEl) el.insertBefore(repostTagEl, head);
-    if (cleanText && !quote) el.appendChild(body);
-    if (quoteLeadEl) el.appendChild(quoteLeadEl);
-    if (mediaEl) el.appendChild(mediaEl);
-    if (quotedEl) el.appendChild(quotedEl);
+
+    if (quote) {
+        if (quoteLeadEl) el.appendChild(quoteLeadEl);
+        if (mediaThumbEl) el.appendChild(mediaThumbEl);
+        if (quotedEl) el.appendChild(quotedEl);
+    } else if (cleanText && mediaThumbEl) {
+        // Text + media: message box and thumbnail sit side by side.
+        const contentRow = document.createElement('div');
+        contentRow.className = 'report-card__content-row';
+        body.classList.add('report-card__text--boxed');
+        contentRow.appendChild(body);
+        contentRow.appendChild(mediaThumbEl);
+        el.appendChild(contentRow);
+    } else if (cleanText) {
+        // Text only: message takes the full card width.
+        el.appendChild(body);
+    } else if (mediaThumbEl) {
+        // Media only, no caption.
+        mediaThumbEl.classList.add('report-card__media-thumb--solo');
+        el.appendChild(mediaThumbEl);
+    }
+
     el.appendChild(footer);
     if (repliesToggle) el.appendChild(repliesToggle);
     if (repliesContainer) el.appendChild(repliesContainer);
@@ -2596,43 +2544,6 @@ function setChatThreadLoading(isLoading) {
     chatThreadWrap?.classList.toggle('is-loading', isLoading);
 }
 
-// ---- Community banner activity stats ----
-// Purely derived from whatever page of chats loadChatHistory just
-// fetched for the current scope — no extra request. Gives the
-// banner a "this is a live, active system" read instead of a static
-// tagline, without needing a dedicated stats endpoint.
-const communityStatEls = {
-    reports: document.getElementById('communityStatReports'),
-    areas: document.getElementById('communityStatAreas'),
-    reporters: document.getElementById('communityStatReporters')
-};
-
-function updateCommunityBannerStats(chats) {
-    if (!communityStatEls.reports && !communityStatEls.areas && !communityStatEls.reporters) return;
-    if (!Array.isArray(chats)) return;
-
-    const startOfToday = new Date();
-    startOfToday.setHours(0, 0, 0, 0);
-    const startOfTodayMs = startOfToday.getTime();
-
-    let reportsToday = 0;
-    const areas = new Set();
-    const reporters = new Set();
-
-    chats.forEach((chat) => {
-        if (shouldHideReport(chat)) return;
-        const createdMs = chat.createdAt ? new Date(chat.createdAt).getTime() : NaN;
-        if (!Number.isNaN(createdMs) && createdMs >= startOfTodayMs) reportsToday += 1;
-        if (chat.location) areas.add(chat.location);
-        const reporterKey = resolveUserId(chat) || chat.handle;
-        if (reporterKey) reporters.add(reporterKey);
-    });
-
-    if (communityStatEls.reports) communityStatEls.reports.textContent = String(reportsToday);
-    if (communityStatEls.areas) communityStatEls.areas.textContent = String(areas.size);
-    if (communityStatEls.reporters) communityStatEls.reporters.textContent = String(reporters.size);
-}
-
 function loadChatHistory() {
     const loc = (targetChatLocation && pendingFocusChatId)
         ? targetChatLocation
@@ -2685,7 +2596,6 @@ function loadChatHistory() {
             setChatThreadLoading(false);
             markChatReady();
             startPolling();
-            updateCommunityBannerStats(chats);
             setCommunityFeedChats(chats);
         })
         .catch(err => {
@@ -2929,7 +2839,10 @@ chatForm?.addEventListener('submit', async (e) => {
     const rawText = chatInput.value.trim();
     if (!rawText && !composerMediaDataUrl) return;
     const baseText = rawText || (composerMediaDataUrl ? '\u200B' : '');
-    const text = selectedLightStatus ? `${LIGHT_STATUS_PREFIX[selectedLightStatus]}${baseText}` : baseText;
+    const statusPrefix = selectedLightStatus ? LIGHT_STATUS_PREFIX[selectedLightStatus] : '';
+    const labelPrefix = selectedReportCategory ? REPORT_CATEGORY_MESSAGE_PREFIX[selectedReportCategory] : '';
+    const text = `${statusPrefix}${labelPrefix}${baseText}`;
+    const category = selectedReportCategory || null;
 
     const myId = getCurrentUserId();
     const loc  = chatLocation || getCurrentChatLocation();
@@ -2953,7 +2866,7 @@ chatForm?.addEventListener('submit', async (e) => {
         chatSendBtn.classList.add('is-sent-pulse');
     }
 
-    const saved = await postChat({ text, replyTo: replyTarget || undefined, media: submittedMedia || undefined, mediaKind: submittedMediaKind || 'image' });
+    const saved = await postChat({ text, replyTo: replyTarget || undefined, media: submittedMedia || undefined, mediaKind: submittedMediaKind || 'image', reportCategory: selectedReportCategory || undefined });
 
     if (!saved) {
         // Put text back so user can retry
@@ -2969,6 +2882,8 @@ chatForm?.addEventListener('submit', async (e) => {
     replyTarget = null;
     if (chatReplyPreview) chatReplyPreview.hidden = true;
     setSelectedLightStatus(null);
+    resetComposerLabelPicker();
+    closeCommunityComposer();
 });
 window.setMobileChatOpen = setMobileChatOpen;
 

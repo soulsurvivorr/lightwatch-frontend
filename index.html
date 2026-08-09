@@ -2609,20 +2609,6 @@
               <div class="community-banner__text">
                 <h1 class="community-banner__title" id="reportPanelCommunityTitle">Community Reports</h1>
                 <p class="community-banner__sub">Real reports. Real people. Reliable updates.</p>
-                <div class="community-banner__stats" id="communityBannerStats" aria-label="Community report activity" hidden>
-                  <div class="community-banner__stat">
-                    <span class="community-banner__stat-value" id="communityStatReports">—</span>
-                    <span class="community-banner__stat-label">Reports today</span>
-                  </div>
-                  <div class="community-banner__stat">
-                    <span class="community-banner__stat-value" id="communityStatAreas">—</span>
-                    <span class="community-banner__stat-label">Areas covered</span>
-                  </div>
-                  <div class="community-banner__stat">
-                    <span class="community-banner__stat-value" id="communityStatReporters">—</span>
-                    <span class="community-banner__stat-label">Reporters</span>
-                  </div>
-                </div>
               </div>
               <!-- Mobile-only quick actions — the topbar (with its own
                    search/notifications) is hidden while this panel is
@@ -2660,54 +2646,6 @@
               <button type="button" class="community-filter-tab community-filter-tab--maintenance" data-report-filter="maintenance" role="tab" aria-selected="false"><span class="community-filter-tab__dot"></span>Maintenance</button>
             </div>
 
-            <div class="community-feed-head">
-              <span class="community-feed-head__label">
-                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 21s7-7.02 7-12a7 7 0 1 0-14 0c0 4.98 7 12 7 12Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="9" r="2.4" stroke="currentColor" stroke-width="1.8"/></svg>
-                Nearby Reports
-              </span>
-              <div class="community-feed-head__actions">
-                <!-- Location tag/select — lets someone narrow the feed down
-                     to one reported area instead of always seeing every
-                     location at once. Options are populated in report.js
-                     from whatever locations are actually present in the
-                     feed (see toggleCommunityLocationMenu). -->
-                <div class="community-location-filter">
-                  <button type="button" class="community-location-filter-btn" id="communityLocationFilterBtn" aria-haspopup="true" aria-expanded="false">
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 21s7-7.02 7-12a7 7 0 1 0-14 0c0 4.98 7 12 7 12Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="12" cy="9" r="2.2" stroke="currentColor" stroke-width="1.7"/></svg>
-                    <span>All locations</span>
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                  </button>
-                  <div class="community-location-menu" id="communityLocationMenu" hidden></div>
-                </div>
-                <div class="community-feed-head__sort">
-                  Sort:
-                  <button type="button" class="community-sort-btn" id="communitySortBtn" aria-expanded="false">
-                    <span id="communitySortLabel">Latest</span>
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div class="community-report-list" id="communityReportList"></div>
-
-            <div class="community-feed-empty" id="communityReportEmpty" hidden>
-              <p>No reports in this category yet.</p>
-            </div>
-
-            <button type="button" class="community-feed-legacy-toggle" id="communityLegacyToggle" aria-expanded="false">
-              Open live discussion
-              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="m9 6 6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </button>
-          </div>
-
-          <!-- ==== Legacy live chat/composer (unchanged) ====
-               Hidden by default now that the card feed above is the
-               panel's default view; opened via #communityLegacyToggle
-               (and by the FAB, which also focuses #chatInput). All ids
-               below are untouched so every existing report.js binding
-               keeps working once this section is visible. -->
-          <div class="chat-card" id="communityLegacyChat" hidden>
             <div class="chat-scope-row" aria-label="Chat visibility scope">
               <span class="chat-scope-label">Audience</span>
               <div class="chat-scope-options" role="tablist" aria-label="Chat audience">
@@ -2722,6 +2660,9 @@
               </div>
             </div>
 
+          </div>
+
+          <div class="community-composer-container" id="communityComposerContainer" hidden>
             <form class="chat-form community-composer" id="chatForm" action="javascript:void(0)">
               <div class="community-composer__top">
                 <span class="avatar community-composer__avatar" aria-hidden="true">
@@ -2748,21 +2689,48 @@
                     <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1-1.6h7l1 1.6h2A1.5 1.5 0 0 1 20 8.5v9A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5v-9Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.2" stroke="currentColor" stroke-width="1.6"/></svg>
                     <span class="community-status-btn__label-full">Add Media</span>
                   </button>
+                  <button type="button" class="community-status-btn community-status-btn--label" id="statusLabelBtn" aria-label="Add label" aria-haspopup="listbox" aria-expanded="false">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M11.3 3H5.5A1.5 1.5 0 0 0 4 4.5v5.8c0 .4.16.78.44 1.06l8.2 8.2c.58.58 1.53.58 2.12 0l5.8-5.8c.58-.58.58-1.53 0-2.12l-8.2-8.2A1.5 1.5 0 0 0 11.3 3Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="8.2" cy="7.8" r="1.3" fill="currentColor"/></svg>
+                    <span class="community-status-btn__label-full">Add Labels</span>
+                  </button>
                 </div>
-                <button type="submit" class="btn btn--primary community-post-btn" id="chatSendBtn" disabled>
+                <button type="submit" class="btn btn--primary community-post-btn" id="chatSendBtn" disabled aria-label="Submit Report">
                   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4 12 20 4l-6 16-3-7-7-1Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
-                  Submit Report
+                </button>
+              </div>
+              <div class="community-composer__label-picker" id="composerLabelPicker" role="listbox" aria-label="Choose a report label" hidden>
+                <button type="button" class="community-status-btn community-status-btn--label-option community-status-btn--label-option--outage" data-report-category="outage" role="option" aria-selected="false">
+                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4 20 20 4M9 4H4v5M20 15v5h-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  <span>Outage</span>
+                </button>
+                <button type="button" class="community-status-btn community-status-btn--label-option community-status-btn--label-option--restored" data-report-category="restored" role="option" aria-selected="false">
+                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M13 3 5 14h5l-1 7 8-11h-5l1-7Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+                  <span>Restored</span>
+                </button>
+                <button type="button" class="community-status-btn community-status-btn--label-option community-status-btn--label-option--review" data-report-category="review" role="option" aria-selected="false">
+                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 3v11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="18" r="1.4" fill="currentColor"/></svg>
+                  <span>Under Review</span>
+                </button>
+                <button type="button" class="community-status-btn community-status-btn--label-option community-status-btn--label-option--maintenance" data-report-category="maintenance" role="option" aria-selected="false">
+                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M14.7 6.3a3.5 3.5 0 0 1-4.6 4.6L4 17l3 3 6.1-6.1a3.5 3.5 0 0 1 4.6-4.6l-2.4 2.4-1.7-.5-.5-1.7 2.4-2.4Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+                  <span>Maintenance</span>
                 </button>
               </div>
             </form>
+          </div>
 
+          <!-- ==== Legacy live chat/composer ==== 
+               Kept visible directly beneath the community feed so the
+               discussion stays available without a separate open/close
+               step. All existing ids remain intact for the current
+               report.js bindings. -->
+          <div class="chat-card" id="communityLegacyChat">
             <div class="community-reports-head">
-              <h2 class="community-reports-head__title">Recent Reports</h2>
+              <div class="community-reports-head__tabs" id="communityHeadTabs" role="tablist" aria-label="Sort reports">
+                <button type="button" class="community-reports-head__tab is-active" id="communityHeadLatestBtn" data-report-sort="latest" role="tab" aria-selected="true">Latest</button>
+                <button type="button" class="community-reports-head__tab" id="communityHeadTrendingBtn" data-report-sort="trending" role="tab" aria-selected="false">Trending</button>
+              </div>
               <div class="community-reports-head__actions">
-                <button type="button" class="community-sort-btn" id="communityLegacySortBtn" aria-expanded="false">
-                  Latest
-                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                </button>
                 <button type="button" class="community-nearby-btn" id="communityNearbyBtn" aria-pressed="false">
                   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 21s7-7.02 7-12a7 7 0 1 0-14 0c0 4.98 7 12 7 12Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="12" cy="9" r="2.2" stroke="currentColor" stroke-width="1.7"/></svg>
                   Nearby
@@ -2837,9 +2805,8 @@
             </div>
           </div>
 
-          <button type="button" class="community-fab community-fab--labeled" id="communityFabBtn" aria-label="Report an issue">
-            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
-            <span class="community-fab__label">Report an Issue</span>
+          <button type="button" class="community-fab" id="communityFabBtn" aria-label="Report an issue">
+            +
           </button>
         </div>
       </main>

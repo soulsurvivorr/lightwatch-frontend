@@ -13,13 +13,13 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 0px 0 8px;
+  gap: 4px;
+  padding: 0;
 }
 
 .report-panel + .report-panel {
-  margin-top: 6px;
-  padding-top: 16px;
+  margin-top: 1px;
+  padding-top: 2px;
   border-top: 1px solid color-mix(in srgb, var(--border-soft) 78%, transparent);
 }
 
@@ -63,6 +63,7 @@
 #view-chat .report-banner {
   width: 100%;
   max-width: 100%;
+  margin-bottom: 2px;
 }
 
 body.lw-chat-community-mode .topbar {
@@ -85,7 +86,7 @@ body.lw-chat-community-mode #view-chat .community-banner {
   background: transparent;
   padding: 0;
   box-shadow: none;
-  gap: 14px;
+  gap: 8px;
 }
 
 /* Chat thread is normal block flow now — the whole chat-card (audience
@@ -981,7 +982,7 @@ html[data-theme="light"] .chat-message__text {
    rule in home.css only reserves 14px, sized for a banner with no
    nested control row like the report-tabs switcher here). */
 .report-banner {
-  margin-bottom: 6px;
+  margin-bottom: 2px;
 }
 /* ============================================================
    COMMUNITY REPORT REDESIGN (reconstruction of the reference
@@ -998,7 +999,7 @@ html[data-theme="light"] .chat-message__text {
 #view-chat .community-banner {
   position: relative;
   color: white;
-  padding: max(env(safe-area-inset-top, 0px), 12px) max(18px, env(safe-area-inset-right, 18px)) 14px max(18px, env(safe-area-inset-left, 18px));
+  padding: max(env(safe-area-inset-top, 0px), 10px) max(18px, env(safe-area-inset-right, 18px)) 10px max(18px, env(safe-area-inset-left, 18px));
   background: #0e1520;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--radius-md);
@@ -1029,42 +1030,6 @@ html[data-theme="light"] .chat-message__text {
   line-height: 1.35;
   color: rgba(255, 255, 255, 0.6);
   margin: 4px 0 0;
-}
-
-/* ---- Stats strip ----
-   A row of live counters (reports logged, active areas, verified
-   sources) under the banner subtitle — the "this is a real, active
-   reporting system" signal that a plain hero banner doesn't give. */
-#view-chat .community-banner__stats {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  flex-wrap: wrap;
-}
-
-#view-chat .community-banner__stat {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-
-#view-chat .community-banner__stat-value {
-  font-size: 0.98rem;
-  font-weight: 800;
-  color: white;
-  font-variant-numeric: tabular-nums;
-  line-height: 1.1;
-}
-
-#view-chat .community-banner__stat-label {
-  font-size: 0.62rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: rgba(255, 255, 255, 0.5);
 }
 
 #view-chat .community-banner__actions {
@@ -1229,24 +1194,39 @@ html[data-theme="device"] #view-chat .community-banner__icon-btn {
   background: var(--bg-panel);
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-md);
-  padding: 10px 12px;
+  padding: 8px 10px;
   margin-top: 0;
   box-shadow: 0 10px 24px rgba(2, 8, 16, 0.22);
+}
+
+/* The composer now lives inside .community-composer-modal__panel (see
+   report.js) instead of pinned above the scrolling feed, so the
+   sticky-offset/shadow/border treatment above — built for the old
+   inline placement — is neutralized here in favor of the modal
+   sheet's own surface. */
+.community-composer-modal__panel .chat-form.community-composer {
+  position: relative;
+  top: auto;
+  z-index: auto;
+  background: transparent;
+  border: none;
+  padding: 0;
+  box-shadow: none;
 }
 
 #view-chat .community-composer__top {
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   width: 100%;
-  min-height: 36px;
+  min-height: 34px;
   gap: 6px;
 }
 
 #view-chat .community-composer__top > .community-composer__input {
   align-self: center;
-  margin: -8px 0 0 0;
+  margin: 0;
 }
 
 #view-chat .community-composer__top > .chat-reply-preview {
@@ -1328,8 +1308,8 @@ html[data-theme="device"] #view-chat .community-banner__icon-btn {
   border-radius: 0;
   background: transparent;
   box-sizing: border-box;
-  padding: 15px 0 2px;
-  min-height: 20px;
+  padding: 6px 0 0;
+  min-height: 22px;
   line-height: 1.2;
   color: var(--text-bright);
   font-size: 0.82rem;
@@ -1351,16 +1331,109 @@ html[data-theme="device"] #view-chat .community-banner__icon-btn {
   justify-content: flex-start;
   gap: 8px;
   flex-wrap: nowrap;
-  padding-top: 6px;
+  padding-top: 4px;
   border-top: 1px solid var(--border-soft);
+}
+
+#view-chat .community-composer__label-picker {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: max-content;
+  min-width: 176px;
+  max-width: min(84vw, 240px);
+  margin-top: 0;
+  padding: 6px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  background: var(--bg-panel-raised);
+  box-shadow: 0 14px 32px rgba(2, 8, 16, 0.4);
+  animation: community-label-picker-in 0.14s ease both;
+}
+
+@keyframes community-label-picker-in {
+  from { opacity: 0; transform: translateY(4px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+#view-chat .community-composer__label-picker .community-status-btn--label-option {
+  justify-content: flex-start;
+  width: 100%;
+  gap: 9px;
+  padding: 9px 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  font-size: 0.78rem;
+}
+
+#view-chat .community-composer__label-picker .community-status-btn--label-option svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* Each label option carries the same color used for its status
+   badge/filter-tab dot elsewhere in the feed (red/green/amber/blue),
+   so the popup doubles as a color key while it's open. */
+#view-chat .community-status-btn--label-option--outage {
+  color: var(--status-red, #f24f62);
+}
+#view-chat .community-status-btn--label-option--outage:hover,
+#view-chat .community-status-btn--label-option--outage.is-active {
+  background: color-mix(in srgb, var(--status-red, #f24f62) 16%, transparent);
+  border-color: color-mix(in srgb, var(--status-red, #f24f62) 40%, transparent);
+}
+
+#view-chat .community-status-btn--label-option--restored {
+  color: var(--status-green, #2fbf6e);
+}
+#view-chat .community-status-btn--label-option--restored:hover,
+#view-chat .community-status-btn--label-option--restored.is-active {
+  background: color-mix(in srgb, var(--status-green, #2fbf6e) 16%, transparent);
+  border-color: color-mix(in srgb, var(--status-green, #2fbf6e) 40%, transparent);
+}
+
+#view-chat .community-status-btn--label-option--review {
+  color: var(--amber, #e6a417);
+}
+#view-chat .community-status-btn--label-option--review:hover,
+#view-chat .community-status-btn--label-option--review.is-active {
+  background: color-mix(in srgb, var(--amber, #e6a417) 16%, transparent);
+  border-color: color-mix(in srgb, var(--amber, #e6a417) 40%, transparent);
+}
+
+#view-chat .community-status-btn--label-option--maintenance {
+  color: var(--brand2, #3b82f6);
+}
+#view-chat .community-status-btn--label-option--maintenance:hover,
+#view-chat .community-status-btn--label-option--maintenance.is-active {
+  background: color-mix(in srgb, var(--brand2, #3b82f6) 16%, transparent);
+  border-color: color-mix(in srgb, var(--brand2, #3b82f6) 40%, transparent);
 }
 
 #view-chat .community-composer__status {
   display: flex;
   align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
+  gap: 6px;
+  flex-wrap: nowrap;
   min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+#view-chat .community-composer__status::-webkit-scrollbar {
+  display: none;
+}
+
+#view-chat .community-status-btn--on,
+#view-chat .community-status-btn--off,
+#view-chat .community-status-btn--media,
+#view-chat .community-status-btn--label {
+  flex-shrink: 0;
 }
 
 /* ON/OFF read as one segmented control (a status selector, like a
@@ -1428,6 +1501,22 @@ html[data-theme="device"] #view-chat .community-banner__icon-btn {
   border-radius: var(--radius-sm);
 }
 
+#view-chat .community-status-btn--label {
+  color: var(--text-muted);
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  border-color: var(--border-soft);
+  background: var(--bg-panel);
+}
+
+#view-chat .community-status-btn--label.is-active,
+#view-chat .community-status-btn--label:focus-visible,
+#view-chat .community-status-btn--label:hover {
+  color: var(--brand2);
+  border-color: color-mix(in srgb, var(--brand2) 45%, var(--border-soft));
+  background: color-mix(in srgb, var(--brand2) 10%, var(--bg-panel));
+}
+
 #view-chat .community-status-btn--media.is-active {
   color: var(--brand2);
   border-color: color-mix(in srgb, var(--brand2) 45%, var(--border-soft));
@@ -1441,13 +1530,21 @@ html[data-theme="device"] #view-chat .community-banner__icon-btn {
 
 #view-chat .community-post-btn {
   margin-left: 0;
-  padding: 8px 12px;
+  padding: 5px 8px;
   flex-shrink: 0;
+  min-height: 24px;
+  align-self: center;
+  line-height: 1;
 }
 
 #view-chat .community-composer__top .community-post-btn {
   margin-left: auto;
   align-self: center;
+}
+
+#view-chat .community-post-btn svg {
+  width: 13px;
+  height: 13px;
 }
 
 @media (max-width: 480px) {
@@ -1466,14 +1563,16 @@ html[data-theme="device"] #view-chat .community-banner__icon-btn {
   }
 }
 
-/* Very small phones only: drop the media button's label back to
-   icon-only so three pills + Post still fit on one line, per the
+/* Very small phones only: drop the media/label buttons' text back to
+   icon-only so all four pills + Post still fit on one line, per the
    reference screenshot's single-row composer footer. */
 @media (max-width: 360px) {
-  #view-chat .community-status-btn--media .community-status-btn__label-full {
+  #view-chat .community-status-btn--media .community-status-btn__label-full,
+  #view-chat .community-status-btn--label .community-status-btn__label-full {
     display: none;
   }
-  #view-chat .community-status-btn--media {
+  #view-chat .community-status-btn--media,
+  #view-chat .community-status-btn--label {
     padding: 7px;
   }
 }
@@ -1501,6 +1600,39 @@ html[data-theme="device"] #view-chat .community-banner__icon-btn {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+/* ---- Latest / Trending tabs (replaces the old "Recent Reports"
+   title + dropdown-style sort button) ---- */
+#view-chat .community-reports-head__tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bg-panel) 85%, black 15%);
+  border: 1px solid var(--border-soft);
+}
+
+#view-chat .community-reports-head__tab {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+#view-chat .community-reports-head__tab:hover {
+  color: var(--text-bright);
+}
+
+#view-chat .community-reports-head__tab.is-active {
+  color: #fff;
+  background: var(--brand2, #3b6df5);
 }
 
 #view-chat .community-sort-btn,
@@ -1584,6 +1716,12 @@ html[data-theme="device"] #view-chat .community-banner__icon-btn {
 }
 
 #view-chat .chat-message.report-card.chat-message--own {
+  /* Overrides the unscoped .chat-message--own teal-tinted background
+     (used elsewhere, e.g. the Account page's plain chat list) so
+     report cards all share one uniform card color like the reference
+     screenshot — only the left accent rail marks a card as your own. */
+  background: var(--bg-panel);
+  border-color: var(--border-soft);
   border-left: 3px solid var(--report-accent, var(--brand2));
 }
 
@@ -1595,8 +1733,9 @@ html[data-theme="device"] #view-chat .community-banner__icon-btn {
 
 #view-chat .report-card__head {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
+  flex-wrap: nowrap;
   gap: 10px;
 }
 
@@ -1634,8 +1773,9 @@ html[data-theme="device"] #view-chat .community-banner__icon-btn {
 
 #view-chat .report-card__who {
   display: flex;
-  flex-direction: column;
-  gap: 3px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
   min-width: 0;
   flex: 1 1 auto;
 }
@@ -1646,6 +1786,17 @@ html[data-theme="device"] #view-chat .community-banner__icon-btn {
   color: var(--text-bright);
   font-family: var(--font-display);
   letter-spacing: -0.01em;
+}
+
+#view-chat .report-card__status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 #view-chat .report-card__meta {
@@ -1687,6 +1838,7 @@ html[data-theme="device"] #view-chat .community-banner__icon-btn {
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
+  margin-left: auto;
 }
 
 #view-chat .report-card__status-badge {
@@ -1718,6 +1870,295 @@ html[data-theme="device"] #view-chat .community-banner__icon-btn {
   background: color-mix(in srgb, var(--status-orange, #f2874d) 14%, transparent);
   color: var(--status-orange, #f2874d);
   border-color: color-mix(in srgb, var(--status-orange, #f2874d) 38%, transparent);
+}
+
+/* ---- Report category badges (Outage / Restored / Under Review /
+   Maintenance) — solid pills matching report-UI-layout.png; the status
+   badge now sits next to the username instead of in a separate type row. ---- */
+#view-chat .report-card__status-badge--outage {
+  background: var(--status-red, #f24f62);
+  color: #fff;
+  border-color: transparent;
+}
+
+#view-chat .report-card__status-badge--restored {
+  background: var(--status-green, #2fbf6e);
+  color: #06210f;
+  border-color: transparent;
+}
+
+#view-chat .report-card__status-badge--review {
+  background: var(--amber, #D6A24A);
+  color: #241800;
+  border-color: transparent;
+}
+
+#view-chat .report-card__status-badge--maintenance {
+  background: var(--brand2, #4A90D9);
+  color: #041423;
+  border-color: transparent;
+}
+
+#view-chat .report-card__type-row {
+  display: none;
+}
+
+#view-chat .report-card__head-time {
+  font-size: 0.74rem;
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ---- Message + media side by side (report-UI-layout.png shows the
+   photo as a small inset next to the text, not stacked full-width). ---- */
+#view-chat .report-card__content-row {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+}
+
+#view-chat .report-card__text--boxed {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-panel-raised);
+  border: 1px solid var(--border-soft);
+}
+
+#view-chat .report-card__media-thumb {
+  position: relative;
+  flex-shrink: 0;
+  width: 84px;
+  height: 84px;
+  padding: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-panel-raised);
+  cursor: pointer;
+  transition: transform 0.12s ease, border-color 0.15s ease;
+}
+
+#view-chat .report-card__media-thumb:hover,
+#view-chat .report-card__media-thumb:focus-visible {
+  border-color: var(--brand2);
+}
+
+#view-chat .report-card__media-thumb:active {
+  transform: scale(0.96);
+}
+
+#view-chat .report-card__media-thumb img,
+#view-chat .report-card__media-thumb video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+#view-chat .report-card__media-thumb-play {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 12, 16, 0.32);
+  color: #fff;
+  pointer-events: none;
+}
+
+#view-chat .report-card__media-thumb-play svg {
+  width: 22px;
+  height: 22px;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.5));
+}
+
+#view-chat .report-card__media-thumb--solo {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 10;
+  max-height: 280px;
+  margin-top: 2px;
+}
+
+/* ---- Media lightbox — opens full-size on tap of any thumbnail. ---- */
+.report-media-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 4000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.report-media-lightbox__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(6, 7, 10, 0.88);
+}
+
+.report-media-lightbox__stage {
+  position: relative;
+  z-index: 1;
+  max-width: 92vw;
+  max-height: 86vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.report-media-lightbox__stage img,
+.report-media-lightbox__stage video {
+  max-width: 92vw;
+  max-height: 86vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 10px;
+  display: block;
+}
+
+.report-media-lightbox__close {
+  position: absolute;
+  top: max(16px, env(safe-area-inset-top));
+  right: 16px;
+  z-index: 2;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  background: rgba(20, 22, 28, 0.7);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.report-media-lightbox__close svg {
+  width: 18px;
+  height: 18px;
+}
+
+body.lw-lightbox-open {
+  overflow: hidden;
+}
+
+/* ---- Composer modal — the report form lives here once it's lifted
+   out of its static spot (see report.js); the "+ Report an Issue" FAB
+   opens it, matching report-UI-layout.png's plain feed with no
+   pinned composer. ---- */
+.community-composer-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 3500;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.community-composer-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(6, 7, 10, 0.6);
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+
+.community-composer-modal.is-visible .community-composer-modal__backdrop {
+  opacity: 1;
+}
+
+.community-composer-modal__panel {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 560px;
+  max-height: 88vh;
+  overflow-y: auto;
+  padding: 14px 16px calc(16px + env(safe-area-inset-bottom));
+  border-radius: 18px 18px 0 0;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-soft);
+  border-bottom: none;
+  box-shadow: 0 -18px 40px rgba(0, 0, 0, 0.35);
+  transform: translateY(100%);
+  transition: transform 0.2s ease;
+}
+
+@media (min-width: 640px) {
+  .community-composer-modal {
+    align-items: center;
+  }
+  .community-composer-modal__panel {
+    border-radius: 18px;
+    border-bottom: 1px solid var(--border-soft);
+    transform: translateY(12px) scale(0.98);
+    opacity: 0;
+    transition: transform 0.18s ease, opacity 0.18s ease;
+  }
+  .community-composer-modal.is-visible .community-composer-modal__panel {
+    opacity: 1;
+  }
+}
+
+.community-composer-modal.is-visible .community-composer-modal__panel {
+  transform: translateY(0) scale(1);
+}
+
+.community-composer-modal__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text-bright);
+}
+
+.community-composer-modal__close {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-panel-raised);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.community-composer-modal__close svg {
+  width: 15px;
+  height: 15px;
+}
+
+body.lw-composer-modal-open {
+  overflow: hidden;
+}
+
+#view-chat .community-composer-container {
+  margin: 0 0 14px;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(-6px);
+  max-height: 0;
+  transition: opacity 0.18s ease, transform 0.18s ease, max-height 0.18s ease;
+}
+
+#view-chat .community-composer-container.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+  max-height: 720px;
+}
+
+#view-chat .community-composer-container[hidden] {
+  display: none;
 }
 
 #view-chat .report-card__menu-btn {
@@ -1821,6 +2262,10 @@ html[data-theme="device"] #view-chat .community-banner__icon-btn {
   color: var(--text-bright);
   margin: 0;
   letter-spacing: -0.001em;
+  padding: 14px 14px 12px;
+  background: rgba(11, 19, 30, 0.8);
+  border: none;
+  border-radius: 14px;
 }
 
 #view-chat .report-card__text .mention {
@@ -1973,15 +2418,16 @@ html[data-theme="device"] #view-chat .community-banner__icon-btn {
   gap: 2px;
   flex-shrink: 0;
   margin-left: auto;
+  margin-top: 0;
 }
 
 #view-chat .report-card__stat {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  height: 28px;
-  padding: 0 8px;
+  gap: 4px;
+  height: 24px;
+  padding: 0 6px;
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
   background: transparent;
@@ -1994,8 +2440,8 @@ html[data-theme="device"] #view-chat .community-banner__icon-btn {
 }
 
 #view-chat .report-card__stat svg {
-  width: 15px;
-  height: 15px;
+  width: 13px;
+  height: 13px;
   flex-shrink: 0;
 }
 
@@ -2020,24 +2466,25 @@ html[data-theme="device"] #view-chat .community-banner__icon-btn {
 }
 
 #view-chat .report-card__stat--like.is-liked {
-  color: var(--red);
+  color: var(--brand2);
 }
 
-#view-chat .report-card__stat--like.is-liked svg {
-  fill: var(--red);
+#view-chat .report-card__stat--like.is-liked svg path {
+  fill: var(--brand2);
+  fill-opacity: 0.22;
 }
 
-/* Restrained "confirmed" pulse on like — a brief scale rather than a
-   radiating burst, to keep the feedback informative instead of
-   celebratory. */
+/* A little more character than a plain scale — a quick tilt-and-settle
+   on the thumbs-up so a like reads as a deliberate, satisfying tap. */
 @keyframes report-card-like-pop {
-  0%   { transform: scale(1); }
-  40%  { transform: scale(1.16); }
-  100% { transform: scale(1); }
+  0%   { transform: scale(1) rotate(0deg); }
+  35%  { transform: scale(1.32) rotate(-14deg); }
+  60%  { transform: scale(0.94) rotate(6deg); }
+  100% { transform: scale(1) rotate(0deg); }
 }
 
 #view-chat .report-card__stat--like.is-liked-pop svg {
-  animation: report-card-like-pop 0.28s ease-out;
+  animation: report-card-like-pop 0.36s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 /* ---- Repost / Quote ---- */
@@ -2075,20 +2522,6 @@ html[data-theme="device"] #view-chat .community-banner__icon-btn {
 /* ---- Views ----
    Read-only — no hover/press affordance, no cursor change, set off
    from the interactive cluster by a hairline divider. */
-#view-chat .report-card__stat--views {
-  cursor: default;
-  color: var(--text-faint);
-  border-left: 1px solid var(--border-soft);
-  border-radius: 0;
-  margin-left: 4px;
-  padding-left: 12px;
-}
-
-#view-chat .report-card__stat--views:hover,
-#view-chat .report-card__stat--views:focus-visible {
-  background: transparent;
-  color: var(--text-faint);
-}
 
 /* The Repost/Quote picker — same visual language as .report-card__menu
    (the "more options" dropdown) but anchored under the repost trigger
@@ -2381,25 +2814,34 @@ html[data-theme="device"] #view-chat .community-banner__icon-btn {
   }
 }
 
-/* ---- Floating "+" quick-report button ---- */
+/* ---- Floating quick-report button ---- */
 #view-chat .community-fab {
   position: fixed !important;
   right: 16px;
-  bottom: calc(76px + env(safe-area-inset-bottom)) !important;
+  bottom: calc(94px + env(safe-area-inset-bottom)) !important;
   top: auto !important;
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
+  min-width: 34px;
+  height: 30px;
+  border-radius: 8px;
   border: none;
-  background: var(--brand);
+  background: #4A90D9;
   color: white;
-  display: flex !important;
+  display: inline-flex !important;
   align-items: center;
   justify-content: center;
+  gap: 8px;
+  padding: 17px 14px;
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
   cursor: pointer;
   z-index: 160;
   pointer-events: auto;
+}
+
+#view-chat .community-fab::after {
+  content: 'Report an issue';
+  font-size: 0.69rem;
+  font-weight: 300;
+  white-space: nowrap;
 }
 
 /* Keep the quick-report control in the first viewport, floating above
@@ -2407,7 +2849,7 @@ html[data-theme="device"] #view-chat .community-banner__icon-btn {
    normal document flow. */
 body.lw-chat-community-mode #view-chat .community-fab {
   position: fixed !important;
-  bottom: calc(76px + env(safe-area-inset-bottom)) !important;
+  bottom: calc(94px + env(safe-area-inset-bottom)) !important;
 }
 
 @media (min-width: 769px) {
@@ -2450,7 +2892,8 @@ body.lw-chat-community-mode #view-chat .community-fab {
    ========================================================================= */
 
 #view-chat .community-feed {
-  padding: 4px 0 0;
+  padding: 0;
+  margin-bottom: 0;
 }
 
 /* ---- Filter pills ---- */
@@ -2459,7 +2902,10 @@ body.lw-chat-community-mode #view-chat .community-fab {
   align-items: center;
   gap: 8px;
   overflow-x: auto;
-  padding: 2px 0 14px;
+  padding: 8px 10px;
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--bg-panel) 90%, var(--border-soft) 10%);
+  border: 1px solid var(--border-soft);
   scrollbar-width: none;
 }
 
@@ -2470,28 +2916,29 @@ body.lw-chat-community-mode #view-chat .community-fab {
 #view-chat .community-filter-tab {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  border: 1px solid var(--border-soft);
-  background: var(--bg-panel);
+  gap: 7px;
+  border: none;
+  background: transparent;
   color: var(--text-muted);
-  font-size: 0.78rem;
-  font-weight: 700;
-  padding: 9px 14px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 10px 14px;
   border-radius: 999px;
   white-space: nowrap;
   cursor: pointer;
-  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+  transition: background-color 0.18s ease, color 0.18s ease;
 }
 
 #view-chat .community-filter-tab:hover {
-  border-color: var(--border-strong);
+  background: color-mix(in srgb, var(--bg-panel) 92%, transparent);
   color: var(--text-bright);
 }
 
 #view-chat .community-filter-tab.is-active {
   color: #fff;
-  border-color: color-mix(in srgb, var(--brand2) 60%, var(--border-soft));
-  background: linear-gradient(135deg, color-mix(in srgb, var(--brand2) 78%, #08131f), color-mix(in srgb, var(--brand) 62%, #061019));
+  font-weight: 700;
+  background: var(--brand2, #3b6df5);
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--brand2, #3b6df5) 45%, transparent);
 }
 
 #view-chat .community-filter-tab.is-active .community-filter-tab__dot {
@@ -2499,8 +2946,8 @@ body.lw-chat-community-mode #view-chat .community-fab {
 }
 
 #view-chat .community-filter-tab__dot {
-  width: 8px;
-  height: 8px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
   flex-shrink: 0;
 }
@@ -2509,23 +2956,6 @@ body.lw-chat-community-mode #view-chat .community-fab {
 #view-chat .community-filter-tab--restored .community-filter-tab__dot { background: var(--status-green, #2fbf6e); }
 #view-chat .community-filter-tab--review .community-filter-tab__dot { background: var(--amber, #e6a417); }
 #view-chat .community-filter-tab--maintenance .community-filter-tab__dot { background: var(--brand2, #3b82f6); }
-
-/* ---- "Nearby Reports" / sort row ---- */
-#view-chat .community-feed-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 4px 2px 12px;
-  flex-wrap: wrap;
-}
-
-#view-chat .community-feed-head__actions {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  flex-wrap: wrap;
-}
 
 /* ---- Location tag/select ---- */
 #view-chat .community-location-filter {
@@ -2660,14 +3090,14 @@ body.lw-chat-community-mode #view-chat .community-fab {
 #view-chat .community-report-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
 #view-chat .community-report-card {
   background: var(--bg-panel);
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-lg, 18px);
-  padding: 14px 15px;
+  padding: 12px 12px 10px;
   cursor: pointer;
   transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.1s ease;
 }
@@ -2690,8 +3120,8 @@ body.lw-chat-community-mode #view-chat .community-fab {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 12px;
+  gap: 8px;
+  margin-bottom: 8px;
 }
 
 #view-chat .community-report-card__title-row {
@@ -2833,7 +3263,7 @@ body.lw-chat-community-mode #view-chat .community-fab {
 
 #view-chat .community-report-card__body {
   display: flex;
-  gap: 12px;
+  gap: 8px;
   align-items: stretch;
 }
 
@@ -2842,7 +3272,7 @@ body.lw-chat-community-mode #view-chat .community-fab {
   min-width: 0;
   background: var(--bg-panel-raised);
   border-radius: var(--radius-md, 14px);
-  padding: 11px 13px;
+  padding: 9px 11px;
   font-size: 0.85rem;
   line-height: 1.45;
   color: var(--text-bright);
@@ -2890,9 +3320,9 @@ body.lw-chat-community-mode #view-chat .community-fab {
 #view-chat .community-report-card__stats {
   display: flex;
   align-items: center;
-  gap: 4px;
-  margin-top: 12px;
-  padding-top: 10px;
+  gap: 3px;
+  margin-top: 4px;
+  padding-top: 4px;
   border-top: 1px solid var(--border-soft);
 }
 
@@ -2900,9 +3330,9 @@ body.lw-chat-community-mode #view-chat .community-fab {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  height: 28px;
-  padding: 0 8px;
+  gap: 4px;
+  height: 24px;
+  padding: 0 6px;
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
   background: transparent;
@@ -2915,8 +3345,8 @@ body.lw-chat-community-mode #view-chat .community-fab {
 }
 
 #view-chat .community-report-card__stat svg {
-  width: 15px;
-  height: 15px;
+  width: 13px;
+  height: 13px;
   flex-shrink: 0;
 }
 
@@ -2938,19 +3368,6 @@ body.lw-chat-community-mode #view-chat .community-fab {
   color: var(--brand2);
 }
 
-#view-chat .community-report-card__stat--views {
-  cursor: default;
-  color: var(--text-faint);
-  border-left: 1px solid var(--border-soft);
-  border-radius: 0;
-  margin-left: 4px;
-  padding-left: 12px;
-}
-
-#view-chat .community-report-card__stat--views:hover {
-  background: transparent;
-  color: var(--text-faint);
-}
 
 /* ---- Empty state ---- */
 #view-chat .community-feed-empty {
@@ -2960,51 +3377,15 @@ body.lw-chat-community-mode #view-chat .community-fab {
   font-size: 0.85rem;
 }
 
-/* ---- Toggle into the legacy live-chat thread ---- */
-#view-chat .community-feed-legacy-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  width: 100%;
-  margin-top: 16px;
-  padding: 12px;
-  border: 1px dashed var(--border-soft);
-  border-radius: var(--radius-md, 14px);
-  background: none;
-  color: var(--text-muted);
-  font-size: 0.82rem;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-#view-chat .community-feed-legacy-toggle:hover {
-  color: var(--text-bright);
-  border-color: var(--border-strong);
-}
-
-#view-chat .community-feed-legacy-toggle svg {
-  width: 14px;
-  height: 14px;
-  transition: transform 0.15s ease;
-}
-
-#view-chat .community-feed-legacy-toggle[aria-expanded="true"] svg {
-  transform: rotate(90deg);
-}
-
-#view-chat #communityLegacyChat {
-  margin-top: 14px;
-}
 
 /* ---- Labeled FAB ("+ Report an Issue") ---- */
 #view-chat .community-fab--labeled {
   width: auto;
   height: auto;
   border-radius: 999px;
-  padding: 13px 18px 13px 16px;
-  gap: 8px;
-  font-size: 0.85rem;
+  padding: 10px 10px 10px 10px;
+  gap: 2px;
+  font-size: 0.65rem;
   font-weight: 700;
 }
 
