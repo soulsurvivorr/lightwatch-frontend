@@ -2607,9 +2607,9 @@
           <div class="hero-banner report-banner community-banner">
             <div class="community-banner__row">
               <div class="community-banner__text">
-                <h1 class="community-banner__title" id="reportPanelCommunityTitle">Community Report</h1>
-                <p class="community-banner__sub">Live updates from nearby residents, businesses, and responders.</p>
-                <div class="community-banner__stats" id="communityBannerStats" aria-label="Community report activity">
+                <h1 class="community-banner__title" id="reportPanelCommunityTitle">Community Reports</h1>
+                <p class="community-banner__sub">Real reports. Real people. Reliable updates.</p>
+                <div class="community-banner__stats" id="communityBannerStats" aria-label="Community report activity" hidden>
                   <div class="community-banner__stat">
                     <span class="community-banner__stat-value" id="communityStatReports">—</span>
                     <span class="community-banner__stat-label">Reports today</span>
@@ -2642,7 +2642,72 @@
             </div>
           </div>
 
-          <div class="chat-card">
+          <!-- ==== New Community Reports feed (matches report-UI-layout.png) ====
+               Default view of this panel. Cards are grouped/status-tagged
+               summaries (Outage / Restored / Under Review / Maintenance) —
+               a concept the live chat feed below doesn't track today, so
+               communityReportCards in report.js currently seeds this from
+               placeholder data. Swap CommunityReports.setData() with a
+               real GET /reports (or derive categories from chatThread
+               history) once that endpoint/field exists; the render + 
+               filter/sort code already expects that exact shape. -->
+          <div class="community-feed" id="communityFeedSection">
+            <div class="community-filter-tabs" id="communityFilterTabs" role="tablist" aria-label="Filter reports by status">
+              <button type="button" class="community-filter-tab is-active" data-report-filter="all" role="tab" aria-selected="true">All</button>
+              <button type="button" class="community-filter-tab community-filter-tab--outage" data-report-filter="outage" role="tab" aria-selected="false"><span class="community-filter-tab__dot"></span>Outages</button>
+              <button type="button" class="community-filter-tab community-filter-tab--restored" data-report-filter="restored" role="tab" aria-selected="false"><span class="community-filter-tab__dot"></span>Restored</button>
+              <button type="button" class="community-filter-tab community-filter-tab--review" data-report-filter="review" role="tab" aria-selected="false"><span class="community-filter-tab__dot"></span>Under Review</button>
+              <button type="button" class="community-filter-tab community-filter-tab--maintenance" data-report-filter="maintenance" role="tab" aria-selected="false"><span class="community-filter-tab__dot"></span>Maintenance</button>
+            </div>
+
+            <div class="community-feed-head">
+              <span class="community-feed-head__label">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 21s7-7.02 7-12a7 7 0 1 0-14 0c0 4.98 7 12 7 12Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="9" r="2.4" stroke="currentColor" stroke-width="1.8"/></svg>
+                Nearby Reports
+              </span>
+              <div class="community-feed-head__actions">
+                <!-- Location tag/select — lets someone narrow the feed down
+                     to one reported area instead of always seeing every
+                     location at once. Options are populated in report.js
+                     from whatever locations are actually present in the
+                     feed (see toggleCommunityLocationMenu). -->
+                <div class="community-location-filter">
+                  <button type="button" class="community-location-filter-btn" id="communityLocationFilterBtn" aria-haspopup="true" aria-expanded="false">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 21s7-7.02 7-12a7 7 0 1 0-14 0c0 4.98 7 12 7 12Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="12" cy="9" r="2.2" stroke="currentColor" stroke-width="1.7"/></svg>
+                    <span>All locations</span>
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </button>
+                  <div class="community-location-menu" id="communityLocationMenu" hidden></div>
+                </div>
+                <div class="community-feed-head__sort">
+                  Sort:
+                  <button type="button" class="community-sort-btn" id="communitySortBtn" aria-expanded="false">
+                    <span id="communitySortLabel">Latest</span>
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="community-report-list" id="communityReportList"></div>
+
+            <div class="community-feed-empty" id="communityReportEmpty" hidden>
+              <p>No reports in this category yet.</p>
+            </div>
+
+            <button type="button" class="community-feed-legacy-toggle" id="communityLegacyToggle" aria-expanded="false">
+              Open live discussion
+              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="m9 6 6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+
+          <!-- ==== Legacy live chat/composer (unchanged) ====
+               Hidden by default now that the card feed above is the
+               panel's default view; opened via #communityLegacyToggle
+               (and by the FAB, which also focuses #chatInput). All ids
+               below are untouched so every existing report.js binding
+               keeps working once this section is visible. -->
+          <div class="chat-card" id="communityLegacyChat" hidden>
             <div class="chat-scope-row" aria-label="Chat visibility scope">
               <span class="chat-scope-label">Audience</span>
               <div class="chat-scope-options" role="tablist" aria-label="Chat audience">
@@ -2694,7 +2759,7 @@
             <div class="community-reports-head">
               <h2 class="community-reports-head__title">Recent Reports</h2>
               <div class="community-reports-head__actions">
-                <button type="button" class="community-sort-btn" id="communitySortBtn" aria-expanded="false">
+                <button type="button" class="community-sort-btn" id="communityLegacySortBtn" aria-expanded="false">
                   Latest
                   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 </button>
@@ -2772,8 +2837,9 @@
             </div>
           </div>
 
-          <button type="button" class="community-fab" id="communityFabBtn" aria-label="Make a report">
+          <button type="button" class="community-fab community-fab--labeled" id="communityFabBtn" aria-label="Report an issue">
             <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+            <span class="community-fab__label">Report an Issue</span>
           </button>
         </div>
       </main>

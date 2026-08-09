@@ -1212,8 +1212,17 @@ html[data-theme="device"] #view-chat .community-banner__icon-btn {
    above a live feed of small report cards (see screenshot) and was
    rendering noticeably taller/heavier than that reference. Tighter
    gap/padding throughout; the textarea itself no longer reserves a
-   large minimum height. */
+   large minimum height.
+
+   Sticky: the whole .chat-card scrolls with the page now (see the
+   #view-chat .chat-thread comment above), so pinning the composer to
+   the top of the viewport as the thread scrolls underneath it is what
+   keeps "report something" always one tap away instead of scrolled
+   out of reach after a few dozen messages. */
 #view-chat .chat-form.community-composer {
+  position: sticky;
+  top: max(env(safe-area-inset-top, 0px), 8px);
+  z-index: 6;
   flex-direction: column;
   align-items: stretch;
   gap: 6px;
@@ -1222,6 +1231,7 @@ html[data-theme="device"] #view-chat .community-banner__icon-btn {
   border-radius: var(--radius-md);
   padding: 10px 12px;
   margin-top: 0;
+  box-shadow: 0 10px 24px rgba(2, 8, 16, 0.22);
 }
 
 #view-chat .community-composer__top {
@@ -2427,5 +2437,589 @@ body.lw-chat-community-mode #view-chat .community-fab {
   }
   #view-chat .community-banner__title {
     font-size: 1.15rem;
+  }
+}
+/* =========================================================================
+   Community Reports feed (report-UI-layout.png)
+   Default view of #reportPanelCommunity — status-filter pills, a
+   "Nearby Reports" sort row, and status-tagged report cards. Lives
+   alongside (not instead of) the legacy live chat, which now sits in
+   #communityLegacyChat and opens via .community-feed-legacy-toggle or
+   the FAB. All new rules are scoped under #view-chat so they only
+   apply to this panel.
+   ========================================================================= */
+
+#view-chat .community-feed {
+  padding: 4px 0 0;
+}
+
+/* ---- Filter pills ---- */
+#view-chat .community-filter-tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px 0 14px;
+  scrollbar-width: none;
+}
+
+#view-chat .community-filter-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+#view-chat .community-filter-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-panel);
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 9px 14px;
+  border-radius: 999px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+#view-chat .community-filter-tab:hover {
+  border-color: var(--border-strong);
+  color: var(--text-bright);
+}
+
+#view-chat .community-filter-tab.is-active {
+  color: #fff;
+  border-color: color-mix(in srgb, var(--brand2) 60%, var(--border-soft));
+  background: linear-gradient(135deg, color-mix(in srgb, var(--brand2) 78%, #08131f), color-mix(in srgb, var(--brand) 62%, #061019));
+}
+
+#view-chat .community-filter-tab.is-active .community-filter-tab__dot {
+  display: none;
+}
+
+#view-chat .community-filter-tab__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+#view-chat .community-filter-tab--outage .community-filter-tab__dot { background: var(--status-red, #f24f62); }
+#view-chat .community-filter-tab--restored .community-filter-tab__dot { background: var(--status-green, #2fbf6e); }
+#view-chat .community-filter-tab--review .community-filter-tab__dot { background: var(--amber, #e6a417); }
+#view-chat .community-filter-tab--maintenance .community-filter-tab__dot { background: var(--brand2, #3b82f6); }
+
+/* ---- "Nearby Reports" / sort row ---- */
+#view-chat .community-feed-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 4px 2px 12px;
+  flex-wrap: wrap;
+}
+
+#view-chat .community-feed-head__actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+/* ---- Location tag/select ---- */
+#view-chat .community-location-filter {
+  position: relative;
+}
+
+#view-chat .community-location-filter-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-panel);
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 6px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+  max-width: 160px;
+}
+
+#view-chat .community-location-filter-btn svg {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+}
+
+#view-chat .community-location-filter-btn span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#view-chat .community-location-filter-btn.is-active {
+  color: var(--brand2);
+  border-color: color-mix(in srgb, var(--brand2) 45%, var(--border-soft));
+  background: color-mix(in srgb, var(--brand2) 12%, transparent);
+}
+
+#view-chat .community-location-filter-btn:hover {
+  border-color: var(--border-strong);
+}
+
+#view-chat .community-location-menu {
+  position: absolute;
+  z-index: 8;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 190px;
+  max-height: 240px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+  background: var(--bg-panel-raised);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md, 12px);
+  box-shadow: 0 12px 28px rgba(2, 8, 16, 0.28);
+}
+
+#view-chat .community-location-menu__item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: none;
+  color: var(--text-bright);
+  font-size: 0.82rem;
+  padding: 8px 9px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+#view-chat .community-location-menu__item:hover {
+  background: color-mix(in srgb, var(--brand2) 10%, transparent);
+}
+
+#view-chat .community-location-menu__item.is-active {
+  color: var(--brand2);
+  font-weight: 700;
+}
+
+#view-chat .community-location-menu__empty {
+  padding: 8px 9px;
+  font-size: 0.78rem;
+  color: var(--text-faint);
+}
+
+#view-chat .community-feed-head__label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-bright);
+}
+
+#view-chat .community-feed-head__label svg {
+  width: 16px;
+  height: 16px;
+  color: var(--text-faint);
+}
+
+#view-chat .community-feed-head__sort {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+#view-chat .community-feed-head__sort .community-sort-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border: none;
+  background: none;
+  color: var(--text-bright);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+}
+
+#view-chat .community-feed-head__sort .community-sort-btn svg {
+  width: 13px;
+  height: 13px;
+}
+
+/* ---- Report card list ---- */
+#view-chat .community-report-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+#view-chat .community-report-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg, 18px);
+  padding: 14px 15px;
+  cursor: pointer;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.1s ease;
+}
+
+#view-chat .community-report-card:hover {
+  border-color: var(--border-strong);
+  box-shadow: 0 10px 22px rgba(2, 8, 16, 0.16);
+}
+
+#view-chat .community-report-card:active {
+  transform: scale(0.995);
+}
+
+#view-chat .community-report-card:focus-visible {
+  outline: 2px solid var(--brand2);
+  outline-offset: 2px;
+}
+
+#view-chat .community-report-card__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+#view-chat .community-report-card__title-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+/* ---- Avatar ---- */
+#view-chat .community-report-card__avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-panel-raised);
+  border: 1px solid var(--border-soft);
+  color: var(--text-muted);
+  overflow: hidden;
+}
+
+#view-chat .community-report-card__avatar svg {
+  width: 17px;
+  height: 17px;
+}
+
+#view-chat .community-report-card__avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+}
+
+#view-chat .community-report-card__who {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+#view-chat .community-report-card__author {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-bright);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 46vw;
+}
+
+/* Per-card location tag — a small tappable chip (not static page copy)
+   that narrows the whole feed to that area, same action the head-row
+   location filter performs. */
+#view-chat .community-report-card__location-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  align-self: flex-start;
+  border: none;
+  background: none;
+  padding: 0;
+  margin: 0;
+  color: var(--text-faint);
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+#view-chat .community-report-card__location-tag svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+#view-chat .community-report-card__location-tag span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 38vw;
+}
+
+#view-chat .community-report-card__location-tag:hover {
+  color: var(--brand2);
+  text-decoration: underline;
+}
+
+#view-chat .community-report-card__top-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+#view-chat .community-report-card__badge {
+  flex-shrink: 0;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border-radius: 7px;
+  white-space: nowrap;
+}
+
+#view-chat .community-report-card__badge--outage {
+  background: color-mix(in srgb, var(--status-red, #f24f62) 16%, transparent);
+  color: var(--status-red, #f24f62);
+}
+
+#view-chat .community-report-card__badge--restored {
+  background: color-mix(in srgb, var(--status-green, #2fbf6e) 16%, transparent);
+  color: var(--status-green, #2fbf6e);
+}
+
+#view-chat .community-report-card__badge--review {
+  background: var(--amber, #e6a417);
+  color: #241a02;
+}
+
+#view-chat .community-report-card__badge--maintenance {
+  background: var(--brand2, #3b82f6);
+  color: #fff;
+}
+
+#view-chat .community-report-card__time {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+
+#view-chat .community-report-card__body {
+  display: flex;
+  gap: 12px;
+  align-items: stretch;
+}
+
+#view-chat .community-report-card__bubble {
+  flex: 1;
+  min-width: 0;
+  background: var(--bg-panel-raised);
+  border-radius: var(--radius-md, 14px);
+  padding: 11px 13px;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--text-bright);
+  overflow-wrap: anywhere;
+}
+
+#view-chat .community-report-card__thumb {
+  width: 92px;
+  flex-shrink: 0;
+  border-radius: var(--radius-md, 14px);
+  position: relative;
+  overflow: hidden;
+}
+
+#view-chat .community-report-card__thumb svg {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 30px;
+  height: 30px;
+}
+
+#view-chat .community-report-card__thumb--outage {
+  background: linear-gradient(160deg, #1a2035, #05060a 75%);
+}
+#view-chat .community-report-card__thumb--outage svg { color: #4c5372; }
+
+#view-chat .community-report-card__thumb--restored {
+  background: linear-gradient(160deg, #17321f, #0a1610);
+}
+#view-chat .community-report-card__thumb--restored svg { color: #3fae72; }
+
+#view-chat .community-report-card__thumb--review {
+  background: radial-gradient(circle at 50% 40%, #4a3a12, #1c1608 70%);
+}
+#view-chat .community-report-card__thumb--review svg { color: var(--amber, #e6a417); }
+
+#view-chat .community-report-card__thumb--maintenance {
+  background: linear-gradient(160deg, #1c2c4d, #0c1327);
+}
+#view-chat .community-report-card__thumb--maintenance svg { color: #6f93f0; }
+
+/* ---- Stats row: reply / like / share / views — same icon language
+   and interaction states as the live thread's .report-card__stat. ---- */
+#view-chat .community-report-card__stats {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-soft);
+}
+
+#view-chat .community-report-card__stat {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-faint);
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+}
+
+#view-chat .community-report-card__stat svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+
+#view-chat .community-report-card__stat:hover,
+#view-chat .community-report-card__stat:focus-visible {
+  background: color-mix(in srgb, var(--bg-panel-raised) 88%, transparent);
+  color: var(--text-muted);
+}
+
+#view-chat .community-report-card__stat--like.is-liked {
+  color: var(--red);
+}
+
+#view-chat .community-report-card__stat--like.is-liked svg {
+  fill: var(--red);
+}
+
+#view-chat .community-report-card__stat--share:hover {
+  color: var(--brand2);
+}
+
+#view-chat .community-report-card__stat--views {
+  cursor: default;
+  color: var(--text-faint);
+  border-left: 1px solid var(--border-soft);
+  border-radius: 0;
+  margin-left: 4px;
+  padding-left: 12px;
+}
+
+#view-chat .community-report-card__stat--views:hover {
+  background: transparent;
+  color: var(--text-faint);
+}
+
+/* ---- Empty state ---- */
+#view-chat .community-feed-empty {
+  padding: 32px 8px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+/* ---- Toggle into the legacy live-chat thread ---- */
+#view-chat .community-feed-legacy-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  margin-top: 16px;
+  padding: 12px;
+  border: 1px dashed var(--border-soft);
+  border-radius: var(--radius-md, 14px);
+  background: none;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+#view-chat .community-feed-legacy-toggle:hover {
+  color: var(--text-bright);
+  border-color: var(--border-strong);
+}
+
+#view-chat .community-feed-legacy-toggle svg {
+  width: 14px;
+  height: 14px;
+  transition: transform 0.15s ease;
+}
+
+#view-chat .community-feed-legacy-toggle[aria-expanded="true"] svg {
+  transform: rotate(90deg);
+}
+
+#view-chat #communityLegacyChat {
+  margin-top: 14px;
+}
+
+/* ---- Labeled FAB ("+ Report an Issue") ---- */
+#view-chat .community-fab--labeled {
+  width: auto;
+  height: auto;
+  border-radius: 999px;
+  padding: 13px 18px 13px 16px;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+#view-chat .community-fab--labeled svg {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+}
+
+#view-chat .community-fab__label {
+  white-space: nowrap;
+}
+
+@media (max-width: 380px) {
+  #view-chat .community-report-card__thumb {
+    width: 76px;
   }
 }

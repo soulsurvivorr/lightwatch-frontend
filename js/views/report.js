@@ -49,8 +49,20 @@ const statusOffBtn = document.getElementById('statusOffBtn');
 const statusMediaBtn = document.getElementById('statusMediaBtn');
 const communityFabBtn = document.getElementById('communityFabBtn');
 const communitySearchBtn = document.getElementById('communitySearchBtn');
+// #communitySortBtn now lives in the new report-feed head (see below);
+// the legacy chat-thread's own sort control moved to a distinct id so
+// both can exist in the DOM at once without clashing.
 const communitySortBtn = document.getElementById('communitySortBtn');
+const communityLegacySortBtn = document.getElementById('communityLegacySortBtn');
 const communityNearbyBtn = document.getElementById('communityNearbyBtn');
+const communityFilterTabsEl = document.getElementById('communityFilterTabs');
+const communityReportListEl = document.getElementById('communityReportList');
+const communityReportEmptyEl = document.getElementById('communityReportEmpty');
+const communitySortLabelEl = document.getElementById('communitySortLabel');
+const communityLocationFilterBtn = document.getElementById('communityLocationFilterBtn');
+const communityLocationMenuEl = document.getElementById('communityLocationMenu');
+const communityLegacyToggleBtn = document.getElementById('communityLegacyToggle');
+const communityLegacyChatEl = document.getElementById('communityLegacyChat');
 const viewChat = document.getElementById('view-chat');
 const reportPanelCommunityEl = document.querySelector('#view-chat .report-panel[data-panel="community"]');
 const communityBanner = reportPanelCommunityEl?.querySelector('.community-banner');
@@ -294,6 +306,7 @@ statusOnBtn?.addEventListener('click', () => setSelectedLightStatus('on'));
 statusOffBtn?.addEventListener('click', () => setSelectedLightStatus('off'));
 
 communityFabBtn?.addEventListener('click', () => {
+    openCommunityLegacyChat();
     chatInput?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     chatInput?.focus();
 });
@@ -336,9 +349,9 @@ communitySearchBtn?.addEventListener('click', () => {
     communitySearchBtn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
 });
 
-communitySortBtn?.addEventListener('click', () => {
-    const isOpen = communitySortBtn.getAttribute('aria-expanded') === 'true';
-    communitySortBtn.setAttribute('aria-expanded', String(!isOpen));
+communityLegacySortBtn?.addEventListener('click', () => {
+    const isOpen = communityLegacySortBtn.getAttribute('aria-expanded') === 'true';
+    communityLegacySortBtn.setAttribute('aria-expanded', String(!isOpen));
 });
 
 communityNearbyBtn?.addEventListener('click', () => {
@@ -346,6 +359,431 @@ communityNearbyBtn?.addEventListener('click', () => {
     communityNearbyBtn.setAttribute('aria-pressed', String(!isActive));
     communityNearbyBtn.classList.toggle('is-active', !isActive);
 });
+
+// =============================================================
+// Community Reports feed
+// Status-tagged (Outage / Restored / Under Review / Maintenance)
+// summary cards — the panel's default view. Built directly from the
+// same real chat documents the live thread below renders (see
+// loadChatHistory/pollChatsOnce, which call setCommunityFeedChats()),
+// so there's no separate/placeholder data source to keep in sync —
+// a category is simply derived per-message from its light-status
+// prefix (see parseLightStatus) or admin flag, since the backend has
+// no dedicated "report category" field of its own yet.
+// =============================================================
+
+const COMMUNITY_REPORT_ICONS = {
+    outage: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 20 20 4M9 4H4v5M20 15v5h-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    restored: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M13 3 5 14h5l-1 7 8-11h-5l1-7Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>',
+    review: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 3v11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="18" r="1.4" fill="currentColor"/></svg>',
+    maintenance: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14.7 6.3a3.5 3.5 0 0 1-4.6 4.6L4 17l3 3 6.1-6.1a3.5 3.5 0 0 1 4.6-4.6l-2.4 2.4-1.7-.5-.5-1.7 2.4-2.4Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>'
+};
+
+const COMMUNITY_REPORT_BADGE_LABEL = {
+    outage: 'Outage',
+    restored: 'Restored',
+    review: 'Under Review',
+    maintenance: 'Maintenance'
+};
+
+// Icons reused across every card's stats row — same glyphs buildMessageEl
+// uses for the live thread, so the two views read as one consistent
+// system instead of two different vocabularies for "reply"/"like"/etc.
+const COMMUNITY_STAT_ICONS = {
+    comment: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M6 17L3.5 20V6a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 9H16M8 13H13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+    like: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 20.2s-7.6-4.7-9.9-9.3A5.7 5.7 0 0 1 12 5.6a5.7 5.7 0 0 1 9.9 5.3c-2.3 4.6-9.9 9.3-9.9 9.3Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>',
+    share: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="18" cy="5" r="2.6" stroke="currentColor" stroke-width="1.7"/><circle cx="6" cy="12" r="2.6" stroke="currentColor" stroke-width="1.7"/><circle cx="18" cy="19" r="2.6" stroke="currentColor" stroke-width="1.7"/><path d="m8.3 10.7 7.4-4.2M8.3 13.3l7.4 4.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>',
+    views: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="12" r="2.6" stroke="currentColor" stroke-width="1.6"/></svg>',
+    pin: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 21s7-7.02 7-12a7 7 0 1 0-14 0c0 4.98 7 12 7 12Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="12" cy="9" r="2.2" stroke="currentColor" stroke-width="1.7"/></svg>'
+};
+
+let communityReportFilter = 'all';
+let communityReportSort = 'latest'; // 'latest' | 'active'
+let communityLocationFilter = null; // null = every location in the current feed
+// Raw chat docs backing the feed — kept in sync with whatever
+// loadChatHistory/pollChatsOnce just fetched for the active scope, so
+// the summary cards and the live thread below are always looking at
+// the exact same reports, never a separate/stale copy.
+let communityFeedChats = [];
+
+function setCommunityFeedChats(chats) {
+    communityFeedChats = Array.isArray(chats) ? chats.filter((c) => !shouldHideReport(c)) : [];
+    renderCommunityReportFeed();
+}
+
+function deriveReportCategory(chat, lightStatus) {
+    if (lightStatus === 'on') return 'restored';
+    if (lightStatus === 'off') return 'outage';
+    if (chat.isAdmin) return 'maintenance';
+    return 'review';
+}
+
+function communityFeedItemFromChat(chat, repliedCounts) {
+    const { status, text } = parseLightStatus(chat.text || '');
+    const id = String(chat._id || chat.id || '');
+    const myUserId = getCurrentUserId();
+    return {
+        id,
+        chat,
+        category: deriveReportCategory(chat, status),
+        location: chat.location || 'Unknown area',
+        text: text || (chat.media ? 'Shared a photo/video update.' : '(no details added)'),
+        timestamp: chat.createdAt ? new Date(chat.createdAt).getTime() : Date.now(),
+        author: chat.isAdmin ? `📢 ${chat.handle || 'LightWatch'}` : (chat.handle || 'Community member'),
+        avatarSeed: resolveUserId(chat) || chat.handle || id,
+        avatarImage: chat.avatarImage || null,
+        replyCount: (repliedCounts && repliedCounts.get(id)) || 0,
+        likeCount: Math.max(0, Number(chat.likeCount || 0)),
+        likedByMe: Boolean(myUserId) && Array.isArray(chat.likedBy) && chat.likedBy.some((x) => String(x) === String(myUserId)),
+        shareCount: Math.max(0, Number(chat.shareCount || 0)),
+        viewCount: Math.max(0, Number(chat.viewCount || 0))
+    };
+}
+
+// Jump from a summary card into the matching bubble in the live thread
+// below, opening it if needed — reuses the same highlight treatment
+// the "View quotes" repost action already uses, rather than
+// duplicating a reply/like UI a second time on the summary card.
+function jumpToChatMessage(chatId) {
+    openCommunityLegacyChat();
+    requestAnimationFrame(() => {
+        const target = chatId ? chatThread?.querySelector(`[data-chat-id="${CSS.escape(chatId)}"]`) : null;
+        if (!target) return;
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        target.classList.add('report-card--quote-highlight');
+        setTimeout(() => target.classList.remove('report-card--quote-highlight'), 2200);
+    });
+}
+
+function setCommunityLocationFilter(nextLocation) {
+    communityLocationFilter = nextLocation || null;
+    renderCommunityLocationFilterChip();
+    renderCommunityReportFeed();
+}
+
+function renderCommunityLocationFilterChip() {
+    if (!communityLocationFilterBtn) return;
+    if (communityLocationFilter) {
+        communityLocationFilterBtn.classList.add('is-active');
+        communityLocationFilterBtn.querySelector('span').textContent = communityLocationFilter;
+    } else {
+        communityLocationFilterBtn.classList.remove('is-active');
+        communityLocationFilterBtn.querySelector('span').textContent = 'All locations';
+    }
+}
+
+// Small popover listing every distinct location currently present in
+// the feed, so tapping the location tag on the head row (or on any
+// individual card) lets someone narrow the feed down to just their
+// own area instead of always seeing everywhere at once.
+function toggleCommunityLocationMenu(forceOpen) {
+    if (!communityLocationMenuEl) return;
+    const nextOpen = typeof forceOpen === 'boolean' ? forceOpen : communityLocationMenuEl.hidden;
+    if (nextOpen) {
+        const locations = [...new Set(communityFeedChats.map((c) => c.location).filter(Boolean))].sort();
+        communityLocationMenuEl.innerHTML = '';
+        const allBtn = document.createElement('button');
+        allBtn.type = 'button';
+        allBtn.className = 'community-location-menu__item' + (communityLocationFilter ? '' : ' is-active');
+        allBtn.textContent = 'All locations';
+        allBtn.addEventListener('click', () => { setCommunityLocationFilter(null); toggleCommunityLocationMenu(false); });
+        communityLocationMenuEl.appendChild(allBtn);
+        locations.forEach((loc) => {
+            const item = document.createElement('button');
+            item.type = 'button';
+            item.className = 'community-location-menu__item' + (communityLocationFilter === loc ? ' is-active' : '');
+            item.textContent = loc;
+            item.addEventListener('click', () => { setCommunityLocationFilter(loc); toggleCommunityLocationMenu(false); });
+            communityLocationMenuEl.appendChild(item);
+        });
+        if (locations.length === 0) {
+            const empty = document.createElement('p');
+            empty.className = 'community-location-menu__empty';
+            empty.textContent = 'No locations reporting yet.';
+            communityLocationMenuEl.appendChild(empty);
+        }
+    }
+    communityLocationMenuEl.hidden = !nextOpen;
+    communityLocationFilterBtn?.setAttribute('aria-expanded', String(nextOpen));
+}
+
+function buildCommunityReportCardEl(item) {
+    const badgeLabel = COMMUNITY_REPORT_BADGE_LABEL[item.category] || item.category;
+    const thumbIcon = COMMUNITY_REPORT_ICONS[item.category] || '';
+
+    const card = document.createElement('div');
+    card.className = 'community-report-card';
+    card.dataset.reportId = item.id;
+    card.setAttribute('role', 'button');
+    card.tabIndex = 0;
+
+    // ---- Head: avatar + author + tappable location tag, badge + time ----
+    const top = document.createElement('div');
+    top.className = 'community-report-card__top';
+
+    const titleRow = document.createElement('div');
+    titleRow.className = 'community-report-card__title-row';
+
+    const avatar = document.createElement('span');
+    avatar.className = 'community-report-card__avatar';
+    avatar.setAttribute('aria-hidden', 'true');
+    renderAvatarIntoEl(avatar, item.avatarSeed, item.avatarImage);
+
+    const who = document.createElement('div');
+    who.className = 'community-report-card__who';
+    const authorEl = document.createElement('span');
+    authorEl.className = 'community-report-card__author';
+    authorEl.textContent = item.author;
+
+    // Location is now a selectable tag (not fixed page copy) — tapping
+    // it narrows the whole feed to that area via the same filter the
+    // head-row location control uses (setCommunityLocationFilter).
+    const locTag = document.createElement('button');
+    locTag.type = 'button';
+    locTag.className = 'community-report-card__location-tag';
+    locTag.setAttribute('aria-label', `Filter reports by ${item.location}`);
+    locTag.innerHTML = `${COMMUNITY_STAT_ICONS.pin}<span></span>`;
+    locTag.querySelector('span').textContent = item.location;
+    locTag.addEventListener('click', (ev) => { ev.stopPropagation(); setCommunityLocationFilter(item.location); });
+
+    who.append(authorEl, locTag);
+    titleRow.append(avatar, who);
+
+    const topRight = document.createElement('div');
+    topRight.className = 'community-report-card__top-right';
+    const badge = document.createElement('span');
+    badge.className = `community-report-card__badge community-report-card__badge--${item.category}`;
+    badge.textContent = badgeLabel;
+    const time = document.createElement('span');
+    time.className = 'community-report-card__time';
+    time.textContent = formatRelativeTime(new Date(item.timestamp).toISOString());
+    topRight.append(badge, time);
+
+    top.append(titleRow, topRight);
+
+    // ---- Body: message text + status thumbnail ----
+    const body = document.createElement('div');
+    body.className = 'community-report-card__body';
+    const bubble = document.createElement('div');
+    bubble.className = 'community-report-card__bubble';
+    bubble.innerHTML = formatMessageTextWithMentions(item.text);
+    const thumb = document.createElement('div');
+    thumb.className = `community-report-card__thumb community-report-card__thumb--${item.category}`;
+    thumb.innerHTML = thumbIcon;
+    body.append(bubble, thumb);
+
+    // ---- Stats: reply / like / share / views, same icon language as
+    // the live thread's buildMessageEl stats row ----
+    const stats = document.createElement('div');
+    stats.className = 'community-report-card__stats';
+
+    const commentBtn = document.createElement('button');
+    commentBtn.type = 'button';
+    commentBtn.className = 'community-report-card__stat community-report-card__stat--comment';
+    commentBtn.setAttribute('aria-label', 'View replies');
+    commentBtn.innerHTML = `${COMMUNITY_STAT_ICONS.comment}<span>${item.replyCount}</span>`;
+    commentBtn.addEventListener('click', (ev) => { ev.stopPropagation(); jumpToChatMessage(item.id); });
+
+    const likeBtn = document.createElement('button');
+    likeBtn.type = 'button';
+    likeBtn.className = 'community-report-card__stat community-report-card__stat--like';
+    if (item.likedByMe) likeBtn.classList.add('is-liked');
+    likeBtn.setAttribute('aria-label', 'Like');
+    likeBtn.innerHTML = `${COMMUNITY_STAT_ICONS.like}<span>${item.likeCount}</span>`;
+    let likeInFlight = false;
+    likeBtn.addEventListener('click', async (ev) => {
+        ev.stopPropagation();
+        if (likeInFlight) return;
+        const myUserId = getCurrentUserId();
+        if (!myUserId) { window.lwToast?.('Sign in to like posts.'); return; }
+        flashIconRing(likeBtn);
+        const countEl = likeBtn.querySelector('span');
+        const previous = Math.max(0, Number(countEl.textContent || 0));
+        const wasLiked = likeBtn.classList.contains('is-liked');
+        likeBtn.classList.toggle('is-liked', !wasLiked);
+        countEl.textContent = String(Math.max(0, previous + (wasLiked ? -1 : 1)));
+        likeInFlight = true;
+        try {
+            const res = await fetch(`${API_URL}/chats/${encodeURIComponent(item.id)}/like`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: myUserId, notify: true })
+            });
+            if (!res.ok) throw new Error('like-failed');
+            const data = await res.json();
+            likeBtn.classList.toggle('is-liked', Boolean(data.liked));
+            countEl.textContent = String(Math.max(0, Number(data.likeCount || 0)));
+        } catch {
+            likeBtn.classList.toggle('is-liked', wasLiked);
+            countEl.textContent = String(previous);
+            window.lwToast?.('Could not update like. Try again.');
+        } finally {
+            likeInFlight = false;
+        }
+    });
+
+    const shareBtn = document.createElement('button');
+    shareBtn.type = 'button';
+    shareBtn.className = 'community-report-card__stat community-report-card__stat--share';
+    shareBtn.setAttribute('aria-label', 'Share');
+    shareBtn.innerHTML = `${COMMUNITY_STAT_ICONS.share}<span>${item.shareCount}</span>`;
+    shareBtn.addEventListener('click', async (ev) => {
+        ev.stopPropagation();
+        flashIconRing(shareBtn);
+        const base = new URL(window.location.href);
+        const shareUrl = new URL('/chat', base.origin || window.location.origin);
+        shareUrl.searchParams.set('chatId', item.id);
+        if (item.chat.scope) shareUrl.searchParams.set('chatScope', item.chat.scope);
+        if (item.chat.location && item.chat.scope !== 'global') shareUrl.searchParams.set('chatLocation', item.chat.location);
+        const urlText = shareUrl.toString();
+        let shared = false;
+        try {
+            if (navigator.share) {
+                await navigator.share({ title: 'LightWatch community report', text: item.text.slice(0, 120), url: urlText });
+                shared = true;
+            } else if (navigator.clipboard?.writeText) {
+                await navigator.clipboard.writeText(urlText);
+                window.lwToast?.('Post URL copied.');
+                shared = true;
+            }
+        } catch {}
+        if (shared) {
+            const countEl = shareBtn.querySelector('span');
+            countEl.textContent = String(Math.max(0, Number(countEl.textContent || 0) + 1));
+            fetch(`${API_URL}/chats/${encodeURIComponent(item.id)}/share`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: getCurrentUserId() })
+            }).catch(() => {});
+        }
+    });
+
+    const viewSpan = document.createElement('span');
+    viewSpan.className = 'community-report-card__stat community-report-card__stat--views';
+    viewSpan.setAttribute('aria-label', 'Views');
+    viewSpan.innerHTML = `${COMMUNITY_STAT_ICONS.views}<span>${item.viewCount}</span>`;
+    if (reportCardViewObserver) {
+        card.addEventListener('lw-report-viewed', () => {
+            const countEl = viewSpan.querySelector('span');
+            countEl.textContent = String(Math.max(0, Number(countEl.textContent || 0) + 1));
+            fetch(`${API_URL}/chats/${encodeURIComponent(item.id)}/view`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: getCurrentUserId() })
+            }).catch(() => {});
+        }, { once: true });
+        reportCardViewObserver.observe(card);
+    }
+
+    stats.append(commentBtn, likeBtn, shareBtn, viewSpan);
+
+    card.append(top, body, stats);
+    card.addEventListener('click', () => jumpToChatMessage(item.id));
+    card.addEventListener('keydown', (ev) => {
+        if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); jumpToChatMessage(item.id); }
+    });
+
+    return card;
+}
+
+function renderCommunityReportFeed() {
+    if (!communityReportListEl) return;
+
+    const myId = getCurrentUserId();
+    const repliedCounts = computeRepliedToIds(communityFeedChats);
+    let items = communityFeedChats.map((chat) => communityFeedItemFromChat(chat, repliedCounts));
+
+    if (communityReportFilter !== 'all') {
+        items = items.filter((item) => item.category === communityReportFilter);
+    }
+    if (communityLocationFilter) {
+        items = items.filter((item) => item.location === communityLocationFilter);
+    }
+
+    items.sort((a, b) => {
+        if (communityReportSort === 'active') {
+            const scoreA = a.replyCount + a.likeCount + a.shareCount;
+            const scoreB = b.replyCount + b.likeCount + b.shareCount;
+            return scoreB - scoreA;
+        }
+        return b.timestamp - a.timestamp;
+    });
+
+    communityReportListEl.innerHTML = '';
+    items.forEach((item) => communityReportListEl.appendChild(buildCommunityReportCardEl(item)));
+    if (communityReportEmptyEl) communityReportEmptyEl.hidden = items.length > 0;
+    void myId; // kept for parity with the live thread's own-message handling, no distinct UI here yet
+}
+
+communityFilterTabsEl?.addEventListener('click', (event) => {
+    const btn = event.target.closest('.community-filter-tab');
+    if (!btn) return;
+    communityFilterTabsEl.querySelectorAll('.community-filter-tab').forEach((tab) => {
+        tab.classList.remove('is-active');
+        tab.setAttribute('aria-selected', 'false');
+    });
+    btn.classList.add('is-active');
+    btn.setAttribute('aria-selected', 'true');
+    communityReportFilter = btn.dataset.reportFilter || 'all';
+    renderCommunityReportFeed();
+});
+
+communityLocationFilterBtn?.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    toggleCommunityLocationMenu();
+});
+document.addEventListener('click', (ev) => {
+    if (!communityLocationMenuEl || communityLocationMenuEl.hidden) return;
+    if (communityLocationMenuEl.contains(ev.target) || communityLocationFilterBtn?.contains(ev.target)) return;
+    toggleCommunityLocationMenu(false);
+});
+
+// Reuses #communitySortBtn — now the new feed's sort control (the
+// legacy chat thread's equivalent button was renamed to
+// #communityLegacySortBtn above so both can coexist).
+communitySortBtn?.addEventListener('click', () => {
+    communityReportSort = communityReportSort === 'latest' ? 'active' : 'latest';
+    if (communitySortLabelEl) communitySortLabelEl.textContent = communityReportSort === 'latest' ? 'Latest' : 'Most Active';
+    communitySortBtn.setAttribute('aria-expanded', communityReportSort === 'active' ? 'true' : 'false');
+    renderCommunityReportFeed();
+});
+
+function openCommunityLegacyChat() {
+    if (!communityLegacyChatEl) return;
+    communityLegacyChatEl.hidden = false;
+    communityLegacyToggleBtn?.setAttribute('aria-expanded', 'true');
+    if (communityLegacyToggleBtn) communityLegacyToggleBtn.firstChild.textContent = 'Hide live discussion ';
+}
+
+function closeCommunityLegacyChat() {
+    if (!communityLegacyChatEl) return;
+    communityLegacyChatEl.hidden = true;
+    communityLegacyToggleBtn?.setAttribute('aria-expanded', 'false');
+    if (communityLegacyToggleBtn) communityLegacyToggleBtn.firstChild.textContent = 'Open live discussion ';
+}
+
+communityLegacyToggleBtn?.addEventListener('click', () => {
+    const isOpen = communityLegacyToggleBtn.getAttribute('aria-expanded') === 'true';
+    if (isOpen) {
+        closeCommunityLegacyChat();
+    } else {
+        openCommunityLegacyChat();
+        communityLegacyChatEl?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+});
+
+// Tapping a card's "thread" link jumps straight into the live
+// discussion, same as the FAB — a report card doesn't have its own
+// standalone thread yet, so this is the closest real destination.
+communityReportListEl?.addEventListener('click', (event) => {
+    if (event.target.closest('[data-report-author]')) {
+        event.preventDefault();
+    }
+    if (event.target.closest('.community-report-card')) {
+        openCommunityLegacyChat();
+        communityLegacyChatEl?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+});
+
+renderCommunityReportFeed();
 
 const initialChatParams = new URLSearchParams(window.location.search);
 const targetChatIdFromNotification = initialChatParams.get('chatId') || '';
@@ -865,6 +1303,27 @@ function syncLiveStatCounts(chats) {
                 chat.likedBy.some((likedId) => String(likedId) === String(myUserId));
             likeStatEl.classList.toggle('is-liked', isLiked);
         }
+
+        const shareCountEl = el.querySelector('.report-card__stat--share .report-card__stat-count');
+        if (shareCountEl) shareCountEl.textContent = String(Math.max(0, Number(chat.shareCount || 0)));
+
+        const viewCountEl = el.querySelector('.report-card__stat--views .report-card__stat-count');
+        if (viewCountEl) viewCountEl.textContent = String(Math.max(0, Number(chat.viewCount || 0)));
+    });
+
+    // Same freshen pass for the summary cards' stats row.
+    communityReportListEl?.querySelectorAll('.community-report-card').forEach((el) => {
+        const id = el.dataset.reportId;
+        const chat = id ? byId.get(id) : null;
+        if (!chat) return;
+        const commentCountEl = el.querySelector('.community-report-card__stat--comment span');
+        if (commentCountEl) commentCountEl.textContent = String(repliedCounts.get(id) || 0);
+        const likeCountEl = el.querySelector('.community-report-card__stat--like span');
+        if (likeCountEl) likeCountEl.textContent = String(Math.max(0, Number(chat.likeCount || 0)));
+        const shareCountEl = el.querySelector('.community-report-card__stat--share span');
+        if (shareCountEl) shareCountEl.textContent = String(Math.max(0, Number(chat.shareCount || 0)));
+        const viewCountEl = el.querySelector('.community-report-card__stat--views span');
+        if (viewCountEl) viewCountEl.textContent = String(Math.max(0, Number(chat.viewCount || 0)));
     });
 }
 
@@ -2227,6 +2686,7 @@ function loadChatHistory() {
             markChatReady();
             startPolling();
             updateCommunityBannerStats(chats);
+            setCommunityFeedChats(chats);
         })
         .catch(err => {
             console.error("Could not load chat history:", err);
@@ -2308,6 +2768,15 @@ async function pollChatsOnce() {
                 // silent — this message gets another shot next tick
             }
         });
+
+        // Feed newly-arrived chats into the summary cards too (prepended,
+        // deduped by id, capped so the feed doesn't grow unbounded over a
+        // long-running tab) — same source of truth as the thread above.
+        const existingIds = new Set(communityFeedChats.map((c) => String(c._id || c.id || '')));
+        const freshChats = chats.filter((c) => !existingIds.has(String(c._id || c.id || '')));
+        if (freshChats.length > 0) {
+            setCommunityFeedChats([...freshChats, ...communityFeedChats].slice(0, 200));
+        }
     } catch (e) {
         // silent — retries next tick
     }
