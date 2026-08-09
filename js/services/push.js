@@ -565,6 +565,71 @@ function ensurePushNotificationsInitialized() {
     return pushInitPromise;
 }
 
+// ── App-update detection ───────────────────────────────────────
+// FIX: initPushNotifications() already calls registration.update() once
+// on boot, which is enough to make the browser re-check service-worker.js
+// on the network (now that server.js excludes it from the 1-day static
+// cache — see the setHeaders change there) and, if it changed, install +
+// activate the new worker (it calls self.skipWaiting()/clients.claim()
+// itself — see service-worker.js). But activating a new worker does NOT
+// reload the page that's currently open: that page keeps running the OLD
+// already-parsed JS in memory until something actually reloads it. There
+// was no listener for that anywhere, so the new code only ever took
+// effect on whichever FUTURE relaunch happened to land after activation
+// finished — which is exactly the "close and reopen a few times" symptom.
+//
+// checkForAppUpdate() is exposed on window so the pull-to-refresh gesture
+// (see app.js) can trigger an update check on demand, not just at cold
+// boot. The controllerchange listener below is what actually closes the
+// loop: the moment ANY new worker takes control (whether triggered by
+// this check, the boot-time one, or the browser's own periodic check),
+// it reloads this tab exactly once so the new code is guaranteed to be
+// running within a second or two of activation, not on some later cold
+// launch.
+let swReloadTriggered = false;
+
+async function checkForAppUpdate() {
+    if (!('serviceWorker' in navigator)) return false;
+    try {
+        const registration = await navigator.serviceWorker.getRegistration();
+        if (!registration) return false;
+        await registration.update();
+        // If an update was found, it's now installing/activating in the
+        // background (skipWaiting/clients.claim in service-worker.js take
+        // it from here) — the controllerchange listener below reloads
+        // once that finishes. Report whether one was actually found so
+        // callers (e.g. the pull-to-refresh gesture) can show a different
+        // message ("Updating app…" vs "Up to date").
+        return Boolean(registration.installing || registration.waiting);
+    } catch (err) {
+        console.error('App update check failed:', err);
+        return false;
+    }
+}
+window.checkForAppUpdate = checkForAppUpdate;
+
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+        // Fires once per new activation, but guard anyway in case the
+        // browser ever fires it more than once in a session — this must
+        // never loop-reload.
+        if (swReloadTriggered) return;
+        swReloadTriggered = true;
+        window.location.reload();
+    });
+}
+
+// Re-check for an update whenever the app comes back to the foreground —
+// covers the common mobile pattern of backgrounding the app instead of
+// fully closing it, which previously meant an update sat undetected
+// until the next full cold launch.
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+        checkForAppUpdate();
+    }
+});
+
+
 // ── Call this from a real tap/click handler — e.g.
 //    <button onclick="enableLightWatchPush()">Enable notifications</button>
 //    This is the ONLY safe place to call Notification.requestPermission()

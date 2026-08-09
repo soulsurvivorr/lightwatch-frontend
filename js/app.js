@@ -346,6 +346,170 @@
 
     window.LWRouter = { navigate, handleHardwareBack, get currentView() { return currentView; } };
 
+    // ---- Pull-to-refresh ----
+    // FIX: there was no pull-to-refresh anywhere — what people felt as
+    // "pull to refresh" was just the OS/webview's native overscroll
+    // bounce, which doesn't run any app code at all. This wires up a
+    // real one, scoped to the app shell's protected views (not the
+    // auth flow), that on release:
+    //   1. asks push.js's checkForAppUpdate() to check for (and, if
+    //      found, activate) a new service worker — if one activates,
+    //      push.js's controllerchange listener reloads the tab once,
+    //      so a pull-to-refresh is now also how someone can manually
+    //      pull the latest deployed app code instead of waiting on a
+    //      relaunch;
+    //   2. calls the current view's own refresh() hook if it has one
+    //      (falling back to show(), which most views already use to
+    //      re-fetch on becoming visible), so pulling down also refetches
+    //      this screen's live data, not just app code;
+    //   3. dispatches 'lw:pull-refresh' so any view/module can hook in
+    //      without needing a formal refresh() method.
+    // `html` is the real scroll owner (see playViewEnterAnimation's
+    // comment above) so "at the top" is checked against
+    // documentElement.scrollTop, same as the scroll-restore code above.
+    (function setupPullToRefresh() {
+        const THRESHOLD = 72;   // px of pull before release triggers a refresh
+        const MAX_PULL = 120;   // px, with resistance past this point
+        const MIN_VISIBLE_MS = 450; // keep the indicator up briefly so a fast refresh doesn't just flash
+
+        let indicatorEl = null;
+        let startY = null;
+        let pulling = false;
+        let currentPull = 0;
+        let refreshInFlight = false;
+
+        function ensureIndicator() {
+            if (indicatorEl) return indicatorEl;
+            if (!document.getElementById('lwPullToRefreshStyles')) {
+                const style = document.createElement('style');
+                style.id = 'lwPullToRefreshStyles';
+                style.textContent = `
+                    #lwPullToRefresh {
+                        position: fixed; top: 0; left: 50%;
+                        width: 34px; height: 34px; margin-left: -17px;
+                        display: flex; align-items: center; justify-content: center;
+                        border-radius: 50%;
+                        background: var(--surface, #1C1F26);
+                        box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+                        transform: translateY(-48px);
+                        transition: transform 0.15s ease-out, opacity 0.15s ease-out;
+                        opacity: 0;
+                        z-index: 9998;
+                        pointer-events: none;
+                    }
+                    #lwPullToRefresh svg { animation: lwPullSpin 0.8s linear infinite; }
+                    #lwPullToRefresh.lw-ptr--ready svg { animation-play-state: paused; }
+                    @keyframes lwPullSpin { to { transform: rotate(360deg); } }
+                `;
+                document.head.appendChild(style);
+            }
+            const el = document.createElement('div');
+            el.id = 'lwPullToRefresh';
+            el.innerHTML = `<svg viewBox="0 0 20 20" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <circle cx="10" cy="10" r="7.5" stroke="rgba(255,255,255,0.25)" stroke-width="2"/>
+                <path d="M10 2.5a7.5 7.5 0 0 1 7.5 7.5" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+            </svg>`;
+            document.body.appendChild(el);
+            indicatorEl = el;
+            return el;
+        }
+
+        function isEligible() {
+            const appShell = shellEl('app');
+            if (!appShell || appShell.hidden) return false; // auth views (login/signup/etc.) are excluded
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop || 0;
+            return scrollTop <= 0;
+        }
+
+        function setPull(distance) {
+            currentPull = distance;
+            const el = ensureIndicator();
+            const eased = Math.min(distance, MAX_PULL);
+            el.style.opacity = String(Math.min(eased / THRESHOLD, 1));
+            el.style.transform = `translateY(${-48 + eased}px)`;
+            el.classList.toggle('lw-ptr--ready', distance >= THRESHOLD);
+        }
+
+        function resetPull() {
+            pulling = false;
+            startY = null;
+            currentPull = 0;
+            if (indicatorEl) {
+                indicatorEl.style.opacity = '0';
+                indicatorEl.style.transform = 'translateY(-48px)';
+                indicatorEl.classList.remove('lw-ptr--ready');
+            }
+        }
+
+        async function runRefresh() {
+            refreshInFlight = true;
+            const el = ensureIndicator();
+            el.classList.remove('lw-ptr--ready'); // resume spin to show work happening
+            el.style.opacity = '1';
+            el.style.transform = 'translateY(16px)';
+
+            const started = Date.now();
+            try {
+                const updateFound = typeof window.checkForAppUpdate === 'function'
+                    ? await window.checkForAppUpdate().catch(() => false)
+                    : false;
+
+                // If an update was found, push.js's controllerchange listener
+                // will reload this tab shortly on its own — no need to also
+                // refetch view data that's about to be thrown away.
+                if (!updateFound) {
+                    callHook(currentView, 'refresh');
+                    if (!(window.LWViews[currentView] && typeof window.LWViews[currentView].refresh === 'function')) {
+                        callHook(currentView, 'show');
+                    }
+                    window.dispatchEvent(new CustomEvent('lw:pull-refresh', { detail: { view: currentView } }));
+                }
+            } finally {
+                const elapsed = Date.now() - started;
+                const wait = Math.max(0, MIN_VISIBLE_MS - elapsed);
+                setTimeout(() => {
+                    refreshInFlight = false;
+                    resetPull();
+                }, wait);
+            }
+        }
+
+        window.addEventListener('touchstart', (e) => {
+            if (refreshInFlight) return;
+            if (!isEligible()) return;
+            if (e.touches.length !== 1) return;
+            startY = e.touches[0].clientY;
+            pulling = true;
+        }, { passive: true });
+
+        window.addEventListener('touchmove', (e) => {
+            if (!pulling || startY == null || refreshInFlight) return;
+            if (!isEligible()) { resetPull(); return; }
+            const delta = e.touches[0].clientY - startY;
+            if (delta <= 0) { setPull(0); return; }
+            // Prevent the native overscroll bounce from fighting the
+            // custom indicator once an actual pull is in progress.
+            if (delta > 8 && e.cancelable) e.preventDefault();
+            // Resistance past MAX_PULL so it doesn't feel infinite.
+            const eased = delta <= MAX_PULL ? delta : MAX_PULL + (delta - MAX_PULL) * 0.15;
+            setPull(eased);
+        }, { passive: false });
+
+        window.addEventListener('touchend', () => {
+            if (!pulling || refreshInFlight) return;
+            pulling = false;
+            if (currentPull >= THRESHOLD) {
+                runRefresh();
+            } else {
+                resetPull();
+            }
+        }, { passive: true });
+
+        window.addEventListener('touchcancel', () => {
+            if (!refreshInFlight) resetPull();
+        }, { passive: true });
+    })();
+
     // ---- Boot ----
     function boot() {
         setupConnectionGuard();
