@@ -324,8 +324,9 @@ function syncNavBadgesToSession() {
 // header.css, which weren't available here to check/edit — if
 // `.topbar` is still `display: none` on mobile, send those over and
 // I'll wire the mobile-breakpoint styles up to match this exactly.
-const TOPBAR_REVEAL_MIN_SCROLL = 72; // stay put near the very top instead of hiding immediately
-let topbarLastScrollY = window.scrollY;
+const TOPBAR_REVEAL_MIN_SCROLL = 80; // stay visible when scrolling back to the very top
+const TOPBAR_REVEAL_DELTA = 2; // show after a small upward scroll
+let topbarLastScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
 let topbarScrollTicking = false;
 
 function updateTopbarVisibility() {
@@ -333,12 +334,17 @@ function updateTopbarVisibility() {
     const topbar = document.querySelector('.topbar');
     if (!topbar) return;
 
-    const currentY = window.scrollY;
-    if (currentY <= TOPBAR_REVEAL_MIN_SCROLL || currentY < topbarLastScrollY) {
-        topbar.classList.remove('lw-topbar--hidden'); // scrolling up (or near top) -> show
-    } else if (currentY > topbarLastScrollY) {
+    const currentY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
+    const delta = currentY - topbarLastScrollY;
+    const scrolledUp = delta <= -TOPBAR_REVEAL_DELTA;
+    const scrolledDown = delta >= TOPBAR_REVEAL_DELTA;
+
+    if (currentY <= TOPBAR_REVEAL_MIN_SCROLL || scrolledUp) {
+        topbar.classList.remove('lw-topbar--hidden'); // near top or scrolling up -> show
+    } else if (scrolledDown) {
         topbar.classList.add('lw-topbar--hidden'); // scrolling down -> hide
     }
+
     topbarLastScrollY = currentY;
 }
 
@@ -350,6 +356,7 @@ function onTopbarScroll() {
 
 window.addEventListener('scroll', onTopbarScroll, { passive: true });
 window.addEventListener('resize', updateTopbarVisibility);
+updateTopbarVisibility();
 
 function initNav() {
     applyNavVisibility();

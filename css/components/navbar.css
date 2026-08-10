@@ -24,6 +24,10 @@
   transition: transform 0.3s ease;
 }
 
+.topbar.lw-topbar--hidden {
+  transform: translateY(-100%);
+}
+
 html[data-theme="light"] .topbar {
   background: #ffffff;
   border-bottom-color: var(--border-soft);

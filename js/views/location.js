@@ -570,7 +570,7 @@
 
         return `
       <div class="loc-row" data-area="${area.name}" data-status="${area.status}" data-favorite="${favorited ? '1' : '0'}" data-name="${area.name.toLowerCase()}" role="listitem">
-        <span class="loc-row__icon loc-row__icon--${meta.cls}" data-action="toggle-area-status" role="button" tabindex="0" style="cursor:pointer" aria-label="Tap to report the light status for ${area.name}">
+        <span class="loc-row__icon loc-row__icon--${meta.cls}" data-action="toggle-area-status" role="button" tabindex="0" aria-disabled="${favorited ? 'true' : 'false'}" style="cursor:${favorited ? 'not-allowed' : 'pointer'}" aria-label="${favorited ? `Unable to report status for favorite location ${area.name}` : `Tap to report the light status for ${area.name}`}">
           <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" fill="currentColor"/></svg>
         </span>
         <div class="loc-row__body">
@@ -816,6 +816,18 @@
         });
     }
 
+    function refreshLiveHeatMap() {
+        if (currentMapStyle !== 'heatmap') return;
+        const liveHeatMap = ensureLiveHeatMap();
+        if (!liveHeatMap) return;
+        liveHeatMap.invalidateSize();
+        liveHeatMap.refresh();
+        setTimeout(() => {
+            liveHeatMap.invalidateSize();
+            liveHeatMap.refresh();
+        }, 120);
+    }
+
     async function loadLocations(isFirstLoad = false) {
         if (isFirstLoad) {
             const cached = LWCache && LWCache.read(LOCATION_LIST_CACHE_KEY, CACHE_MAX_AGE_MEDIUM_MS);
@@ -829,6 +841,7 @@
         const locations = await fetchAllLocations();
         renderLocations(locations);
         applyLiveUpdate(locations);
+        refreshLiveHeatMap();
 
         if (LWCache) {
             LWCache.write(LOCATION_LIST_CACHE_KEY, locations);
@@ -931,6 +944,7 @@
 
     async function toggleAreaStatus(row) {
         if (!row || areaToggleInFlight || !window.LWLightStatus) return;
+        if (row.dataset.favorite === '1') return;
         
         const currentlyOn = row.dataset.status === 'on';
         // Don't allow toggling when light is already ON — users can only report outages (OFF)
@@ -1071,7 +1085,13 @@
                 if (canvas) canvas.hidden = true;
                 if (heatHost) heatHost.hidden = false;
                 currentMapStyle = 'heatmap';
-                ensureLiveHeatMap()?.invalidateSize();
+                const liveHeatMap = ensureLiveHeatMap();
+                if (liveHeatMap) {
+                    liveHeatMap.invalidateSize();
+                    liveHeatMap.refresh();
+                } else {
+                    setTimeout(() => ensureLiveHeatMap()?.refresh(), 120);
+                }
             } else {
                 if (canvas) canvas.hidden = false;
                 if (heatHost) heatHost.hidden = true;
@@ -1116,7 +1136,15 @@
         if (requestedButton) {
             requestedButton.click();
         } else if (currentMapStyle === 'heatmap') {
-            ensureLiveHeatMap()?.invalidateSize();
+            const liveHeatMap = ensureLiveHeatMap();
+            if (liveHeatMap) {
+                liveHeatMap.invalidateSize();
+                liveHeatMap.refresh();
+                setTimeout(() => {
+                    liveHeatMap.invalidateSize();
+                    liveHeatMap.refresh();
+                }, 120);
+            }
         } else if (map) {
             setTimeout(() => map.resize(), 60);
         }

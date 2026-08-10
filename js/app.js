@@ -572,43 +572,7 @@
         }
     } // end of boot function
 
-    // ---- Topbar hide/show on scroll ----
-    // Hide topbar when scrolling down, show when scrolling up
-    let lastScrollTop = 0;
-    let scrollTimeout;
-    const topbar = document.querySelector('.topbar');
-
-    function handleHeaderScroll() {
-        if (!topbar) return;
-
-        const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
-
-        if (currentScroll > lastScrollTop && currentScroll > 80) {
-            // Scrolling DOWN - hide header
-            topbar.style.transform = 'translateY(-100%)';
-            topbar.style.opacity = '0';
-        } else {
-            // Scrolling UP or at top - show header
-            topbar.style.transform = 'translateY(0)';
-            topbar.style.opacity = '1';
-            topbar.style.boxShadow = currentScroll > 20 ? '0 4px 20px rgba(0,0,0,0.15)' : 'none';
-        }
-
-        lastScrollTop = currentScroll <= 0 ? 0 : currentScroll;
-    }
-
-    // Enable on desktop and tablet (min-width: 769px)
-    function enableHeaderScroll() {
-        if (window.innerWidth >= 769) {
-            window.addEventListener('scroll', handleHeaderScroll, { passive: true });
-        } else {
-            topbar.style.transform = 'translateY(0)';
-            topbar.style.opacity = '1';
-            window.removeEventListener('scroll', handleHeaderScroll);
-        }
-    }
-
-    window.addEventListener('resize', enableHeaderScroll);
+    // The shared topbar scroll behavior is handled in components/nav.js.
 
     // Move the activation and class removal inside the boot function
     // by placing them at the end of the boot function itself.
@@ -616,10 +580,8 @@
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
             boot();
-            enableHeaderScroll();
         });
     } else {
         boot();
-        enableHeaderScroll();
     }
 })();
