@@ -818,7 +818,6 @@
 #view-location .page,
 #locationRealContent,
 .loc-page,
-.loc-header,
 .loc-nearby {
   width: 100%;
   max-width: none;
@@ -829,20 +828,44 @@
   padding: 20px 16px 0px;
 }
 
-/* ---- Header: title / subtitle + add button ---- */
+/* ---- Header: mirrors the real app .topbar chrome exactly (same
+   background gradient/blur/border, same sticky behavior, same
+   width/position/margin/padding as .topbar / .topbar__inner in
+   components/navbar.css), so this page-level header reads as a
+   continuation of the app's nav bar rather than a differently-styled
+   panel. It's full-bleed (100vw) the same way .topbar spans the true
+   viewport edge-to-edge, with an inner row that re-creates
+   .topbar__inner's own max-width/centering — same treatment as
+   .notif-header on the Notifications page. ---- */
 
 .loc-header {
   position: sticky;
   top: 0;
   z-index: 10;
+  width: 100vw;
+  margin-left: calc(-50vw + 50%);
+  box-sizing: border-box;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--bg-panel) 96%, transparent), color-mix(in srgb, var(--bg-panel-raised) 88%, transparent));
+  border-bottom: 1px solid color-mix(in srgb, var(--border-soft) 86%, transparent);
+  backdrop-filter: blur(6px);
+  padding-top: env(safe-area-inset-top, 0px);
+  transition: transform 0.3s ease;
+}
+
+html[data-theme="light"] .loc-header {
+  background: #ffffff;
+  border-bottom-color: var(--border-soft);
+}
+
+.loc-header__inner {
+  max-width: var(--max-width);
+  margin: 0 0 0 20px;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 24px;
-  width: 100%;
-  box-sizing: border-box;
   padding: 14px 24px 6px;
-  margin: 0;
+  gap: 24px;
+  box-sizing: border-box;
 }
 
 .loc-header__text {
@@ -1065,7 +1088,7 @@ html[data-theme="light"] .loc-header__title {
 }
 
 @media (max-width: 768px) {
-  .loc-header {
+  .loc-header__inner {
     padding: 8px;
   }
 

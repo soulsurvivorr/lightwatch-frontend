@@ -2817,11 +2817,13 @@
     <section id="view-location" data-view="location" hidden>
   <div class="page" id="locationSkeleton" aria-hidden="true">
     <div class="loc-header">
-      <div class="loc-header__text">
-        <span class="skel skel-line" style="width:140px;height:22px;"></span>
-        <span class="skel skel-line" style="width:220px;height:12px;margin-top:8px;"></span>
+      <div class="loc-header__inner">
+        <div class="loc-header__text">
+          <span class="skel skel-line" style="width:140px;height:22px;"></span>
+          <span class="skel skel-line" style="width:220px;height:12px;margin-top:8px;"></span>
+        </div>
+        <span class="skel skel-circle" style="width:38px;height:38px;"></span>
       </div>
-      <span class="skel skel-circle" style="width:38px;height:38px;"></span>
     </div>
     <span class="skel skel-block" style="height:46px;margin-top:14px;"></span>
     <div style="display:flex;gap:8px;margin-top:14px;">
@@ -2846,13 +2848,15 @@
 
       <!-- ==== Page header: title + subtitle + add-location button ==== -->
       <div class="loc-header">
-        <div class="loc-header__text">
-          <h1 class="loc-header__title">Locations</h1>
-          <p class="loc-header__sub">Explore and monitor power status in your area</p>
+        <div class="loc-header__inner">
+          <div class="loc-header__text">
+            <h1 class="loc-header__title">Locations</h1>
+            <p class="loc-header__sub">Explore and monitor power status in your area</p>
+          </div>
+          <button type="button" class="loc-header__add" id="locAddBtn" aria-label="Add a location">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+          </button>
         </div>
-        <button type="button" class="loc-header__add" id="locAddBtn" aria-label="Add a location">
-          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
-        </button>
       </div>
 
       <!-- ==== Search ==== -->
