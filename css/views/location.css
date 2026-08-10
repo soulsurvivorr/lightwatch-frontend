@@ -863,7 +863,7 @@ html[data-theme="light"] .loc-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  padding: 14px 24px 6px;
+  padding: 0 24px 6px;
   gap: 24px;
   box-sizing: border-box;
 }
@@ -1089,7 +1089,7 @@ html[data-theme="light"] .loc-header__title {
 
 @media (max-width: 768px) {
   .loc-header__inner {
-    padding: 8px;
+    padding: 0 8px 8px 8px;
   }
 
   .loc-map {
