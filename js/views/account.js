@@ -378,32 +378,38 @@ function initProfileIdentityForm() {
 // for the 'lw-display-prefs-changed' event to react live.
 // ------------------------------------------------------------
 const DISPLAY_PREF_KEYS = {
-    compactChat:   'lw_pref_compact_chat',
-    reduceMotion:  'lw_pref_reduce_motion',
-    largeChatText: 'lw_pref_large_chat_text',
-    density:       'lw_pref_density',   // 'comfortable' | 'compact'
-    accent:        'lw_pref_accent',    // 'teal' | 'amber' | 'violet'
-    theme:         'lw_theme_pref'      // 'device' | 'light' | 'dark'
+    reduceMotion:   'lw_pref_reduce_motion',
+    showHomeStats:  'lw_pref_show_home_stats', // outage-pace/avg-duration row on Home
+    density:        'lw_pref_density',   // 'comfortable' | 'compact'
+    accent:         'lw_pref_accent',    // 'teal' | 'amber' | 'violet'
+    theme:          'lw_theme_pref',     // 'device' | 'light' | 'dark'
+    compactBubbles: 'lw_pref_compact_bubbles', // smaller message cards in Community Report chat
+    largerText:     'lw_pref_larger_text',     // bumped font size in Community Report chat
+    dataSaver:      'lw_pref_data_saver'       // lower-res images, no autoplay previews
 };
 
 function readDisplayPrefs() {
     return {
-        compactChat:   localStorage.getItem(DISPLAY_PREF_KEYS.compactChat) === '1',
-        reduceMotion:  localStorage.getItem(DISPLAY_PREF_KEYS.reduceMotion) === '1',
-        largeChatText: localStorage.getItem(DISPLAY_PREF_KEYS.largeChatText) === '1',
-        density:       localStorage.getItem(DISPLAY_PREF_KEYS.density) || 'comfortable',
-        accent:        localStorage.getItem(DISPLAY_PREF_KEYS.accent) || 'teal',
-        theme:         localStorage.getItem(DISPLAY_PREF_KEYS.theme) || 'device'
+        reduceMotion:   localStorage.getItem(DISPLAY_PREF_KEYS.reduceMotion) === '1',
+        showHomeStats:  localStorage.getItem(DISPLAY_PREF_KEYS.showHomeStats) !== '0', // default ON
+        density:        localStorage.getItem(DISPLAY_PREF_KEYS.density) || 'comfortable',
+        accent:         localStorage.getItem(DISPLAY_PREF_KEYS.accent) || 'teal',
+        theme:          localStorage.getItem(DISPLAY_PREF_KEYS.theme) || 'device',
+        compactBubbles: localStorage.getItem(DISPLAY_PREF_KEYS.compactBubbles) === '1',
+        largerText:     localStorage.getItem(DISPLAY_PREF_KEYS.largerText) === '1',
+        dataSaver:      localStorage.getItem(DISPLAY_PREF_KEYS.dataSaver) === '1'
     };
 }
 
 function applyDisplayPrefsToDocument(prefs) {
     const root = document.documentElement;
-    root.setAttribute('data-compact-chat', prefs.compactChat ? '1' : '0');
     root.setAttribute('data-reduce-motion', prefs.reduceMotion ? '1' : '0');
-    root.setAttribute('data-large-chat-text', prefs.largeChatText ? '1' : '0');
+    root.setAttribute('data-show-home-stats', prefs.showHomeStats ? '1' : '0');
     root.setAttribute('data-density', prefs.density);
     root.setAttribute('data-accent', prefs.accent);
+    root.setAttribute('data-compact-bubbles', prefs.compactBubbles ? '1' : '0');
+    root.setAttribute('data-larger-text', prefs.largerText ? '1' : '0');
+    root.setAttribute('data-saver', prefs.dataSaver ? '1' : '0');
 }
 
 function setDisplayPref(key, value) {
@@ -419,45 +425,72 @@ window.LWDisplayPrefs = {
     set: setDisplayPref
 };
 
+// Generic pill/segmented-control wiring — used for Home card spacing.
+// (Theme mode moved back to a native <select> — see prefThemeSelect
+// above.) `containerId` holds one or more `.segmented__btn` children
+// carrying `data-value`; clicking one marks it pressed and un-presses
+// its siblings.
+function initSegmentedControl(containerId, currentValue, onSelect) {
+    const container = el(containerId);
+    if (!container) return;
+    const buttons = container.querySelectorAll('.segmented__btn');
+    buttons.forEach(btn => {
+        btn.setAttribute('aria-pressed', btn.dataset.value === currentValue ? 'true' : 'false');
+        btn.addEventListener('click', () => {
+            if (btn.getAttribute('aria-pressed') === 'true') return;
+            buttons.forEach(b => b.setAttribute('aria-pressed', b === btn ? 'true' : 'false'));
+            onSelect(btn.dataset.value);
+        });
+    });
+}
+
 function initDisplayPrefsUI() {
     const prefs = readDisplayPrefs();
     applyDisplayPrefsToDocument(prefs);
 
-    const compactToggle = el('prefCompactChat');
     const reduceMotionToggle = el('prefReduceMotion');
-    const largeTextToggle = el('prefLargeChatText');
-    const densitySelect = el('prefDensity');
-    const themeSelect = el('prefTheme');
+    const showStatsToggle = el('prefShowStats');
+    const compactBubblesToggle = el('prefCompactBubbles');
+    const largerTextToggle = el('prefLargerText');
+    const dataSaverToggle = el('prefDataSaver');
     const swatches = document.querySelectorAll('#accentSwatchRow .swatch');
 
-    if (compactToggle) compactToggle.checked = prefs.compactChat;
     if (reduceMotionToggle) reduceMotionToggle.checked = prefs.reduceMotion;
-    if (largeTextToggle) largeTextToggle.checked = prefs.largeChatText;
-    if (densitySelect) densitySelect.value = prefs.density;
-    if (themeSelect) themeSelect.value = prefs.theme;
+    if (showStatsToggle) showStatsToggle.checked = prefs.showHomeStats;
+    if (compactBubblesToggle) compactBubblesToggle.checked = prefs.compactBubbles;
+    if (largerTextToggle) largerTextToggle.checked = prefs.largerText;
+    if (dataSaverToggle) dataSaverToggle.checked = prefs.dataSaver;
     swatches.forEach(btn => btn.setAttribute('aria-pressed', btn.dataset.accent === prefs.accent ? 'true' : 'false'));
-
-    compactToggle?.addEventListener('change', () => {
-        setDisplayPref('compactChat', compactToggle.checked);
-        openChatPreviewPopup();
-    });
 
     reduceMotionToggle?.addEventListener('change', () => {
         setDisplayPref('reduceMotion', reduceMotionToggle.checked);
     });
 
-    largeTextToggle?.addEventListener('change', () => {
-        setDisplayPref('largeChatText', largeTextToggle.checked);
-        openChatPreviewPopup();
+    showStatsToggle?.addEventListener('change', () => {
+        setDisplayPref('showHomeStats', showStatsToggle.checked);
     });
 
-    densitySelect?.addEventListener('change', () => {
-        setDisplayPref('density', densitySelect.value);
+    compactBubblesToggle?.addEventListener('change', () => {
+        setDisplayPref('compactBubbles', compactBubblesToggle.checked);
     });
 
-    themeSelect?.addEventListener('change', () => {
-        setDisplayPref('theme', themeSelect.value);
+    largerTextToggle?.addEventListener('change', () => {
+        setDisplayPref('largerText', largerTextToggle.checked);
     });
+
+    dataSaverToggle?.addEventListener('change', () => {
+        setDisplayPref('dataSaver', dataSaverToggle.checked);
+    });
+
+    const themeSelect = el('prefThemeSelect');
+    if (themeSelect) {
+        themeSelect.value = prefs.theme;
+        themeSelect.addEventListener('change', () => {
+            setDisplayPref('theme', themeSelect.value);
+        });
+    }
+
+    initSegmentedControl('prefDensitySegmented', prefs.density, (value) => setDisplayPref('density', value));
 
     swatches.forEach(btn => {
         btn.addEventListener('click', () => {
@@ -511,80 +544,11 @@ function initAccordions() {
 }
 
 // ------------------------------------------------------------
-// COMPACT CHAT PREVIEW POPUP
-// Pulls real, recent messages for the signed-in user's location
-// (same /chats endpoint the live community chat uses) instead of
-// placeholder bubbles, with real loading/empty/error states —
-// the same pattern notification.js uses for its network calls.
-// Reuses the exact same markup/classes the live community chat
-// renders with (.chat-message, .chat-message--own, etc.), driven
-// by the same [data-compact-chat]/[data-large-chat-text]/
-// [data-reduce-motion] attributes already applied to <html>, so
-// toggling a preference here updates the preview exactly the way
-// it'll actually look in chat, live.
+// HTML ESCAPING — shared helper for anything rendered from
+// server/user-provided text (recent chat activity list, etc).
 // ------------------------------------------------------------
 function escapeHtml(str) {
     return String(str ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-}
-
-async function openChatPreviewPopup() {
-    const overlay = el('chatPopupOverlay');
-    const popup = el('chatPopup');
-    const body = el('chatPopupBody');
-    if (!overlay || !popup || !body) return;
-
-    overlay.classList.add('chat-popup-overlay--open');
-    overlay.setAttribute('aria-hidden', 'false');
-    body.innerHTML = `<div style="color:var(--text-faint);font-size:0.85rem;padding:14px 0;text-align:center;">Loading recent messages…</div>`;
-
-    const userId = getCurrentUserId();
-    const userObj = getCurrentUserData();
-    const loc = userObj.city ? `${userObj.city}, ${userObj.region || ''}`.replace(/,\s*$/, '') : (userObj.region || userObj.location);
-    const myHandle = userObj.chatHandle || localStorage.getItem('chatHandle') || null;
-
-    if (!loc) {
-        body.innerHTML = `<div style="color:var(--text-faint);font-size:0.85rem;padding:14px 0;text-align:center;">Set a city/town to preview your community chat.</div>`;
-        return;
-    }
-
-    try {
-        const res = await fetch(`${API_URL}/chats?location=${encodeURIComponent(loc)}`);
-        if (!res.ok) throw new Error('bad response');
-        const chats = await res.json();
-        const recent = chats.slice(0, 8).reverse(); // oldest -> newest, like a real thread
-
-        if (recent.length === 0) {
-            body.innerHTML = `<div style="color:var(--text-faint);font-size:0.85rem;padding:14px 0;text-align:center;">No messages in ${escapeHtml(loc.split(',')[0])} yet — be the first to say something on Home.</div>`;
-            return;
-        }
-
-        body.innerHTML = `<div class="chat-thread">${recent.map(m => {
-            const isMine = myHandle && m.handle === myHandle;
-            const time = m.createdAt ? new Date(m.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
-            return `
-                <div class="chat-message${isMine ? ' chat-message--own' : ''}">
-                  <span class="chat-message__author">${isMine ? 'You' : escapeHtml(m.handle || 'anon')}</span>
-                  <span class="chat-message__text">${escapeHtml(m.text)}</span>
-                  <span class="chat-message__time">${time}</span>
-                </div>`;
-        }).join('')}</div>`;
-    } catch (err) {
-        body.innerHTML = `<div style="color:var(--text-faint);font-size:0.85rem;padding:14px 0;text-align:center;">Could not load chat preview right now.</div>`;
-    }
-}
-
-function closeChatPreviewPopup() {
-    const overlay = el('chatPopupOverlay');
-    if (!overlay) return;
-    overlay.classList.remove('chat-popup-overlay--open');
-    overlay.setAttribute('aria-hidden', 'true');
-}
-
-function initChatPreviewPopup() {
-    el('chatPopupCloseBtn')?.addEventListener('click', closeChatPreviewPopup);
-    el('chatPopupOverlay')?.addEventListener('click', (e) => {
-        if (e.target === el('chatPopupOverlay')) closeChatPreviewPopup();
-    });
 }
 
 // ------------------------------------------------------------
@@ -595,6 +559,8 @@ function initNotificationPrefToggles() {
     const chatMentionsToggle = el('prefChatMentions');
     const checkInToggle = el('prefCheckInAlerts');
     const outageNewsToggle = el('prefOutageNewsAlerts');
+    const outageAlertsToggle = el('prefOutageAlerts');
+    const restoredAlertsToggle = el('prefRestoredAlerts');
 
     // Seed from localStorage immediately (fast paint), then reconcile
     // with the server's saved state once the push subscription is ready.
@@ -602,6 +568,8 @@ function initNotificationPrefToggles() {
     if (chatMentionsToggle) chatMentionsToggle.checked = localStorage.getItem('lw_chat_mentions') !== '0'; // default ON
     if (checkInToggle) checkInToggle.checked = localStorage.getItem('lw_checkin_alerts') !== '0'; // default ON
     if (outageNewsToggle) outageNewsToggle.checked = localStorage.getItem('lw_outage_news_alerts') !== '0'; // default ON
+    if (outageAlertsToggle) outageAlertsToggle.checked = localStorage.getItem('lw_outage_alerts') !== '0'; // default ON
+    if (restoredAlertsToggle) restoredAlertsToggle.checked = localStorage.getItem('lw_restored_alerts') !== '0'; // default ON
 
     (async () => {
         if (typeof window.getChatPushPreferences !== 'function') return;
@@ -622,6 +590,17 @@ function initNotificationPrefToggles() {
         if (outageNewsToggle) {
             outageNewsToggle.checked = prefs.outageNewsAlertsEnabled !== false;
             localStorage.setItem('lw_outage_news_alerts', outageNewsToggle.checked ? '1' : '0');
+        }
+        // Only reconcile against the server if it actually returned these
+        // fields — older backends may not have them yet, and this should
+        // never silently flip a real local choice back to default.
+        if (outageAlertsToggle && typeof prefs.outageAlertsEnabled !== 'undefined') {
+            outageAlertsToggle.checked = prefs.outageAlertsEnabled !== false;
+            localStorage.setItem('lw_outage_alerts', outageAlertsToggle.checked ? '1' : '0');
+        }
+        if (restoredAlertsToggle && typeof prefs.restoredAlertsEnabled !== 'undefined') {
+            restoredAlertsToggle.checked = prefs.restoredAlertsEnabled !== false;
+            localStorage.setItem('lw_restored_alerts', restoredAlertsToggle.checked ? '1' : '0');
         }
     })();
 
@@ -695,6 +674,49 @@ function initNotificationPrefToggles() {
         window.lwToast?.(outageNewsToggle.checked
             ? 'You\u2019ll be pushed when official news reports an outage anywhere in Ghana.'
             : 'Outage news alerts are off — you\u2019ll still get alerts for your own location.');
+    });
+
+    outageAlertsToggle?.addEventListener('change', async () => {
+        // No dedicated backend setter for this one yet — persist locally
+        // the same way the others do, and pick up window.setOutageAlertsPreference
+        // automatically the moment push.js defines it.
+        if (typeof window.setOutageAlertsPreference !== 'function') {
+            localStorage.setItem('lw_outage_alerts', outageAlertsToggle.checked ? '1' : '0');
+            window.lwToast?.(outageAlertsToggle.checked
+                ? 'You\u2019ll be notified the moment light goes off at your saved location.'
+                : 'Outage alerts for your area are off.');
+            return;
+        }
+        const result = await window.setOutageAlertsPreference(outageAlertsToggle.checked);
+        if (!result.success) {
+            outageAlertsToggle.checked = !outageAlertsToggle.checked;
+            window.lwToast?.(result.error || 'Could not save outage alert setting.');
+            return;
+        }
+        localStorage.setItem('lw_outage_alerts', outageAlertsToggle.checked ? '1' : '0');
+        window.lwToast?.(outageAlertsToggle.checked
+            ? 'You\u2019ll be notified the moment light goes off at your saved location.'
+            : 'Outage alerts for your area are off.');
+    });
+
+    restoredAlertsToggle?.addEventListener('change', async () => {
+        if (typeof window.setRestoredAlertsPreference !== 'function') {
+            localStorage.setItem('lw_restored_alerts', restoredAlertsToggle.checked ? '1' : '0');
+            window.lwToast?.(restoredAlertsToggle.checked
+                ? 'You\u2019ll be notified the moment power comes back on.'
+                : 'Power-restored alerts are off.');
+            return;
+        }
+        const result = await window.setRestoredAlertsPreference(restoredAlertsToggle.checked);
+        if (!result.success) {
+            restoredAlertsToggle.checked = !restoredAlertsToggle.checked;
+            window.lwToast?.(result.error || 'Could not save restored-power alert setting.');
+            return;
+        }
+        localStorage.setItem('lw_restored_alerts', restoredAlertsToggle.checked ? '1' : '0');
+        window.lwToast?.(restoredAlertsToggle.checked
+            ? 'You\u2019ll be notified the moment power comes back on.'
+            : 'Power-restored alerts are off.');
     });
 }
 
@@ -899,6 +921,8 @@ function renderLocationsList(user) {
     wireSecondaryLocationActions(sec);
 }
 
+let secondaryLocationPicker = null;
+
 function setSecondaryFormVisible(visible, sec) {
     const addBtn = el('secondaryLocationAddBtn');
     const form = el('secondaryLocationForm');
@@ -910,6 +934,8 @@ function setSecondaryFormVisible(visible, sec) {
         el('secondaryLocationCity').value = sec?.city || '';
         el('secondaryLocationRegion').value = sec?.region || '';
         el('secondaryLocationMessage').textContent = '';
+        secondaryLocationPicker?.reset();
+        secondaryLocationPicker?.refresh();
     }
 }
 
@@ -946,7 +972,27 @@ function wireSecondaryLocationActions(sec) {
 }
 
 function initSecondaryLocationForm() {
-    el('secondaryLocationForm')?.addEventListener('submit', async () => {
+    const cityInput = el('secondaryLocationCity');
+    const regionInput = el('secondaryLocationRegion');
+    const resultsEl = el('secondaryLocationSearchResults');
+    const locateBtn = el('secondaryLocationLocateBtn');
+    const hintEl = el('secondaryLocationLocationHint');
+    const form = el('secondaryLocationForm');
+
+    if (cityInput && cityInput.dataset.locationPickerBound !== '1') {
+        secondaryLocationPicker = window.LWLocationPicker?.attach({
+            input: cityInput,
+            resultsEl,
+            locateBtn,
+            hintEl,
+            getRegion: () => String(regionInput?.value || '')
+        }) || null;
+        cityInput.dataset.locationPickerBound = '1';
+    }
+
+    regionInput?.addEventListener('input', () => secondaryLocationPicker?.refresh());
+
+    form?.addEventListener('submit', async () => {
         const userId = getCurrentUserId();
         const label = String(el('secondaryLocationLabel')?.value || '').trim();
         const city = String(el('secondaryLocationCity')?.value || '').trim();
@@ -964,10 +1010,12 @@ function initSecondaryLocationForm() {
         if (messageEl) messageEl.textContent = 'Saving...';
 
         try {
+            const coords = secondaryLocationPicker?.getCoords();
+            const payload = coords ? { label, city, region, lat: coords.lat, lng: coords.lng } : { label, city, region };
             const res = await fetch(`${API_URL}/user/${userId}/secondary-location`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ label, city, region })
+                body: JSON.stringify(payload)
             });
             const data = await res.json().catch(() => ({}));
             if (!res.ok) {
@@ -1552,7 +1600,6 @@ function consumePendingAccountPanel() {
 // ------------------------------------------------------------
 function mount() {
     initDisplayPrefsUI();
-    initChatPreviewPopup();
     initNotificationPrefToggles();
     initSecondaryLocationForm();
     initProfileIdentityForm();

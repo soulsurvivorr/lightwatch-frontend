@@ -53,6 +53,29 @@ html[data-theme="light"] .topbar {
   margin: 0;
 }
 
+.topbar__view-title {
+  font-size: 1.15rem;
+  font-weight: 750;
+  color: var(--text-bright);
+  margin: 0;
+  flex: 1;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 12px;
+}
+
+@media (max-width: 540px) {
+  .topbar:has(#topbarViewTitle:not([hidden])) .topbar__brand p {
+    display: none;
+  }
+  .topbar__view-title {
+    text-align: left;
+    padding-left: 0;
+  }
+}
+
 .brand {
   display: flex;
   align-items: center;

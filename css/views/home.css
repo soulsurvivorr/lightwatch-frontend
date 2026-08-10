@@ -5255,6 +5255,15 @@ body:not(.page-data-loading) #view-home #realPageContent {
    as 4 columns; desktop override below just gives them more
    breathing room instead of changing the column count.
    ============================================================ */
+/* Real wiring for Account's "Home outage summary" toggle (previously
+   hardcoded checked with zero JS behind it) -- hides the outage-pace
+   stat row when the person turns it off. Scoped to #view-home so the
+   [data-show-home-stats] attribute on <html> can never affect any
+   other .lw-stat-grid usage elsewhere in the app. */
+html[data-show-home-stats="0"] #view-home .lw-stat-grid.lwx-stat-grid-5 {
+  display: none;
+}
+
 .lw-stat-grid {
   display: flex;
   flex-wrap: nowrap;

@@ -291,6 +291,16 @@
         currentView = name;
         document.title = cfg.title;
 
+        // Update Topbar Title
+        const topbarTitle = document.getElementById('topbarViewTitle');
+        if (topbarTitle) {
+            let shortTitle = '';
+            if (name === 'location') shortTitle = 'Map';
+
+            topbarTitle.textContent = shortTitle;
+            topbarTitle.hidden = !shortTitle;
+        }
+
         syncHistory(name, push, search);
 
         window.dispatchEvent(new CustomEvent('lw:route-changed', { detail: { view: name } }));

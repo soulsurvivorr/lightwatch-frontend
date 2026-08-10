@@ -236,22 +236,19 @@ window.createLoopCarousel = createLoopCarousel;
 // ------------------------------------------------------------
 (function applyDisplayPrefsOnHome() {
     const root = document.documentElement;
-    const KEYS = {
-        'data-compact-chat':     'lw_pref_compact_chat',
-        'data-reduce-motion':    'lw_pref_reduce_motion',
-        'data-large-chat-text':  'lw_pref_large_chat_text'
-    };
-    Object.entries(KEYS).forEach(([attr, key]) => {
-        root.setAttribute(attr, localStorage.getItem(key) === '1' ? '1' : '0');
-    });
+    root.setAttribute('data-reduce-motion', localStorage.getItem('lw_pref_reduce_motion') === '1' ? '1' : '0');
+    // Drives the "Outage today / Avg. outage / Confidence / Reports" stat
+    // row via home.css's [data-show-home-stats="0"] rule — real toggle now
+    // (Account's "Home outage summary" switch), default ON.
+    root.setAttribute('data-show-home-stats', localStorage.getItem('lw_pref_show_home_stats') !== '0' ? '1' : '0');
     root.setAttribute('data-density', localStorage.getItem('lw_pref_density') || 'comfortable');
     root.setAttribute('data-accent', localStorage.getItem('lw_pref_accent') || 'teal');
 
     // Live-sync if the user flips a toggle on Account while Home stays
     // open in another tab.
     window.addEventListener('storage', (e) => {
-        const attr = Object.keys(KEYS).find(a => KEYS[a] === e.key);
-        if (attr) root.setAttribute(attr, e.newValue === '1' ? '1' : '0');
+        if (e.key === 'lw_pref_reduce_motion') root.setAttribute('data-reduce-motion', e.newValue === '1' ? '1' : '0');
+        if (e.key === 'lw_pref_show_home_stats') root.setAttribute('data-show-home-stats', e.newValue !== '0' ? '1' : '0');
         if (e.key === 'lw_pref_density') root.setAttribute('data-density', e.newValue || 'comfortable');
         if (e.key === 'lw_pref_accent') root.setAttribute('data-accent', e.newValue || 'teal');
     });

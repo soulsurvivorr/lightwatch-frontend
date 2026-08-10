@@ -1,490 +1,7 @@
 /* ============================================================
    VIEWS/NOTIFICATIONS.CSS
-   Shared notifications feed styling for the Notifications page and
-   home page report preview lists. This file centralizes the
-   .notification-list / .notification-item and .report-list / .report-item
-   rules and desktop-specific #view-notifications layout tweaks.
    ============================================================ */
 
-.notification-list,
-.report-list {
-  display: grid;
-  gap: 12px;
-}
-
-.report-item,
-.notification-item {
-  background: var(--bg-panel);
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-md);
-  padding: 14px 16px;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 14px;
-  transition: transform 0.18s ease, opacity 0.22s ease;
-}
-
-.report-item:hover,
-.notification-item:hover {
-  transform: translateY(-2px);
-}
-
-.notification-list.loading .notification-item,
-.report-list.loading .report-item {
-  opacity: 0.5;
-}
-
-.report-skeleton,
-.notification-skeleton {
-  position: relative;
-  overflow: hidden;
-  background: linear-gradient(90deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.05) 100%);
-  background-size: 200% 100%;
-  animation: skeletonShimmer 1.2s linear infinite;
-}
-
-.report-skeleton::before {
-  content: "";
-  display: block;
-  padding-top: 14px;
-}
-
-@keyframes skeletonShimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-
-.report-item strong,
-.notification-item strong {
-  display: block;
-  font-size: 0.88rem;
-  margin-bottom: 5px;
-}
-
-@media (max-width: 720px) {
-  .report-item,
-  .notification-item {
-    padding: 10px 12px;
-    gap: 10px;
-  }
-
-  .report-item strong,
-  .notification-item strong {
-    font-size: 0.78rem;
-    margin-bottom: 3px;
-  }
-
-  .report-item__text,
-  .notification-item__text {
-    font-size: 0.68rem;
-    line-height: 1.28;
-  }
-
-  .report-item__time,
-  .notification-item__time {
-    font-size: 0.6rem;
-  }
-}
-
-.report-item__text,
-.notification-item__text {
-  color: var(--text-muted);
-  font-size: 0.78rem;
-  line-height: 1.4;
-}
-
-.report-item__time,
-.notification-item__time {
-  /* FIX: this rule used to only target .report-item__time — the
-     notification-item version had no white-space/flex-shrink
-     protection of its own, so on narrower cards (or longer titles)
-     the time column would get squeezed and "4d ago" would wrap onto
-     two lines, one word per line. white-space:nowrap keeps the label
-     on one line; flex-shrink:0 stops the flex row (.report-item /
-     .notification-item is display:flex) from shrinking this column
-     at all — the text side (.notification-item__text) wraps instead,
-     which is the column that's supposed to give way. */
-  color: var(--text-faint);
-  font-size: 0.7rem;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.report-item--info,
-.notification-item--info {
-  border-color: rgba(23, 25, 60, 0.15);
-}
-
-.report-item--chat,
-.notification-item--chat {
-  border-color: rgba(61, 217, 194, 0.3);
-}
-
-.report-item--reply,
-.notification-item--reply {
-  border-color: rgba(120, 130, 255, 0.45);
-}
-
-.report-item--news,
-.notification-item--news {
-  border-color: rgba(242, 179, 61, 0.3);
-}
-
-.report-item--admin,
-.notification-item--admin {
-  border-color: rgba(242, 179, 61, 0.55);
-  background: rgba(242, 179, 61, 0.06);
-}
-
-/* ============================================================
-   Outage / restoration status items get the same "own identity"
-   treatment as news below, instead of just a thin tinted border —
-   a left accent bar plus a status chip, colored with the app's
-   existing red=alert / teal=resolved language (see --red/--teal in
-   variables.css) so an outage reads as urgent and a restoration
-   reads as resolved at a glance, rather than blending into every
-   other bordered card in the feed.
-   ============================================================ */
-.report-item--warning,
-.notification-item--warning {
-  position: relative;
-  padding-left: 20px;
-  background: linear-gradient(90deg, rgba(229, 72, 77, 0.07), transparent 60%);
-  border-color: rgba(229, 72, 77, 0.35);
-}
-
-.report-item--warning::before,
-.notification-item--warning::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 10px;
-  bottom: 10px;
-  width: 3px;
-  border-radius: 999px;
-  background: var(--red);
-}
-
-.notification-item--warning strong {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.notification-item--warning strong::after {
-  content: "Outage";
-  font-size: 0.6rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--red);
-  background: rgba(229, 72, 77, 0.12);
-  border: 1px solid rgba(229, 72, 77, 0.32);
-  border-radius: 999px;
-  padding: 2px 7px;
-  line-height: 1.4;
-}
-
-.report-item--success,
-.notification-item--success {
-  position: relative;
-  padding-left: 20px;
-  background: linear-gradient(90deg, rgba(61, 217, 194, 0.08), transparent 60%);
-  border-color: rgba(61, 217, 194, 0.4);
-}
-
-.report-item--success::before,
-.notification-item--success::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 10px;
-  bottom: 10px;
-  width: 3px;
-  border-radius: 999px;
-  background: var(--teal);
-}
-
-.notification-item--success strong {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.notification-item--success strong::after {
-  content: "Restored";
-  font-size: 0.6rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--teal-dim);
-  background: rgba(61, 217, 194, 0.16);
-  border: 1px solid rgba(61, 217, 194, 0.4);
-  border-radius: 999px;
-  padding: 2px 7px;
-  line-height: 1.4;
-}
-
-@media (max-width: 720px) {
-  .report-item--warning,
-  .notification-item--warning,
-  .report-item--success,
-  .notification-item--success {
-    padding-left: 16px;
-  }
-}
-
-/* ============================================================
-   News items get their own identity instead of just a tinted
-   border like the other types — a small "News" chip and a left
-   accent bar, so a glance down the feed tells news apart from
-   outage/reply/admin items without reading the text.
-   ============================================================ */
-.report-item--news,
-.notification-item--news {
-  position: relative;
-  padding-left: 20px;
-  background: linear-gradient(90deg, rgba(242, 179, 61, 0.05), transparent 60%);
-}
-
-.report-item--news::before,
-.notification-item--news::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 10px;
-  bottom: 10px;
-  width: 3px;
-  border-radius: 999px;
-  background: var(--amber);
-}
-
-.notification-item--news strong {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.notification-item--news strong::after {
-  content: "News";
-  font-size: 0.6rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--amber);
-  background: rgba(242, 179, 61, 0.14);
-  border: 1px solid rgba(242, 179, 61, 0.35);
-  border-radius: 999px;
-  padding: 2px 7px;
-  line-height: 1.4;
-}
-
-@media (max-width: 720px) {
-  .report-item--news,
-  .notification-item--news {
-    padding-left: 16px;
-  }
-}
-
-/* ============================================================
-   Card + item polish
-   ============================================================ */
-.notification-card {
-  overflow: hidden;
-}
-
-.notification-item {
-  box-shadow: 0 1px 2px rgba(28, 31, 38, 0.04);
-}
-
-.notification-item:hover {
-  box-shadow: 0 8px 20px rgba(28, 31, 38, 0.08);
-  border-color: color-mix(in srgb, var(--brand2) 30%, var(--border-soft));
-}
-
-.notification-item strong {
-  color: var(--text-bright);
-}
-
-.report-item[role="link"],
-.notification-item[role="link"] {
-  cursor: pointer;
-  transition: transform 0.12s ease, box-shadow 0.12s ease;
-}
-
-.report-item[role="link"]:hover,
-.report-item[role="link"]:focus-visible,
-.notification-item[role="link"]:hover,
-.notification-item[role="link"]:focus-visible {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 20px rgba(28, 31, 38, 0.1);
-  outline: none;
-}
-
-/* ------------------------------------------------------------
-   #notifSkeleton / #notifRealContent — same pattern as account.css's
-   #accountSkeleton/#accountRealContent, home.css's
-   #pageSkeleton/#realPageContent, and location.css's
-   #locationSkeleton/#locationRealContent. This page never had it:
-   both were plain block-level siblings sharing class="page" with
-   nothing making them mutually exclusive, so they stacked in normal
-   flow instead of one replacing the other — skeleton first, real
-   content shoved down beneath it, both visible at once. That's also
-   why the skeleton never matched the real content's width/height:
-   with no display:none to remove it from flow, it was never sitting
-   there being measured on its own — it was overlapping/stacking with
-   a sibling that carries the extra `.notif-page` class (max-width,
-   padding, flex column) that this element never had. Fixed both
-   here: the display gate below, and `.notif-page` added onto
-   #notifSkeleton itself in index.html so its box matches
-   #notifRealContent's exactly.
-
-   display:none/block is mutually exclusive by design: only one of
-   the pair is ever actually laid out, so neither can push the other
-   down. notifications.js's hideNotifSkeleton() adds .lw-skel-fading
-   first (triggering the opacity fade below while .notif-data-loading,
-   and therefore display:block, is still in effect), then ~180ms
-   later drops .notif-data-loading (snapping the now-invisible
-   skeleton to display:none) and adds .lw-content-reveal to
-   #notifRealContent for its entrance animation — mirroring
-   profile.js's showProfileLoader()/hideProfileLoader() timing for
-   Home. notifications.js's own render() already only shows this
-   skeleton when there's no cached data on first load (isFirstLoad
-   check), so this was purely the missing display-gate CSS.
-
-   FIX: this used to key off the shared `.page-data-loading` class —
-   the same flag profile.js's showProfileLoader()/hideProfileLoader()
-   uses for the unrelated Home/Account first-boot skeleton. Whichever
-   loader finished first cleared the class out from under the other,
-   so the Notifications skeleton could get stuck showing (or hidden
-   too early) depending on load timing, and could stack visibly on
-   top of #notifRealContent. `.notif-data-loading` is set/cleared only
-   by notifications.js itself now, so this page's loading state can't
-   be touched by any other view's loader.
-
-   FIX 2: this display gate was losing the cascade to the shared
-   sizing rule below (`#view-notifications .notif-page { display:
-   flex; ... }`) — both #notifSkeleton and #notifRealContent carry
-   that `.notif-page` class for their width/padding, and 1 id + 1
-   class beats a bare id selector (100 vs 110), regardless of source
-   order or which class is on <body>. In practice that meant
-   #notifSkeleton was permanently pinned to `display: flex` — visible
-   at all times, `.notif-data-loading` or not — which is exactly why
-   it always showed even once #notifRealContent had already rendered
-   real, fetched data underneath it. Scoping these to
-   `#view-notifications` (id + id, and class + id + id below) gives
-   the gate enough specificity to always win. */
-#view-notifications #notifSkeleton {
-  display: none;
-  opacity: 1;
-  transition: opacity 0.2s ease;
-}
-
-.notif-data-loading #view-notifications #notifSkeleton {
-  display: block;
-}
-
-#notifSkeleton.lw-skel-fading {
-  opacity: 0;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  #notifSkeleton {
-    transition: none;
-  }
-}
-
-.notif-data-loading #view-notifications #notifRealContent {
-  display: none;
-}
-
-/* @keyframes lwContentReveal is defined once in account.css and
-   loaded on every page, so it's shared here rather than redefined. */
-#notifRealContent.lw-content-reveal {
-  animation: lwContentReveal 0.4s cubic-bezier(.19, 1, .22, 1) both;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  #notifRealContent.lw-content-reveal {
-    animation: none;
-  }
-}
-
-/* ============================================================
-   Notifications page — structural .page fixes (KEPT from the
-   previous pass; still needed regardless of the markup redesign
-   below, since they fix real row-vs-column / width / scroll-height
-   bugs in the shared, unseen base .page rule — see the long
-   comments below for the original diagnosis of each).
-   ============================================================ */
-@media (min-width: 981px) {
-  #view-notifications .page {
-    display: flex;
-    flex-direction: column;
-  }
-}
-
-/* Same fix as the 981px block above, at the earlier breakpoint where
-  desktop layout (and therefore the row/column bug) actually starts —
-  matches the min-width:721px breakpoint report.css's Community Report
-  fix uses, so the 721-980px tablet range isn't left broken. */
-@media (min-width: 721px) {
-  /* FIX: an earlier pass here also forced width:100% !important;
-     max-width:100% !important; margin:0 !important, intending to
-     make the header/card run edge-to-edge. That fought the same
-     upstream (not in this file set) .page rule that gives every
-     other view (Home, Location) its shared centered max-width —
-     Notifications ended up wider than the rest of the app instead
-     of matching them. Removed: .page's own width/max-width/margin
-     are left alone so Notifications sizes exactly like every other
-     view. flex-direction:column above only fixes the ROW-vs-COLUMN
-     direction — width was never actually broken and didn't need an
-     override. (This block used to also defend a min-height:100vh rule
-     here on the grounds that a short list would expose bare <html>
-     background beneath it — see the FIX comment just below for why
-     that's no longer true and the rule was removed.) */
-  #view-notifications .page {
-    display: flex;
-    flex-direction: column;
-    /* FIX (max-content sections): was min-height:100vh here, forcing
-       this view to a full screen even with a short list on tall
-       monitors. See global.css's #appShell section[data-view] fix --
-       the section's own background (still --app-bg-solid, unaffected
-       by this change) already reads as one continuous color with
-       #appShell/body beneath a shorter page, so nothing relies on this
-       forced height anymore; removing it just stops the dead space. */
-    box-sizing: border-box;
-    /* FIX: the same unseen base .page rule that forces row layout
-       (see the 981px block's comment) also carries justify-content
-       and align-items values meant for centering a single flex item
-       — likely used for auth/loading screens. Left in place here,
-       those center page__header and .notification-card as a group
-       vertically in the viewport, and center each one horizontally
-       by its own width (so the narrower page__header's left edge
-       lands to the right of notification-card's, instead of the two
-       lining up). flex-start keeps content pinned to the top;
-       stretch makes both children span the full column width so
-       their left edges match. !important for the same
-       specificity/source-order reason as the rest of this block. */
-    justify-content: flex-start !important;
-    align-items: stretch !important;
-  }
-}
-
-/* ============================================================
-   NOTIFICATIONS REDESIGN — matches the reference mobile design:
-   plain page header (no shared app topbar), All/Priority/Mentions/
-   System count tabs, a Priority preview section, and an Earlier
-   section. Locked to a dark palette below 1024px the same way
-   views/home.css's end-of-file "HOME REDESIGN" layer locks Home to
-   dark on phones (theme.js hard-forces light theme under 1024px
-   regardless of system/stored preference, so without this lock the
-   phone screenshot's dark design would render in light colors);
-   above 1024px this instead follows the real light/dark tokens from
-   variables.css + themes/light.css + themes/dark.css, matching how
-   every non-phone-locked view in this app already behaves.
-   ============================================================ */
 #view-notifications {
   --notif-bg: var(--bg-deep);
   --notif-panel: var(--bg-panel);
@@ -499,6 +16,12 @@
   --notif-teal: var(--teal);
   --notif-purple: #a855f7;
   --notif-gray: #7b8496;
+
+  background: var(--notif-bg);
+  color: var(--notif-text);
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
 }
 
 @media (max-width: 1023px) {
@@ -512,85 +35,69 @@
     --notif-blue: #3b82f6;
   }
 
-  /* Requirement: this page gets its own header instead of the
-     shared brand bar. body.lw-notif-view is toggled by
-     js/views/notifications.js's show()/hide() (mount() doesn't need
-     it — mount always runs right before show()). Scoped to phone
-     widths only, since the reference design is mobile-only and the
-     shared topbar's nav links have no equivalent on this page. */
   body.lw-notif-view .topbar {
     display: none !important;
   }
 }
 
-/* FIX (max-content sections): this used to force min-height:100vh/100dvh
-   here directly, with no media query -- so it fired at every width,
-   including mobile, independently re-stretching this view to a full
-   screen even after global.css's #appShell section[data-view] rule was
-   fixed to stop doing that. Removed, same reasoning as global.css: a
-   short notification list should just end where its content ends, not
-   leave dead space above the (position:fixed) bottom nav. */
-#view-notifications {
-  background: var(--notif-bg);
-  color: var(--notif-text);
-  display: flex;
-  flex-direction: column;
-}
-
 #view-notifications .notif-page {
-  max-width: 640px;
+  max-width: 680px;
   width: 100%;
-  max-width: 100%;
   margin: 0 auto;
-  padding: 6px 16px 0px;
-  flex: 1 1 auto;
-  min-height: 100%;
+  padding: 16px;
+  flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start !important;
-  align-items: stretch !important;
-  box-sizing: border-box;
 }
 
-#view-notifications .notif-header,
-#view-notifications .notif-tabs,
-#view-notifications .notif-section,
-#view-notifications .notif-list {
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-  align-self: stretch;
-}
-
-/* ---- Header: title + subtitle left, search + settings right ----
-   FIX: explicit width so this reliably matches .notif-section's width
-   even if the flex-stretch default from .notif-page's column layout
-   ever gets interrupted by something upstream (a later stylesheet,
-   an inline style, etc.) — same class, so this covers the header on
-   both #notifRealContent and #notifSkeleton, since both reuse
-   `.notif-header` as-is. */
+/* ---- Header: mirrors the real app .topbar chrome exactly (same
+   background gradient/blur/border, same sticky behavior, same
+   width/position/margin/padding and font sizes as .topbar /
+   .topbar__inner / .topbar__view-title in components/navbar.css),
+   so this page-level header reads as a continuation of the app's
+   nav bar rather than a differently-styled panel. It's full-bleed
+   (100vw) the same way .topbar spans the true viewport edge-to-edge
+   regardless of this page's own max-width column, with an inner
+   row that re-creates .topbar__inner's own max-width/centering. ---- */
 .notif-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  width: 100vw;
+  margin-left: calc(-50vw + 50%);
+  box-sizing: border-box;
+  backdrop-filter: blur(6px);
+  padding-top: env(safe-area-inset-top, 0px);
+  transition: transform 0.3s ease;
+}
+
+html[data-theme="light"] .notif-header {
+  background: #ffffff;
+  border-bottom-color: var(--notif-border);
+}
+
+.notif-header__inner {
+  max-width: var(--max-width);
+  margin: 0 auto;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
-  width: 100% !important;
-  align-self: stretch !important;
+  padding: 14px 4px 6px 24px;
+  gap: 24px;
   box-sizing: border-box;
-  padding-top: env(safe-area-inset-top, 0px);
-  margin: 10px 0 4px;
 }
 
 .notif-header__title {
-  font-size: 1.7rem;
-  font-weight: 800;
+  font-size: 1.15rem;
+  font-weight: 750;
   color: var(--notif-text);
-  letter-spacing: -0.01em;
+  letter-spacing: normal;
+  margin: 0;
 }
 
 .notif-header__subtitle {
-  margin-top: 4px;
-  font-size: 0.86rem;
+  margin-top: 2px;
+  font-size: 0.85rem;
   color: var(--notif-text-muted);
 }
 
@@ -599,7 +106,6 @@
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
-  margin-top: 4px;
 }
 
 .notif-icon-btn {
@@ -620,398 +126,393 @@
   height: 22px;
 }
 
-/* ---- Inline search bar ---- */
-.notif-search {
+.notif-icon-btn.is-active {
+  background: var(--notif-blue);
+  color: white;
+}
+
+/* ---- Toolbar: Tabs + Actions ---- */
+.notif-toolbar {
   display: flex;
   align-items: center;
-  gap: 8px;
-  width: 100%;
-  box-sizing: border-box;
-  background: var(--notif-panel);
-  border: 1px solid var(--notif-border);
-  border-radius: 999px;
-  padding: 9px 14px;
-  margin-bottom: 12px;
-  color: var(--notif-text-faint);
+  gap: 12px;
+  margin-bottom: 16px;
 }
 
-.notif-search svg {
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
-}
-
-.notif-search input {
-  flex: 1;
-  border: none;
-  background: transparent;
-  outline: none;
-  color: var(--notif-text);
-  font-size: 0.88rem;
-}
-
-.notif-search input::placeholder {
-  color: var(--notif-text-faint);
-}
-
-/* ---- Tabs: All / Priority / Mentions / System
-   FIX: same explicit width parity as .notif-header above — matches
-   .notif-section's width on both real content and the skeleton,
-   which shares this exact class for its tab-pill row. */
 .notif-tabs {
   display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 4px;
-  width: 100% !important;
-  align-self: stretch !important;
-  box-sizing: border-box;
-  overflow-x: auto;
-  scrollbar-width: none;
-  border-bottom: 1px solid var(--notif-border);
-  margin-bottom: 18px;
+  border: none;
 }
 
-.notif-tabs::-webkit-scrollbar {
-  display: none;
-}
+.notif-tabs::-webkit-scrollbar { display: none; }
 
 .notif-tab {
   appearance: none;
-  border: none;
-  border-bottom: 2px solid transparent;
   background: transparent;
+  border: none;
   color: var(--notif-text-muted);
   font-size: 0.86rem;
-  font-weight: 600;
-  padding: 10px 12px;
+  font-weight: 650;
+  padding: 10px 16px;
+  cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  border-radius: 999px;
   white-space: nowrap;
-  cursor: pointer;
-  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.notif-tab:hover,
+.notif-tab:focus-visible {
+  background: color-mix(in srgb, var(--notif-blue) 10%, var(--notif-panel));
+  border-color: color-mix(in srgb, var(--notif-blue) 40%, var(--notif-border));
+  color: var(--notif-text);
+  transform: translateY(-1px);
+}
+
+.notif-tab:active {
+  transform: translateY(0);
 }
 
 .notif-tab.is-active {
-  color: var(--notif-text);
-  border-bottom-color: var(--notif-blue);
+  color: white;
+  font-weight: 700;
+  background: var(--notif-blue);
+  border-color: var(--notif-blue);
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--notif-blue) 40%, transparent);
+}
+
+.notif-tab.is-active:hover,
+.notif-tab.is-active:focus-visible {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
 }
 
 .notif-tab__badge {
-  display: inline-flex;
-  align-items: center;
+  font-size: 0.7rem;
+  background: rgba(255, 255, 255, 0.14);
+  color: inherit;
+  padding: 1px 6px;
+  border-radius: 999px;
+  min-width: 20px;
+  text-align: center;
+}
+
+.notif-tab.is-active .notif-tab__badge {
+  background: rgba(255, 255, 255, 0.24);
+}
+
+.notif-load-more {
+  display: flex;
   justify-content: center;
-  width: 16px;
-  height: 16px;
-  min-width: 16px;
-  padding: 0;
-  border-radius: 50%;
-  font-size: 0.58rem;
-  font-weight: 800;
-  color: white;
-  flex-shrink: 0;
-  line-height: 1;
+  margin: 14px 0 24px;
 }
 
-.notif-tab__badge--red { background: var(--notif-red); }
-.notif-tab__badge--blue { background: var(--notif-blue); }
-.notif-tab__badge--gray { background: var(--notif-gray); }
-
-/* ---- Sections: Priority preview / Earlier / flat tab list ---- */
-.notif-section {
-  margin-bottom: 22px;
+.notif-load-more__btn {
+  appearance: none;
+  border: 1px solid var(--notif-border);
+  background: var(--notif-panel);
+  color: var(--notif-text);
+  padding: 12px 18px;
+  border-radius: 16px;
+  cursor: pointer;
+  font-weight: 700;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
 }
 
-.notif-section__head {
+.notif-load-more__btn:hover,
+.notif-load-more__btn:focus-visible {
+  background: color-mix(in srgb, var(--notif-blue) 12%, var(--notif-panel));
+  border-color: var(--notif-blue);
+}
+
+.notif-card__head-actions {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 10px;
-}
-
-.notif-section__title {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--notif-text);
-}
-
-.notif-section__action {
-  appearance: none;
-  border: none;
-  background: transparent;
-  color: var(--notif-blue);
-  font-size: 0.84rem;
-  font-weight: 600;
-  cursor: pointer;
-  padding: 4px 0;
-}
-
-.notif-dot {
-  display: inline-block;
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-}
-
-.notif-dot--red { background: var(--notif-red); }
-
-/* ---- Cards ---- */
-.notif-list {
-  display: grid;
   gap: 10px;
 }
 
-.notif-card {
+.notif-card__delete {
+  appearance: none;
+  border: none;
+  padding: 6px;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--notif-text-faint);
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.notif-card__delete:hover,
+.notif-card__delete:focus-visible {
+  background: color-mix(in srgb, var(--notif-blue) 12%, var(--notif-panel));
+  color: var(--notif-text);
+}
+
+/* ---- Search Bar ---- */
+.notif-search {
   display: flex;
-  align-items: flex-start;
-  gap: 12px;
+  align-items: center;
+  gap: 10px;
   background: var(--notif-panel);
   border: 1px solid var(--notif-border);
-  border-radius: 16px;
-  padding: 14px;
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin-bottom: 20px;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.notif-search svg { width: 18px; height: 18px; color: var(--notif-text-faint); }
+.notif-search input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--notif-text);
+  font-size: 0.9rem;
+}
+
+/* ---- Grouping ---- */
+.notif-group {
+  margin-bottom: 24px;
+}
+
+.notif-group__title {
+  font-size: 0.85rem;
+  font-weight: 750;
+  color: var(--notif-text);
+  margin-bottom: 8px;
+  padding: 0;
+}
+
+.notif-list {
+  display: flex;
+  flex-direction: column;
+  background: var(--notif-panel);
+  border: 1px solid var(--notif-border);
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+/* ---- Card Design: rows within one shared list container, not
+   individually-boxed cards. Each row keeps its own hit area/position
+   (for the swipe-to-delete panel underneath it) but no longer carries
+   its own background, radius, shadow, or margin — a border-bottom
+   divider between rows does the separating instead. ---- */
+.notif-card {
+  position: relative;
+  overflow: hidden;
+  border-bottom: 1px solid var(--notif-border);
+}
+
+.notif-card:last-child {
+  border-bottom: none;
+}
+
+.notif-card__action-panel {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 84px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  background: rgba(229, 72, 77, 0.14);
+  z-index: 0;
+}
+
+.notif-card__action {
+  appearance: none;
+  border: none;
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  cursor: pointer;
+  background: var(--notif-red);
+  box-shadow: 0 4px 14px rgba(229, 72, 77, 0.35);
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.notif-card__action svg {
+  width: 20px;
+  height: 20px;
+}
+
+.notif-card__action:hover,
+.notif-card__action:focus-visible {
+  filter: brightness(1.08);
+  transform: scale(1.05);
+}
+
+.notif-card__action:active {
+  transform: scale(0.95);
+}
+
+.notif-card__surface {
+  display: flex;
+  gap: 16px;
+  padding: 16px 18px;
+  background: var(--notif-panel);
+  transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1), background 0.15s ease;
+  position: relative;
+  z-index: 1;
+  touch-action: pan-y;
+  will-change: transform;
+}
+
+/* While the user is actively dragging, transform is driven 1:1 by the
+   pointer position, so the transition above (meant for the snap-open /
+   snap-closed animation on release) is switched off to avoid lag between
+   the finger and the card. Re-enabled the instant the pointer lifts. */
+.notif-card__surface--dragging {
+  transition: none;
 }
 
 .notif-card[role="link"] {
   cursor: pointer;
 }
 
-.notif-card[role="link"]:hover,
-.notif-card[role="link"]:focus-visible {
-  border-color: color-mix(in srgb, var(--notif-blue) 35%, var(--notif-border));
-  outline: none;
+.notif-card[role="link"] .notif-card__surface:hover,
+.notif-card[role="link"] .notif-card__surface:focus-visible {
+  background: color-mix(in srgb, var(--notif-blue) 6%, var(--notif-panel));
 }
 
-.notif-card--empty {
+.notif-card--unread::after {
+  content: "";
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--notif-blue);
+}
+
+.notif-card--accent {
+  border-left: 4px solid var(--notif-blue);
+}
+
+.notif-card--accent.notif-card--red { border-left-color: var(--notif-red); }
+.notif-card--accent.notif-card--amber { border-left-color: var(--notif-amber); }
+.notif-card--accent.notif-card--blue { border-left-color: var(--notif-blue); }
+
+.notif-card--red { border-left-color: var(--notif-red); }
+.notif-card--amber { border-left-color: var(--notif-amber); }
+.notif-card--blue { border-left-color: var(--notif-blue); }
+
+.notif-card__icon {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.notif-card__icon svg { width: 22px; height: 22px; }
+
+.notif-card__icon--red { color: var(--notif-red); background: rgba(229, 72, 77, 0.12); }
+.notif-card__icon--amber { color: var(--notif-amber); background: rgba(242, 179, 61, 0.14); }
+.notif-card__icon--blue { color: var(--notif-blue); background: rgba(59, 130, 246, 0.12); }
+.notif-card__icon--green { color: var(--notif-green); background: rgba(46, 204, 113, 0.14); }
+.notif-card__icon--teal { color: var(--notif-teal); background: rgba(61, 217, 194, 0.14); }
+.notif-card__icon--purple { color: var(--notif-purple); background: rgba(168, 85, 247, 0.14); }
+
+.notif-card__body { flex: 1; min-width: 0; }
+
+.notif-card__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 2px;
+  gap: 12px;
+}
+
+.notif-card__title {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--notif-text);
+  line-height: 1.25;
+}
+
+.notif-card__time {
+  font-size: 0.75rem;
+  color: var(--notif-text-faint);
+  white-space: nowrap;
+}
+
+.notif-card__text {
+  font-size: 0.88rem;
+  color: var(--notif-text-muted);
+  line-height: 1.45;
+  margin-bottom: 6px;
+}
+
+.notif-card__footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
   color: var(--notif-text-faint);
 }
 
-.notif-card--skeleton {
-  padding: 0;
-  overflow: hidden;
-  background: transparent;
-  border: none;
-}
-
-/* Priority-only left accent stripe + faint background tint, keyed
-   off the same color the card's icon/chip use. */
-.notif-card--accent {
-  position: relative;
-  padding-left: 16px;
-}
-
-.notif-card--accent::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 10px;
-  bottom: 10px;
-  width: 3px;
-  border-radius: 999px;
-}
-
-.notif-card--red::before { background: var(--notif-red); }
-.notif-card--amber::before { background: var(--notif-amber); }
-.notif-card--blue::before { background: var(--notif-blue); }
-
-.notif-card--red { background: linear-gradient(90deg, color-mix(in srgb, var(--notif-red) 8%, var(--notif-panel)), var(--notif-panel) 65%); }
-.notif-card--amber { background: linear-gradient(90deg, color-mix(in srgb, var(--notif-amber) 8%, var(--notif-panel)), var(--notif-panel) 65%); }
-.notif-card--blue.notif-card--accent { background: linear-gradient(90deg, color-mix(in srgb, var(--notif-blue) 8%, var(--notif-panel)), var(--notif-panel) 65%); }
-
-/* ---- Icon circle ---- */
-.notif-card__icon {
-  flex-shrink: 0;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.notif-card__icon svg {
-  width: 20px;
-  height: 20px;
-}
-
-.notif-card__icon--red { background: color-mix(in srgb, var(--notif-red) 16%, transparent); color: var(--notif-red); }
-.notif-card__icon--amber { background: color-mix(in srgb, var(--notif-amber) 16%, transparent); color: var(--notif-amber); }
-.notif-card__icon--blue { background: color-mix(in srgb, var(--notif-blue) 16%, transparent); color: var(--notif-blue); }
-.notif-card__icon--green { background: color-mix(in srgb, var(--notif-green) 16%, transparent); color: var(--notif-green); }
-.notif-card__icon--teal { background: color-mix(in srgb, var(--notif-teal) 18%, transparent); color: var(--notif-teal); }
-.notif-card__icon--purple { background: color-mix(in srgb, var(--notif-purple) 16%, transparent); color: var(--notif-purple); }
-
-/* ---- Mention avatar (initials, since notification authors don't
-   carry a real profile-photo URL from the server) ---- */
-.notif-card__avatar {
-  flex-shrink: 0;
-  position: relative;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: 0.78rem;
-  font-weight: 700;
-  text-transform: uppercase;
-}
-
-.notif-card__avatar-badge {
-  position: absolute;
-  right: -2px;
-  bottom: -2px;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--notif-blue);
-  border: 2px solid var(--notif-panel);
-  color: white;
-  font-size: 0.5rem;
-  font-weight: 800;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* ---- Body text ---- */
-.notif-card__body {
-  flex: 1;
-  min-width: 0;
-}
+.notif-card__meta-dot { opacity: 0.4; }
 
 .notif-card__label {
-  display: block;
-  font-size: 0.66rem;
+  font-size: 0.68rem;
   font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 3px;
+  letter-spacing: 0.04em;
 }
 
 .notif-card__label--red { color: var(--notif-red); }
 .notif-card__label--amber { color: var(--notif-amber); }
 .notif-card__label--blue { color: var(--notif-blue); }
-.notif-card__label--green { color: var(--notif-green); }
-.notif-card__label--teal { color: var(--notif-teal); }
-.notif-card__label--purple { color: var(--notif-purple); }
 
-.notif-card__title {
-  display: block;
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--notif-text);
+.notif-empty {
+  padding: 40px 0;
+  text-align: center;
 }
 
-.notif-card__meta {
-  margin-top: 3px;
-  font-size: 0.76rem;
+.notif-empty p {
   color: var(--notif-text-faint);
+  font-size: 0.9rem;
 }
 
-.notif-card__meta-dot {
-  margin: 0 2px;
+/* ---- Skeleton ---- */
+#view-notifications #notifSkeleton { display: none; }
+.notif-data-loading #view-notifications #notifSkeleton { display: flex; }
+.notif-data-loading #view-notifications #notifRealContent { display: none; }
+
+.skel-block {
+    background: var(--notif-panel);
+    border: 1px solid var(--notif-border);
+    border-radius: 16px;
 }
 
-.notif-card__text {
-  margin-top: 5px;
-  font-size: 0.82rem;
-  line-height: 1.4;
-  color: var(--notif-text-muted);
-}
-
-.notif-card__handle {
-  color: var(--notif-blue);
-  font-weight: 600;
-}
-
-/* ---- Right-side dot + chevron ---- */
-.notif-card__side {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  align-self: center;
-}
-
-.notif-card__dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-}
-
-.notif-card__dot--red { background: var(--notif-red); }
-.notif-card__dot--amber { background: var(--notif-amber); }
-.notif-card__dot--blue { background: var(--notif-blue); }
-.notif-card__dot--gray { background: var(--notif-gray); }
-
-.notif-card__chevron {
-  width: 18px;
-  height: 18px;
-  color: var(--notif-text-faint);
-}
-
-/* ============================================================
-   Notifications page — desktop styling (≥981px). The reference
-   design is mobile-only, so this keeps the same components but
-   gives them a calmer, slightly larger desktop reading width
-   instead of the mobile card density.
-   ============================================================ */
-@media (min-width: 981px) {
-  #view-notifications .notif-page {
-    max-width: 720px;
-    padding-top: 28px;
-  }
-
-  .notif-header__title {
-    font-size: 1.9rem;
-  }
-
-  .notif-header__subtitle {
-    font-size: 0.95rem;
-  }
-
-  .notif-card {
-    padding: 18px;
-  }
-
-  .notif-card__title {
-    font-size: 1rem;
-  }
-
-  .notif-card__text {
-    font-size: 0.86rem;
-  }
-}
-
-/* The mobile notification palette above is intentionally dark for the
-   default presentation, but an explicit light theme must still be able
-   to override it. Keep the header and tabs readable against the light
-   page instead of inheriting the forced dark values. */
+/* Light Mode Overrides */
 html[data-theme="light"] #view-notifications {
-  --notif-bg: #f4f6fb;
+  --notif-bg: #f5f7fa;
   --notif-panel: #ffffff;
-  --notif-border: #dfe4ee;
-  --notif-text: #121318;
-  --notif-text-muted: #394255;
-  --notif-text-faint: #647086;
-  --notif-blue: #3574b0;
-}
-
-html[data-theme="light"] #view-notifications .notif-header,
-html[data-theme="light"] #view-notifications .notif-tabs {
-  color: #121318;
-}
-
-html[data-theme="light"] #view-notifications .notif-header__title,
-html[data-theme="light"] #view-notifications .notif-tab.is-active {
-  color: #121318;
-}
-
-html[data-theme="light"] #view-notifications .notif-header__subtitle,
-html[data-theme="light"] #view-notifications .notif-tab {
-  color: #394255;
+  --notif-border: #e1e6ed;
+  --notif-text: #1a1d23;
+  --notif-text-muted: #4a5568;
+  --notif-text-faint: #94a3b8;
+  --notif-blue: #2563eb;
 }
