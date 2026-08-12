@@ -204,34 +204,49 @@ function nameForReportId(id) {
 
 
 // -----------------------------------------------------
-// NEARBY_MAP — which locations show up under "Nearby" for a given
-// location. We don't have geocoding/lat-lng yet, so this is a
-// hand-built adjacency map based on how these neighborhoods
-// actually sit relative to each other in Kumasi. Worth a
-// sanity check against local knowledge — this is a reasonable
-// approximation, not verified survey data.
+// NEARBY — real "nearby" locations, computed from the user's own GPS
+// position against every monitored location's real lat/lng (the same
+// GET /locations/map data + haversine-distance approach views/location.js
+// uses for its own "Nearby" filter).
+//
+// FIX: this used to be NEARBY_MAP, a hand-built Kumasi-neighborhood
+// adjacency table — written back when we had no geocoding/lat-lng at
+// all, so it could never reflect where the user actually is, and broke
+// down completely for any location outside its hardcoded key list.
+// Replaced with the block below, which asks for the device's real
+// position (falling back to the tracked location's own coordinates if
+// permission is denied/unavailable) and ranks every other known
+// location by real distance from it.
 // -----------------------------------------------------
-const NEARBY_MAP = {
-    "bantama": ["Suame", "Kejetia", "Asafo", "Manhyia"],
-    "adum": ["Kejetia", "Nhyiaeso", "Bantama"],
-    "asafo": ["Asokwa", "Nhyiaeso", "Bantama"],
-    "asokwa": ["Ahodwo", "Asafo"],
-    "ahodwo": ["Asokwa", "Nhyiaeso"],
-    "suame": ["Bantama", "Suame Magazine", "Kejetia"],
-    "suame magazine": ["Suame", "Bantama"],
-    "tafo": ["Oforikrom", "Asuoyeboah"],
-    "kejetia": ["Adum", "Bantama", "Asafo"],
-    "kejetia market": ["Adum", "Bantama"],
-    "nhyiaeso": ["Adum", "Asafo", "Ahodwo", "Santasi"],
-    "santasi": ["Nhyiaeso", "Bomso"],
-    "bomso": ["Ayigya", "Santasi"],
-    "asuoyeboah": ["Tafo", "Oforikrom"],
-    "kwadaso": ["Patasi", "Santasi"],
-    "oforikrom": ["Ayigya", "Tafo"],
-    "ayigya": ["Bomso", "Oforikrom"],
-    "patasi": ["Kwadaso", "Suame"],
-    "manhyia": ["Bantama", "Suame"]
-};
+const NEARBY_RADIUS_KM = 60;
+const NEARBY_MAX_RESULTS = 6;
+let nearbyUserCoords = null;
+
+function haversineKm(a, b) {
+    if (!a || !b) return null;
+    const R = 6371;
+    const dLat = (b.lat - a.lat) * Math.PI / 180;
+    const dLng = (b.lng - a.lng) * Math.PI / 180;
+    const lat1 = a.lat * Math.PI / 180;
+    const lat2 = b.lat * Math.PI / 180;
+    const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+    return R * 2 * Math.asin(Math.sqrt(h));
+}
+
+function requestNearbyUserCoords() {
+    return new Promise((resolve) => {
+        if (nearbyUserCoords) { resolve(nearbyUserCoords); return; }
+        if (!navigator.geolocation) { resolve(null); return; }
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                nearbyUserCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                resolve(nearbyUserCoords);
+            },
+            () => resolve(null),
+            { enableHighAccuracy: true, timeout: 8000, maximumAge: 300000 }
+        );
+    });
+}
 
 
 // -----------------------------------------------------
@@ -677,24 +692,45 @@ async function fetchLocationReports(location) {
 
 async function fetchNearby(locationKey) {
     if (!nearbyListEl) return;
-    const neighbors = NEARBY_MAP[locationKey] || [];
+    nearbyListEl.innerHTML = '<span class="nearby-list__empty">Finding nearby locations…</span>';
 
-    if (neighbors.length === 0) {
-        nearbyListEl.innerHTML = '<span class="nearby-list__empty">No nearby locations mapped for this location yet.</span>';
-        return;
-    }
+    try {
+        const [mapRes, userCoords] = await Promise.all([
+            fetch(`${API_BASE}/locations/map`),
+            requestNearbyUserCoords()
+        ]);
+        if (!mapRes.ok) throw new Error(`Bad response (${mapRes.status})`);
+        const data = await mapRes.json();
+        const all = Array.isArray(data.locations) ? data.locations : [];
 
-    const results = await Promise.all(neighbors.map(async name => {
-        try {
-            const res = await fetch(`${API_BASE}/lightstatus?location=${encodeURIComponent(name)}`);
-            const data = await res.json();
-            return { name, status: data.status || 'unknown', reportedAt: data.reportedAt || null };
-        } catch (err) {
-            return { name, status: 'unknown', reportedAt: null };
+        // Prefer the device's real GPS fix; if that's denied/unavailable,
+        // fall back to the tracked location's own coordinates so results
+        // are still real distance-sorted (just centered on the saved
+        // location instead of the user's live position).
+        const self = all.find(l => l.locationKey === locationKey) || null;
+        const origin = userCoords || (self && typeof self.lat === 'number' ? { lat: self.lat, lng: self.lng } : null);
+
+        if (!origin) {
+            nearbyListEl.innerHTML = '<span class="nearby-list__empty">No nearby locations mapped for this location yet.</span>';
+            return;
         }
-    }));
 
-    renderNearby(results);
+        const results = all
+            .filter(l => l.locationKey !== locationKey && typeof l.lat === 'number' && typeof l.lng === 'number')
+            .map(l => ({ ...l, distanceKm: haversineKm(origin, { lat: l.lat, lng: l.lng }) }))
+            .filter(l => typeof l.distanceKm === 'number' && l.distanceKm <= NEARBY_RADIUS_KM)
+            .sort((a, b) => a.distanceKm - b.distanceKm)
+            .slice(0, NEARBY_MAX_RESULTS);
+
+        if (results.length === 0) {
+            nearbyListEl.innerHTML = '<span class="nearby-list__empty">No nearby locations mapped for this location yet.</span>';
+            return;
+        }
+
+        renderNearby(results);
+    } catch (err) {
+        nearbyListEl.innerHTML = '<span class="nearby-list__empty">No nearby locations mapped for this location yet.</span>';
+    }
 }
 
 function renderNearby(results) {
@@ -705,9 +741,12 @@ function renderNearby(results) {
         const item = document.createElement('div');
         item.className = 'nearby-item';
 
+        const distanceText = typeof area.distanceKm === 'number'
+            ? (area.distanceKm < 1 ? 'Less than 1 km away' : `${area.distanceKm.toFixed(1)} km away`)
+            : null;
         const metaText = area.reportedAt
-            ? `Verified ${formatRelativeTime(new Date(area.reportedAt).getTime())}`
-            : 'No reports yet';
+            ? `Verified ${formatRelativeTime(new Date(area.reportedAt).getTime())}${distanceText ? ` · ${distanceText}` : ''}`
+            : (distanceText || 'No reports yet');
 
         const nameRow = document.createElement('span');
         nameRow.className = 'nearby-item__name';

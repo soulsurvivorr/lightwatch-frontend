@@ -157,6 +157,19 @@
         return favorite;
     }
 
+    // One-way add (never removes) — used by the Add Location flow below
+    // so a freshly added/matched location always ends up favorited,
+    // regardless of whatever favorite state it happened to be in already.
+    function addToFavorites(name) {
+        if (!name) return;
+        const list = readFavorites();
+        if (!list.includes(name)) {
+            list.push(name);
+            writeFavorites(list);
+        }
+        Promise.resolve(window.setFavoriteLocationPreference?.(name, true)).catch(() => {});
+    }
+
     function statusMeta(status) {
         const isOn = status === 'on';
         const isUnknown = status === 'unknown' || !status;
@@ -740,6 +753,37 @@
         }
     }
 
+    // Selects a filter pill programmatically — the click handler above and
+    // applyPendingLocationFilter() below (nav-shortcut handoff) both funnel
+    // through here so "select Favorites" always does the same three things:
+    // update the pill UI, re-render/re-cluster, and smoothly zoom to fit.
+    function selectFilter(filterName) {
+        if (!filterName) return;
+        const pill = document.querySelector(`#locFilters .loc-filter[data-filter="${filterName}"]`);
+        document.querySelectorAll('#locFilters .loc-filter').forEach(p => {
+            const active = p === pill;
+            p.classList.toggle('is-active', active);
+            p.setAttribute('aria-selected', active ? 'true' : 'false');
+        });
+        currentFilter = filterName;
+        renderLocations(latestLocations);
+        if (currentFilter === 'favorites') focusMapOnFavorites();
+    }
+
+    // Nav shortcuts (e.g. the topbar/bottom-nav Favorites icon —
+    // data-nav="favorites" data-route="location" data-filter="favorites"
+    // in index.html) route here before this view's show() runs. Following
+    // the same window.__lwPending* handoff convention already used for
+    // map style (__lwPendingMapMode above) and the account panel
+    // (__lwPendingAccountPanel, see account.js) — nav.js should stash the
+    // link's data-filter in window.__lwPendingLocationFilter right before
+    // navigating, and this consumes it once, here.
+    function applyPendingLocationFilter() {
+        const requested = window.__lwPendingLocationFilter;
+        window.__lwPendingLocationFilter = null;
+        if (requested) selectFilter(requested);
+    }
+
     function matchesActiveFilter(area) {
         if (currentFilter === 'favorites') return isFavorited(area.name);
         if (currentFilter === 'myareas') return normalizeAreaName(area.name) === normalizeAreaName(getRegisteredLocationName());
@@ -875,6 +919,7 @@
             if (own) LWCache.write(LOCATION_CACHE_KEY, own);
         }
         hideLocationSkeleton();
+        if (isFirstLoad) applyPendingLocationFilter();
     }
 
     // ============================================================
@@ -1037,12 +1082,15 @@
         overlay.innerHTML = `
       <div class="loc-add-panel" role="dialog" aria-modal="true" aria-labelledby="locAddTitle">
         <div class="loc-add-panel__header">
+          <span class="loc-add-panel__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 21s7-7.02 7-12a7 7 0 1 0-14 0c0 4.98 7 12 7 12Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="9" r="2.4" stroke="currentColor" stroke-width="1.8"/></svg>
+          </span>
           <h2 id="locAddTitle">Add a location</h2>
           <button type="button" class="loc-add-panel__close" aria-label="Close">
             <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
           </button>
         </div>
-        <p class="loc-add-panel__sub">Search for the town or area, or use your current position — then give it a name to show on the map.</p>
+        <p class="loc-add-panel__sub">Search for the town or area, or use your current position — then give it a name to show on the map. Already-tracked places are added to your favorites right away instead of duplicating.</p>
         <form class="loc-add-form" novalidate>
           <label class="loc-add-form__label" for="locAddNameInput">Location name</label>
           <input id="locAddNameInput" class="loc-add-form__input" type="text" placeholder="e.g. Ahodwo" autocomplete="off" required>
@@ -1149,8 +1197,9 @@
         const coords = addLocationPicker ? addLocationPicker.getCoords() : null;
         const ready = hasName && !!coords;
         els.submitBtn.disabled = !ready || addLocationSubmitting;
+        els.hintEl.classList.toggle('is-confirmed', !!coords);
         els.hintEl.textContent = coords
-            ? 'Location confirmed — give it a name and add it.'
+            ? 'Pin dropped — give it a name and add it.'
             : 'Search for the place above, or use your current position, to drop a pin.';
     }
 
@@ -1179,6 +1228,25 @@
         setTimeout(() => { els.overlay.hidden = true; }, 200);
     }
 
+    // If the town/area the user just picked is already one of the
+    // locations we track — same name, or a pin close enough (≤2km) that
+    // it's obviously the same place under a slightly different spelling
+    // — there's no reason to create a duplicate entry. Matched by
+    // normalized name first (handles "Ahodwo" vs "ahodwo "), falling
+    // back to distance so a search result that resolves to a slightly
+    // different point than our own stored pin still gets recognized.
+    function findExistingLocation(name, coords) {
+        const normalized = normalizeAreaName(name);
+        let match = latestLocations.find(l => normalizeAreaName(l.name) === normalized);
+        if (!match && coords) {
+            match = latestLocations.find(l =>
+                typeof l.lat === 'number' && typeof l.lng === 'number' &&
+                haversineKm(coords, { lat: l.lat, lng: l.lng }) <= 2
+            );
+        }
+        return match || null;
+    }
+
     async function submitAddLocation() {
         const els = addLocationEls;
         if (!els || addLocationSubmitting) return;
@@ -1191,6 +1259,29 @@
             return;
         }
 
+        addLocationSubmitting = true;
+        els.submitBtn.disabled = true;
+        els.errorEl.hidden = true;
+
+        // Already tracked — skip creating a duplicate, just add it
+        // straight to favorites so the user starts receiving live
+        // updates from it right away (see addToFavorites()/toggleAreaStatus
+        // above, which already locks reporting for favorited rows).
+        const existing = findExistingLocation(name, coords);
+        if (existing) {
+            addToFavorites(existing.name);
+            renderLocations(latestLocations);
+            if (map && currentMapStyle !== 'heatmap' && existing.lat != null) {
+                map.flyTo({ center: [existing.lng, existing.lat], zoom: DEFAULT_ZOOM, essential: true, duration: 1200 });
+                setTimeout(() => openLocationPopup(existing, [existing.lng, existing.lat]), 350);
+            }
+            addLocationSubmitting = false;
+            els.submitBtn.textContent = 'Add location';
+            updateAddLocationSubmitState();
+            closeAddLocationModal();
+            return;
+        }
+
         const admin = isAdmin();
         const payload = {
             name,
@@ -1199,10 +1290,7 @@
             ...(admin ? { status: els.getPickedStatus(), adminManaged: true } : {})
         };
 
-        addLocationSubmitting = true;
-        els.submitBtn.disabled = true;
         els.submitBtn.textContent = 'Adding…';
-        els.errorEl.hidden = true;
 
         try {
             const res = await fetch(`${LWHelpers.apiBase()}/locations`, {
@@ -1230,9 +1318,14 @@
             };
 
             latestLocations = latestLocations.filter(l => l.locationKey !== created.locationKey).concat(created);
+            // Every location the user adds is theirs — favorite it
+            // automatically so they get its live status without an
+            // extra tap, same lock toggleAreaStatus() already applies
+            // to favorited rows (view-only, can't report on/off for it).
+            addToFavorites(created.name);
             renderLocations(latestLocations);
             if (map) {
-                map.flyTo({ center: [created.lng, created.lat], zoom: DEFAULT_ZOOM, essential: true });
+                map.flyTo({ center: [created.lng, created.lat], zoom: DEFAULT_ZOOM, essential: true, duration: 1200 });
                 setTimeout(() => openLocationPopup(created, [created.lng, created.lat]), 350);
             }
             ensureLiveHeatMap()?.refresh();
@@ -1257,16 +1350,7 @@
         controlsBound = true;
 
         document.querySelectorAll('#locFilters .loc-filter').forEach(pill => {
-            pill.addEventListener('click', () => {
-                document.querySelectorAll('#locFilters .loc-filter').forEach(p => {
-                    p.classList.remove('is-active');
-                    p.setAttribute('aria-selected', 'false');
-                });
-                pill.classList.add('is-active');
-                pill.setAttribute('aria-selected', 'true');
-                currentFilter = pill.dataset.filter;
-                renderLocations(latestLocations);
-            });
+            pill.addEventListener('click', () => selectFilter(pill.dataset.filter));
         });
 
         const searchInput = document.getElementById('locationSearchInput');
@@ -1359,6 +1443,7 @@
                 if (liveHeatMap) {
                     liveHeatMap.invalidateSize();
                     liveHeatMap.refresh();
+                    if (currentFilter === 'favorites') setTimeout(focusMapOnFavorites, 150);
                 } else {
                     setTimeout(() => ensureLiveHeatMap()?.refresh(), 120);
                 }
@@ -1385,6 +1470,39 @@
         const addBtn = document.querySelector('.loc-header__add');
         if (addBtn) {
             addBtn.addEventListener('click', openAddLocationModal);
+        }
+    }
+
+    // Smoothly flies/fits the currently-active map view — MapLibre street
+    // map+satellite, or the Leaflet-based live heat map — around every
+    // favorited location so switching to the Favorites filter actually
+    // brings them into view instead of leaving the camera wherever it
+    // was. One match gets a gentle flyTo; several get a fitBounds/
+    // flyToBounds so all of them land in frame together.
+    function focusMapOnFavorites() {
+        const favNames = readFavorites();
+        if (!favNames.length) return;
+        const favLocations = latestLocations.filter(a =>
+            favNames.includes(a.name) && typeof a.lat === 'number' && typeof a.lng === 'number'
+        );
+        if (!favLocations.length) return;
+
+        if (map && currentMapStyle !== 'heatmap') {
+            if (favLocations.length === 1) {
+                map.flyTo({ center: [favLocations[0].lng, favLocations[0].lat], zoom: DEFAULT_ZOOM, essential: true, duration: 1400 });
+            } else {
+                let bounds = new maplibregl.LngLatBounds(
+                    [favLocations[0].lng, favLocations[0].lat],
+                    [favLocations[0].lng, favLocations[0].lat]
+                );
+                favLocations.forEach(loc => bounds.extend([loc.lng, loc.lat]));
+                map.fitBounds(bounds, { padding: 72, maxZoom: DEFAULT_ZOOM + 1, duration: 1400, essential: true });
+            }
+        }
+
+        const heat = ensureLiveHeatMap();
+        if (heat && typeof heat.focusOn === 'function') {
+            heat.focusOn(favLocations.map(l => l.name));
         }
     }
 
@@ -1423,6 +1541,7 @@
         } else if (map) {
             setTimeout(() => map.resize(), 60);
         }
+        applyPendingLocationFilter();
     }
 
     function hide() {

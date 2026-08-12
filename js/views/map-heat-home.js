@@ -28,11 +28,10 @@
 (function () {
     const POLL_INTERVAL_MS = Number(window.LW_HEATMAP_POLL_MS) || 10 * 1000; // Default: refresh every 10 seconds (override via LW_HEATMAP_POLL_MS)
     const MAX_ZOOM = 16;
-    // The full map fits tight (maxZoom 16 above) since it has room to zoom
-    // freely. The small home-card preview should stay pulled back a bit
-    // more by default so it reads as an overview, not a tight crop on
-    // whichever cluster of points happens to be closest together.
-    const HOME_CARD_FIT_MAX_ZOOM = 8;
+    // City-level zoom used to center the mini card on the user's own
+    // registered location (see getRegisteredLocationName below) — a
+    // close, useful view of their own area, not a fit around every city.
+    const MY_LOCATION_ZOOM = 10;
     const HEAT_RADIUS = 40; // 35-45px
     const HEAT_BLUR = 30;   // 25-35px
 
@@ -109,6 +108,28 @@
         return String(str || '').replace(/[&<>"']/g, (ch) => ({
             '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
         }[ch]));
+    }
+
+    // Same reads as location.js's getRegisteredLocationName/normalizeAreaName
+    // — kept local here rather than depending on load order between the
+    // two view scripts.
+    function getCurrentUserData() {
+        try {
+            const raw = localStorage.getItem('currentUserData') || sessionStorage.getItem('currentUserData');
+            return JSON.parse(raw || '{}');
+        } catch (err) {
+            return {};
+        }
+    }
+
+    function getRegisteredLocationName() {
+        const user = getCurrentUserData();
+        if (user.city && String(user.city).trim()) return String(user.city).trim();
+        return user.region ? String(user.region).trim() : null;
+    }
+
+    function normalizeAreaName(name) {
+        return String(name || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
     }
 
     // ---- Build the card's inner DOM once ----
@@ -256,6 +277,7 @@
     let hasFitBoundsOnce = false;
     let hasLoadedOnce = false;
     let pollTimer = null;
+    let lastPlottable = []; // most recent renderHeat() batch — used by focusOn() below
 
     function setStatus(message, variant) {
         if (!statusEl) return;
@@ -310,6 +332,7 @@
     // batch is added, so nothing stale is ever left on the map.
     function renderHeat(locations) {
         const plottable = locations.filter(loc => Number.isFinite(loc.lat) && Number.isFinite(loc.lng));
+        lastPlottable = plottable;
 
         const points = plottable.map(loc => [loc.lat, loc.lng]);
         Object.keys(heatLayers).forEach((status) => {
@@ -352,12 +375,26 @@
             });
 
         if (points.length && !hasFitBoundsOnce) {
-            // Only auto-fit once, on the first real batch of points —
+            // Only auto-center/fit once, on the first real batch of points —
             // after that, leave the user's own pan/zoom alone between polls.
-            // Mini card gets extra padding on top of its lower zoom cap so
-            // it reads as a wide overview rather than a tight crop.
-            const bounds = L.latLngBounds(points.map(p => [p[0], p[1]]));
-            map.fitBounds(bounds.pad(isFullMap ? 0.35 : 0.6), { maxZoom: isFullMap ? MAX_ZOOM : HOME_CARD_FIT_MAX_ZOOM, animate: true });
+            if (isFullMap) {
+                // Full map: fit tight around every location, same as before.
+                const bounds = L.latLngBounds(points.map(p => [p[0], p[1]]));
+                map.fitBounds(bounds.pad(0.35), { maxZoom: MAX_ZOOM, animate: true });
+            } else {
+                // Mini card: center on the user's own registered location
+                // rather than fitting the whole region — this card is meant
+                // to show "your area", not every city on the map. Falls
+                // back to fitting all points only if we can't match one.
+                const registeredName = normalizeAreaName(getRegisteredLocationName());
+                const mine = registeredName && plottable.find(loc => normalizeAreaName(loc.name) === registeredName);
+                if (mine) {
+                    map.setView([mine.lat, mine.lng], MY_LOCATION_ZOOM, { animate: true });
+                } else {
+                    const bounds = L.latLngBounds(points.map(p => [p[0], p[1]]));
+                    map.fitBounds(bounds.pad(0.6), { maxZoom: MY_LOCATION_ZOOM, animate: true });
+                }
+            }
             hasFitBoundsOnce = true;
         }
 
@@ -462,11 +499,39 @@
         }
     }, 150);
 
+        // Slowly/smoothly flies this map to whichever of `names` we
+        // actually have coordinates for — called by location.js when the
+        // Favorites filter is chosen, so the full-map heat panel (and any
+        // other instance) reframes on them too instead of only the
+        // MapLibre street/satellite view moving. One match gets a gentle
+        // flyTo; several get flyToBounds so all of them land in frame.
+        function focusOn(names) {
+            if (!map || !Array.isArray(names) || !names.length) return;
+            const wanted = new Set(names.map(normalizeAreaName));
+            const matches = lastPlottable.filter(loc => wanted.has(normalizeAreaName(loc.name)));
+            if (!matches.length) return;
+
+            if (matches.length === 1) {
+                map.flyTo([matches[0].lat, matches[0].lng], Math.max(map.getZoom(), MY_LOCATION_ZOOM), {
+                    animate: true,
+                    duration: 1.4
+                });
+            } else {
+                const bounds = L.latLngBounds(matches.map(loc => [loc.lat, loc.lng]));
+                map.flyToBounds(bounds.pad(0.4), {
+                    maxZoom: MAX_ZOOM,
+                    animate: true,
+                    duration: 1.4
+                });
+            }
+        }
+
         return {
             refresh,
             invalidateSize() {
                 if (map) map.invalidateSize();
-            }
+            },
+            focusOn
         };
     }
 
