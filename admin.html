@@ -448,6 +448,7 @@
   .status-chip--unknown { background:var(--panel2); color:var(--faint); border:1px solid var(--border2); }
 
   /* ======= NEW: Toggle Switch Location Control ======= */
+  .loc-card__schedule { font-size:0.72rem; color:var(--brand); font-weight:700; margin-top:6px; }
   .loc-card__footer { border-top: 1px solid var(--border); padding: 14px 17px; display: flex; align-items: center; gap: 12px; }
   .loc-toggle-group { display: flex; align-items: center; gap: 10px; flex: 1; }
   .loc-toggle-label { font-size: 0.75rem; font-weight: 700; color: var(--muted); }
@@ -943,6 +944,17 @@
         <button class="btn-ghost" id="locBulkOnBtn" type="button" disabled>Turn ON selected</button>
         <button class="btn-ghost btn-ghost--danger" id="locBulkAllOffBtn" type="button">Turn all OFF</button>
        </div>
+       <div class="broadcast-card" id="locPushCard">
+        <div class="broadcast-card__head"><span class="broadcast-card__title">📢 Push Message to Locations</span> <span class="broadcast-card__hint">Sends to each area's Community Reports feed AND as a push notification, the same way a news post does. Target the checked locations below, or every tracked location, one by one.</span>
+        </div>
+        <div class="broadcast-row"><input type="text" id="locPushTitleInput" placeholder="Title (optional — defaults to &quot;LightWatch Admin&quot;)" maxlength="60">
+        </div>
+        <div class="broadcast-row"><textarea id="locPushBodyInput" placeholder="Write your message…" maxlength="220" rows="2"></textarea>
+        </div>
+        <div class="broadcast-row"><button class="btn-ghost" id="locPushSelectedBtn" type="button" disabled>Send to selected areas</button> <button class="btn-ghost" id="locPushAllBtn" type="button">Send to all, one by one</button>
+        </div>
+        <div id="locPushStatus" class="broadcast-status"></div>
+       </div>
        <div class="locations-panel__split">
          <div class="locations-panel__list">
            <div id="locationsList"></div>
@@ -1070,6 +1082,8 @@
         <div class="broadcast-row"><input type="url" id="newsUrlInput" placeholder="Link — article URL, or the tweet/post link you're sharing" maxlength="500">
         </div>
         <div class="broadcast-row"><input type="url" id="newsImageInput" placeholder="Image URL (optional)" maxlength="500">
+         <input type="file" id="newsImageFileInput" accept="image/*" style="display:none;">
+         <button class="btn-ghost" id="newsImageUploadBtn" type="button">📁 Upload from device</button>
          <select id="newsCategorySelect">
           <option value="general">General</option>
           <option value="outage">Outage / Fault</option>
@@ -1077,6 +1091,11 @@
           <option value="maintenance">Planned Maintenance</option>
           <option value="tariff">Tariff Update</option>
          </select>
+        </div>
+        <div class="broadcast-row" id="newsImagePreviewRow" style="display:none; align-items:center;">
+         <img id="newsImagePreview" alt="Selected image preview" style="height:52px; width:auto; max-width:120px; object-fit:cover; border-radius:8px; border:1px solid var(--border);">
+         <span style="font-size:0.75rem; color:var(--faint);">Using uploaded image</span>
+         <button class="btn-ghost" id="newsImageClearBtn" type="button">✕ Remove</button>
         </div>
         <div class="broadcast-row"><input type="text" id="newsSourceInput" placeholder="Source label (optional — defaults to &quot;LightWatch Admin&quot;)" maxlength="60">
          <label style="display:flex; align-items:center; gap:6px; font-size:0.8rem; color:var(--faint); white-space:nowrap; padding:0 6px;">
@@ -1309,7 +1328,7 @@
       backdrop.className = 'modal-backdrop';
       const inputsHtml = fields.map(field => `
           <label class="modal-input-label">${field.label}
-            <input id="modalInput_${field.name}" class="modal-input" type="text" placeholder="${field.placeholder || ''}" value="${field.value || ''}" />
+            <input id="modalInput_${field.name}" class="modal-input" type="${field.type || 'text'}" placeholder="${field.placeholder || ''}" value="${field.value || ''}" />
           </label>
         `).join('');
       backdrop.innerHTML = `
@@ -1833,6 +1852,10 @@
         : "No status set yet";
       const isOn = status === "on";
       const isSelected = selectedLocationKeys.has(loc.locationKey);
+      const schedule = loc.schedule;
+      const scheduleLine = (schedule && (schedule.onTime || schedule.offTime))
+        ? `<div class="loc-card__schedule">⏱ ${schedule.onTime ? `ON ${esc(schedule.onTime)}` : ""}${schedule.onTime && schedule.offTime ? " · " : ""}${schedule.offTime ? `OFF ${esc(schedule.offTime)}` : ""}</div>`
+        : "";
       return `
         <div class="loc-card loc-card--${status}" data-location-key="${esc(loc.locationKey)}" style="animation-delay:${idx * 0.04}s">
           <div class="loc-card__body">
@@ -1845,6 +1868,7 @@
               <span class="status-chip ${chipClass}">${chipLabel}</span>
             </div>
             <div class="loc-card__meta">${meta}</div>
+            ${scheduleLine}
           </div>
           <div class="loc-card__footer">
             <div class="loc-toggle-group">
@@ -1855,6 +1879,7 @@
               </label>
               <span class="loc-toggle-state-label loc-toggle-state-label--${status}">${isOn ? "ON" : "OFF"}</span>
             </div>
+            <button class="loc-card__action-btn" type="button" data-action="schedule" data-loc-key="${esc(loc.locationKey)}" title="Set ON/OFF timer for ${esc(loc.label)}" aria-label="Set ON/OFF timer for ${esc(loc.label)}">⏱</button>
             <button class="loc-card__action-btn" type="button" data-action="delete" data-loc-key="${esc(loc.locationKey)}" title="Remove ${esc(loc.label)}" aria-label="Remove ${esc(loc.label)}">✕</button>
           </div>
         </div>
@@ -1876,6 +1901,39 @@
         const newStatus = e.currentTarget.checked ? "on" : "off";
         e.currentTarget.disabled = true;
         await pushLocationStatus(key, newStatus);
+      });
+    });
+
+    list.querySelectorAll("button[data-action='schedule']").forEach(btn => {
+      btn.addEventListener("click", async (e) => {
+        const key = e.currentTarget.dataset.locKey;
+        const loc = allLocations.find(l => l.locationKey === key);
+        const existing = loc?.schedule || {};
+        const result = await showPrompt({
+          title: `Timer — ${loc?.label || key}`,
+          description: "Set a daily time to auto-switch this location's light status. Leave both blank and save to clear the timer.",
+          fields: [
+            { name: "onTime", label: "Turn ON at", type: "time", value: existing.onTime || "" },
+            { name: "offTime", label: "Turn OFF at", type: "time", value: existing.offTime || "" }
+          ],
+          confirmText: "Save timer"
+        });
+        if (result === null) return;
+        try {
+          await apiPost("/admin/locations/schedule", { location: key, onTime: result.onTime || null, offTime: result.offTime || null });
+          if (loc) loc.schedule = (result.onTime || result.offTime) ? { onTime: result.onTime || null, offTime: result.offTime || null } : null;
+          renderLocations(allLocations);
+          const label = loc?.label || key;
+          if (result.onTime || result.offTime) {
+            logSystemEvent(`Set timer for ${label}: ON ${result.onTime || "—"} / OFF ${result.offTime || "—"}`, "ok");
+            showToast(`Timer saved for ${label}`, "ok");
+          } else {
+            logSystemEvent(`Cleared timer for ${label}`, "info");
+            showToast(`Timer cleared for ${label}`, "info");
+          }
+        } catch (err) {
+          if (err.message !== "auth") showToast(err.message || "Could not save timer.", "err");
+        }
       });
     });
 
@@ -1927,6 +1985,8 @@
     if (countEl) countEl.textContent = selectedLocationKeys.size ? `${selectedLocationKeys.size} selected` : "";
     if (offBtn) offBtn.disabled = selectedLocationKeys.size === 0;
     if (onBtn) onBtn.disabled = selectedLocationKeys.size === 0;
+    const pushSelectedBtn = document.getElementById("locPushSelectedBtn");
+    if (pushSelectedBtn) pushSelectedBtn.disabled = selectedLocationKeys.size === 0;
   }
 
   document.getElementById("locFilterTabs")?.addEventListener("click", (e) => {
@@ -1999,6 +2059,75 @@
     if (!confirmed) return;
     pushLocationStatusMany(allLocations.map(l => l.locationKey), "off");
   });
+  // Sends one /admin/broadcast call per location key, in sequence (not
+  // Promise.all) so this is genuinely "one by one" — each call already
+  // posts to that area's Community Reports feed AND pushes a notification
+  // to subscribed devices, same as the single-location broadcast card.
+  async function pushMessageToLocations(locationKeys, { title, body }) {
+    const statusEl = document.getElementById("locPushStatus");
+    if (!locationKeys.length || !statusEl) return;
+    statusEl.className = "broadcast-status";
+    let sentOk = 0, failed = 0;
+    for (let i = 0; i < locationKeys.length; i++) {
+      statusEl.textContent = `Sending ${i + 1} of ${locationKeys.length}…`;
+      try {
+        await apiPost("/admin/broadcast", { title, body, location: locationKeys[i] });
+        sentOk++;
+      } catch (e) {
+        if (e.message === "auth") return;
+        failed++;
+      }
+      if (i < locationKeys.length - 1) await new Promise(r => setTimeout(r, 200));
+    }
+    statusEl.textContent = failed
+      ? `✅ Sent to ${sentOk} location(s) — ${failed} failed.`
+      : `✅ Sent to ${sentOk} location(s), posted to their Community Reports feed and pushed as a notification.`;
+    statusEl.classList.add(failed ? "broadcast-status--err" : "broadcast-status--ok");
+    logSystemEvent(`Pushed message to ${sentOk} location${sentOk === 1 ? "" : "s"}${failed ? ` (${failed} failed)` : ""}`, failed ? "warn" : "ok");
+    showToast(failed ? `Sent to ${sentOk}, ${failed} failed` : `Sent to ${sentOk} location${sentOk === 1 ? "" : "s"}`, failed ? "err" : "ok");
+    loadChats();
+  }
+
+  document.getElementById("locPushSelectedBtn")?.addEventListener("click", async () => {
+    const title = document.getElementById("locPushTitleInput").value.trim();
+    const body = document.getElementById("locPushBodyInput").value.trim();
+    if (!body) { showToast("Write a message first.", "err"); return; }
+    const keys = Array.from(selectedLocationKeys);
+    if (!keys.length) { showToast("Select at least one location.", "err"); return; }
+    const confirmed = await showConfirm({
+      icon: "📢", title: "Push to Selected Areas",
+      desc: `Send this message to <strong>${keys.length}</strong> selected location${keys.length === 1 ? "" : "s"}: "<strong>${esc(body.slice(0, 80))}${body.length > 80 ? "…" : ""}</strong>"<br><br>This posts to each area's Community Reports feed and pushes a notification to their devices.`,
+      confirmText: "Send", danger: false
+    });
+    if (!confirmed) return;
+    const btn = document.getElementById("locPushSelectedBtn");
+    btn.disabled = true;
+    await pushMessageToLocations(keys, { title, body });
+    document.getElementById("locPushBodyInput").value = "";
+    document.getElementById("locPushTitleInput").value = "";
+    updateLocBulkToolbar(allLocations);
+    btn.disabled = selectedLocationKeys.size === 0;
+  });
+
+  document.getElementById("locPushAllBtn")?.addEventListener("click", async () => {
+    const title = document.getElementById("locPushTitleInput").value.trim();
+    const body = document.getElementById("locPushBodyInput").value.trim();
+    if (!body) { showToast("Write a message first.", "err"); return; }
+    if (!allLocations.length) { showToast("No locations to send to.", "err"); return; }
+    const confirmed = await showConfirm({
+      icon: "📢", title: "Push to All Locations",
+      desc: `Send this message to all <strong>${allLocations.length}</strong> tracked locations, one by one: "<strong>${esc(body.slice(0, 80))}${body.length > 80 ? "…" : ""}</strong>"<br><br>This posts to each area's Community Reports feed and pushes a notification to their devices.`,
+      confirmText: "Send to all", danger: false
+    });
+    if (!confirmed) return;
+    const btn = document.getElementById("locPushAllBtn");
+    btn.disabled = true;
+    await pushMessageToLocations(allLocations.map(l => l.locationKey), { title, body });
+    document.getElementById("locPushBodyInput").value = "";
+    document.getElementById("locPushTitleInput").value = "";
+    btn.disabled = false;
+  });
+
   document.getElementById("locationSearch")?.addEventListener("input", (e) => {
     const q = e.target.value.toLowerCase();
     renderLocations(q ? allLocations.filter(l => l.label.toLowerCase().includes(q)) : allLocations);
@@ -2462,13 +2591,52 @@
     }
   }
 
+  // ===== NEWS IMAGE — upload directly from device =====
+  // Reads the chosen file as a base64 data URI and uses that in place of
+  // the URL field's value. Keeps this working with the existing
+  // /admin/news `image` field (a plain string) without any new backend
+  // route — see chat reply for the tradeoffs (payload size, DB bloat)
+  // and the proper-upload-endpoint alternative.
+  let newsUploadedImageDataUrl = null;
+  const newsImageFileInput = document.getElementById("newsImageFileInput");
+  const newsImageInputEl = document.getElementById("newsImageInput");
+  const newsImagePreviewRow = document.getElementById("newsImagePreviewRow");
+
+  function clearNewsUploadedImage() {
+    newsUploadedImageDataUrl = null;
+    if (newsImageFileInput) newsImageFileInput.value = "";
+    if (newsImageInputEl) { newsImageInputEl.disabled = false; newsImageInputEl.placeholder = "Image URL (optional)"; }
+    if (newsImagePreviewRow) newsImagePreviewRow.style.display = "none";
+  }
+
+  document.getElementById("newsImageUploadBtn")?.addEventListener("click", () => newsImageFileInput?.click());
+
+  newsImageFileInput?.addEventListener("change", () => {
+    const file = newsImageFileInput.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { showToast("Please choose an image file.", "err"); newsImageFileInput.value = ""; return; }
+    if (file.size > 3 * 1024 * 1024) { showToast("Image is too large — please pick one under 3MB.", "err"); newsImageFileInput.value = ""; return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      newsUploadedImageDataUrl = reader.result;
+      if (newsImageInputEl) { newsImageInputEl.value = ""; newsImageInputEl.disabled = true; newsImageInputEl.placeholder = "Using uploaded image below"; }
+      const preview = document.getElementById("newsImagePreview");
+      if (preview) preview.src = newsUploadedImageDataUrl;
+      if (newsImagePreviewRow) newsImagePreviewRow.style.display = "flex";
+    };
+    reader.onerror = () => showToast("Could not read that image.", "err");
+    reader.readAsDataURL(file);
+  });
+
+  document.getElementById("newsImageClearBtn")?.addEventListener("click", clearNewsUploadedImage);
+
   document.getElementById("newsPublishBtn")?.addEventListener("click", async () => {
     const statusEl = document.getElementById("newsPublishStatus");
     const btn = document.getElementById("newsPublishBtn");
     const title = document.getElementById("newsTitleInput").value.trim();
     const summary = document.getElementById("newsSummaryInput").value.trim();
     const url = document.getElementById("newsUrlInput").value.trim();
-    const image = document.getElementById("newsImageInput").value.trim();
+    const image = newsUploadedImageDataUrl || document.getElementById("newsImageInput").value.trim();
     const category = document.getElementById("newsCategorySelect").value;
     const sourceName = document.getElementById("newsSourceInput").value.trim();
     const isOfficial = document.getElementById("newsOfficialCheckbox").checked;
@@ -2486,6 +2654,7 @@
       document.getElementById("newsSummaryInput").value = "";
       document.getElementById("newsUrlInput").value = "";
       document.getElementById("newsImageInput").value = "";
+      clearNewsUploadedImage();
       document.getElementById("newsCategorySelect").value = "general";
       document.getElementById("newsSourceInput").value = "";
       document.getElementById("newsOfficialCheckbox").checked = true;
