@@ -341,6 +341,7 @@ function getReporterId() {
 // location panel, and location.js's per-area rows.
 // -----------------------------------------------------
 let currentReportedStatus = 'unknown';
+let currentSchedule = null; // { onTime, offTime } from GET /lightstatus, or null — see scheduleSoonText() below
 let lightToggleInFlight = false;
 let lastStatusIconTriggerAt = 0;
 let lastPrimaryReportedAt = null;
@@ -355,6 +356,55 @@ const STATUS_ICON_SVG = {
     off: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M9 21h6M10 18h4M8.5 14.5A5.5 5.5 0 1 1 15.5 14.5c-.7.9-1.5 1.8-1.5 3H10c0-1.2-.8-2.1-1.5-3Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 4l16 16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
     unknown: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 3v8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M7 6.3a7.5 7.5 0 1 0 10 0" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>'
 };
+
+// "About to switch" window for the pill text below — inside this many
+// ms of the relevant scheduled time, the pill swaps to a countdown
+// instead of the plain "Light is on/off now" text. An hour felt like
+// the right amount of advance notice without showing a countdown
+// literally all day for locations that have a timer set.
+const SCHEDULE_SOON_WINDOW_MS = 60 * 60 * 1000;
+
+// Next Date this "HH:mm" occurs at or after `from` — today if that time
+// hasn't passed yet, tomorrow otherwise. Mirrors the HH:mm validation
+// server.js's POST /admin/locations/schedule applies.
+function nextOccurrenceOf(hhmm, from = new Date()) {
+    if (!hhmm || !/^([01]\d|2[0-3]):([0-5]\d)$/.test(hhmm)) return null;
+    const [h, m] = hhmm.split(':').map(Number);
+    const next = new Date(from);
+    next.setHours(h, m, 0, 0);
+    if (next.getTime() <= from.getTime()) next.setDate(next.getDate() + 1);
+    return next;
+}
+
+function formatMinutesUntil(ms) {
+    const mins = Math.max(0, Math.round(ms / 60000));
+    if (mins < 1) return 'any moment now';
+    if (mins === 1) return 'in 1 min';
+    return `in ${mins} min`;
+}
+
+// Returns a "Turns off/on <when>" string when the location is within
+// SCHEDULE_SOON_WINDOW_MS of its next scheduled flip, or null when
+// there's no timer set or the flip is still a ways off — in which case
+// paintPrimaryStatus() below falls back to its normal "Light is on/off
+// now" text.
+function scheduleSoonText(schedule, status) {
+    if (!schedule) return null;
+    const now = new Date();
+    if (status === 'on' && schedule.offTime) {
+        const next = nextOccurrenceOf(schedule.offTime, now);
+        if (next && next.getTime() - now.getTime() <= SCHEDULE_SOON_WINDOW_MS) {
+            return `Turns off ${formatMinutesUntil(next.getTime() - now.getTime())}`;
+        }
+    }
+    if (status === 'off' && schedule.onTime) {
+        const next = nextOccurrenceOf(schedule.onTime, now);
+        if (next && next.getTime() - now.getTime() <= SCHEDULE_SOON_WINDOW_MS) {
+            return `Turns on ${formatMinutesUntil(next.getTime() - now.getTime())}`;
+        }
+    }
+    return null;
+}
 
 function applyPrimaryStatusIconState(status) {
     // Unknown status has no lit-windows evidence either way, so the city
@@ -374,6 +424,7 @@ function applyPrimaryStatusIconState(status) {
 // and the record POST /lightstatus returns use.
 function paintPrimaryStatus(data) {
     currentReportedStatus = data.status || 'unknown';
+    if (data.schedule !== undefined) currentSchedule = data.schedule || null;
     if (data.reportedAt) lastPrimaryReportedAt = data.reportedAt;
     applyPrimaryStatusIconState(currentReportedStatus);
 
@@ -383,11 +434,12 @@ function paintPrimaryStatus(data) {
             : currentReportedStatus === 'off'
                 ? 'status-hero__title-icon status-hero__title-icon--off'
                 : 'status-hero__title-icon status-hero__title-icon--unknown';
-        const titleText = currentReportedStatus === 'on'
+        const soonText = scheduleSoonText(currentSchedule, currentReportedStatus);
+        const titleText = soonText || (currentReportedStatus === 'on'
             ? 'Light is on now'
             : currentReportedStatus === 'off'
                 ? 'Light is off now'
-                : 'No reports yet — tap to check in';
+                : 'No reports yet — tap to check in');
         statusPillTextEl.innerHTML = `<span class="${titleIconClass}" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" fill="currentColor"/></svg></span><span>${titleText}</span>`;
     }
 
