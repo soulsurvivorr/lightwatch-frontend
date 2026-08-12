@@ -9,8 +9,28 @@
   border-bottom: 1px solid color-mix(in srgb, var(--border-soft) 86%, transparent);
   backdrop-filter: blur(6px);
   width: 100%;
-  position: sticky;
-  top: 0;
+  /* FIX (hide-on-scroll freeze, take 2): `position: fixed` fixed the
+     sticky+transform repaint bug (see below) but had a side effect
+     nobody wanted — the topbar floated above content from the very
+     first pixel of scroll instead of behaving like a normal part of
+     the page at the top. The actual desired behavior: sit in normal
+     flow (scrolls away naturally, just like any other content) until
+     the page has scrolled past the topbar's own height, and only
+     then become a floating, fixed header that shows/hides with
+     scroll direction.
+     `static` is the resting state here for exactly that reason —
+     nothing pins it until nav.js adds `.is-pinned` once you've
+     scrolled far enough (see nav.js's topbarPinThreshold). Position
+     and inset only apply within `.is-pinned` below; the un-pinned
+     state is deliberately plain, ordinary flow.
+     (Earlier history: this was `position: sticky` originally, which
+     has a well-documented cross-browser repaint bug — once a sticky
+     element is actually "stuck," a `transform` change on it stops
+     repainting live in most engines, which is why the old hide/
+     reveal only ever worked back at the very top of the page and
+     froze everywhere else. `fixed` doesn't have that bug, which is
+     why `.is-pinned` uses it below rather than reintroducing sticky.) */
+  position: static;
   z-index: 10;
   /* Extends the topbar's own dark background up underneath the status
      bar / Dynamic Island / camera cutout instead of stopping short of
@@ -21,10 +41,33 @@
      padding (.topbar__inner below) so links/logo/avatar stay clear of
      the notch; only the background bleeds under it. */
   padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Added by nav.js once the page has scrolled past the topbar's own
+   height — see nav.js's topbarPinThreshold / .is-pinned toggle. This
+   is the only state in which the topbar leaves normal flow.
+   `transition` lives here rather than on the base `.topbar` rule on
+   purpose: it should only animate the hide/reveal toggle that happens
+   *while* pinned (fixed). If it were unconditional, unpinning (nav.js
+   removes `.is-pinned` and `.lw-topbar--hidden` in the same tick)
+   would flip `position: fixed -> static` instantly — not animatable —
+   while the leftover `transform: translateY(-100%) -> none` change
+   still played out over 0.3s. For that 300ms you'd get a `position:
+   static` box (already back in flow, pushing content down) that's
+   also mid-transform off-screen: a torn, ghosted double-header
+   overlapping the content underneath, right at the default/unpinned
+   position. Scoping the transition to `.is-pinned` means it's gone
+   the instant the class is removed, so unpinning snaps cleanly back
+   to plain flow with no leftover animation. */
+.topbar.is-pinned {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
   transition: transform 0.3s ease;
 }
 
-.topbar.lw-topbar--hidden {
+.topbar.is-pinned.lw-topbar--hidden {
   transform: translateY(-100%);
 }
 

@@ -49,6 +49,45 @@
         return;
     }
 
+    // ---- Shared SSE connection ----
+    // One EventSource for the whole page rather than one per card: the
+    // home card and the Locations view's own full-map heat panel can
+    // both be alive at once, and each opening its own /locations/stream
+    // connection would just be two redundant sockets doing the same
+    // job. Lazily opened on the first instance and fanned out to every
+    // registered instance's own refresh() from there.
+    let sharedEventSource = null;
+    let sseConnected = false;
+    const liveInstanceRefreshers = new Set();
+
+    function ensureSharedSse() {
+        if (sharedEventSource || typeof EventSource === 'undefined') return;
+        try {
+            const base = (typeof LWHelpers !== 'undefined' && typeof LWHelpers.apiBase === 'function')
+                ? LWHelpers.apiBase()
+                : (window.API_URL || '');
+            const url = `${base}/locations/stream`;
+            sharedEventSource = new EventSource(url);
+            sharedEventSource.addEventListener('location:update', () => {
+                liveInstanceRefreshers.forEach((fn) => {
+                    try { fn(); } catch (e) { console.error('[map-heat-home] SSE update handling error', e); }
+                });
+            });
+            sharedEventSource.onopen = () => {
+                sseConnected = true;
+                console.log('[map-heat-home] SSE connected');
+            };
+            sharedEventSource.onerror = () => {
+                // EventSource auto-reconnects on its own; fall back to the
+                // faster poll cadence for however long the connection is down.
+                sseConnected = false;
+                console.warn('[map-heat-home] SSE connection error');
+            };
+        } catch (err) {
+            console.warn('[map-heat-home] SSE not available', err);
+        }
+    }
+
     function createLiveHeatMap(visual, options = {}) {
         if (!visual || visual.dataset.liveHeatMapBound === '1') return null;
         visual.dataset.liveHeatMapBound = '1';
@@ -357,36 +396,23 @@
     }
 
     function startPolling() {
-        refresh();
-        clearInterval(pollTimer);
-        pollTimer = setInterval(refresh, POLL_INTERVAL_MS);
+        clearTimeout(pollTimer);
+        async function tick() {
+            await refresh();
+            // SSE is the primary signal once it's up — this loop just
+            // becomes a slow safety net in case an update event is missed.
+            // While SSE is down/still connecting, poll at the normal cadence.
+            const nextDelay = sseConnected ? POLL_INTERVAL_MS * 6 : POLL_INTERVAL_MS;
+            pollTimer = setTimeout(tick, nextDelay);
+        }
+        tick();
     }
 
-    // ---- SSE: listen for server-sent location updates and trigger a refresh ----
-    function setupSse() {
-        try {
-            const base = (typeof LWHelpers !== 'undefined' && typeof LWHelpers.apiBase === 'function')
-                ? LWHelpers.apiBase()
-                : (window.API_URL || '');
-            const url = `${base}/locations/stream`;
-            const es = new EventSource(url);
-            es.addEventListener('location:update', (ev) => {
-                try {
-                    // lightweight: re-fetch the full list (refresh has in-flight guard)
-                    refresh();
-                } catch (e) {
-                    console.error('[map-heat-home] SSE update handling error', e);
-                }
-            });
-            es.onopen = () => console.log('[map-heat-home] SSE connected');
-            es.onerror = () => {
-                // EventSource auto-reconnects; log occasionally
-                console.warn('[map-heat-home] SSE connection error');
-            };
-        } catch (err) {
-            console.warn('[map-heat-home] SSE not available', err);
-        }
-    }
+    // ---- SSE: register this instance so the shared connection's
+    // 'location:update' events (see ensureSharedSse() above) trigger
+    // its refresh() too — no per-instance EventSource needed.
+    liveInstanceRefreshers.add(refresh);
+    ensureSharedSse();
 
     // Fires on every reveal of the card's view (including, per home.js's
     // own use of the same event, the very first one) — makes sure the
@@ -401,6 +427,14 @@
     setStatus('Loading live status…', 'loading');
     startPolling();
     window.addEventListener('lw-page-revealed', handleReveal);
+    // Fired by location.js right after a new location is successfully
+    // added (loc-header__add) — every live heat-map instance on the page
+    // (home card + the Locations view's own full-map heat panel) picks
+    // it up immediately rather than waiting on its own poll/SSE cycle.
+    window.addEventListener('lw:locations-changed', () => {
+        if (ensureMapBuilt() && map) map.invalidateSize();
+        refresh();
+    });
 
     // Extra safety nets for the "still hidden when this script ran"
     // case, in case lw-page-revealed isn't dispatched for the very first

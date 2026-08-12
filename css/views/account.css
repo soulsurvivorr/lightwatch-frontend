@@ -1559,5 +1559,6 @@
 #view-account .account-grid {
   height: auto;
   min-height: 100%;
+  padding-top: 0;
   padding-bottom: 6px;
 }

@@ -177,6 +177,14 @@
         }
     }
 
+    // Same "isAdmin" flag home.js already reads off chat posts
+    // (`c.isAdmin`) — here it's read off the signed-in user's own cached
+    // profile to gate who can set/change the light status of a
+    // manually-added location (see openAddLocationModal / adminManaged).
+    function isAdmin() {
+        return !!getCurrentUserData().isAdmin;
+    }
+
     function getRegisteredLocationName() {
         const user = getCurrentUserData();
         if (user.city && String(user.city).trim()) return String(user.city).trim();
@@ -568,14 +576,27 @@
         const favorited = isFavorited(area.name);
         const distanceText = typeof area.distanceKm === 'number' ? `${area.distanceKm.toFixed(1)} km` : '';
 
+        const areaName = area.name || 'Unnamed area';
+        // Admin-added locations (see openAddLocationModal) can carry
+        // adminManaged: true — regular users can still see/tap into them,
+        // but only an admin account is allowed to report/change their
+        // light status (locked the same way a favorited row already is).
+        const adminLocked = !!area.adminManaged && !isAdmin();
+        const locked = favorited || adminLocked;
+        const lockedReason = favorited
+            ? `Unable to report status for favorite location ${areaName}`
+            : adminLocked
+                ? `Only an admin can report the light status for ${areaName}`
+                : '';
+
         return `
-      <div class="loc-row" data-area="${area.name}" data-status="${area.status}" data-favorite="${favorited ? '1' : '0'}" data-name="${area.name.toLowerCase()}" role="listitem">
-        <span class="loc-row__icon loc-row__icon--${meta.cls}" data-action="toggle-area-status" role="button" tabindex="0" aria-disabled="${favorited ? 'true' : 'false'}" style="cursor:${favorited ? 'not-allowed' : 'pointer'}" aria-label="${favorited ? `Unable to report status for favorite location ${area.name}` : `Tap to report the light status for ${area.name}`}">
+      <div class="loc-row" data-area="${areaName}" data-status="${area.status}" data-favorite="${favorited ? '1' : '0'}" data-admin-managed="${area.adminManaged ? '1' : '0'}" data-name="${areaName.toLowerCase()}" role="listitem">
+        <span class="loc-row__icon loc-row__icon--${meta.cls}" data-action="toggle-area-status" role="button" tabindex="0" aria-disabled="${locked ? 'true' : 'false'}" style="cursor:${locked ? 'not-allowed' : 'pointer'}" aria-label="${locked ? lockedReason : `Tap to report the light status for ${areaName}`}">
           <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" fill="currentColor"/></svg>
         </span>
         <div class="loc-row__body">
           <div class="loc-row__name-line">
-            <span class="loc-row__name">${area.name}</span>
+            <span class="loc-row__name">${areaName}</span>
             ${area.live ? '<span class="loc-row__badge">Your Area</span>' : ''}
           </div>
           <p class="loc-row__status loc-row__status--${meta.cls}">${meta.label}</p>
@@ -881,7 +902,7 @@
 
         const q = query.toLowerCase();
         const backendMatches = latestLocations
-            .filter(a => a.name.toLowerCase().includes(q))
+            .filter(a => (a.name || '').toLowerCase().includes(q))
             .slice(0, 6);
 
         // Normalized to the same shape the old Mapbox geocoder features
@@ -945,7 +966,11 @@
     async function toggleAreaStatus(row) {
         if (!row || areaToggleInFlight || !window.LWLightStatus) return;
         if (row.dataset.favorite === '1') return;
-        
+        // Manually-added locations (adminManaged, see openAddLocationModal)
+        // only accept status reports from an admin account — everyone else
+        // can still view the location, just not tap-to-report its status.
+        if (row.dataset.adminManaged === '1' && !isAdmin()) return;
+
         const currentlyOn = row.dataset.status === 'on';
         // Don't allow toggling when light is already ON — users can only report outages (OFF)
         if (currentlyOn) return;
@@ -979,6 +1004,246 @@
         } finally {
             icon?.removeAttribute('aria-busy');
             areaToggleInFlight = false;
+        }
+    }
+
+    // ============================================================
+    //  Add Location (loc-header__add)
+    //  Built entirely in JS (no matching markup existed in index.html)
+    //  and reuses LWLocationPicker — the same search/geolocate widget
+    //  signup.js/account.js already use for picking a city — instead of
+    //  duplicating that logic here. Regular users can name a spot and
+    //  drop a pin; only an admin account also gets a light-status
+    //  control, and the resulting location is flagged adminManaged so
+    //  everyone else can view it but not report its status (see
+    //  nearbyRowTemplate/toggleAreaStatus above).
+    // ============================================================
+
+    let addLocationEls = null; // cached DOM refs, built once
+    let addLocationPicker = null; // LWLocationPicker.attach() handle
+    let addLocationSubmitting = false;
+
+    function buildAddLocationModal() {
+        if (addLocationEls) return addLocationEls;
+
+        const overlay = document.createElement('div');
+        overlay.className = 'loc-add-overlay';
+        overlay.hidden = true;
+        overlay.innerHTML = `
+      <div class="loc-add-panel" role="dialog" aria-modal="true" aria-labelledby="locAddTitle">
+        <div class="loc-add-panel__header">
+          <h2 id="locAddTitle">Add a location</h2>
+          <button type="button" class="loc-add-panel__close" aria-label="Close">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+        <p class="loc-add-panel__sub">Search for the town or area, or use your current position — then give it a name to show on the map.</p>
+        <form class="loc-add-form" novalidate>
+          <label class="loc-add-form__label" for="locAddNameInput">Location name</label>
+          <input id="locAddNameInput" class="loc-add-form__input" type="text" placeholder="e.g. Ahodwo" autocomplete="off" required>
+
+          <label class="loc-add-form__label" for="locAddSearchInput">Find on map</label>
+          <div class="loc-search loc-add-form__search">
+            <span class="loc-search__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M21 21l-4.35-4.35M11 19a8 8 0 1 1 0-16 8 8 0 0 1 0 16Z" stroke="currentColor" stroke-width="1.8"/></svg>
+            </span>
+            <input id="locAddSearchInput" type="text" placeholder="Search for a place…" autocomplete="off">
+            <button type="button" id="locAddLocateBtn" class="loc-add-form__locate" aria-label="Use my current location">
+              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 2v3m0 14v3M2 12h3m14 0h3M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            </button>
+          </div>
+          <div id="locAddSearchResults" class="loc-search__results" hidden></div>
+          <p id="locAddHint" class="loc-add-form__hint">Pin a spot to enable Add.</p>
+
+          <div id="locAddAdminStatus" class="loc-add-admin" hidden>
+            <span class="loc-add-admin__label">Light status (admin only)</span>
+            <div class="loc-add-admin__options" role="radiogroup" aria-label="Initial light status">
+              <button type="button" class="loc-add-admin__opt is-active" data-status="unknown">Unknown</button>
+              <button type="button" class="loc-add-admin__opt" data-status="on">On</button>
+              <button type="button" class="loc-add-admin__opt" data-status="off">Off</button>
+            </div>
+          </div>
+
+          <p id="locAddError" class="loc-add-form__error" hidden></p>
+
+          <div class="loc-add-form__actions">
+            <button type="button" class="btn btn--ghost" data-action="loc-add-cancel">Cancel</button>
+            <button type="submit" class="btn btn--primary" id="locAddSubmitBtn" disabled>Add location</button>
+          </div>
+        </form>
+      </div>
+    `;
+        document.body.appendChild(overlay);
+
+        addLocationEls = {
+            overlay,
+            panel: overlay.querySelector('.loc-add-panel'),
+            form: overlay.querySelector('.loc-add-form'),
+            nameInput: overlay.querySelector('#locAddNameInput'),
+            searchInput: overlay.querySelector('#locAddSearchInput'),
+            resultsEl: overlay.querySelector('#locAddSearchResults'),
+            locateBtn: overlay.querySelector('#locAddLocateBtn'),
+            hintEl: overlay.querySelector('#locAddHint'),
+            adminStatus: overlay.querySelector('#locAddAdminStatus'),
+            errorEl: overlay.querySelector('#locAddError'),
+            submitBtn: overlay.querySelector('#locAddSubmitBtn'),
+            closeBtn: overlay.querySelector('.loc-add-panel__close')
+        };
+
+        let pickedStatus = 'unknown';
+        addLocationEls.adminStatus.querySelectorAll('.loc-add-admin__opt').forEach(opt => {
+            opt.addEventListener('click', () => {
+                addLocationEls.adminStatus.querySelectorAll('.loc-add-admin__opt').forEach(o => o.classList.remove('is-active'));
+                opt.classList.add('is-active');
+                pickedStatus = opt.dataset.status;
+            });
+        });
+        addLocationEls.getPickedStatus = () => pickedStatus;
+
+        addLocationPicker = window.LWLocationPicker && typeof window.LWLocationPicker.attach === 'function'
+            ? window.LWLocationPicker.attach({
+                input: addLocationEls.searchInput,
+                resultsEl: addLocationEls.resultsEl,
+                locateBtn: addLocationEls.locateBtn,
+                hintEl: addLocationEls.hintEl,
+                onPick: ({ label, lat, lng }) => {
+                    if (!addLocationEls.nameInput.value.trim()) addLocationEls.nameInput.value = label || '';
+                    updateAddLocationSubmitState();
+                }
+            })
+            : { getCoords: () => null, reset: () => {} };
+
+        addLocationEls.searchInput.addEventListener('input', () => {
+            // A hand-edit after a pick invalidates the stored coords
+            // (same contract location-picker.js documents) — reflect
+            // that in the Add button immediately rather than only on blur.
+            updateAddLocationSubmitState();
+        });
+
+        addLocationEls.nameInput.addEventListener('input', updateAddLocationSubmitState);
+
+        addLocationEls.closeBtn.addEventListener('click', closeAddLocationModal);
+        overlay.querySelector('[data-action="loc-add-cancel"]').addEventListener('click', closeAddLocationModal);
+        overlay.addEventListener('mousedown', (e) => { if (e.target === overlay) closeAddLocationModal(); });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !overlay.hidden) closeAddLocationModal();
+        });
+
+        addLocationEls.form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            submitAddLocation();
+        });
+
+        return addLocationEls;
+    }
+
+    function updateAddLocationSubmitState() {
+        const els = addLocationEls;
+        if (!els) return;
+        const hasName = !!els.nameInput.value.trim();
+        const coords = addLocationPicker ? addLocationPicker.getCoords() : null;
+        const ready = hasName && !!coords;
+        els.submitBtn.disabled = !ready || addLocationSubmitting;
+        els.hintEl.textContent = coords
+            ? 'Location confirmed — give it a name and add it.'
+            : 'Search for the place above, or use your current position, to drop a pin.';
+    }
+
+    function openAddLocationModal() {
+        const els = buildAddLocationModal();
+        els.form.reset();
+        els.nameInput.value = '';
+        els.searchInput.value = '';
+        els.errorEl.hidden = true;
+        addLocationSubmitting = false;
+        addLocationPicker?.reset();
+        els.adminStatus.hidden = !isAdmin();
+        els.adminStatus.querySelectorAll('.loc-add-admin__opt').forEach(o => o.classList.toggle('is-active', o.dataset.status === 'unknown'));
+        updateAddLocationSubmitState();
+        els.overlay.hidden = false;
+        document.body.classList.add('lw-modal-open');
+        requestAnimationFrame(() => els.overlay.classList.add('is-open'));
+        setTimeout(() => els.nameInput.focus(), 60);
+    }
+
+    function closeAddLocationModal() {
+        const els = addLocationEls;
+        if (!els || els.overlay.hidden) return;
+        els.overlay.classList.remove('is-open');
+        document.body.classList.remove('lw-modal-open');
+        setTimeout(() => { els.overlay.hidden = true; }, 200);
+    }
+
+    async function submitAddLocation() {
+        const els = addLocationEls;
+        if (!els || addLocationSubmitting) return;
+
+        const name = els.nameInput.value.trim();
+        const coords = addLocationPicker ? addLocationPicker.getCoords() : null;
+        if (!name || !coords) {
+            els.errorEl.textContent = 'Pick a location on the map and give it a name first.';
+            els.errorEl.hidden = false;
+            return;
+        }
+
+        const admin = isAdmin();
+        const payload = {
+            name,
+            lat: coords.lat,
+            lng: coords.lng,
+            ...(admin ? { status: els.getPickedStatus(), adminManaged: true } : {})
+        };
+
+        addLocationSubmitting = true;
+        els.submitBtn.disabled = true;
+        els.submitBtn.textContent = 'Adding…';
+        els.errorEl.hidden = true;
+
+        try {
+            const res = await fetch(`${LWHelpers.apiBase()}/locations`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (!res.ok) throw new Error(`Bad response (${res.status})`);
+            const data = await res.json().catch(() => ({}));
+
+            // Normalize whatever the backend hands back — always guarantee
+            // a `name`, since a blank one is what broke rendering before
+            // (see nearbyRowTemplate/runSearch guards above).
+            const created = {
+                locationKey: normalizeAreaName(name) + '-' + Date.now().toString(36),
+                status: admin ? els.getPickedStatus() : 'unknown',
+                minutesAgo: 0,
+                confirmations: 0,
+                confidence: null,
+                ...(data && data.location ? data.location : data),
+                name: (data && (data.location?.name || data.name)) || name,
+                lat: coords.lat,
+                lng: coords.lng,
+                adminManaged: admin ? true : !!(data && (data.location?.adminManaged || data.adminManaged))
+            };
+
+            latestLocations = latestLocations.filter(l => l.locationKey !== created.locationKey).concat(created);
+            renderLocations(latestLocations);
+            if (map) {
+                map.flyTo({ center: [created.lng, created.lat], zoom: DEFAULT_ZOOM, essential: true });
+                setTimeout(() => openLocationPopup(created, [created.lng, created.lat]), 350);
+            }
+            ensureLiveHeatMap()?.refresh();
+            // Lets the home page's card + any other open heat-map instance
+            // pick this up immediately instead of waiting on their own
+            // poll/SSE cycle — see the matching listener in map-heat-home.js.
+            window.dispatchEvent(new CustomEvent('lw:locations-changed', { detail: created }));
+
+            closeAddLocationModal();
+        } catch (err) {
+            els.errorEl.textContent = "Couldn't add that location — please try again.";
+            els.errorEl.hidden = false;
+        } finally {
+            addLocationSubmitting = false;
+            els.submitBtn.textContent = 'Add location';
+            updateAddLocationSubmitState();
         }
     }
 
@@ -1110,6 +1375,11 @@
                 const style = btn.dataset.style || 'street';
                 setMapStyle(style);
             });
+        }
+
+        const addBtn = document.querySelector('.loc-header__add');
+        if (addBtn) {
+            addBtn.addEventListener('click', openAddLocationModal);
         }
     }
 

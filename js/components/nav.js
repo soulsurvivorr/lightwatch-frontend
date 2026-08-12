@@ -305,44 +305,134 @@ function syncNavBadgesToSession() {
     refreshPushPromptDot();
 }
 
-// ── Topbar: hide on scroll down, reveal on scroll up ────────────
-// FIX: this used to bail out below 1024px (`if (window.innerWidth <
-// 1024) { ...; return; }`), on the assumption that this behavior was
-// desktop-only — .topbar is display:none below home.css's mobile
-// breakpoint, and the bottom nav takes over. That's exactly why this
-// never did anything on the native app: at phone widths the class
-// toggling below still ran (or, in the old code, was skipped and
-// forced-visible before returning), but had nothing to act on.
-// Removed the width branch — the same scroll-direction math now runs
-// at every width, and just toggles `lw-topbar--hidden` unconditionally.
+// ── Topbar: normal flow at the top of the page; becomes a floating
+// hide-on-scroll-down/reveal-on-scroll-up header once you've
+// scrolled past its own height ───────────────────────────────────
+// FIX (history): this used to bail out below 1024px, then later
+// switched .topbar straight to `position: fixed` from the very
+// first pixel of scroll to work around a sticky+transform repaint
+// bug (see navbar.css). That fixed the freeze but introduced a
+// different problem: the header floated above content immediately,
+// instead of behaving like a normal part of the page at the top.
 //
-// NOTE: this only produces a visible effect once `.topbar` (or
-// whatever header markup you're using at phone widths) is actually
-// shown and positioned `fixed`/`sticky` there, with
-// `.lw-topbar--hidden { transform: translateY(-100%); }` (or similar)
-// defined for that breakpoint too. That CSS lives in home.css/
-// header.css, which weren't available here to check/edit — if
-// `.topbar` is still `display: none` on mobile, send those over and
-// I'll wire the mobile-breakpoint styles up to match this exactly.
-const TOPBAR_REVEAL_MIN_SCROLL = 80; // stay visible when scrolling back to the very top
-const TOPBAR_REVEAL_DELTA = 2; // show after a small upward scroll
+// What this does now: .topbar's resting CSS position is `static`
+// (navbar.css) — at the top of the page it's just ordinary content
+// and scrolls away naturally like anything else, no special
+// handling at all. Only once the page has scrolled past the
+// topbar's own height does nav.js add `.is-pinned` (switches it to
+// `position: fixed` — see navbar.css) and start applying the
+// scroll-direction hide/reveal. Scrolling back up above that
+// threshold unpins it and drops it right back into normal flow.
+const topbarEl = document.querySelector('.topbar');
+// FIX (missing padding compensation / "floating header, no reserved
+// space"): this used to be `const appShellEl = document.getElementById
+// ('appShell');`, resolved once, synchronously, the moment nav.js was
+// parsed. If the <script> tag sits between the topbar markup and
+// `<div id="appShell">` in the HTML — plausible, since the topbar is
+// the page header and #appShell wraps everything after it — this read
+// returns null before #appShell has been parsed yet, and being a
+// const, that null was permanent for the rest of the session. `.topbar`
+// itself still pinned/hid correctly (queried the same way, but it
+// already existed by this point), so the pin/hide always looked right
+// visually — but `if (appShellEl) appShellEl.classList.add(...)`
+// silently no-opped forever, meaning the padding compensation
+// (`#appShell.lw-topbar-pinned` in home.css) never applied on any pin,
+// ever: exactly the "floating header sitting on top of content with
+// nothing reserving its space" symptom, on every single pin, not just
+// on load. `getAppShellEl()` re-queries lazily instead of trusting a
+// single parse-time snapshot, so a late-parsed #appShell still gets
+// found the first time it's actually needed.
+let appShellEl = document.getElementById('appShell');
+function getAppShellEl() {
+    if (!appShellEl) appShellEl = document.getElementById('appShell');
+    return appShellEl;
+}
+// FIX (topbar overlapping content on load): this used to read
+// topbarEl.offsetHeight immediately, with no fallback for "not
+// measured yet". If nav.js runs before the topbar has actually been
+// laid out (stylesheet still applying, fonts/images not painted,
+// during the .page-data-loading skeleton swap — see home.css),
+// offsetHeight reads 0. currentY (also 0 at page load) >= a 0
+// threshold is true, so updateTopbarVisibility's very first call
+// pinned the topbar instantly, before any real scrolling — fixed
+// positioning with a 0px --lw-topbar-h compensation, i.e. exactly a
+// floating header with no reserved space, sitting on top of
+// whatever's underneath it. `null` here (rather than 0) means
+// "not measured yet", and the pin check below refuses to fire until
+// a real (>0) measurement exists.
+let topbarPinThreshold = null;
+let topbarPinned = false;
+let topbarJustPinned = false;
 let topbarLastScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
 let topbarScrollTicking = false;
+const TOPBAR_REVEAL_DELTA = 2; // direction-change sensitivity once pinned
+
+// Keeps topbarPinThreshold (and --lw-topbar-h, which home.css's
+// padding compensation reads) in sync with the topbar's real
+// height. Only trusted while unpinned: a fixed, possibly
+// translateY-hidden topbar can report a misleading offsetHeight in
+// some engines, which would corrupt both the threshold and the
+// compensation if re-measured after pinning. A 0 reading here is
+// left as "not measured yet" rather than accepted as real — a
+// genuinely 0-height topbar isn't a real layout this app has.
+function syncTopbarHeightVar() {
+    if (!topbarEl || topbarPinned) return;
+    const measured = topbarEl.offsetHeight;
+    if (measured > 0) {
+        topbarPinThreshold = measured;
+        document.documentElement.style.setProperty('--lw-topbar-h', measured + 'px');
+    }
+}
 
 function updateTopbarVisibility() {
     topbarScrollTicking = false;
-    const topbar = document.querySelector('.topbar');
-    if (!topbar) return;
+    if (!topbarEl) return;
 
     const currentY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
     const delta = currentY - topbarLastScrollY;
-    const scrolledUp = delta <= -TOPBAR_REVEAL_DELTA;
-    const scrolledDown = delta >= TOPBAR_REVEAL_DELTA;
 
-    if (currentY <= TOPBAR_REVEAL_MIN_SCROLL || scrolledUp) {
-        topbar.classList.remove('lw-topbar--hidden'); // near top or scrolling up -> show
-    } else if (scrolledDown) {
-        topbar.classList.add('lw-topbar--hidden'); // scrolling down -> hide
+    if (!topbarPinned) {
+        // Nothing to do until we actually know the topbar's real
+        // height — pinning off a guessed/zero threshold is what caused
+        // the overlap-on-load bug (see comment above).
+        if (topbarPinThreshold !== null && currentY >= topbarPinThreshold) {
+            topbarPinned = true;
+            topbarJustPinned = true;
+            topbarEl.classList.add('is-pinned');
+            const shellOnPin = getAppShellEl();
+            if (shellOnPin) shellOnPin.classList.add('lw-topbar-pinned');
+            // Always pin as VISIBLE first, even if we crossed the
+            // threshold while actively scrolling down. Bundling
+            // `.lw-topbar--hidden` with `.is-pinned` in the same tick
+            // means `position` (static -> fixed) and `transform` (none
+            // -> translateY(-100%)) change together in one style recalc
+            // — browsers don't reliably animate a transform change that
+            // lands in the same recalc as its containing block changing,
+            // so no in-between frame gets painted and the header just
+            // cuts out instantly instead of sliding away.
+            topbarEl.classList.remove('lw-topbar--hidden');
+        }
+    } else if (topbarPinThreshold !== null && currentY < topbarPinThreshold) {
+        // Scrolled back up past the threshold — unpin, return to normal
+        // flow, fully visible (matches how it looked before pinning).
+        topbarPinned = false;
+        topbarEl.classList.remove('is-pinned', 'lw-topbar--hidden');
+        const shellOnUnpin = getAppShellEl();
+        if (shellOnUnpin) shellOnUnpin.classList.remove('lw-topbar-pinned');
+    } else {
+        const scrolledUp = delta <= -TOPBAR_REVEAL_DELTA;
+        const scrolledDown = delta >= TOPBAR_REVEAL_DELTA;
+        if (topbarJustPinned) {
+            // Avoid hiding immediately on the very first pin transition.
+            // Let the header settle into fixed position before a
+            // transform-only hide happens on the next scroll tick.
+            topbarJustPinned = false;
+        } else if (scrolledUp) {
+            topbarEl.classList.remove('lw-topbar--hidden');
+        } else if (scrolledDown) {
+            topbarEl.classList.add('lw-topbar--hidden');
+        }
+
     }
 
     topbarLastScrollY = currentY;
@@ -354,8 +444,33 @@ function onTopbarScroll() {
     requestAnimationFrame(updateTopbarVisibility);
 }
 
+if (typeof ResizeObserver !== 'undefined' && topbarEl) {
+    // ResizeObserver's first callback fires once real layout is
+    // available (asynchronously, after the 0px read at parse-time
+    // above), which is what actually supplies the real threshold in
+    // practice — this is the primary fix for the overlap-on-load bug,
+    // not just a nice-to-have.
+    new ResizeObserver(() => {
+        syncTopbarHeightVar();
+        updateTopbarVisibility();
+    }).observe(topbarEl);
+} else {
+    // Fallback for engines without ResizeObserver: re-measure once
+    // everything (styles, fonts, images) has definitely finished
+    // loading.
+    window.addEventListener('load', () => {
+        syncTopbarHeightVar();
+        updateTopbarVisibility();
+    });
+}
+window.addEventListener('orientationchange', syncTopbarHeightVar);
+syncTopbarHeightVar();
+
 window.addEventListener('scroll', onTopbarScroll, { passive: true });
-window.addEventListener('resize', updateTopbarVisibility);
+window.addEventListener('resize', () => {
+    syncTopbarHeightVar();
+    updateTopbarVisibility();
+});
 updateTopbarVisibility();
 
 function initNav() {

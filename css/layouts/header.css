@@ -23,9 +23,22 @@
    entirely (absolute, positioned off .topbar itself) pins it to the
    real left edge of the bar regardless of viewport width, fully
    independent of wherever topbar__inner's content is centered. */
-.topbar {
-  position: relative !important;
-}
+/* FIX (scroll-up-to-reveal was broken): this used to force
+   `position: relative !important` on .topbar here. navbar.css already
+   sets `.topbar { position: sticky; top: 0; }` plus
+   `.topbar.lw-topbar--hidden { transform: translateY(-100%); }`, driven
+   by components/nav.js's scroll-direction listener — hide on scroll
+   down, un-hide the instant the user scrolls back up. Because this
+   rule's !important beat navbar.css's non-!important `position: sticky`
+   regardless of load order, .topbar was actually `position: relative`
+   at runtime: it scrolled away with the page instead of pinning to the
+   viewport, so hiding it via transform just moved an already
+   scrolled-past element further offscreen — scrolling back up had
+   nothing fixed-in-viewport to reveal. `position: sticky` (or any
+   non-static position) is already a valid containing block for the
+   absolutely-positioned .topbar__brand below, so this override was
+   never needed for that purpose — removing it fixes the scroll
+   behavior without touching the brand positioning. */
 
 .topbar__brand {
   position: absolute !important;

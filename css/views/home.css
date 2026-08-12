@@ -4802,7 +4802,7 @@ body:not(.page-data-loading) #view-home #realPageContent {
 #view-home #pageSkeleton {
   /* Match location spacing: give the page top breathing room
      so content doesn't appear pinned under the native status area. */
-  padding: 6px 16px 0px !important;
+  padding: 0 16px 0px !important;
   max-width: 640px !important;
   margin: 0 auto !important;
   width: 100% !important;
@@ -6000,7 +6000,13 @@ html[data-show-home-stats="0"] #view-home .lw-stat-grid.lwx-stat-grid-5 {
   .topbar {
     display: block !important;
     padding-top: env(safe-area-inset-top, 0px);
-    position: relative;
+    /* FIX (superseded): this used to correct `position: relative`
+       (which broke the hide/reveal entirely) to `position: sticky`.
+       sticky turned out to have its own cross-browser freeze bug
+       once the element is actually stuck — see navbar.css's base
+       .topbar rule, now `position: fixed`, for the full story. No
+       position override needed here anymore; fixed applies at every
+       width from the base rule. */
     z-index: 40;
   }
 
@@ -6337,22 +6343,38 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
 }
 
 /* ============================================================
-   DESKTOP TOPBAR — hide on scroll down, reveal on scroll up
-   Driven by components/nav.js toggling .lw-topbar--hidden based on
-   scroll direction. Only takes effect >=1024px, matching the tier
-   the rest of the app treats as "desktop" (bottom nav hidden there).
+   TOPBAR — normal flow at the top of the page; becomes a floating
+   hide-on-scroll-down/reveal-on-scroll-up header once you've
+   scrolled past its own height.
+   Driven by nav.js: it toggles `.is-pinned` on `.topbar` once
+   scrollY passes the topbar's height (see navbar.css for the
+   `.is-pinned` / `.is-pinned.lw-topbar--hidden` rules — that's the
+   single place position + transform are defined now, so nothing
+   here duplicates them), and toggles `.lw-topbar-pinned` on
+   #appShell at the same moment for the padding compensation below.
    ============================================================ */
 @media (min-width: 1024px) {
-  .topbar {
-    position: sticky;
-    top: 0;
+  .topbar.is-pinned {
     z-index: 60;
     transition: transform 0.28s ease;
   }
+}
 
-  .topbar.lw-topbar--hidden {
-    transform: translateY(-100%);
-  }
+/* ---- Layout-space compensation, only while pinned ----
+   While the topbar is in normal flow (unpinned) it already reserves
+   its own height the ordinary way — no extra padding needed, and
+   adding it here too would just leave a blank gap under it.
+   Once nav.js pins it (`position: fixed`, out of flow entirely) that
+   reserved space disappears, so #appShell needs to make up for it or
+   content would render straight under/behind the now-floating
+   header. `lw-topbar-pinned` is added/removed by nav.js in the exact
+   same scroll-frame it toggles `.is-pinned`, so the switch is
+   invisible — no jump, no flash.
+   --lw-topbar-h is measured by nav.js's ResizeObserver (topbar
+   height changes with breakpoint and env(safe-area-inset-top), so a
+   hardcoded number would drift out of sync on rotation etc). */
+#appShell.lw-topbar-pinned {
+  padding-top: var(--lw-topbar-h, 56px);
 }
 
 /* ============================================================

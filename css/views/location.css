@@ -1801,3 +1801,245 @@ html[data-theme="light"] .loc-header__title {
     display: none !important;
   }
 }
+/* ============================================================
+   Add Location modal (loc-header__add -> views/location.js
+   openAddLocationModal). Reuses the app's existing .loc-search /
+   .loc-search__result classes for the LWLocationPicker-driven search
+   dropdown, and the shared .btn / .btn--primary / .btn--ghost
+   button styles, so this doesn't introduce a second visual language.
+   ============================================================ */
+
+body.lw-modal-open {
+  overflow: hidden !important;
+}
+
+.loc-add-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(7, 12, 20, 0.6);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.loc-add-overlay[hidden] {
+  display: none;
+}
+
+.loc-add-overlay.is-open {
+  opacity: 1;
+}
+
+.loc-add-panel {
+  width: min(100%, 420px);
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4);
+  padding: 22px 22px 20px;
+  transform: translateY(10px) scale(0.98);
+  transition: transform 0.2s ease;
+  box-sizing: border-box;
+}
+
+.loc-add-overlay.is-open .loc-add-panel {
+  transform: translateY(0) scale(1);
+}
+
+.loc-add-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.loc-add-panel__header h2 {
+  font-size: 1.15rem;
+  color: var(--text-bright);
+}
+
+.loc-add-panel__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: var(--bg-panel-raised);
+  color: var(--text-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.loc-add-panel__close svg {
+  width: 16px;
+  height: 16px;
+}
+
+.loc-add-panel__close:hover {
+  color: var(--text-bright);
+}
+
+.loc-add-panel__sub {
+  margin-top: 6px;
+  font-size: 0.82rem;
+  color: var(--text-faint);
+  line-height: 1.5;
+}
+
+.loc-add-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 16px;
+}
+
+.loc-add-form__label {
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin-top: 10px;
+}
+
+.loc-add-form__label:first-of-type {
+  margin-top: 0;
+}
+
+.loc-add-form__input {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  padding: 11px 14px;
+  font-size: 0.9rem;
+  color: var(--text-bright);
+  font-family: var(--font-body);
+}
+
+.loc-add-form__input:focus {
+  outline: none;
+  border-color: var(--brand2, #4A90D9);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand2, #4A90D9) 18%, transparent);
+}
+
+.loc-add-form__search {
+  position: relative;
+}
+
+.loc-add-form__search input {
+  padding-right: 44px;
+}
+
+.loc-add-form__locate {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: none;
+  background: var(--bg-panel-raised);
+  color: var(--brand2, #4A90D9);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.loc-add-form__locate svg {
+  width: 16px;
+  height: 16px;
+}
+
+.loc-add-form__search .loc-search__results {
+  position: static;
+  margin-top: 6px;
+  box-shadow: none;
+  border: 1px solid var(--border-soft);
+}
+
+.loc-add-form__hint {
+  font-size: 0.76rem;
+  color: var(--text-faint);
+  margin: 2px 0 0;
+}
+
+.loc-add-form__error {
+  font-size: 0.8rem;
+  color: var(--red, #E5484D);
+  margin: 4px 0 0;
+}
+
+.loc-add-admin {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--bg-panel-raised);
+}
+
+.loc-add-admin[hidden] {
+  display: none;
+}
+
+.loc-add-admin__label {
+  display: block;
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.loc-add-admin__options {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.loc-add-admin__opt {
+  flex: 1;
+  padding: 8px 0;
+  border-radius: 999px;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-panel);
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.loc-add-admin__opt.is-active {
+  border-color: var(--brand2, #4A90D9);
+  background: color-mix(in srgb, var(--brand2, #4A90D9) 18%, var(--bg-panel));
+  color: var(--text-bright);
+}
+
+.loc-add-form__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.loc-add-form__actions .btn {
+  min-width: 100px;
+}
+
+.loc-add-form__actions .btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
