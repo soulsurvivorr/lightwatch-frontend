@@ -107,6 +107,45 @@
   .modal-btn--danger { background: linear-gradient(135deg, var(--red), #c8343c); color: #fff; }
   .modal-btn--confirm { background: linear-gradient(135deg, var(--brand), #d99a26); color: var(--brand-ink); }
 
+  /* ============ PROMPT MODAL (form fields) ============ */
+  .modal-form { display: flex; flex-direction: column; gap: 14px; margin-bottom: 22px; text-align: left; }
+  .modal-input-label {
+    display: flex; flex-direction: column; gap: 7px;
+    font-size: 0.78rem; font-weight: 700; color: var(--muted);
+    letter-spacing: 0.01em;
+  }
+  .modal-input {
+    background: var(--panel2); border: 1px solid var(--border); border-radius: var(--r-md);
+    padding: 11px 13px; color: var(--txt); font-size: 0.92rem; font-family: var(--font);
+    transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+  }
+  .modal-input::placeholder { color: var(--faint); }
+  .modal-input:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px rgba(242,179,61,0.15); }
+  .modal-input[type="time"] { color-scheme: dark; }
+  .modal-input[type="time"]::-webkit-calendar-picker-indicator { filter: invert(1) brightness(1.7); cursor: pointer; opacity: 0.85; }
+  .modal-input[type="time"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
+
+  /* Warm "sun" accent for ON-time fields, cool "moon" accent for OFF-time
+     fields — gives the timer prompt a bit of life instead of two identical
+     grey boxes. */
+  .modal-input-label--on { color: var(--brand); }
+  .modal-input-label--on .modal-input {
+    border-color: var(--brand-dim);
+    background: linear-gradient(160deg, rgba(242,179,61,0.10), var(--panel2));
+  }
+  .modal-input-label--on .modal-input:focus {
+    border-color: var(--brand); box-shadow: 0 0 0 3px rgba(242,179,61,0.2);
+  }
+  .modal-input-label--off { color: var(--brand2); }
+  .modal-input-label--off .modal-input {
+    border-color: var(--brand2-dim);
+    background: linear-gradient(160deg, rgba(79,134,247,0.10), var(--panel2));
+  }
+  .modal-input-label--off .modal-input:focus {
+    border-color: var(--brand2); box-shadow: 0 0 0 3px rgba(79,134,247,0.2);
+  }
+  .modal-input-label--off .modal-input[type="time"]::-webkit-calendar-picker-indicator { filter: invert(64%) sepia(56%) saturate(1873%) hue-rotate(202deg) brightness(1.05); }
+
   /* ============ LOGIN ============ */
   #loginScreen { min-height: calc(100 * min(var(--vh, 1vh), 1vh)); display:flex; align-items:center; justify-content:center; padding:24px; }
   .login-card {
@@ -1322,18 +1361,18 @@
     });
   }
 
-  function showPrompt({ title, description, fields = [{ name: 'value', label: 'Value', placeholder: '', value: '' }], confirmText = 'Save', cancelText = 'Cancel' }) {
+  function showPrompt({ title, description, fields = [{ name: 'value', label: 'Value', placeholder: '', value: '' }], confirmText = 'Save', cancelText = 'Cancel', icon = '✏️' }) {
     return new Promise(resolve => {
       const backdrop = document.createElement('div');
       backdrop.className = 'modal-backdrop';
       const inputsHtml = fields.map(field => `
-          <label class="modal-input-label">${field.label}
+          <label class="modal-input-label${field.accent ? ` modal-input-label--${field.accent}` : ''}">${field.label}
             <input id="modalInput_${field.name}" class="modal-input" type="${field.type || 'text'}" placeholder="${field.placeholder || ''}" value="${field.value || ''}" />
           </label>
         `).join('');
       backdrop.innerHTML = `
         <div class="modal-box">
-          <div class="modal-icon">✏️</div>
+          <div class="modal-icon">${icon}</div>
           <div class="modal-title">${title}</div>
           <div class="modal-desc">${description}</div>
           <div class="modal-form">${inputsHtml}</div>
@@ -1909,13 +1948,18 @@
         const key = e.currentTarget.dataset.locKey;
         const loc = allLocations.find(l => l.locationKey === key);
         const existing = loc?.schedule || {};
+        const isCurrentlyOn = (loc?.status || "unknown") === "on";
+        const onField = { name: "onTime", label: "☀️ Turn ON at", accent: "on", type: "time", value: existing.onTime || "" };
+        const offField = { name: "offTime", label: "🌙 Turn OFF at", accent: "off", type: "time", value: existing.offTime || "" };
+        // Lead with whichever action is next for this location — if the
+        // light is currently on, the OFF time is the more relevant one to
+        // set first, and vice versa.
+        const fields = isCurrentlyOn ? [offField, onField] : [onField, offField];
         const result = await showPrompt({
+          icon: "⏱",
           title: `Timer — ${loc?.label || key}`,
           description: "Set a daily time to auto-switch this location's light status. Leave both blank and save to clear the timer.",
-          fields: [
-            { name: "onTime", label: "Turn ON at", type: "time", value: existing.onTime || "" },
-            { name: "offTime", label: "Turn OFF at", type: "time", value: existing.offTime || "" }
-          ],
+          fields,
           confirmText: "Save timer"
         });
         if (result === null) return;
