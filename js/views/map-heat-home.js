@@ -284,7 +284,11 @@
             if (!res.ok) throw new Error(`Bad response (${res.status})`);
             const data = await res.json();
             if (!data || !Array.isArray(data.locations)) throw new Error('Malformed /locations/map response');
-            return data.locations;
+            // Fall back to locationKey when a location has no `name` (e.g.
+            // one picked straight off the map with nothing typed/geocoded)
+            // so its marker label/tooltip never renders blank — same
+            // fallback the admin console's heat map already uses.
+            return data.locations.map(loc => ({ ...loc, name: loc.name || loc.locationKey }));
         } catch (err) {
             console.error('[map-heat-home] fetch failed:', err?.message || err);
             return null;

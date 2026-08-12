@@ -816,7 +816,12 @@
             const data = await res.json();
             if (!Array.isArray(data.locations)) throw new Error('Malformed /locations/map response');
             const registeredName = normalizeAreaName(getRegisteredLocationName());
-            return data.locations.map(loc => ({ ...loc, live: normalizeAreaName(loc.name) === registeredName }));
+            // Some locations (picked straight off the map with no reverse-
+            // geocoded/typed name) come back from the API with an empty
+            // `name` — fall back to locationKey so markers, popups, list
+            // rows, and search never render a blank/undefined label.
+            // Mirrors the same fallback the admin console's heat map uses.
+            return data.locations.map(loc => ({ ...loc, name: loc.name || loc.locationKey, live: normalizeAreaName(loc.name) === registeredName }));
         } catch (err) {
             console.error('Failed to load /locations/map, using offline fallback:', err.message);
             return OFFLINE_FALLBACK_LOCATIONS;
