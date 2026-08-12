@@ -28,9 +28,13 @@
 (function () {
     const POLL_INTERVAL_MS = Number(window.LW_HEATMAP_POLL_MS) || 10 * 1000; // Default: refresh every 10 seconds (override via LW_HEATMAP_POLL_MS)
     const MAX_ZOOM = 16;
+    // The full map fits tight (maxZoom 16 above) since it has room to zoom
+    // freely. The small home-card preview should stay pulled back a bit
+    // more by default so it reads as an overview, not a tight crop on
+    // whichever cluster of points happens to be closest together.
+    const HOME_CARD_FIT_MAX_ZOOM = 8;
     const HEAT_RADIUS = 40; // 35-45px
     const HEAT_BLUR = 30;   // 25-35px
-    const MAX_MARKERS = 8;  // small card — cap labeled points so they don't crowd each other
 
     // Same statuses, as marker dot colors and isolated heat-layer colors.
     const STATUS_COLOR = {
@@ -99,16 +103,6 @@
 
     function colorFor(rawStatus) {
         return STATUS_COLOR[statusKey(rawStatus)] || STATUS_COLOR.unknown;
-    }
-
-    // Ranks "off" first so, on a card that caps how many labeled points
-    // it shows, the places that actually need attention are the ones
-    // kept — same rule the old status panel used.
-    function severityRank(rawStatus) {
-        const key = statusKey(rawStatus);
-        if (key === 'off') return 0;
-        if (key === 'unknown') return 1;
-        return 2;
     }
 
     function escapeHtml(str) {
@@ -284,11 +278,7 @@
             if (!res.ok) throw new Error(`Bad response (${res.status})`);
             const data = await res.json();
             if (!data || !Array.isArray(data.locations)) throw new Error('Malformed /locations/map response');
-            // Fall back to locationKey when a location has no `name` (e.g.
-            // one picked straight off the map with nothing typed/geocoded)
-            // so its marker label/tooltip never renders blank — same
-            // fallback the admin console's heat map already uses.
-            return data.locations.map(loc => ({ ...loc, name: loc.name || loc.locationKey }));
+            return data.locations;
         } catch (err) {
             console.error('[map-heat-home] fetch failed:', err?.message || err);
             return null;
@@ -330,10 +320,13 @@
         });
 
         markersLayer.clearLayers();
+        // Used to cap the mini card at its 8 highest-severity points so
+        // "off"/"unknown" locations wouldn't lose their labeled pin to
+        // crowding — but that meant any location outside the top 8 (like
+        // a brand-new "unknown" one competing with lots of others) never
+        // got a name/pin at all, even though the full map showed it fine.
+        // Show every plottable location on both, same as the full map.
         plottable
-            .slice()
-            .sort((a, b) => severityRank(a.status) - severityRank(b.status))
-            .slice(0, MAX_MARKERS)
             .forEach(loc => {
                 const color = colorFor(loc.status);
                 const icon = L.divIcon({
@@ -361,8 +354,10 @@
         if (points.length && !hasFitBoundsOnce) {
             // Only auto-fit once, on the first real batch of points —
             // after that, leave the user's own pan/zoom alone between polls.
+            // Mini card gets extra padding on top of its lower zoom cap so
+            // it reads as a wide overview rather than a tight crop.
             const bounds = L.latLngBounds(points.map(p => [p[0], p[1]]));
-            map.fitBounds(bounds.pad(0.35), { maxZoom: MAX_ZOOM, animate: true });
+            map.fitBounds(bounds.pad(isFullMap ? 0.35 : 0.6), { maxZoom: isFullMap ? MAX_ZOOM : HOME_CARD_FIT_MAX_ZOOM, animate: true });
             hasFitBoundsOnce = true;
         }
 
