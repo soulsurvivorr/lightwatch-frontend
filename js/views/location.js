@@ -147,6 +147,54 @@
         return readFavorites().includes(name);
     }
 
+    // ── Per-location labels ("Home", "Work Place", etc.) ──────
+    // Purely a personal annotation on top of a location — same
+    // localStorage-only contract favorites already use above, keyed by
+    // location name so it survives a refresh/re-render without needing
+    // any backend support. Set from the Add Location form (see
+    // buildAddLocationModal) and shown as a small badge on that
+    // location's row/popup (see nearbyRowTemplate/openLocationPopup).
+    const LOCATION_LABELS_KEY = 'lw_location_labels';
+
+    function readLocationLabels() {
+        try {
+            const raw = localStorage.getItem(LOCATION_LABELS_KEY);
+            return raw ? JSON.parse(raw) : {};
+        } catch (err) {
+            return {};
+        }
+    }
+
+    function writeLocationLabels(map) {
+        try {
+            localStorage.setItem(LOCATION_LABELS_KEY, JSON.stringify(map));
+        } catch (err) {
+            // Storage unavailable — labels just won't persist this session.
+        }
+    }
+
+    function getLocationLabel(name) {
+        if (!name) return null;
+        return readLocationLabels()[name] || null;
+    }
+
+    function setLocationLabel(name, label) {
+        if (!name) return;
+        const map = readLocationLabels();
+        const clean = String(label || '').trim();
+        if (clean) map[name] = clean; else delete map[name];
+        writeLocationLabels(map);
+    }
+
+    function escapeHtml(value) {
+        return String(value || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
     function toggleFavorite(name) {
         const list = readFavorites();
         const idx = list.indexOf(name);
@@ -375,6 +423,19 @@
         );
     }
 
+    // Mirrors what initMap()'s load handler does on first paint — used
+    // by selectFilter() below so switching back to "All" actually
+    // returns the camera to the default view instead of leaving it
+    // wherever the previous filter (e.g. Favorites) had flown it.
+    function resetMapToDefaultView() {
+        if (!map || currentMapStyle === 'heatmap') return;
+        if (userCoords) {
+            map.flyTo({ center: [userCoords.lng, userCoords.lat], zoom: DEFAULT_ZOOM, essential: true, duration: 1200 });
+            return;
+        }
+        centerOnFallback();
+    }
+
     function centerOnFallback() {
         // Prefer a cached last-known location, then the current user's
         // registered city (once we know its coordinates from the loaded
@@ -531,7 +592,15 @@
         const node = template.content.firstElementChild.cloneNode(true);
         const meta = statusMeta(props.status);
 
-        node.querySelector('[data-field="name"]').textContent = props.name;
+        const nameEl = node.querySelector('[data-field="name"]');
+        nameEl.textContent = props.name;
+        const popupLabel = getLocationLabel(props.name);
+        if (popupLabel) {
+            const badge = document.createElement('span');
+            badge.className = 'loc-popup__label-badge';
+            badge.textContent = popupLabel;
+            nameEl.insertAdjacentElement('afterend', badge);
+        }
         const statusEl = node.querySelector('[data-field="status"]');
         statusEl.textContent = meta.label;
         statusEl.className = `loc-popup__status loc-popup__status--${meta.cls}`;
@@ -590,6 +659,7 @@
         const distanceText = typeof area.distanceKm === 'number' ? `${area.distanceKm.toFixed(1)} km` : '';
 
         const areaName = area.name || 'Unnamed area';
+        const areaLabel = getLocationLabel(areaName);
         // Admin-added locations (see openAddLocationModal) can carry
         // adminManaged: true — regular users can still see/tap into them,
         // but only an admin account is allowed to report/change their
@@ -611,6 +681,7 @@
           <div class="loc-row__name-line">
             <span class="loc-row__name">${areaName}</span>
             ${area.live ? '<span class="loc-row__badge">Your Area</span>' : ''}
+            ${areaLabel ? `<span class="loc-row__badge loc-row__badge--label">${escapeHtml(areaLabel)}</span>` : ''}
           </div>
           <p class="loc-row__status loc-row__status--${meta.cls}">${meta.label}</p>
           <p class="loc-row__meta">Updated ${timeText} · ${area.confirmations || 0} reports</p>
@@ -768,6 +839,7 @@
         currentFilter = filterName;
         renderLocations(latestLocations);
         if (currentFilter === 'favorites') focusMapOnFavorites();
+        else if (currentFilter === 'all') resetMapToDefaultView();
     }
 
     // Nav shortcuts (e.g. the topbar/bottom-nav Favorites icon —
@@ -1090,23 +1162,32 @@
             <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
           </button>
         </div>
-        <p class="loc-add-panel__sub">Search for the town or area, or use your current position — then give it a name to show on the map. Already-tracked places are added to your favorites right away instead of duplicating.</p>
+        <p class="loc-add-panel__sub">Type the town or area to search — or, if you've already allowed location access, we've gone ahead and filled in where you are. Pick a match to drop the pin. Already-tracked places are added to your favorites right away instead of duplicating.</p>
         <form class="loc-add-form" novalidate>
           <label class="loc-add-form__label" for="locAddNameInput">Location name</label>
-          <input id="locAddNameInput" class="loc-add-form__input" type="text" placeholder="e.g. Ahodwo" autocomplete="off" required>
-
-          <label class="loc-add-form__label" for="locAddSearchInput">Find on map</label>
           <div class="loc-search loc-add-form__search">
             <span class="loc-search__icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M21 21l-4.35-4.35M11 19a8 8 0 1 1 0-16 8 8 0 0 1 0 16Z" stroke="currentColor" stroke-width="1.8"/></svg>
             </span>
-            <input id="locAddSearchInput" type="text" placeholder="Search for a place…" autocomplete="off">
+            <input id="locAddNameInput" type="text" placeholder="e.g. Ahodwo" autocomplete="off" required>
             <button type="button" id="locAddLocateBtn" class="loc-add-form__locate" aria-label="Use my current location">
               <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 2v3m0 14v3M2 12h3m14 0h3M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
             </button>
           </div>
           <div id="locAddSearchResults" class="loc-search__results" hidden></div>
           <p id="locAddHint" class="loc-add-form__hint">Pin a spot to enable Add.</p>
+
+          <div class="loc-add-labelgroup">
+            <span class="loc-add-labelgroup__label">Label (optional)</span>
+            <div id="locAddLabelOptions" class="loc-add-labelgroup__options" role="radiogroup" aria-label="Location label">
+              <button type="button" class="loc-add-labelgroup__opt is-active" data-label="">None</button>
+              <button type="button" class="loc-add-labelgroup__opt" data-label="Home">Home</button>
+              <button type="button" class="loc-add-labelgroup__opt" data-label="Work Place">Work Place</button>
+              <button type="button" class="loc-add-labelgroup__opt" data-label="Favorite Spot">Favorite Spot</button>
+              <button type="button" class="loc-add-labelgroup__opt" data-label="__custom__">Other…</button>
+            </div>
+            <input id="locAddLabelCustom" class="loc-add-form__input" type="text" placeholder="Enter a label" autocomplete="off" hidden style="margin-top:8px">
+          </div>
 
           <div id="locAddAdminStatus" class="loc-add-admin" hidden>
             <span class="loc-add-admin__label">Light status (admin only)</span>
@@ -1132,11 +1213,15 @@
             overlay,
             panel: overlay.querySelector('.loc-add-panel'),
             form: overlay.querySelector('.loc-add-form'),
+            // The name field IS the search field now — one box drives
+            // both what shows on the map and what gets typed/matched
+            // (see the comment above buildAddLocationModal's markup).
             nameInput: overlay.querySelector('#locAddNameInput'),
-            searchInput: overlay.querySelector('#locAddSearchInput'),
             resultsEl: overlay.querySelector('#locAddSearchResults'),
             locateBtn: overlay.querySelector('#locAddLocateBtn'),
             hintEl: overlay.querySelector('#locAddHint'),
+            labelGroup: overlay.querySelector('#locAddLabelOptions'),
+            labelCustomInput: overlay.querySelector('#locAddLabelCustom'),
             adminStatus: overlay.querySelector('#locAddAdminStatus'),
             errorEl: overlay.querySelector('#locAddError'),
             submitBtn: overlay.querySelector('#locAddSubmitBtn'),
@@ -1153,27 +1238,41 @@
         });
         addLocationEls.getPickedStatus = () => pickedStatus;
 
+        // Preset "Home"/"Work Place"/etc. pills, same pattern as the
+        // admin-only status pills above — "Other…" reveals a free-text
+        // field instead of picking a fixed value.
+        let pickedLabel = '';
+        addLocationEls.labelGroup.querySelectorAll('.loc-add-labelgroup__opt').forEach(opt => {
+            opt.addEventListener('click', () => {
+                addLocationEls.labelGroup.querySelectorAll('.loc-add-labelgroup__opt').forEach(o => o.classList.remove('is-active'));
+                opt.classList.add('is-active');
+                pickedLabel = opt.dataset.label;
+                const isCustom = pickedLabel === '__custom__';
+                addLocationEls.labelCustomInput.hidden = !isCustom;
+                if (isCustom) addLocationEls.labelCustomInput.focus();
+            });
+        });
+        addLocationEls.getPickedLabel = () => pickedLabel === '__custom__'
+            ? addLocationEls.labelCustomInput.value.trim()
+            : pickedLabel;
+
         addLocationPicker = window.LWLocationPicker && typeof window.LWLocationPicker.attach === 'function'
             ? window.LWLocationPicker.attach({
-                input: addLocationEls.searchInput,
+                input: addLocationEls.nameInput,
                 resultsEl: addLocationEls.resultsEl,
                 locateBtn: addLocationEls.locateBtn,
                 hintEl: addLocationEls.hintEl,
-                onPick: ({ label, lat, lng }) => {
-                    if (!addLocationEls.nameInput.value.trim()) addLocationEls.nameInput.value = label || '';
-                    updateAddLocationSubmitState();
-                }
+                onPick: () => updateAddLocationSubmitState()
             })
-            : { getCoords: () => null, reset: () => {} };
+            : { getCoords: () => null, reset: () => {}, autoLocate: () => {} };
 
-        addLocationEls.searchInput.addEventListener('input', () => {
+        addLocationEls.nameInput.addEventListener('input', () => {
             // A hand-edit after a pick invalidates the stored coords
-            // (same contract location-picker.js documents) — reflect
-            // that in the Add button immediately rather than only on blur.
+            // (location-picker.js clears them on its own 'input' listener) —
+            // reflect that in the Add button immediately rather than only
+            // on blur.
             updateAddLocationSubmitState();
         });
-
-        addLocationEls.nameInput.addEventListener('input', updateAddLocationSubmitState);
 
         addLocationEls.closeBtn.addEventListener('click', closeAddLocationModal);
         overlay.querySelector('[data-action="loc-add-cancel"]').addEventListener('click', closeAddLocationModal);
@@ -1199,25 +1298,32 @@
         els.submitBtn.disabled = !ready || addLocationSubmitting;
         els.hintEl.classList.toggle('is-confirmed', !!coords);
         els.hintEl.textContent = coords
-            ? 'Pin dropped — give it a name and add it.'
-            : 'Search for the place above, or use your current position, to drop a pin.';
+            ? 'Pin dropped — ready to add.'
+            : 'Search for the place above, or allow location access, to drop a pin.';
     }
 
     function openAddLocationModal() {
         const els = buildAddLocationModal();
         els.form.reset();
         els.nameInput.value = '';
-        els.searchInput.value = '';
         els.errorEl.hidden = true;
         addLocationSubmitting = false;
         addLocationPicker?.reset();
         els.adminStatus.hidden = !isAdmin();
         els.adminStatus.querySelectorAll('.loc-add-admin__opt').forEach(o => o.classList.toggle('is-active', o.dataset.status === 'unknown'));
+        els.labelGroup.querySelectorAll('.loc-add-labelgroup__opt').forEach(o => o.classList.toggle('is-active', o.dataset.label === ''));
+        els.labelCustomInput.value = '';
+        els.labelCustomInput.hidden = true;
         updateAddLocationSubmitState();
         els.overlay.hidden = false;
         document.body.classList.add('lw-modal-open');
         requestAnimationFrame(() => els.overlay.classList.add('is-open'));
         setTimeout(() => els.nameInput.focus(), 60);
+        // reset() above just cleared the field/coords — if location access
+        // was already granted earlier, re-fill it right away instead of
+        // making the person tap the locate button again (see
+        // location-picker.js's attemptAutoLocate/.autoLocate()).
+        addLocationPicker?.autoLocate?.();
     }
 
     function closeAddLocationModal() {
@@ -1263,6 +1369,8 @@
         els.submitBtn.disabled = true;
         els.errorEl.hidden = true;
 
+        const label = els.getPickedLabel ? els.getPickedLabel() : '';
+
         // Already tracked — skip creating a duplicate, just add it
         // straight to favorites so the user starts receiving live
         // updates from it right away (see addToFavorites()/toggleAreaStatus
@@ -1270,6 +1378,7 @@
         const existing = findExistingLocation(name, coords);
         if (existing) {
             addToFavorites(existing.name);
+            setLocationLabel(existing.name, label);
             renderLocations(latestLocations);
             if (map && currentMapStyle !== 'heatmap' && existing.lat != null) {
                 map.flyTo({ center: [existing.lng, existing.lat], zoom: DEFAULT_ZOOM, essential: true, duration: 1200 });
@@ -1287,6 +1396,7 @@
             name,
             lat: coords.lat,
             lng: coords.lng,
+            ...(label ? { label } : {}),
             ...(admin ? { status: els.getPickedStatus(), adminManaged: true } : {})
         };
 
@@ -1323,6 +1433,7 @@
             // extra tap, same lock toggleAreaStatus() already applies
             // to favorited rows (view-only, can't report on/off for it).
             addToFavorites(created.name);
+            setLocationLabel(created.name, label);
             renderLocations(latestLocations);
             if (map) {
                 map.flyTo({ center: [created.lng, created.lat], zoom: DEFAULT_ZOOM, essential: true, duration: 1200 });

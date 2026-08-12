@@ -1650,6 +1650,25 @@ html[data-theme="light"] .loc-header__title {
   padding: 2px 8px;
 }
 
+.loc-row__badge--label {
+  background: var(--panel-raised, rgba(255,255,255,0.08));
+  color: var(--text-faint);
+  border: 1px solid var(--border-soft);
+}
+
+.loc-popup__label-badge {
+  display: inline-block;
+  margin: 2px 0 0;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text-faint);
+  background: rgba(255,255,255,0.08);
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
 .loc-row__status {
   margin: 2px 0 0;
   font-size: 0.78rem;
@@ -2123,4 +2142,51 @@ body.lw-modal-open {
 .loc-add-form__actions .btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.loc-add-labelgroup {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--bg-panel-raised);
+}
+
+.loc-add-labelgroup__label {
+  display: block;
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.loc-add-labelgroup__options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.loc-add-labelgroup__opt {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-panel);
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.loc-add-labelgroup__opt:hover {
+  border-color: var(--brand2, #4A90D9);
+  color: var(--text-bright);
+}
+
+.loc-add-labelgroup__opt.is-active {
+  border-color: var(--brand2, #4A90D9);
+  background: color-mix(in srgb, var(--brand2, #4A90D9) 18%, var(--bg-panel));
+  color: var(--text-bright);
 }

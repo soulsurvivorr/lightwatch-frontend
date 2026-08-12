@@ -536,8 +536,39 @@
   .add-location-row { display:flex; gap:8px; margin-bottom:18px; flex-wrap:wrap; }
   .add-location-row input { background:var(--panel2); border:1px solid var(--border); border-radius:var(--r-md); padding:10px 13px; color:var(--txt); font-size:0.85rem; font-family: var(--font); flex:1; min-width:200px; transition: border-color 0.2s; }
   .add-location-row input:focus { outline:none; border-color:var(--brand); }
+  .add-location-row select { background:var(--panel2); border:1px solid var(--border); border-radius:var(--r-md); padding:10px 13px; color:var(--txt); font-size:0.85rem; font-family: var(--font); flex:0 0 auto; min-width:150px; transition: border-color 0.2s; }
+  .add-location-row select:focus { outline:none; border-color:var(--brand); }
   .add-location-row button { padding:10px 18px; border-radius:var(--r-md); border:none; background:linear-gradient(135deg, var(--brand2), #3767d6); color:#fff; font-weight:700; font-size:0.82rem; font-family: var(--font); cursor:pointer; transition: filter 0.15s, transform 0.2s var(--ease-spring); white-space: nowrap; }
   .add-location-row button:hover { filter:brightness(1.1); transform: translateY(-1px); }
+
+  /* Wraps the city text input + the shared locate-me button so the
+     button can sit pinned inside the field (js/utils/location-picker.js
+     drives both — see admin's addLocationBtn handler). */
+  .add-location-row__city { position:relative; flex:1 1 220px; min-width:220px; }
+  .add-location-row__city input { width:100%; box-sizing:border-box; padding-right:40px; }
+  .add-location-row__locate {
+    position:absolute; right:5px; top:50%; transform:translateY(-50%);
+    width:28px; height:28px; border-radius:50%; border:none;
+    background:var(--panel-raised); color:var(--brand2);
+    display:inline-flex; align-items:center; justify-content:center; cursor:pointer;
+  }
+  .add-location-row__locate svg { width:15px; height:15px; transition:transform 0.15s ease; }
+  .add-location-row__locate:hover:not(:disabled) { filter:brightness(1.2); }
+  .add-location-row__locate:disabled { cursor:not-allowed; opacity:0.7; }
+  .add-location-row__locate.is-loading svg { animation: addLocLocateSpin 0.9s linear infinite; }
+  @keyframes addLocLocateSpin { to { transform: rotate(360deg); } }
+  .add-location-row__hint { flex-basis:100%; font-size:0.72rem; color:var(--faint); margin:-10px 0 4px; }
+
+  /* Search-as-you-type dropdown — markup/classes come from the shared
+     js/utils/location-picker.js widget, styled here to match admin's
+     own dark panel look (index.html's location.css has its own copy of
+     these same class names for the user-facing map/signup forms). */
+  .loc-search__results { position:relative; margin-top:6px; max-height:220px; overflow-y:auto; border:1px solid var(--border); border-radius:var(--r-md); background:var(--panel2); }
+  .loc-search__result { width:100%; display:flex; align-items:center; gap:10px; padding:9px 12px; border:none; background:none; color:var(--txt); font-family:var(--font); font-size:0.82rem; text-align:left; cursor:pointer; }
+  .loc-search__result:hover { background:var(--panel-raised); }
+  .loc-search__result-icon { flex-shrink:0; width:18px; height:18px; color:var(--brand2); }
+  .loc-search__result-icon svg { width:100%; height:100%; }
+  .loc-search__result-sub { display:block; font-size:0.7rem; color:var(--faint); margin-top:1px; }
 
   /* ======= Bulk select/turn-off toolbar above the locations list ======= */
   .loc-bulk-toolbar { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:14px; padding:10px 14px; border:1px solid var(--border); border-radius:var(--r-md); background:var(--panel2); }
@@ -713,6 +744,11 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+  <!-- Same city search/geolocate widget signup.js and location.js (the
+       user-facing Locations map) already use — reused here so admin's
+       Add Location field works identically instead of being a bare
+       text box with no map-matching. -->
+  <script src="./js/utils/location-picker.js"></script>
   <script src="https://cdn.tailwindcss.com/3.4.17" type="text/javascript"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js" type="text/javascript"></script>
   <script src="/_sdk/0179d719c431a79e.data_sdk.js" type="text/javascript" integrity="sha512-OsRvJkI5GkC3MJQcgotQYotpzrMSX415GiKKgvYdxQEEkzD/fdchShO2FMSy0PJr/tiINMXOk5Vl2zAgg6bUiA=="></script>
@@ -974,7 +1010,35 @@
          </div>
         </div><input class="search-input" type="text" id="locationSearch" placeholder="Search locations…">
        </div>
-       <div class="add-location-row"><input type="text" id="newLocationInput" placeholder="Add a location not listed yet (e.g. Bantama, Ashanti)"> <button id="addLocationBtn" type="button">+ Add Location</button>
+       <div class="add-location-row">
+        <select id="newLocationRegion" aria-label="Region">
+          <option value="">Region…</option>
+          <option value="Greater Accra">Greater Accra</option>
+          <option value="Ashanti">Ashanti</option>
+          <option value="Central">Central</option>
+          <option value="Western">Western</option>
+          <option value="Western North">Western North</option>
+          <option value="Eastern">Eastern</option>
+          <option value="Volta">Volta</option>
+          <option value="Oti">Oti</option>
+          <option value="Northern">Northern</option>
+          <option value="North East">North East</option>
+          <option value="Savannah">Savannah</option>
+          <option value="Upper East">Upper East</option>
+          <option value="Upper West">Upper West</option>
+          <option value="Bono">Bono</option>
+          <option value="Bono East">Bono East</option>
+          <option value="Ahafo">Ahafo</option>
+        </select>
+        <div class="add-location-row__city">
+          <input type="text" id="newLocationInput" placeholder="Search for a town or area…" autocomplete="off">
+          <button type="button" id="newLocationLocateBtn" class="add-location-row__locate" aria-label="Use my current location">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 2v3m0 14v3M2 12h3m14 0h3M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </button>
+          <div id="newLocationResults" class="loc-search__results" hidden></div>
+        </div>
+        <button id="addLocationBtn" type="button">+ Add Location</button>
+        <span class="add-location-row__hint" id="newLocationHint">Pick a region, then search — or pin an exact spot with the locate button.</span>
        </div>
        <div class="loc-bulk-toolbar" id="locBulkToolbar" hidden>
         <label class="loc-bulk-toolbar__select"><input type="checkbox" id="locSelectAll" /> Select all</label>
@@ -2177,11 +2241,30 @@
     renderLocations(q ? allLocations.filter(l => l.label.toLowerCase().includes(q)) : allLocations);
   });
 
+  // Region select + city input, wired through the same shared
+  // js/utils/location-picker.js widget the user-facing Locations map's
+  // Add Location modal and the signup form use — gives admin real
+  // search-as-you-type + geolocate instead of a bare text box, and
+  // (crucially) a real lat/lng pin so the added location shows up on
+  // the public map immediately instead of waiting on a geocode guess
+  // (see getLocationsMapData() in server.js).
+  const newLocationRegionEl = document.getElementById("newLocationRegion");
+  const newLocationPicker = window.LWLocationPicker?.attach({
+    input: document.getElementById("newLocationInput"),
+    resultsEl: document.getElementById("newLocationResults"),
+    locateBtn: document.getElementById("newLocationLocateBtn"),
+    hintEl: document.getElementById("newLocationHint"),
+    getRegion: () => newLocationRegionEl?.value || ""
+  }) || null;
+  newLocationRegionEl?.addEventListener("change", () => newLocationPicker?.refresh());
+
   document.getElementById("addLocationBtn")?.addEventListener("click", async () => {
     const input = document.getElementById("newLocationInput");
     const value = input.value.trim();
     if (!value) return;
     const key = value.toLowerCase().split(",")[0].trim();
+    const region = newLocationRegionEl?.value || null;
+    const coords = newLocationPicker ? newLocationPicker.getCoords() : null;
     if (allLocations.some(l => l.locationKey === key)) {
       input.value = "";
       document.getElementById("locationSearch").value = value.split(",")[0].trim();
@@ -2191,12 +2274,18 @@
     }
     const label = key.split(" ").filter(Boolean).map(w => w[0].toUpperCase() + w.slice(1)).join(" ");
     try {
-      await apiPost('/admin/locations', { location: key, label });
-      allLocations = [...allLocations, { locationKey: key, label, status: "unknown", reportedBy: null, reportedAt: null }]
+      await apiPost('/admin/locations', {
+        location: key,
+        label,
+        region,
+        ...(coords ? { lat: coords.lat, lng: coords.lng } : {})
+      });
+      allLocations = [...allLocations, { locationKey: key, label, region, lat: coords?.lat ?? null, lng: coords?.lng ?? null, status: "unknown", reportedBy: null, reportedAt: null }]
         .sort((a, b) => a.label.localeCompare(b.label));
       renderLocations(allLocations);
       updateLocationQuickStats();
       input.value = "";
+      newLocationPicker?.reset();
       logSystemEvent(`Added location: ${label}`, "info");
       showToast(`Added "${label}"`, "ok");
     } catch (err) {

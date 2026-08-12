@@ -408,27 +408,54 @@
             );
         }
 
-        if (locateBtn) {
-            locateBtn.addEventListener('click', () => {
-                if (!('geolocation' in navigator)) {
-                    setHint('Location is not available on this device — please type your city.');
-                    return;
-                }
-                if (navigator.permissions?.query) {
-                    navigator.permissions.query({ name: 'geolocation' })
-                        .then((status) => {
-                            if (status.state === 'denied') {
-                                setHint('Location is blocked for this site — enable it in your browser/site settings, or type your city manually.');
-                                return;
-                            }
-                            runGeolocation();
-                        })
-                        .catch(runGeolocation); // Permissions API not supported — fall back to asking directly.
-                } else {
-                    runGeolocation();
-                }
-            });
+        // Click always re-checks first — if the user has since revoked
+        // permission (or never granted it), this still asks; it just
+        // skips the extra round-trip when we already know the answer.
+        function requestLocate() {
+            if (!('geolocation' in navigator)) {
+                setHint('Location is not available on this device — please type your city.');
+                return;
+            }
+            if (navigator.permissions?.query) {
+                navigator.permissions.query({ name: 'geolocation' })
+                    .then((status) => {
+                        if (status.state === 'denied') {
+                            setHint('Location is blocked for this site — enable it in your browser/site settings, or type your city manually.');
+                            return;
+                        }
+                        runGeolocation();
+                    })
+                    .catch(runGeolocation); // Permissions API not supported — fall back to asking directly.
+            } else {
+                runGeolocation();
+            }
         }
+
+        if (locateBtn) {
+            locateBtn.addEventListener('click', requestLocate);
+        }
+
+        // Auto-locate: if the browser has ALREADY granted this site
+        // location permission (from a previous visit/prompt), don't make
+        // the person hunt for and tap the locate button again — just
+        // silently run the same lookup requestLocate() runs on click.
+        // navigator.permissions.query() itself never prompts, so this is
+        // safe to call unconditionally; it only proceeds when the answer
+        // comes back 'granted'. Skips entirely if the field already has a
+        // typed value or a confirmed pick, so it never clobbers something
+        // the person (or an earlier auto-locate) already put there.
+        function attemptAutoLocate() {
+            if (coords || input.value.trim()) return;
+            if (!('geolocation' in navigator) || !navigator.permissions?.query) return;
+            navigator.permissions.query({ name: 'geolocation' })
+                .then((status) => {
+                    if (status.state !== 'granted') return;
+                    if (coords || input.value.trim()) return; // re-check — state may have changed while we waited
+                    runGeolocation();
+                })
+                .catch(() => {});
+        }
+        attemptAutoLocate();
 
         return {
             getCoords: () => coords,
@@ -442,7 +469,13 @@
                 if (!query || query.length < 2) return;
                 runLocalPass(query);
                 search(query);
-            }
+            },
+            // Callers that reset() the field (e.g. reopening an "Add
+            // location" modal) should call this right after — it re-runs
+            // the same already-granted-permission check so the field
+            // fills itself again instead of staying blank until a manual
+            // locate-button tap.
+            autoLocate: attemptAutoLocate
         };
     }
 
