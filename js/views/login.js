@@ -26,7 +26,6 @@
     let brandLoopActive = false;
     let brandLoopStarted = false;
     let userCountLoaded = false;
-    let keyboardViewportCleanup = null;
 
     const brandLoopTexts = [
         'Community-powered. Stay ahead of outages',
@@ -135,6 +134,7 @@
             sessionStorage.setItem('maskedContact', result.maskedContact);
             sessionStorage.setItem('pendingUserId', result.userId);
             sessionStorage.setItem('rememberMePending', rememberMe ? 'true' : 'false');
+            sessionStorage.setItem('lw_signin_origin', 'login');
 
             if (result.chatHandle) {
                 sessionStorage.setItem('chatHandle', result.chatHandle);
@@ -183,86 +183,6 @@
             showFooter();
         });
 
-        // Native app only — in a regular mobile browser the page already
-        // reflows/scrolls the focused field into view on its own, and
-        // stacking this manual shift on top of that just double-moves
-        // the box. Capacitor's webview doesn't get that for free, so
-        // this stays scoped to isNative.
-        if (isNative && window.visualViewport && userInput) {
-            // Gap kept between the bottom of the field and the top of the
-            // keyboard once the box has been pulled up — a little more
-            // than the old 16px so the input clears the keyboard with
-            // comfortable breathing room instead of sitting flush against it.
-            const KEYBOARD_BOTTOM_GAP = 20;
-
-            const updateKeyboardShift = () => {
-                if (!loginFormSide) {
-                    return;
-                }
-
-                // Measure the box's natural (unshifted) position first —
-                // getBoundingClientRect() reflects any transform already
-                // applied, so briefly zeroing it out gives the true resting
-                // position to shift from. Without this, every subsequent
-                // visualViewport 'resize'/'scroll' event (the keyboard's
-                // open animation fires several) would measure off the
-                // previous shift instead of the natural layout and keep
-                // compounding the offset — which is why the box could end
-                // up drifting further than intended, or not settling
-                // where the field actually needed to land.
-                loginFormSide.style.setProperty('--login-keyboard-shift', '0px');
-                const inputBottom = userInput.getBoundingClientRect().bottom;
-
-                const viewportBottom = window.visualViewport.height - KEYBOARD_BOTTOM_GAP;
-                const shift = Math.min(0, viewportBottom - inputBottom);
-                const isKeyboardVisible = document.activeElement === userInput && shift < 0;
-
-                if (isKeyboardVisible) {
-                    loginFormSide.style.setProperty('--login-keyboard-shift', `${shift}px`);
-                    // Footer sits below the fold once the keyboard is up
-                    // regardless — hiding it outright (rather than letting
-                    // it just be covered) keeps it from being announced to
-                    // screen readers or tabbed to while off-screen, and
-                    // avoids any chance of it trailing the shift visually.
-                    hideFooter();
-                } else {
-                    loginFormSide.style.removeProperty('--login-keyboard-shift');
-                    showFooter();
-                }
-            };
-            const clearKeyboardShift = () => {
-                loginFormSide.style.removeProperty('--login-keyboard-shift');
-                showFooter();
-            };
-
-            const handleUserInputFocus = () => {
-                updateKeyboardShift();
-                requestAnimationFrame(updateKeyboardShift);
-                setTimeout(updateKeyboardShift, 180);
-                setTimeout(updateKeyboardShift, 400);
-            };
-
-            const handleNativeKeyboardState = () => {
-                handleUserInputFocus();
-            };
-
-            userInput.addEventListener('focus', handleUserInputFocus);
-            userInput.addEventListener('blur', clearKeyboardShift);
-            window.visualViewport.addEventListener('resize', updateKeyboardShift);
-            window.visualViewport.addEventListener('scroll', updateKeyboardShift);
-            window.addEventListener('lw-keyboard-show', handleNativeKeyboardState);
-            window.addEventListener('lw-keyboard-hide', clearKeyboardShift);
-            keyboardViewportCleanup = () => {
-                userInput.removeEventListener('focus', handleUserInputFocus);
-                userInput.removeEventListener('blur', clearKeyboardShift);
-                window.visualViewport.removeEventListener('resize', updateKeyboardShift);
-                window.visualViewport.removeEventListener('scroll', updateKeyboardShift);
-                window.removeEventListener('lw-keyboard-show', handleNativeKeyboardState);
-                window.removeEventListener('lw-keyboard-hide', clearKeyboardShift);
-                clearKeyboardShift();
-            };
-        }
-
         document.querySelectorAll('#view-login [data-route-custom="signup"]').forEach(link => {
             link.addEventListener('click', e => {
                 e.preventDefault();
@@ -300,8 +220,6 @@
     function hide() {
         document.documentElement.classList.remove('lw-view-login');
         brandLoopActive = false;
-        keyboardViewportCleanup?.();
-        keyboardViewportCleanup = null;
     }
 
     window.LWViews = window.LWViews || {};

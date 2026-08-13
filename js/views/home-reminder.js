@@ -54,8 +54,19 @@ function clearPendingReminderOpen() {
   }
 }
 
+function getHomeReminderOrigin() {
+  try {
+    const origin = sessionStorage.getItem('lw_signin_origin');
+    return origin === 'login' || origin === 'signup' ? origin : null;
+  } catch {
+    return null;
+  }
+}
+
 function shouldShowHomeReminder() {
   if (typeof getSession === 'function' && !getSession()) return false;
+
+  if (!getHomeReminderOrigin()) return false;
 
   try {
     return sessionStorage.getItem(HOME_REMINDER_SEEN_KEY) !== '1';
@@ -70,6 +81,7 @@ function markHomeReminderSeen() {
   try {
     sessionStorage.setItem(HOME_REMINDER_SEEN_KEY, '1');
     localStorage.removeItem(HOME_REMINDER_SEEN_KEY);
+    sessionStorage.removeItem('lw_signin_origin');
   } catch {}
 }
 

@@ -28,10 +28,14 @@
 (function () {
     const POLL_INTERVAL_MS = Number(window.LW_HEATMAP_POLL_MS) || 10 * 1000; // Default: refresh every 10 seconds (override via LW_HEATMAP_POLL_MS)
     const MAX_ZOOM = 16;
-    // City-level zoom used to center the mini card on the user's own
-    // registered location (see getRegisteredLocationName below) — a
-    // close, useful view of their own area, not a fit around every city.
-    const MY_LOCATION_ZOOM = 10;
+    // City-level zoom used to center on the user's own registered
+    // location (see getRegisteredLocationName below) — a close, useful
+    // view of their own area, not a fit around every tracked city.
+    // Shared by both the Home mini card and the full Location-view map:
+    // the full map's much bigger on-screen viewport already shows more
+    // surrounding context than the mini card at this same zoom, so a
+    // separate, more-zoomed-out value isn't needed on top of that.
+    const MY_LOCATION_ZOOM = 11;
     const HEAT_RADIUS = 40; // 35-45px
     const HEAT_BLUR = 30;   // 25-35px
 
@@ -187,13 +191,17 @@
             center: DEFAULT_CENTER,
             zoom: DEFAULT_ZOOM,
             maxZoom: MAX_ZOOM,
-            zoomControl: isFullMap,
+            zoomControl: false,
             attributionControl: isFullMap,
             scrollWheelZoom: false,    // don't fight page scroll
             touchZoom: true,           // pinch-zoom stays on for mobile
             tap: true,
             dragging: true
         });
+
+        if (isFullMap) {
+            L.control.zoom({ position: 'topright' }).addTo(map);
+        }
 
         // Dark OSM basemap (CARTO's free "dark_all" tiles — OpenStreetMap
         // data underneath, no Google Maps, no API key).
@@ -377,23 +385,33 @@
         if (points.length && !hasFitBoundsOnce) {
             // Only auto-center/fit once, on the first real batch of points —
             // after that, leave the user's own pan/zoom alone between polls.
-            if (isFullMap) {
-                // Full map: fit tight around every location, same as before.
-                const bounds = L.latLngBounds(points.map(p => [p[0], p[1]]));
-                map.fitBounds(bounds.pad(0.35), { maxZoom: MAX_ZOOM, animate: true });
+            //
+            // FIX: this used to branch on isFullMap and, for the full map,
+            // always fitBounds() around every plottable location in the
+            // whole dataset — since /locations/map returns every tracked
+            // location nationwide, that fit was effectively "zoom to fit
+            // all of Ghana" on first open, which is why the Heat Map tab
+            // read as a distant region view instead of a map of anywhere
+            // in particular. Both the mini card and the full map now
+            // share the exact same "center close on the user's own city"
+            // logic and zoom level — the full map's much larger on-screen
+            // viewport already shows more surrounding context at that
+            // same zoom, so it doesn't need a separate, more-zoomed-out
+            // value on top of that. The person can always pinch/scroll
+            // out from there if they want the bigger picture; nothing
+            // here stops that.
+            const registeredName = normalizeAreaName(getRegisteredLocationName());
+            const mine = registeredName && plottable.find(loc => normalizeAreaName(loc.name) === registeredName);
+
+            if (mine) {
+                map.setView([mine.lat, mine.lng], MY_LOCATION_ZOOM, { animate: true });
             } else {
-                // Mini card: center on the user's own registered location
-                // rather than fitting the whole region — this card is meant
-                // to show "your area", not every city on the map. Falls
-                // back to fitting all points only if we can't match one.
-                const registeredName = normalizeAreaName(getRegisteredLocationName());
-                const mine = registeredName && plottable.find(loc => normalizeAreaName(loc.name) === registeredName);
-                if (mine) {
-                    map.setView([mine.lat, mine.lng], MY_LOCATION_ZOOM, { animate: true });
-                } else {
-                    const bounds = L.latLngBounds(points.map(p => [p[0], p[1]]));
-                    map.fitBounds(bounds.pad(0.6), { maxZoom: MY_LOCATION_ZOOM, animate: true });
-                }
+                // No registered-location match — fall back to fitting
+                // around whatever points came back, but still capped to a
+                // close-in city zoom rather than however far out fitting
+                // every single point would otherwise pull the view.
+                const bounds = L.latLngBounds(points.map(p => [p[0], p[1]]));
+                map.fitBounds(bounds.pad(isFullMap ? 0.35 : 0.6), { maxZoom: MY_LOCATION_ZOOM, animate: true });
             }
             hasFitBoundsOnce = true;
         }

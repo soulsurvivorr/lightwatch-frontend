@@ -190,6 +190,17 @@
 
         const gazetteerSrc = gazetteerUrl === null ? null : (gazetteerUrl || DEFAULT_GAZETTEER_URL);
 
+        // Kick the local gazetteer fetch off right now instead of lazily
+        // on the first keystroke (runLocalPass below used to be the only
+        // caller of loadGazetteer). loadGazetteer() itself is memoized
+        // per-URL, so this just moves the one-time network fetch+parse
+        // earlier — by the time the person's typed 2 characters it's
+        // almost always already resolved, so that first search feels
+        // instant instead of visibly lagging behind the keystroke (this
+        // was most of what made a brand-new page's — e.g. signup's —
+        // very first search feel slow).
+        if (gazetteerSrc) loadGazetteer(gazetteerSrc);
+
         let coords = null;
         let debounceTimer = null;
         let abortController = null;
@@ -352,8 +363,10 @@
 
             // Nominatim underneath, debounced as before — fills in typo-
             // tolerant/fuzzy matches and anything missing from the local
-            // list.
-            debounceTimer = setTimeout(() => search(query), 200);
+            // list. Short debounce — just enough to skip firing a request
+            // per keystroke during a fast typer's burst — not a delay
+            // meant to be felt.
+            debounceTimer = setTimeout(() => search(query), 120);
         });
         input.addEventListener('blur', () => {
             setTimeout(clearResults, 150); // let a result's mousedown register first

@@ -924,10 +924,20 @@ html[data-theme="light"] .loc-header__title {
 .loc-search__icon {
   position: absolute;
   left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
   width: 17px;
   height: 17px;
   color: var(--text-faint);
   pointer-events: none;
+  transition: color 0.15s ease;
+}
+
+/* Icon brightens to the brand color while the field is focused, so the
+   whole search control visibly "activates" together instead of just
+   the border ring changing on its own. */
+.loc-search:focus-within .loc-search__icon {
+  color: var(--brand2, #4A90D9);
 }
 
 .loc-search input {
@@ -1931,7 +1941,7 @@ body.lw-modal-open {
 }
 
 .loc-add-panel__sub {
-  margin-top: 12px;
+  margin-top: 10px;
   font-size: 0.82rem;
   color: var(--text-faint);
   line-height: 1.5;
@@ -1993,42 +2003,70 @@ body.lw-modal-open {
 
 .loc-add-form__search {
   position: relative;
+  display: block;
 }
 
+/* This field reuses the base .loc-search input rule for its icon
+   gutter/padding, then only adds what's specific to this context: room
+   on the right for the locate button, and the "docks into the open
+   dropdown" shape below. */
 .loc-add-form__search input {
-  padding-right: 44px;
+  width: 100%;
+  box-sizing: border-box;
+  padding-right: 46px;
+  border-radius: 14px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, border-radius 0.15s ease, background 0.15s ease;
 }
 
+.loc-add-form__search:has(.loc-search__results:not([hidden])) input,
+.loc-add-form__search input:focus {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-color: color-mix(in srgb, var(--brand2, #4A90D9) 55%, var(--border-soft));
+  background: var(--bg-panel-raised);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand2, #4A90D9) 16%, transparent);
+}
+
+/* Locate ("use my current location") button — sits inside the field on
+   the right, visually a level above the input (soft border + shadow)
+   so it reads as its own tappable control rather than a stray icon. */
 .loc-add-form__locate {
   position: absolute;
-  right: 6px;
+  right: 5px;
   top: 50%;
   transform: translateY(-50%);
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  border: none;
-  background: var(--bg-panel-raised);
+  border: 1px solid color-mix(in srgb, var(--brand2, #4A90D9) 24%, transparent);
+  background: color-mix(in srgb, var(--brand2, #4A90D9) 10%, var(--bg-panel-raised));
   color: var(--brand2, #4A90D9);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.12s ease;
 }
 
 .loc-add-form__locate svg {
-  width: 16px;
-  height: 16px;
+  width: 15px;
+  height: 15px;
   transition: transform 0.15s ease;
 }
 
 .loc-add-form__locate:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--brand2, #4A90D9) 20%, var(--bg-panel-raised));
+  background: color-mix(in srgb, var(--brand2, #4A90D9) 22%, var(--bg-panel-raised));
+  border-color: color-mix(in srgb, var(--brand2, #4A90D9) 40%, transparent);
+}
+
+.loc-add-form__locate:active:not(:disabled) {
+  transform: translateY(-50%) scale(0.92);
 }
 
 .loc-add-form__locate:disabled {
   cursor: not-allowed;
-  opacity: 0.7;
+  opacity: 0.55;
 }
 
 .loc-add-form__locate.is-loading svg {
@@ -2039,11 +2077,51 @@ body.lw-modal-open {
   to { transform: rotate(360deg); }
 }
 
+/* Dropdown card — visually docked under the input as one continuous
+   control (shared border color, no seam), with its own subtle depth so
+   it clearly floats above the rest of the form. */
 .loc-add-form__search .loc-search__results {
-  position: static;
-  margin-top: 6px;
-  box-shadow: none;
-  border: 1px solid var(--border-soft);
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% - 1px);
+  z-index: 35;
+  margin-top: 0;
+  padding: 4px;
+  border: 1px solid color-mix(in srgb, var(--brand2, #4A90D9) 55%, var(--border-soft));
+  border-top: 1px solid color-mix(in srgb, var(--border-soft) 60%, transparent);
+  border-radius: 0 0 14px 14px;
+  background: var(--bg-panel-raised);
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.3), 0 0 0 3px color-mix(in srgb, var(--brand2, #4A90D9) 16%, transparent);
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.loc-add-form__search .loc-search__result {
+  padding: 10px 10px;
+  border-radius: 10px;
+  border-top: none;
+}
+
+.loc-add-form__search .loc-search__result + .loc-search__result {
+  margin-top: 2px;
+}
+
+.loc-add-form__search .loc-search__result:hover,
+.loc-add-form__search .loc-search__result.is-active {
+  background: color-mix(in srgb, var(--brand2, #4A90D9) 14%, transparent);
+}
+
+.loc-add-form__search .loc-search__result-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--brand2, #4A90D9) 14%, var(--bg-panel));
+  border: 1px solid color-mix(in srgb, var(--brand2, #4A90D9) 18%, transparent);
+}
+
+.loc-add-form__search .loc-search__result-sub {
+  margin-top: 2px;
 }
 
 .loc-add-form__hint {
@@ -2080,7 +2158,7 @@ body.lw-modal-open {
 .loc-add-admin {
   margin-top: 14px;
   padding: 12px 14px;
-  border: 1px dashed var(--border-strong);
+  border: 1px solid var(--border-soft);
   border-radius: var(--radius-md);
   background: var(--bg-panel-raised);
 }
@@ -2122,6 +2200,10 @@ body.lw-modal-open {
   color: var(--text-bright);
 }
 
+.loc-add-admin__opt:active {
+  transform: scale(0.96);
+}
+
 .loc-add-admin__opt.is-active {
   border-color: var(--brand2, #4A90D9);
   background: color-mix(in srgb, var(--brand2, #4A90D9) 18%, var(--bg-panel));
@@ -2147,7 +2229,7 @@ body.lw-modal-open {
 .loc-add-labelgroup {
   margin-top: 14px;
   padding: 12px 14px;
-  border: 1px dashed var(--border-strong);
+  border: 1px solid var(--border-soft);
   border-radius: var(--radius-md);
   background: var(--bg-panel-raised);
 }
@@ -2183,6 +2265,10 @@ body.lw-modal-open {
 .loc-add-labelgroup__opt:hover {
   border-color: var(--brand2, #4A90D9);
   color: var(--text-bright);
+}
+
+.loc-add-labelgroup__opt:active {
+  transform: scale(0.96);
 }
 
 .loc-add-labelgroup__opt.is-active {

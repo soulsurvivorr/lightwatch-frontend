@@ -1477,87 +1477,6 @@ function initAddContactForm() {
 }
 
 // ------------------------------------------------------------
-// KEYBOARD-AWARE INPUTS — native app only.
-// Account has form fields scattered across several accordions/cards
-// rather than one known field like login/signup, so instead of a
-// fixed CSS-var shift on a single element, this delegates focus on
-// the whole view: whichever input/textarea is currently focused gets
-// checked against the keyboard-shrunk viewport, and the page only
-// scrolls if that field would actually end up covered. Eases back to
-// where it was on blur. No-op outside the native app — a regular
-// mobile browser already scrolls the focused field into view itself.
-// ------------------------------------------------------------
-function isNativeApp() {
-    return Boolean(
-        window.Capacitor &&
-        typeof window.Capacitor.isNativePlatform === 'function' &&
-        window.Capacitor.isNativePlatform()
-    );
-}
-
-function initKeyboardAwareInputs() {
-    if (!isNativeApp() || !window.visualViewport) return;
-    const view = document.getElementById('view-account');
-    if (!view) return;
-
-    const GAP = 16; // breathing room between the field and the keyboard
-    let activeInput = null;
-    let originalScrollY = null;
-
-    const isTextField = (node) => node instanceof HTMLElement && (
-        node.tagName === 'TEXTAREA' ||
-        (node.tagName === 'INPUT' && !['checkbox', 'radio', 'button', 'submit', 'range', 'file'].includes(node.type))
-    );
-
-    const reposition = () => {
-        if (!activeInput || !activeInput.isConnected) return;
-        const viewportBottom = window.visualViewport.height + window.visualViewport.offsetTop - GAP;
-        const fieldBottom = activeInput.getBoundingClientRect().bottom;
-        const delta = fieldBottom - viewportBottom;
-        if (delta > 0) {
-            window.scrollBy({ top: delta, behavior: 'smooth' });
-        }
-    };
-
-    const handleNativeKeyboardState = () => {
-        if (!activeInput) return;
-        requestAnimationFrame(reposition);
-        setTimeout(reposition, 180);
-        setTimeout(reposition, 400);
-    };
-
-    view.addEventListener('focusin', (e) => {
-        if (!isTextField(e.target)) return;
-        activeInput = e.target;
-        if (originalScrollY === null) originalScrollY = window.scrollY;
-        requestAnimationFrame(reposition);
-        setTimeout(reposition, 180); // keyboard animates in — recheck once it's settled
-        setTimeout(reposition, 400);
-    });
-
-    view.addEventListener('focusout', (e) => {
-        if (e.target !== activeInput) return;
-        activeInput = null;
-        if (originalScrollY !== null) {
-            window.scrollTo({ top: originalScrollY, behavior: 'smooth' });
-            originalScrollY = null;
-        }
-    });
-
-    window.visualViewport.addEventListener('resize', reposition);
-    window.addEventListener('lw-keyboard-show', handleNativeKeyboardState);
-    window.addEventListener('lw-keyboard-hide', () => {
-        if (activeInput) {
-            if (originalScrollY !== null) {
-                window.scrollTo({ top: originalScrollY, behavior: 'smooth' });
-                originalScrollY = null;
-            }
-            activeInput = null;
-        }
-    });
-}
-
-// ------------------------------------------------------------
 // DEEP LINK: the settings-gear icon on the Notifications view (top
 // right corner there) routes here with data-panel="notifications" —
 // nav.js stashes that in window.__lwPendingAccountPanel right before
@@ -1608,7 +1527,6 @@ function mount() {
     initCollapsibleCards();
     initDetailRowExpanders();
     initAddContactForm();
-    initKeyboardAwareInputs();
     loadAccountExtras();
 
     refreshPushStatusRow();

@@ -72,7 +72,7 @@
     // geolocation is denied/unavailable AND no saved location exists.
     const DEFAULT_CENTER = { lat: 6.6885, lng: -1.6244 };
     const DEFAULT_ZOOM = 12;
-    const COUNTRY_ZOOM = 6.4;
+    const COUNTRY_ZOOM = 5.4;
 
     const LOCATION_CACHE_KEY = 'lw_cache_location_bantama';
     const LOCATION_LIST_CACHE_KEY = 'lw_cache_location_list';
@@ -1162,7 +1162,7 @@
             <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
           </button>
         </div>
-        <p class="loc-add-panel__sub">Type the town or area to search — or, if you've already allowed location access, we've gone ahead and filled in where you are. Pick a match to drop the pin. Already-tracked places are added to your favorites right away instead of duplicating.</p>
+        <p class="loc-add-panel__sub">Search a place or use your location — already-tracked spots go straight to favorites instead of duplicating.</p>
         <form class="loc-add-form" novalidate>
           <label class="loc-add-form__label" for="locAddNameInput">Location name</label>
           <div class="loc-search loc-add-form__search">
@@ -1173,8 +1173,8 @@
             <button type="button" id="locAddLocateBtn" class="loc-add-form__locate" aria-label="Use my current location">
               <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 2v3m0 14v3M2 12h3m14 0h3M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
             </button>
+            <div id="locAddSearchResults" class="loc-search__results" hidden></div>
           </div>
-          <div id="locAddSearchResults" class="loc-search__results" hidden></div>
           <p id="locAddHint" class="loc-add-form__hint">Pin a spot to enable Add.</p>
 
           <div class="loc-add-labelgroup">
@@ -1262,7 +1262,14 @@
                 resultsEl: addLocationEls.resultsEl,
                 locateBtn: addLocationEls.locateBtn,
                 hintEl: addLocationEls.hintEl,
-                onPick: () => updateAddLocationSubmitState()
+                onPick: () => {
+                    updateAddLocationSubmitState();
+                    // A pick is a tap, not typing — there's nothing left
+                    // to enter, so drop focus immediately to dismiss the
+                    // keyboard instead of leaving it up over the rest of
+                    // the form (label pills, admin status, actions).
+                    addLocationEls.nameInput.blur();
+                }
             })
             : { getCoords: () => null, reset: () => {}, autoLocate: () => {} };
 

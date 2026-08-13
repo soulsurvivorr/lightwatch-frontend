@@ -2202,68 +2202,7 @@ function createInlineComposerBox(parentChat, parentText, mode) {
     return box;
 }
 
-// ---- Native app only: keep the inline reply/quote composer clear of
-// the on-screen keyboard. The composer sits appended below the card's
-// own text — potentially anywhere down a long, page-scrolling thread —
-// so instead of a fixed-target transform (like login/signup's single
-// known field) this scrolls the page itself: the card being replied to,
-// and everything above it, scrolls up just enough to bring the
-// composer's textarea above the keyboard. Eases back to where the
-// thread was once the field loses focus. No-op outside the native app —
-// a regular mobile browser already scrolls the focused field into view. ----
-function attachComposerKeyboardScroll(box) {
-    if (!isNativeApp() || !window.visualViewport) return () => {};
-    const ta = box.querySelector('textarea');
-    if (!ta) return () => {};
-
-    const GAP = 16; // breathing room between the composer and the keyboard
-    let originalScrollY = null;
-
-    const reposition = () => {
-        if (!ta.isConnected) return;
-        const viewportBottom = window.visualViewport.height + window.visualViewport.offsetTop - GAP;
-        const boxBottom = box.getBoundingClientRect().bottom;
-        const delta = boxBottom - viewportBottom;
-        if (delta > 0) {
-            window.scrollBy({ top: delta, behavior: 'smooth' });
-        }
-    };
-
-    const handleFocus = () => {
-        if (originalScrollY === null) originalScrollY = window.scrollY;
-        requestAnimationFrame(reposition);
-        setTimeout(reposition, 180); // keyboard animates in — recheck once it's settled
-        setTimeout(reposition, 400);
-    };
-
-    const handleBlur = () => {
-        if (originalScrollY !== null) {
-            window.scrollTo({ top: originalScrollY, behavior: 'smooth' });
-            originalScrollY = null;
-        }
-    };
-
-    const handleNativeKeyboardState = () => {
-        handleFocus();
-    };
-
-    ta.addEventListener('focus', handleFocus);
-    ta.addEventListener('blur', handleBlur);
-    window.visualViewport.addEventListener('resize', reposition);
-    window.addEventListener('lw-keyboard-show', handleNativeKeyboardState);
-    window.addEventListener('lw-keyboard-hide', handleBlur);
-
-    handleFocus(); // the textarea is focused as soon as the box opens
-
-    return () => {
-        ta.removeEventListener('focus', handleFocus);
-        ta.removeEventListener('blur', handleBlur);
-        window.visualViewport.removeEventListener('resize', reposition);
-    };
-}
-
 function removeComposerBox(box) {
-    box._kbCleanup?.();
     box.remove();
 }
 
@@ -2281,7 +2220,6 @@ function toggleInlineReplyBox(cardEl, parentChat, parentText, opts) {
     const box = createInlineComposerBox(parentChat, parentText, mode);
     cardEl.appendChild(box);
     box.querySelector('textarea')?.focus();
-    box._kbCleanup = attachComposerKeyboardScroll(box);
 }
 
 chatReplyCancel?.addEventListener('click', () => {

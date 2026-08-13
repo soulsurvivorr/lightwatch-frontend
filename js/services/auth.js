@@ -93,7 +93,7 @@ function clearSession() {
      TEMP_AUTH_KEY, TEMP_USER_KEY, TEMP_EXPIRES_KEY,
      'currentUserId', 'currentUserData', 'chatHandle',
      'maskedContact', 'signupUser', 'userIdentifier',
-     'pendingUserId', 'rememberMePending',
+     'pendingUserId', 'rememberMePending', 'lw_signin_origin',
      'lw_skip_disclaimer_once',
      'lw_launch_overlay_pending',
      HOME_REMINDER_SEEN_KEY

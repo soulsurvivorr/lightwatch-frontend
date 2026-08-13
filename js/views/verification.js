@@ -21,8 +21,6 @@
     let cooldownInterval = null;
     let verifyInFlight = false;
     let mounted = false;
-    let keyboardViewportCleanup = null;
-    let focusedOtp = null;
 
     function getVerificationValue(key) {
         return sessionStorage.getItem(key) || localStorage.getItem(key);
@@ -207,42 +205,6 @@
         backBtn = document.getElementById('verifyBackBtn');
         changeContactBtn = document.getElementById('changeContactBtn');
 
-        const KEYBOARD_TOP_GAP = 16; // px gap kept below the sticky header once shifted up
-
-        const updateKeyboardShift = () => {
-            if (!verifyBody || !focusedOtp) return;
-            const headerEl = document.querySelector('#view-verification header');
-            const headerBottom = headerEl ? headerEl.getBoundingClientRect().bottom : 0;
-            const targetTop = headerBottom + KEYBOARD_TOP_GAP;
-
-            // Measure the body's natural (unshifted) position first —
-            // getBoundingClientRect() reflects any transform already
-            // applied, so briefly zeroing it out gives us the true
-            // resting position to shift from. Only .verify-body moves;
-            // the card frame itself stays put.
-            verifyBody.style.setProperty('--verify-keyboard-shift', '0px');
-            const naturalTop = verifyBody.getBoundingClientRect().top;
-
-            const shift = Math.min(0, targetTop - naturalTop);
-            // The card clips overflow by default (rounded corners); while
-            // the body is actually shifted above its resting spot, let it
-            // escape that clip so it doesn't get cut off mid-float.
-            verifyCard?.classList.toggle('kb-active', shift < 0);
-            verifyBody.style.setProperty('--verify-keyboard-shift', `${shift}px`);
-        };
-
-        const clearKeyboardShift = () => {
-            verifyBody?.style.removeProperty('--verify-keyboard-shift');
-            verifyCard?.classList.remove('kb-active');
-        };
-
-        keyboardViewportCleanup = () => {
-            window.visualViewport?.removeEventListener('resize', updateKeyboardShift);
-            window.visualViewport?.removeEventListener('scroll', updateKeyboardShift);
-            clearKeyboardShift();
-            focusedOtp = null;
-        };
-
         editLink?.addEventListener('click', (e) => {
             e.preventDefault();
             window.LWRouter.navigate('signup');
@@ -264,27 +226,6 @@
         });
 
         otpBoxes.forEach((box, index) => {
-            box.addEventListener('focus', () => {
-                focusedOtp = box;
-                requestAnimationFrame(updateKeyboardShift);
-                setTimeout(updateKeyboardShift, 120);
-            });
-            box.addEventListener('blur', () => {
-                if (focusedOtp !== box) return;
-                // Auto-advance (input handler) and paste both call
-                // .focus() on the next box synchronously, but that
-                // focus event fires just after this blur — clearing
-                // the shift here immediately would snap the card back
-                // to center for a beat before it re-shifts, bouncing
-                // on every keystroke. Deferring one tick lets the new
-                // focus land first so we only clear when focus truly
-                // left the OTP group.
-                setTimeout(() => {
-                    if (otpBoxes.includes(document.activeElement)) return;
-                    focusedOtp = null;
-                    clearKeyboardShift();
-                }, 0);
-            });
             box.addEventListener('input', () => {
                 const digits = box.value.replace(/[^0-9]/g, '');
 
@@ -324,9 +265,6 @@
                 autoSubmitWhenFull();
             });
         });
-
-        window.visualViewport?.addEventListener('resize', updateKeyboardShift);
-        window.visualViewport?.addEventListener('scroll', updateKeyboardShift);
 
         continueBtn.addEventListener('click', e => { e.preventDefault(); checkOTP(); });
 
@@ -382,8 +320,6 @@
 
     function hide() {
         clearInterval(cooldownInterval);
-        keyboardViewportCleanup?.();
-        keyboardViewportCleanup = null;
     }
 
     window.LWViews = window.LWViews || {};
