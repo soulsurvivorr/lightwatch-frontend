@@ -9,21 +9,26 @@
   :root {
     --brand: #F2B33D; --brand-dim: #3A2C12;
     --brand2: #4F86F7; --brand2-dim: #16233F;
+    --ecg-red: #E4392E; --ecg-red-dim: #3A1512;
     --red: #FF5C66; --red-dim: #3A1418; --green: #35D07F; --green-dim: #143122;
-    --bg: #07090D; --panel: #10141D; --panel2: #151A25; --panel-raised: #181E2B;
-    --border: #232A38; --border2: #2E374A;
-    --txt: #F3F5F9; --muted: #9AA4B8; --faint: #5C6578;
+    --bg: #06080C; --panel: #10141D; --panel2: #151A25; --panel-raised: #181E2B;
+    --border: #212836; --border2: #2C3446;
+    --txt: #F4F6FA; --muted: #97A2B8; --faint: #576074;
     --font: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     --r-sm: 8px; --r-md: 12px; --r-lg: 18px;
-    --sidebar-w: 240px;
+    --sidebar-w: 252px;
+    --shadow-card: 0 1px 0 rgba(255,255,255,0.02) inset, 0 14px 34px rgba(0,0,0,0.35);
+    --shadow-pop: 0 24px 70px rgba(0,0,0,0.55);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html { color-scheme: dark; }
   body {
-    background: radial-gradient(900px 520px at 8% -10%, rgba(242,179,61,0.08), transparent 60%),
-                radial-gradient(900px 560px at 96% 0%, rgba(79,134,247,0.09), transparent 55%), var(--bg);
+    background: radial-gradient(1100px 560px at 6% -12%, rgba(228,57,46,0.10), transparent 58%),
+                radial-gradient(900px 560px at 100% 0%, rgba(79,134,247,0.08), transparent 55%),
+                radial-gradient(700px 500px at 40% 110%, rgba(242,179,61,0.05), transparent 60%), var(--bg);
     background-attachment: fixed; color: var(--txt); font-family: var(--font);
     font-size: 14px; min-height: 100vh; -webkit-font-smoothing: antialiased;
+    letter-spacing: 0.1px;
   }
   a { color: inherit; }
   button, input, select, textarea { font-family: var(--font); }
@@ -35,26 +40,31 @@
     display: inline-flex; align-items: center; justify-content: center; gap: 6px;
     padding: 10px 16px; border-radius: var(--r-md); border: 1px solid var(--border2);
     background: var(--panel-raised); color: var(--txt); font-weight: 600; font-size: 0.85rem;
-    cursor: pointer; transition: transform .12s ease, border-color .12s ease;
+    cursor: pointer; transition: transform .1s ease, border-color .12s ease, background .12s ease;
   }
-  .btn:hover { border-color: var(--brand); }
+  .btn:hover { border-color: var(--brand); background: #1c2333; }
   .btn:active { transform: scale(0.97); }
-  .btn--primary { background: var(--brand); color: #241a05; border-color: var(--brand); }
+  .btn--primary { background: linear-gradient(180deg, #F5C158, var(--brand)); color: #241a05; border-color: var(--brand); box-shadow: 0 6px 18px rgba(242,179,61,0.18); }
+  .btn--primary:hover { background: linear-gradient(180deg, #FFCE6B, #F5BA45); }
   .btn--danger { background: var(--red-dim); color: var(--red); border-color: rgba(255,92,102,0.4); }
+  .btn--danger:hover { border-color: var(--red); }
   .btn--ghost { background: transparent; }
-  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
   .btn--sm { padding: 6px 10px; font-size: 0.75rem; }
 
   input[type=text], input[type=email], input[type=password], select, textarea {
     width: 100%; padding: 11px 13px; border-radius: var(--r-md); border: 1px solid var(--border2);
     background: var(--panel2); color: var(--txt); font-size: 0.88rem; outline: none;
+    transition: border-color .12s ease, box-shadow .12s ease;
   }
-  input:focus, select:focus, textarea:focus { border-color: var(--brand); }
-  label.field { display: block; font-size: 0.76rem; color: var(--muted); margin-bottom: 6px; font-weight: 600; }
+  input:focus, select:focus, textarea:focus { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(242,179,61,0.14); }
+  select { appearance: none; -webkit-appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%); background-position: calc(100% - 18px) 50%, calc(100% - 13px) 50%; background-size: 5px 5px, 5px 5px; background-repeat: no-repeat; padding-right: 34px; }
+  label.field { display: block; font-size: 0.76rem; color: var(--muted); margin-bottom: 6px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
   .field-wrap { margin-bottom: 14px; }
+  .field-hint { color: var(--faint); font-size: 0.74rem; margin-top: 6px; line-height: 1.4; }
 
-  .badge { display: inline-block; padding: 2px 9px; border-radius: 99px; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.02em; }
-  .badge--hq { background: var(--brand-dim); color: var(--brand); }
+  .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 99px; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.02em; }
+  .badge--hq { background: var(--ecg-red-dim); color: #FF7A70; }
   .badge--regional { background: var(--brand2-dim); color: var(--brand2); }
   .badge--district { background: var(--green-dim); color: var(--green); }
   .badge--operator { background: var(--panel-raised); color: var(--muted); border: 1px solid var(--border2); }
@@ -67,8 +77,10 @@
   }
   .auth-card {
     width: 100%; max-width: 440px; background: var(--panel); border: 1px solid var(--border);
-    border-radius: 20px; padding: 30px 28px; box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+    border-radius: 20px; padding: 30px 28px; box-shadow: var(--shadow-pop); position: relative; overflow: hidden;
   }
+  .auth-card::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--ecg-red), var(--brand)); }
+  .auth-mark { width: 44px; height: 44px; border-radius: 12px; background: linear-gradient(155deg, var(--ecg-red), #b5261d); display: flex; align-items: center; justify-content: center; font-weight: 800; color: #fff; font-size: 1rem; margin-bottom: 16px; box-shadow: 0 8px 20px rgba(228,57,46,0.3); }
   .auth-card h1 { font-size: 1.15rem; margin-bottom: 4px; }
   .auth-card p.sub { color: var(--muted); font-size: 0.82rem; margin-bottom: 22px; }
   .auth-tabs { display: flex; gap: 6px; background: var(--panel2); padding: 4px; border-radius: var(--r-md); margin-bottom: 22px; }
@@ -89,47 +101,68 @@
     width: var(--sidebar-w); flex-shrink: 0; background: var(--panel); border-right: 1px solid var(--border);
     display: flex; flex-direction: column; padding: 20px 14px; position: sticky; top: 0; height: 100vh;
   }
-  .sidebar__brand { display: flex; align-items: center; gap: 10px; padding: 6px 8px 20px; }
-  .sidebar__brand-mark { width: 30px; height: 30px; border-radius: 8px; background: var(--brand); display: flex; align-items: center; justify-content: center; font-weight: 800; color: #241a05; }
-  .sidebar__brand-text b { display: block; font-size: 0.85rem; }
-  .sidebar__brand-text span { font-size: 0.68rem; color: var(--muted); }
+  .sidebar__brand { display: flex; align-items: center; gap: 11px; padding: 4px 8px 22px; border-bottom: 1px solid var(--border); margin-bottom: 14px; }
+  .sidebar__brand-mark { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(155deg, var(--ecg-red), #b5261d); display: flex; align-items: center; justify-content: center; font-weight: 800; color: #fff; font-size: 0.95rem; box-shadow: 0 8px 18px rgba(228,57,46,0.28); }
+  .sidebar__brand-text b { display: block; font-size: 0.88rem; letter-spacing: 0.01em; }
+  .sidebar__brand-text span { font-size: 0.67rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+  .nav-section-label { padding: 12px 12px 6px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--faint); }
   .nav-item {
-    display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: var(--r-md);
+    display: flex; align-items: center; gap: 11px; padding: 10px 12px; border-radius: var(--r-md);
     font-size: 0.83rem; font-weight: 600; color: var(--muted); cursor: pointer; margin-bottom: 2px;
+    transition: background .12s ease, color .12s ease;
   }
+  .nav-item .nav-ic { width: 18px; text-align: center; opacity: 0.9; }
   .nav-item:hover { background: var(--panel2); color: var(--txt); }
-  .nav-item.active { background: var(--brand-dim); color: var(--brand); }
-  .sidebar__org { margin-top: auto; padding: 12px; border-radius: var(--r-md); background: var(--panel2); font-size: 0.75rem; }
+  .nav-item.active { background: var(--brand-dim); color: var(--brand); box-shadow: inset 2px 0 0 var(--brand); }
+  .sidebar__org { margin-top: auto; padding: 13px; border-radius: var(--r-md); background: var(--panel2); font-size: 0.75rem; border: 1px solid var(--border); }
   .sidebar__org b { display: block; font-size: 0.82rem; margin-bottom: 3px; }
   .sidebar__org span { color: var(--muted); }
 
   .main { flex: 1; min-width: 0; }
-  .topbar { display: flex; align-items: center; justify-content: space-between; padding: 18px 28px; border-bottom: 1px solid var(--border); }
-  .topbar h2 { font-size: 1.05rem; }
-  .content { padding: 24px 28px 60px; max-width: 1080px; }
+  .topbar { display: flex; align-items: center; justify-content: space-between; padding: 18px 28px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: rgba(6,8,12,0.72); backdrop-filter: blur(10px); z-index: 40; }
+  .topbar h2 { font-size: 1.08rem; letter-spacing: 0.01em; }
+  .content { padding: 24px 28px 60px; max-width: 1120px; }
 
-  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 20px; margin-bottom: 20px; }
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 20px; margin-bottom: 20px; box-shadow: var(--shadow-card); }
   .panel__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; gap: 10px; flex-wrap: wrap; }
-  .panel__head h3 { font-size: 0.95rem; }
-  .panel__head p { color: var(--muted); font-size: 0.78rem; margin-top: 2px; }
+  .panel__head h3 { font-size: 0.97rem; letter-spacing: 0.01em; }
+  .panel__head p { color: var(--muted); font-size: 0.78rem; margin-top: 3px; }
 
   table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
-  th { text-align: left; color: var(--muted); font-weight: 600; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; padding: 8px 10px; border-bottom: 1px solid var(--border); }
-  td { padding: 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { text-align: left; color: var(--muted); font-weight: 700; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 9px 10px; border-bottom: 1px solid var(--border); background: var(--panel2); }
+  th:first-child { border-top-left-radius: var(--r-sm); }
+  th:last-child { border-top-right-radius: var(--r-sm); }
+  td { padding: 11px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tbody tr:hover td { background: rgba(255,255,255,0.012); }
   tr:last-child td { border-bottom: none; }
-  .empty-row { color: var(--faint); text-align: center; padding: 24px; font-size: 0.8rem; }
+  .empty-row { color: var(--faint); text-align: center; padding: 28px; font-size: 0.8rem; }
 
-  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin-bottom: 20px; }
-  .stat-card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 16px; }
-  .stat-card b { display: block; font-size: 1.5rem; }
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-bottom: 20px; }
+  .stat-card { background: var(--panel); border: 1px solid var(--border); border-left: 3px solid var(--brand); border-radius: var(--r-lg); padding: 16px; box-shadow: var(--shadow-card); }
+  .stat-card b { display: block; font-size: 1.6rem; letter-spacing: -0.01em; }
   .stat-card span { color: var(--muted); font-size: 0.76rem; }
 
-  .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 999; padding: 20px; }
-  .modal-box { background: var(--panel); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 24px; width: 100%; max-width: 440px; }
-  .modal-box h3 { margin-bottom: 4px; }
-  .modal-box p.desc { color: var(--muted); font-size: 0.8rem; margin-bottom: 18px; }
+  .modal-backdrop { position: fixed; inset: 0; background: rgba(3,4,7,0.68); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; z-index: 999; padding: 20px; }
+  .modal-box { background: var(--panel); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 24px; width: 100%; max-width: 440px; box-shadow: var(--shadow-pop); max-height: 88vh; overflow-y: auto; }
+  .modal-box h3 { margin-bottom: 4px; letter-spacing: 0.01em; }
+  .modal-box p.desc { color: var(--muted); font-size: 0.8rem; margin-bottom: 18px; line-height: 1.45; }
   .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
   .key-reveal { background: var(--brand-dim); border: 1px dashed var(--brand); border-radius: var(--r-md); padding: 14px; text-align: center; font-family: monospace; font-size: 1rem; letter-spacing: 0.03em; color: var(--brand); margin: 12px 0; word-break: break-all; }
+
+  /* ===== searchable select / coverage picker (org unit creation) ===== */
+  .static-field { padding: 11px 13px; border-radius: var(--r-md); border: 1px solid var(--border2); background: var(--panel2); font-size: 0.88rem; color: var(--txt); font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .search-list { max-height: 190px; overflow-y: auto; border: 1px solid var(--border2); border-radius: var(--r-md); margin-top: 8px; background: var(--panel2); }
+  .search-item { padding: 9px 12px; font-size: 0.83rem; cursor: pointer; border-bottom: 1px solid var(--border); transition: background .1s ease; }
+  .search-item:last-child { border-bottom: none; }
+  .search-item:hover { background: var(--panel-raised); }
+  .search-item.active { background: var(--brand-dim); color: var(--brand); font-weight: 700; }
+  .search-empty { padding: 14px; color: var(--faint); font-size: 0.8rem; text-align: center; }
+  .coverage-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+  .coverage-chip { display: flex; align-items: center; gap: 6px; padding: 7px 11px; border-radius: 99px; border: 1px solid var(--border2); background: var(--panel2); font-size: 0.78rem; cursor: pointer; user-select: none; }
+  .coverage-chip:has(input:checked) { border-color: var(--green); color: var(--green); background: var(--green-dim); }
+  .coverage-chip input { width: auto; margin: 0; accent-color: var(--green); }
+  .illus-map-wrap { margin: 4px 0 14px; }
+  .illus-map-label { font-size: 0.68rem; color: var(--faint); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; font-weight: 700; }
 
   #toastContainer { position: fixed; bottom: 22px; right: 22px; z-index: 1200; display: flex; flex-direction: column; gap: 10px; }
   .toast { background: var(--panel-raised); border: 1px solid var(--border2); border-radius: var(--r-md); padding: 12px 16px; font-size: 0.8rem; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,0.4); }
@@ -151,6 +184,7 @@
 <!-- ============== AUTH VIEW ============== -->
 <div id="authView">
   <div class="auth-card">
+    <div class="auth-mark">ECG</div>
     <h1>LightWatch ECG Operations</h1>
     <p class="sub">Staff access is invitation-only. This page is separate from the public LightWatch app.</p>
 
@@ -205,16 +239,16 @@
 <div id="appView">
   <aside class="sidebar" id="sidebar">
     <div class="sidebar__brand">
-      <div class="sidebar__brand-mark">E</div>
-      <div class="sidebar__brand-text"><b>LightWatch</b><span>ECG Operations</span></div>
+      <div class="sidebar__brand-mark">ECG</div>
+      <div class="sidebar__brand-text"><b>LightWatch</b><span>Operations Console</span></div>
     </div>
     <nav>
-      <div class="nav-item active" data-tab="overview" onclick="switchTab('overview')">📊 Overview</div>
-      <div class="nav-item" data-tab="events" onclick="switchTab('events')">⚡ Electricity Events</div>
-      <div class="nav-item hidden" data-tab="org" data-role-gate="org" onclick="switchTab('org')">🏢 Organization</div>
-      <div class="nav-item" data-tab="staff" onclick="switchTab('staff')">👥 Staff</div>
-      <div class="nav-item" data-tab="invitations" onclick="switchTab('invitations')">✉️ Invitations</div>
-      <div class="nav-item" data-tab="audit" onclick="switchTab('audit')">🕓 Audit Log</div>
+      <div class="nav-item active" data-tab="overview" onclick="switchTab('overview')"><span class="nav-ic">📊</span> Overview</div>
+      <div class="nav-item" data-tab="events" onclick="switchTab('events')"><span class="nav-ic">⚡</span> Electricity Events</div>
+      <div class="nav-item hidden" data-tab="org" data-role-gate="org" onclick="switchTab('org')"><span class="nav-ic">🏢</span> Organization</div>
+      <div class="nav-item" data-tab="staff" onclick="switchTab('staff')"><span class="nav-ic">👥</span> Staff</div>
+      <div class="nav-item" data-tab="invitations" onclick="switchTab('invitations')"><span class="nav-ic">✉️</span> Invitations</div>
+      <div class="nav-item" data-tab="audit" onclick="switchTab('audit')"><span class="nav-ic">🕓</span> Audit Log</div>
     </nav>
     <div class="sidebar__org">
       <b id="sbOrgName">—</b>
@@ -250,6 +284,43 @@ function setToken(t) { sessionStorage.setItem(TK, t); }
 function clearToken() { sessionStorage.removeItem(TK); }
 
 let ME = null; // { staff, organizationUnit, permissions }
+
+// ============================================================
+// Ghana regions / districts / towns — illustrative reference data used to
+// power the searchable pickers and auto-loaded coverage suggestions when
+// staff create Regional Offices and District/Local Stations below. Real
+// coverage areas can always be added or removed by staff before saving.
+// ============================================================
+const GHANA_DATA = {"Ahafo": {"capital": "Goaso", "districts": {"Asunafo North Municipal": ["Goaso", "Kasapin", "Mim", "Ayomso"], "Asunafo South": ["Kukuom", "Kwapong", "Sankore"], "Asutifi North": ["Kenyasi", "Acherensua", "Gambia No.1"], "Asutifi South": ["Hwidiem", "Kenyasi No.2", "Gyedu"], "Tano North Municipal": ["Duayaw Nkwanta", "Tanoso", "Afrisipa"], "Tano South Municipal": ["Bechem", "Derma", "Kojina"]}}, "Ashanti": {"capital": "Kumasi", "districts": {"Kumasi Metropolitan": ["Adum", "Bantama", "Asafo", "Suame Roundabout", "Manhyia"], "Asokwa Municipal": ["Asokwa", "Atonsu", "Ahinsan"], "Oforikrom Municipal": ["Oforikrom", "KNUST", "Aboabo"], "Old Tafo Municipal": ["Tafo", "Pankrono", "Sepe Buokrom"], "Suame Municipal": ["Suame", "Bohyen", "Akwatia Line"], "Kwadaso Municipal": ["Kwadaso", "Kotei", "Ayeduase"], "Asokore Mampong Municipal": ["Asokore Mampong", "Sawaba", "Aboabo No.2"], "Kwabre East Municipal": ["Mamponteng", "Kenyase", "Antoa"], "Afigya Kwabre North": ["Boamang", "Adankwame"], "Afigya Kwabre South": ["Kodie", "Nkukua Buoho"], "Atwima Nwabiagya Municipal": ["Nkawie", "Barekese"], "Atwima Nwabiagya North": ["Barekese", "Toase"], "Atwima Kwanwoma": ["Foase", "Kotwi"], "Atwima Mponua": ["Nyinahin", "Toase"], "Bosomtwe": ["Kuntanase", "Feyiase"], "Bosome Freho": ["Asiwa", "Kokofu Junction"], "Ejisu Municipal": ["Ejisu", "Besease", "Bomfa"], "Juaben Municipal": ["Juaben", "Ejisu-Juaben"], "Asante Akim Central Municipal": ["Konongo", "Odumase"], "Asante Akim North": ["Agogo", "Domeabra"], "Asante Akim South": ["Juaso", "Bompata"], "Bekwai Municipal": ["Bekwai", "Anwiankwanta"], "Amansie Central": ["Jacobu", "Antoakrom"], "Amansie West": ["Manso Nkwanta", "Antoakrom"], "Amansie South": ["Manso Adubia", "Bepoase"], "Adansi North": ["Fomena", "Akrokerri"], "Adansi South": ["New Edubiase", "Dompoase"], "Adansi Asokwa": ["Adansi Asokwa", "Ahenkro"], "Obuasi Municipal": ["Obuasi", "Tutuka", "Anyinam"], "Obuasi East": ["Tutuka", "Kwabrafoso"], "Akrofuom": ["Akrofuom", "Diaso"], "Offinso Municipal": ["Offinso", "Abofour"], "Offinso North": ["Akomadan", "Afrancho"], "Ejura Sekyedumase Municipal": ["Ejura", "Sekyedumase"], "Sekyere Central": ["Nsuta", "Beposo"], "Sekyere East": ["Effiduase", "Asokore"], "Sekyere South": ["Agona", "Bodwesango"], "Sekyere Kumawu": ["Kumawu", "Woraso"], "Sekyere Afram Plains": ["Drobonso", "Kumawu Junction"], "Mampong Municipal": ["Mampong", "Nsuta-Beposo"], "Ahafo Ano North Municipal": ["Tepa", "Kunsu"], "Ahafo Ano South West": ["Mankranso", "Biemso"], "Ahafo Ano South East": ["Wioso", "Kokotenten"]}}, "Bono": {"capital": "Sunyani", "districts": {"Sunyani Municipal": ["Sunyani", "Abesim", "Fiapre"], "Sunyani West": ["Odumase", "Nsoatre"], "Berekum East Municipal": ["Berekum", "Senase"], "Berekum West": ["Jinijini", "Namasa"], "Dormaa Central Municipal": ["Dormaa Ahenkro", "Wamahinso"], "Dormaa East": ["Wamfie", "Kyekyewere"], "Dormaa West": ["Nkrankwanta", "Konkomaa"], "Jaman North": ["Sampa", "Suma Ahenkuro"], "Jaman South Municipal": ["Drobo", "Duayaw"], "Tain": ["Nsawkaw", "Namasa"], "Banda": ["Banda Ahenkro", "Kabrono"], "Wenchi Municipal": ["Wenchi", "Techimantia"]}}, "Bono East": {"capital": "Techiman", "districts": {"Techiman Municipal": ["Techiman", "Tanoso", "Krobo"], "Techiman North": ["Tuobodom", "Nsuta"], "Kintampo North Municipal": ["Kintampo", "Kunsu"], "Kintampo South": ["Jema", "Kawampe"], "Nkoranza North": ["Busunya", "Buesa"], "Nkoranza South Municipal": ["Nkoranza", "Akumsa"], "Atebubu-Amantin Municipal": ["Atebubu", "Amantin"], "Sene East": ["Kajaji", "Kwadwokrom"], "Sene West": ["Kwame Danso", "Kwabena Akwa"], "Pru East": ["Yeji", "Otisu"], "Pru West": ["Prang", "Zabrama"]}}, "Central": {"capital": "Cape Coast", "districts": {"Cape Coast Metropolitan": ["Cape Coast", "Pedu", "Abura"], "Abura Asebu Kwamankese": ["Abura Dunkwa", "Kwamankese"], "Twifo Atti Morkwa": ["Twifo Praso", "Mankessim Junction"], "Twifo Heman Lower Denkyira": ["Jukwa", "Heman"], "Assin North Municipal": ["Assin Fosu", "Nyankumasi"], "Assin South": ["Nsuaem Kyekyewere", "Assin Bereku"], "Assin Central Municipal": ["Assin Fosu", "Assin Manso"], "Ajumako Enyan Essiam": ["Ajumako", "Enyan Denkyira"], "Ekumfi": ["Essarkyir", "Ekumfi Otuam"], "Mfantsiman Municipal": ["Saltpond", "Anomabo"], "Gomoa East": ["Potsin", "Afransi"], "Gomoa Central": ["Afransi", "Bawjiase Junction"], "Gomoa West": ["Apam", "Mumford"], "Effutu Municipal": ["Winneba", "Gomoa Ajumako"], "Awutu Senya East Municipal": ["Kasoa", "Opeikuma"], "Awutu Senya West": ["Awutu Bereku", "Bawjiase"], "Agona East": ["Nsaba", "Duakwa"], "Agona West Municipal": ["Agona Swedru", "Nyakrom"], "Asikuma Odoben Brakwa": ["Breman Asikuma", "Odoben"], "Upper Denkyira East Municipal": ["Dunkwa-on-Offin", "Diaso Junction"], "Upper Denkyira West": ["Diaso", "Kyekyewere"], "Komenda Edina Eguafo Abirem Municipal": ["Elmina", "Komenda", "Abrem Agona"]}}, "Eastern": {"capital": "Koforidua", "districts": {"New Juaben South Municipal": ["Koforidua", "Adweso", "Effiduase"], "New Juaben North Municipal": ["Effiduase-Koforidua", "Densuano"], "Abuakwa North Municipal": ["Kukurantumi", "Asiakwa"], "Abuakwa South Municipal": ["Kibi", "Apedwa"], "Akyemansa": ["Ofoase Kokoben", "Anyinasin"], "Atiwa East": ["Anyinam", "Bunso"], "Atiwa West": ["Kwabeng", "Akropong Atiwa"], "Birim Central Municipal": ["Oda", "Akyease"], "Birim North": ["New Abirem", "Afosu"], "Birim South": ["Achiase", "Akyem Swedru"], "Denkyembour": ["Akwatia", "Asuom"], "Kwaebibirem Municipal": ["Kade", "Asuom"], "West Akim Municipal": ["Asamankese", "Akwatia Road"], "Upper West Akim": ["Adeiso", "Osenase"], "Akuapim North Municipal": ["Akropong", "Mampong Akuapim"], "Akuapim South": ["Aburi", "Nsawam"], "Nsawam Adoagyiri Municipal": ["Nsawam", "Adoagyiri"], "Suhum Municipal": ["Suhum", "Otoase"], "Ayensuano": ["Coaltar", "Anyinam Ayensuano"], "Fanteakwa North": ["Begoro", "Abomosu"], "Fanteakwa South": ["Osino", "Adukrom Junction"], "Kwahu East": ["Abetifi", "Obomeng"], "Kwahu West Municipal": ["Nkawkaw", "Obo"], "Kwahu South": ["Mpraeso", "Kwahu Tafo"], "Kwahu Afram Plains North": ["Donkorkrom", "Tease"], "Kwahu Afram Plains South": ["Tease", "Mem-Chemfe"], "Asuogyaman": ["Atimpoku", "Akosombo"], "Yilo Krobo Municipal": ["Somanya", "Kpong Junction"], "Lower Manya Krobo Municipal": ["Odumase Krobo", "Kpong"], "Upper Manya Krobo": ["Asesewa", "Sekesua"], "Okere": ["Adukrom", "Abiriw"]}}, "Greater Accra": {"capital": "Accra", "districts": {"Accra Metropolitan": ["Osu", "Adabraka", "Jamestown", "Korle Gonno", "Kokomlemle"], "Ablekuma North Municipal": ["Darkuman", "Kaneshie"], "Ablekuma South Municipal": ["Dansoman", "Chorkor"], "Ablekuma West Municipal": ["Dansoman West", "Mataheko"], "Ablekuma Central Municipal": ["Awoshie", "Odorkor"], "Ayawaso Central Municipal": ["Kotobabi", "Alajo"], "Ayawaso East Municipal": ["Nima", "Maamobi"], "Ayawaso North Municipal": ["Accra New Town", "Kotobabi"], "Ayawaso West Municipal": ["Dzorwulu", "Legon", "Airport Residential"], "Okaikwei North Municipal": ["Abeka", "Achimota"], "Korle Klottey Municipal": ["Ridge", "Labone", "Cantonments"], "La Dade-Kotopon Municipal": ["La", "Labadi", "Teshie Junction"], "La Nkwantanang Madina Municipal": ["Madina", "Ashongman", "Ritz"], "Ledzokuku Municipal": ["Teshie", "Nungua Junction"], "Krowor Municipal": ["Nungua", "Baatsona"], "Tema Metropolitan": ["Tema Community 1", "Tema Community 9", "Tema Newtown"], "Tema West Municipal": ["Community 25", "Sakumono"], "Kpone Katamanso Municipal": ["Kpone", "Katamanso", "Community 22"], "Ashaiman Municipal": ["Ashaiman", "Klagon", "Zenu"], "Adenta Municipal": ["Adenta", "Frafraha"], "Ga East Municipal": ["Abokobi", "Dome", "Taifa"], "Ga West Municipal": ["Amasaman", "Pokuase", "Ofankor"], "Ga Central Municipal": ["Sowutuom", "Bortianor Junction"], "Ga South Municipal": ["Domeabra", "Ngleshie Amanfro"], "Ga North Municipal": ["Ofankor", "Achiaman"], "Weija Gbawe Municipal": ["Weija", "Gbawe", "Mallam"], "Ningo Prampram": ["Prampram", "Ningo", "Dawhenya"], "Shai Osudoku": ["Dodowa", "Agomeda"]}}, "North East": {"capital": "Nalerigu", "districts": {"East Mamprusi Municipal": ["Gambaga", "Nalerigu", "Langbinsi"], "West Mamprusi Municipal": ["Walewale", "Wungu"], "Mamprugu Moagduri": ["Yagaba", "Kubori"], "Bunkpurugu Nyakpanduri": ["Bunkpurugu", "Nakpanduri"], "Yunyoo-Nasuan": ["Yunyoo", "Nasuan"], "Chereponi": ["Chereponi", "Gushiegu Road"]}}, "Northern": {"capital": "Tamale", "districts": {"Tamale Metropolitan": ["Tamale", "Vittin", "Lamashegu"], "Sagnarigu Municipal": ["Sagnarigu", "Kanvili"], "Kumbungu": ["Kumbungu", "Zangbalung"], "Tolon": ["Tolon", "Dalun"], "Savelugu Municipal": ["Savelugu", "Diare"], "Nanton": ["Nanton", "Kpachaa"], "Karaga": ["Karaga", "Ztowla"], "Gushegu Municipal": ["Gushegu", "Nabuli"], "Saboba": ["Saboba", "Wapuli"], "Zabzugu": ["Zabzugu", "Nakpali"], "Tatale Sanguli": ["Tatale", "Sanguli"], "Yendi Municipal": ["Yendi", "Bunbon"], "Mion": ["Sang", "Jimle"], "Nanumba North Municipal": ["Bimbilla", "Wulensi Road"], "Nanumba South": ["Wulensi", "Nakpayili"], "Kpandai": ["Kpandai", "Katiejeli"]}}, "Oti": {"capital": "Dambai", "districts": {"Krachi East Municipal": ["Dambai", "Kete"], "Krachi West": ["Kete Krachi", "Kyabobo"], "Krachi Nchumuru": ["Chinderi", "Bejamso"], "Nkwanta North": ["Kpassa", "Kete Krachi Road"], "Nkwanta South Municipal": ["Nkwanta", "Kpassa Junction"], "Jasikan Municipal": ["Jasikan", "Ahamansu"], "Kadjebi": ["Kadjebi", "Menusu"], "Biakoye": ["Nkonya Ahenkro", "Worawora"], "Guan": ["Likpe Mate", "Santrokofi"]}}, "Savannah": {"capital": "Damongo", "districts": {"West Gonja Municipal": ["Damongo", "Larabanga"], "Central Gonja": ["Buipe", "Yapei"], "East Gonja Municipal": ["Salaga", "Kpembe"], "North Gonja": ["Daboya", "Busunu"], "North East Gonja": ["Kpalbe", "Kabache"], "Sawla-Tuna-Kalba": ["Sawla", "Tuna"], "Bole": ["Bole", "Bamboi"]}}, "Upper East": {"capital": "Bolgatanga", "districts": {"Bolgatanga Municipal": ["Bolgatanga", "Zaare"], "Bolgatanga East": ["Zuarungu", "Yorogo"], "Bongo": ["Bongo", "Zorko"], "Bawku Municipal": ["Bawku", "Kubongo"], "Bawku West": ["Zebilla", "Tilli"], "Binduri": ["Binduri", "Pusiga Road"], "Garu": ["Garu", "Widana"], "Tempane": ["Tempane", "Yaraga"], "Kassena Nankana Municipal": ["Navrongo", "Biu"], "Kassena Nankana West": ["Paga", "Chiana"], "Builsa North Municipal": ["Sandema", "Wiaga"], "Builsa South": ["Fumbisi", "Uwasi"], "Talensi": ["Tongo", "Datoko"], "Nabdam": ["Nangodi", "Sekoti"], "Pusiga": ["Pusiga", "Yelwoko"]}}, "Upper West": {"capital": "Wa", "districts": {"Wa Municipal": ["Wa", "Kpaguri"], "Wa East": ["Funsi", "Bulenga"], "Wa West": ["Wechiau", "Wa Line"], "Nadowli-Kaleo": ["Nadowli", "Kaleo"], "Daffiama Bussie Issa": ["Issa", "Daffiama"], "Jirapa Municipal": ["Jirapa", "Han"], "Lambussie Karni": ["Lambussie", "Karni"], "Lawra Municipal": ["Lawra", "Babile"], "Nandom Municipal": ["Nandom", "Ko"], "Sissala East Municipal": ["Tumu", "Gwollu Road"], "Sissala West": ["Gwollu", "Nabugubelle"]}}, "Volta": {"capital": "Ho", "districts": {"Ho Municipal": ["Ho", "Bankoe", "Dome"], "Ho West": ["Dzolo Kpuita", "Abutia"], "Adaklu": ["Adaklu Waya", "Have"], "South Dayi": ["Kpeve", "Peki"], "North Dayi": ["Anfoega", "Alavanyo"], "Afadzato South": ["Ve Golokwati", "Gbi"], "Agotime Ziope": ["Kpetoe", "Ziope"], "Akatsi North": ["Ave Dakpa", "Avenui"], "Akatsi South Municipal": ["Akatsi", "Wute"], "Central Tongu": ["Adidome", "Battor Junction"], "North Tongu": ["Battor", "Mepe"], "South Tongu": ["Sogakope", "Dabala"], "Ketu North Municipal": ["Dzodze", "Penyi"], "Ketu South Municipal": ["Denu", "Aflao"], "Keta Municipal": ["Keta", "Anloga Road"], "Anloga": ["Anloga", "Woe"], "Hohoe Municipal": ["Hohoe", "Gbledi"], "Kpando Municipal": ["Kpando", "Kudzra"]}}, "Western": {"capital": "Sekondi-Takoradi", "districts": {"Sekondi-Takoradi Metropolitan": ["Sekondi", "Takoradi", "Market Circle"], "Effia Kwesimintsim Municipal": ["Kwesimintsim", "Effia"], "Shama": ["Shama", "Aboadze"], "Ahanta West Municipal": ["Agona Nkwanta", "Busua"], "Nzema East Municipal": ["Axim", "Bewire"], "Ellembelle": ["Nkroful", "Esiama"], "Jomoro Municipal": ["Half Assini", "Elubo"], "Wassa East": ["Daboase", "Adiembra"], "Wassa Amenfi East Municipal": ["Wassa Akropong", "Asankrangwa Road"], "Wassa Amenfi Central": ["Manso Amenfi", "Asankran"], "Wassa Amenfi West Municipal": ["Asankragua", "Bawdie"], "Mpohor": ["Mpohor", "Daboase Junction"], "Tarkwa Nsuaem Municipal": ["Tarkwa", "Nsuaem"], "Prestea Huni-Valley Municipal": ["Prestea", "Bogoso"]}}, "Western North": {"capital": "Sefwi Wiawso", "districts": {"Sefwi Wiawso Municipal": ["Sefwi Wiawso", "Kwamekrom"], "Sefwi Akontombra": ["Akontombra", "Datano"], "Bibiani Anhwiaso Bekwai Municipal": ["Bibiani", "Anhwiaso"], "Bodi": ["Bodi", "Sureso"], "Juaboso": ["Juaboso", "Bakwaline"], "Bia East": ["Adabokrom", "Debiso Road"], "Bia West": ["Essam Debiso", "Sefwi Bekwai"], "Aowin Municipal": ["Enchi", "Sefwi Bekwai Road"], "Suaman": ["Dwenase", "Suaman Road"]}}};
+const GHANA_REGIONS = Object.keys(GHANA_DATA).sort();
+function districtsForRegion(region) {
+  const r = GHANA_DATA[region];
+  return r ? Object.keys(r.districts).sort() : [];
+}
+function townsFor(region, district) {
+  const r = GHANA_DATA[region];
+  return (r && r.districts[district]) ? r.districts[district] : [];
+}
+// Illustrative, non-geographic radial diagram — NOT a real map. Shows the
+// selected district's capital at the centre with its suggested coverage
+// towns arranged around it, purely so staff can sanity-check the set.
+function renderIllustrativeMap(centerLabel, towns) {
+  const w = 360, h = 200, cx = w / 2, cy = h / 2 + 6, r = 74;
+  const pts = towns.map((t, i) => {
+    const angle = (i / (towns.length || 1)) * 2 * Math.PI - Math.PI / 2;
+    return { name: t, x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle) };
+  });
+  const lines = pts.map(p => `<line x1="${cx}" y1="${cy}" x2="${p.x}" y2="${p.y}" stroke="#2C3446" stroke-width="1.5" stroke-dasharray="3 3"/>`).join('');
+  const nodes = pts.map(p => `<g><circle cx="${p.x}" cy="${p.y}" r="5" fill="#4F86F7"/><text x="${p.x}" y="${p.y - 11}" text-anchor="middle" font-size="9.5" font-family="ui-sans-serif,system-ui" fill="#97A2B8">${esc(p.name)}</text></g>`).join('');
+  return `<div class="illus-map-wrap"><div class="illus-map-label">Illustrative coverage preview — not a real map</div>
+    <svg viewBox="0 0 ${w} ${h}" style="width:100%;height:180px;background:#151A25;border:1px solid #2C3446;border-radius:12px">
+      ${lines}
+      <circle cx="${cx}" cy="${cy}" r="9" fill="#F2B33D"/>
+      <text x="${cx}" y="${cy + 24}" text-anchor="middle" font-size="10.5" font-weight="700" font-family="ui-sans-serif,system-ui" fill="#F4F6FA">${esc(centerLabel)}</text>
+      ${nodes}
+    </svg></div>`;
+}
+
 
 // ===== toast =====
 function toast(msg, type = "ok") {
@@ -525,7 +596,7 @@ async function resolveEvent(id) {
 async function renderOrg(content) {
   if (!ME.permissions.canManageOrgUnits) { content.innerHTML = `<div class="panel">You don't have access to this section.</div>`; return; }
   const units = await ecgGet("/ecg/org-units");
-  const canCreateType = ME.staff.role === 'hq_admin' ? 'regional office or district/local station' : 'district/local station (under your region)';
+  const canCreateType = ME.staff.role === 'hq_admin' ? 'Regional Office' : 'District / Local Station (under your region)';
   content.innerHTML = `
     <div class="panel">
       <div class="panel__head">
@@ -552,42 +623,123 @@ function roleUnitBadge(type) { return { headquarters: 'hq', regional: 'regional'
 
 function openCreateUnitModal() {
   const isHq = ME.staff.role === 'hq_admin';
-  const parentOptions = isHq ? (window.__orgUnits || []).filter(u => u.type !== 'district').map(u => `<option value="${u.id}">${esc(u.name)} (${u.type})</option>`).join('') : '';
   const backdrop = document.createElement('div');
   backdrop.className = 'modal-backdrop';
-  backdrop.innerHTML = `
-    <div class="modal-box">
-      <h3>New Organization Unit</h3>
-      <p class="desc">Fields marked as coverage areas apply to district/local stations only.</p>
-      <div class="field-wrap"><label class="field">Name</label><input type="text" id="mName" placeholder="e.g. Bantama Local Station"></div>
-      ${isHq ? `
-      <div class="field-wrap"><label class="field">Type</label>
-        <select id="mType" onchange="document.getElementById('mParentWrap').classList.toggle('hidden', this.value!=='district'); document.getElementById('mRegionWrap').classList.toggle('hidden', this.value!=='regional')">
-          <option value="regional">Regional Office</option><option value="district">District / Local Station</option>
-        </select></div>
-      <div class="field-wrap" id="mRegionWrap"><label class="field">Region Name</label><input type="text" id="mRegion" placeholder="e.g. Ashanti Region"></div>
-      <div class="field-wrap hidden" id="mParentWrap"><label class="field">Parent Regional Office</label><select id="mParent">${parentOptions}</select></div>
-      ` : `<input type="hidden" id="mType" value="district">`}
-      <div class="field-wrap"><label class="field">Coverage Areas (comma-separated, district only)</label><input type="text" id="mCoverage" placeholder="Bantama, Abrepo, Krofrom"></div>
-      <div id="mKeyReveal"></div>
-      <div class="modal-actions">
-        <button class="btn" onclick="this.closest('.modal-backdrop').remove()">Cancel</button>
-        <button class="btn btn--primary" onclick="createUnit(this)">Create</button>
-      </div>
-    </div>`;
+
+  if (isHq) {
+    // ---- HQ: the only unit type it can create is a Regional Office. ----
+    const existingRegions = new Set((window.__orgUnits || []).filter(u => u.type === 'regional').map(u => u.region));
+    const available = GHANA_REGIONS.filter(r => !existingRegions.has(r));
+    const hqUnit = (window.__orgUnits || []).find(u => u.type === 'headquarters');
+    backdrop.innerHTML = `
+      <div class="modal-box">
+        <h3>New Organization Unit</h3>
+        <p class="desc">ECG Headquarters can only establish Regional Offices — district/local stations are created by each Regional Office's own manager, under their region.</p>
+        <input type="hidden" id="mType" value="regional">
+        <input type="hidden" id="mParent" value="${hqUnit ? esc(hqUnit.id) : ''}">
+        <div class="field-wrap"><label class="field">Unit Type</label>
+          <div class="static-field">🏢 Regional Office</div>
+        </div>
+        <div class="field-wrap"><label class="field">Region</label>
+          <select id="mRegionSelect">
+            <option value="" disabled ${available.length ? 'selected' : ''}>Select a region of Ghana…</option>
+            ${available.map(r => `<option value="${esc(r)}">${esc(r)}</option>`).join('')}
+          </select>
+          ${!available.length ? '<p class="field-hint">All 16 regions already have a Regional Office set up.</p>' : `<p class="field-hint">${available.length} of 16 regions still need a Regional Office.</p>`}
+        </div>
+        <div id="mKeyReveal"></div>
+        <div class="modal-actions">
+          <button class="btn" onclick="this.closest('.modal-backdrop').remove()">Cancel</button>
+          <button class="btn btn--primary" onclick="createUnit(this)" ${!available.length ? 'disabled' : ''}>Create</button>
+        </div>
+      </div>`;
+  } else {
+    // ---- Regional manager: create a District / Local Station under their own region. ----
+    const region = ME.organizationUnit.region;
+    const known = districtsForRegion(region);
+    const existingNames = new Set((window.__orgUnits || []).filter(u => u.type === 'district').map(u => u.name));
+    const available = known.filter(d => !existingNames.has(d));
+    backdrop.innerHTML = `
+      <div class="modal-box" style="max-width:540px">
+        <h3>New District / Local Station</h3>
+        <p class="desc">Pick a district in <b>${esc(region || 'your region')}</b>. Its coverage areas load automatically the moment you select it — uncheck any that don't apply, or add more.</p>
+        <input type="hidden" id="mType" value="district">
+        <input type="hidden" id="mName" value="">
+        ${known.length ? `
+        <div class="field-wrap">
+          <label class="field">District</label>
+          <input type="text" id="mDistrictSearch" placeholder="Search districts in ${esc(region)}…" oninput="filterDistrictList()" autocomplete="off">
+          <div class="search-list" id="mDistrictList">
+            ${available.length ? available.map(d => `<div class="search-item" data-val="${esc(d)}" onclick="selectDistrict('${esc(d).replace(/'/g, "\\'")}')">${esc(d)}</div>`).join('') : '<div class="search-empty">All known districts in this region already have a station.</div>'}
+          </div>
+        </div>
+        <div id="mMapWrap"></div>
+        <div class="field-wrap hidden" id="mCoverageWrap"></div>
+        ` : `
+        <div class="field-wrap"><label class="field">District / Station Name</label><input type="text" id="mNameManual" placeholder="e.g. Bantama Local Station" oninput="document.getElementById('mName').value=this.value.trim()"></div>
+        <div class="field-wrap"><label class="field">Coverage Areas (comma-separated)</label><input type="text" id="mCoverage" placeholder="Bantama, Abrepo, Krofrom"></div>
+        <p class="field-hint">We don't have a district list on file for ${esc(region || 'this region')} yet — enter the station and its coverage areas manually.</p>
+        `}
+        <div id="mKeyReveal"></div>
+        <div class="modal-actions">
+          <button class="btn" onclick="this.closest('.modal-backdrop').remove()">Cancel</button>
+          <button class="btn btn--primary" onclick="createUnit(this)">Create</button>
+        </div>
+      </div>`;
+  }
   document.body.appendChild(backdrop);
 }
+function filterDistrictList() {
+  const q = (document.getElementById('mDistrictSearch').value || '').trim().toLowerCase();
+  document.querySelectorAll('#mDistrictList .search-item').forEach(el => {
+    el.classList.toggle('hidden', !el.dataset.val.toLowerCase().includes(q));
+  });
+}
+function selectDistrict(name) {
+  document.getElementById('mName').value = name;
+  document.getElementById('mDistrictSearch').value = name;
+  document.querySelectorAll('#mDistrictList .search-item').forEach(el => el.classList.toggle('active', el.dataset.val === name));
+  const region = ME.organizationUnit.region;
+  const towns = townsFor(region, name);
+  document.getElementById('mMapWrap').innerHTML = towns.length ? renderIllustrativeMap(name, towns) : '';
+  const coverageWrap = document.getElementById('mCoverageWrap');
+  coverageWrap.classList.remove('hidden');
+  coverageWrap.innerHTML = `
+    <label class="field">Coverage Areas — loaded automatically</label>
+    <div class="coverage-grid" id="mCoverageGrid">
+      ${towns.length ? towns.map(t => `<label class="coverage-chip"><input type="checkbox" checked value="${esc(t)}"> ${esc(t)}</label>`).join('') : '<span style="color:var(--faint);font-size:0.8rem">No suggested towns on file for this district — add them below.</span>'}
+    </div>
+    <input type="text" id="mCoverageExtra" placeholder="Add another area, comma-separated" style="margin-top:10px">`;
+}
 async function createUnit(btn) {
-  const name = document.getElementById('mName').value.trim();
   const type = document.getElementById('mType').value;
-  if (!name) { toast("Name is required", "err"); return; }
-  try {
-    const payload = {
-      name, type,
-      region: document.getElementById('mRegion')?.value?.trim(),
-      parentUnitId: document.getElementById('mParent')?.value,
-      coverageAreas: (document.getElementById('mCoverage').value || '').split(',').map(s => s.trim()).filter(Boolean)
+  let payload;
+  if (type === 'regional') {
+    const region = document.getElementById('mRegionSelect').value;
+    if (!region) { toast("Select a region", "err"); return; }
+    payload = {
+      name: `${region} Regional Office`, type: 'regional', region,
+      parentUnitId: document.getElementById('mParent').value,
+      coverageAreas: []
     };
+  } else {
+    const manualInput = document.getElementById('mNameManual');
+    const name = (manualInput ? manualInput.value : document.getElementById('mName').value || '').trim();
+    if (!name) { toast("Select or enter a district name", "err"); return; }
+    let coverageAreas = [];
+    const grid = document.getElementById('mCoverageGrid');
+    if (grid) {
+      coverageAreas = Array.from(grid.querySelectorAll('input[type=checkbox]:checked')).map(c => c.value);
+      const extra = document.getElementById('mCoverageExtra');
+      if (extra && extra.value.trim()) coverageAreas = coverageAreas.concat(extra.value.split(',').map(s => s.trim()).filter(Boolean));
+    } else {
+      const manualCoverage = document.getElementById('mCoverage');
+      if (manualCoverage) coverageAreas = manualCoverage.value.split(',').map(s => s.trim()).filter(Boolean);
+    }
+    if (!coverageAreas.length) { toast("Add at least one coverage area", "err"); return; }
+    payload = { name, type: 'district', coverageAreas: Array.from(new Set(coverageAreas)) };
+  }
+  try {
     const unit = await ecgPost("/ecg/org-units", payload);
     if (unit.branchKey) {
       document.getElementById('mKeyReveal').innerHTML = `<div class="key-reveal">${esc(unit.branchKey)}</div><p class="desc" style="color:var(--red)">Copy this now — it will not be shown again. Share it only with authorized branch staff.</p>`;
@@ -610,11 +762,48 @@ async function rotateBranchKey(unitId) {
     document.body.appendChild(backdrop);
   } catch (err) { toast(err.message, "err"); }
 }
-async function editCoverage(unitId, current) {
-  const val = prompt("Coverage areas (comma-separated):", (current || []).join(', '));
-  if (val === null) return;
+function editCoverage(unitId, current) {
+  const unit = (window.__orgUnits || []).find(u => u.id === unitId);
+  const towns = unit ? townsFor(unit.region, unit.name) : [];
+  const combined = Array.from(new Set([...(towns || []), ...(current || [])]));
+  if (!combined.length) {
+    const val = prompt("Coverage areas (comma-separated):", (current || []).join(', '));
+    if (val === null) return;
+    saveCoverage(unitId, val.split(',').map(s => s.trim()).filter(Boolean));
+    return;
+  }
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  backdrop.innerHTML = `
+    <div class="modal-box" style="max-width:520px">
+      <h3>Edit Coverage Areas</h3>
+      <p class="desc">${esc(unit.name)}${unit.region ? ' · ' + esc(unit.region) : ''}</p>
+      ${towns.length ? renderIllustrativeMap(unit.name, towns) : ''}
+      <div class="field-wrap">
+        <label class="field">Areas served — check what applies</label>
+        <div class="coverage-grid">
+          ${combined.map(t => `<label class="coverage-chip"><input type="checkbox" ${(current || []).includes(t) || towns.includes(t) ? 'checked' : ''} value="${esc(t)}"> ${esc(t)}</label>`).join('')}
+        </div>
+        <input type="text" id="ecExtra" placeholder="Add another area, comma-separated" style="margin-top:10px">
+      </div>
+      <div class="modal-actions">
+        <button class="btn" onclick="this.closest('.modal-backdrop').remove()">Cancel</button>
+        <button class="btn btn--primary" onclick="saveCoverageFromModal('${unitId}', this)">Save</button>
+      </div>
+    </div>`;
+  document.body.appendChild(backdrop);
+}
+async function saveCoverageFromModal(unitId, btn) {
+  const box = btn.closest('.modal-box');
+  let areas = Array.from(box.querySelectorAll('.coverage-grid input:checked')).map(c => c.value);
+  const extra = box.querySelector('#ecExtra');
+  if (extra && extra.value.trim()) areas = areas.concat(extra.value.split(',').map(s => s.trim()).filter(Boolean));
+  await saveCoverage(unitId, Array.from(new Set(areas)));
+  btn.closest('.modal-backdrop').remove();
+}
+async function saveCoverage(unitId, areas) {
   try {
-    await ecgPatch(`/ecg/org-units/${unitId}`, { coverageAreas: val.split(',').map(s => s.trim()).filter(Boolean) });
+    await ecgPatch(`/ecg/org-units/${unitId}`, { coverageAreas: areas });
     toast("Coverage updated.");
     switchTab("org");
   } catch (err) { toast(err.message, "err"); }
