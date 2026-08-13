@@ -167,6 +167,33 @@
   select[size] option { padding: 8px 10px; border-radius: 6px; font-size: 0.85rem; }
   select[size] option:checked { background: var(--brand-dim); color: var(--brand); }
 
+  /* ===== Power control ===== */
+  .power-card {
+    border-radius: var(--r-lg); border: 1px solid var(--border); padding: 20px; position: relative; overflow: hidden;
+    background: linear-gradient(180deg, var(--panel-raised), var(--panel));
+  }
+  .power-card.is-off { border-color: rgba(255,92,102,0.5); box-shadow: 0 0 0 1px rgba(255,92,102,0.15) inset; }
+  .power-card.is-on { border-color: rgba(53,208,127,0.4); }
+  .power-card__head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+  .power-card__head h4 { font-size: 0.95rem; }
+  .power-dot { width: 10px; height: 10px; border-radius: 99px; display: inline-block; margin-right: 6px; }
+  .power-dot.on { background: var(--green); box-shadow: 0 0 8px var(--green); }
+  .power-dot.off { background: var(--red); box-shadow: 0 0 8px var(--red); }
+  .power-card p.hint { color: var(--muted); font-size: 0.78rem; margin-bottom: 14px; line-height: 1.5; }
+  .power-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .btn--power-off { background: linear-gradient(180deg, #FF7A82, var(--red)); color: #2a0507; border-color: var(--red); box-shadow: 0 6px 18px rgba(255,92,102,0.22); }
+  .btn--power-off:hover { background: linear-gradient(180deg, #FF9197, #FF6E78); }
+  .btn--power-on { background: linear-gradient(180deg, #55E39A, var(--green)); color: #052316; border-color: var(--green); box-shadow: 0 6px 18px rgba(53,208,127,0.2); }
+  .btn--power-on:hover { background: linear-gradient(180deg, #6CEBA9, #35D07F); }
+  .power-status-list { margin-top: 10px; }
+  .power-status-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border-radius: var(--r-md); background: var(--panel2); border: 1px solid var(--border); margin-bottom: 8px; }
+  .power-status-row .meta { font-size: 0.72rem; color: var(--muted); }
+  .perm-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; background: var(--panel2); border: 1px solid var(--border2); border-radius: var(--r-md); padding: 12px 14px; }
+  .perm-check { display: flex; align-items: flex-start; gap: 8px; font-size: 0.78rem; color: var(--txt); cursor: pointer; padding: 4px 0; }
+  .perm-check input { width: auto; margin-top: 2px; accent-color: var(--brand); }
+  .perm-check span.pdesc { display: block; color: var(--faint); font-size: 0.68rem; margin-top: 1px; }
+  @media (max-width: 640px) { .perm-grid { grid-template-columns: 1fr; } }
+
   #toastContainer { position: fixed; bottom: 22px; right: 22px; z-index: 1200; display: flex; flex-direction: column; gap: 10px; }
   .toast { background: var(--panel-raised); border: 1px solid var(--border2); border-radius: var(--r-md); padding: 12px 16px; font-size: 0.8rem; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,0.4); }
   .toast--err { border-color: rgba(255,92,102,0.4); color: var(--red); }
@@ -248,10 +275,11 @@
     <nav>
       <div class="nav-item active" data-tab="overview" onclick="switchTab('overview')"><span class="nav-ic">📊</span> Overview</div>
       <div class="nav-item" data-tab="events" onclick="switchTab('events')"><span class="nav-ic">⚡</span> Electricity Events</div>
+      <div class="nav-item hidden" data-tab="power" data-role-gate="power" onclick="switchTab('power')"><span class="nav-ic">🔌</span> Power Control</div>
       <div class="nav-item hidden" data-tab="org" data-role-gate="org" onclick="switchTab('org')"><span class="nav-ic">🏢</span> Organization</div>
       <div class="nav-item" data-tab="staff" onclick="switchTab('staff')"><span class="nav-ic">👥</span> Staff</div>
-      <div class="nav-item" data-tab="invitations" onclick="switchTab('invitations')"><span class="nav-ic">✉️</span> Invitations</div>
-      <div class="nav-item" data-tab="audit" onclick="switchTab('audit')"><span class="nav-ic">🕓</span> Audit Log</div>
+      <div class="nav-item hidden" data-tab="invitations" data-role-gate="invitations" onclick="switchTab('invitations')"><span class="nav-ic">✉️</span> Invitations</div>
+      <div class="nav-item hidden" data-tab="audit" data-role-gate="audit" onclick="switchTab('audit')"><span class="nav-ic">🕓</span> Audit Log</div>
     </nav>
     <div class="sidebar__org">
       <b id="sbOrgName">—</b>
@@ -455,10 +483,50 @@ async function handleAcceptInvite(e) {
 }
 
 function formatRole(role) {
-  return { hq_admin: "ECG Headquarters Admin", regional_manager: "Regional Office Manager", district_manager: "District / Local Station Manager", station_operator: "Station Operator" }[role] || role;
+  return {
+    hq_super_admin: "HQ Super Admin", hq_manager: "HQ Manager", hq_staff: "HQ Staff",
+    regional_manager: "Regional Manager", regional_staff: "Regional Staff",
+    station_manager: "Station Manager", station_operator: "Station Operator"
+  }[role] || role;
 }
 function roleBadgeClass(role) {
-  return { hq_admin: "hq", regional_manager: "regional", district_manager: "district", station_operator: "operator" }[role] || "operator";
+  return {
+    hq_super_admin: "hq", hq_manager: "hq", hq_staff: "hq",
+    regional_manager: "regional", regional_staff: "regional",
+    station_manager: "district", station_operator: "operator"
+  }[role] || "operator";
+}
+// Permission catalog fetched once after login — used to render the invite
+// form's checkbox list (already filtered server-side to what the caller
+// can actually grant; see GET /ecg/permissions-catalog).
+let PERM_CATALOG = null;
+const PERM_LABELS = {
+  view_nationwide_status: ["View nationwide status", "See the national grid-status overview"],
+  view_all_regions: ["View all regions", "See every region, district and station"],
+  view_community_reports: ["View community reports", "See public outage reports"],
+  view_outages: ["View outage events", "See published outage/restoration events"],
+  monitor_stations: ["Monitor stations", "See local station activity"],
+  view_audit_log: ["View audit log", "See the staff action history"],
+  publish_updates: ["Publish updates", "Publish official outage/restoration/maintenance updates"],
+  manage_events: ["Manage events", "Edit, resolve or retract published updates"],
+  control_nationwide_power: ["Control nationwide power", "Toggle power status for the whole country"],
+  control_regional_power: ["Control regional power", "Toggle power status for a region"],
+  control_district_power: ["Control district power", "Toggle power status for a station's coverage areas"],
+  invite_staff: ["Invite staff", "Send new-staff invitations"],
+  assign_roles: ["Assign roles", "Choose the role on an invitation"],
+  manage_staff: ["Manage staff", "Activate/deactivate staff accounts"],
+  manage_org_units: ["Manage organization", "Create/edit organization units"],
+  manage_regional_offices: ["Manage regional offices", "Create/edit regional offices"],
+  manage_local_stations: ["Manage local stations", "Create/edit district/local stations"],
+  delete_org_units: ["Delete organizations", "Permanently delete an organization unit"],
+  manage_branch_keys: ["Manage branch keys", "Rotate station branch access keys"],
+  manage_operational_permissions: ["Manage permissions", "Grant/revoke other staff's permissions"],
+  manage_ecg_config: ["Manage ECG configuration", "Change system-level ECG configuration"]
+};
+async function loadPermCatalog() {
+  if (PERM_CATALOG) return PERM_CATALOG;
+  try { PERM_CATALOG = await ecgGet("/ecg/permissions-catalog"); } catch { PERM_CATALOG = { grantable: [] }; }
+  return PERM_CATALOG;
 }
 
 // ============================================================
@@ -478,6 +546,10 @@ async function bootDashboard() {
   document.getElementById("topbarStaffName").textContent = `${ME.staff.name} · ${ME.organizationUnit.name}`;
 
   document.querySelectorAll('[data-role-gate="org"]').forEach(el => el.classList.toggle("hidden", !ME.permissions.canManageOrgUnits));
+  document.querySelectorAll('[data-role-gate="invitations"]').forEach(el => el.classList.toggle("hidden", !ME.permissions.canInviteStaff));
+  document.querySelectorAll('[data-role-gate="audit"]').forEach(el => el.classList.toggle("hidden", !ME.permissions.canViewAuditLog));
+  const canTogglePower = ME.permissions.canControlNationwidePower || ME.permissions.canControlRegionalPower || ME.permissions.canControlDistrictPower;
+  document.querySelectorAll('[data-role-gate="power"]').forEach(el => el.classList.toggle("hidden", !canTogglePower));
 
   switchTab("overview");
 }
@@ -492,7 +564,7 @@ function handleLogout() {
 // ============================================================
 // TAB SWITCHING + RENDERING
 // ============================================================
-const TAB_TITLES = { overview: "Overview", events: "Electricity Events", org: "Organization", staff: "Staff", invitations: "Invitations", audit: "Audit Log" };
+const TAB_TITLES = { overview: "Overview", events: "Electricity Events", power: "Power Control", org: "Organization", staff: "Staff", invitations: "Invitations", audit: "Audit Log" };
 
 async function switchTab(tab) {
   document.querySelectorAll(".nav-item").forEach(el => el.classList.toggle("active", el.dataset.tab === tab));
@@ -502,6 +574,7 @@ async function switchTab(tab) {
   try {
     if (tab === "overview") await renderOverview(content);
     else if (tab === "events") await renderEvents(content);
+    else if (tab === "power") await renderPower(content);
     else if (tab === "org") await renderOrg(content);
     else if (tab === "staff") await renderStaff(content);
     else if (tab === "invitations") await renderInvitations(content);
@@ -538,9 +611,12 @@ async function renderOverview(content) {
 
 // ---- Events ----
 async function renderEvents(content) {
-  const canPublish = true; // every role can publish for their own unit; server enforces scope
+  const canPublish = ME.permissions.canPublishEvents;
+  const canManage = ME.permissions.canManageEvents;
+  const isDistrict = ME.organizationUnit.type === 'district';
   const events = await ecgGet(`/ecg/events?orgUnitId=${ME.organizationUnit.id}`).catch(() => []);
   content.innerHTML = `
+    ${canPublish && isDistrict ? `
     <div class="panel">
       <div class="panel__head">
         <div><h3>Publish an Official Update</h3><p>Only areas assigned to your station's coverage can be selected.</p></div>
@@ -558,7 +634,7 @@ async function renderEvents(content) {
         </div>
         <button class="btn btn--primary" type="submit">Publish</button>
       </form>
-    </div>
+    </div>` : (canPublish ? `<div class="panel"><p style="color:var(--muted)">Official updates are published against a district/local station. Your unit is a ${esc(ME.organizationUnit.type)} — you can view events below, but publishing happens at station level.</p></div>` : '')}
     <div class="panel">
       <div class="panel__head"><h3>This Unit's Events</h3></div>
       <table><thead><tr><th>Headline</th><th>Type</th><th>Areas</th><th>Status</th><th>Published</th><th></th></tr></thead>
@@ -569,7 +645,7 @@ async function renderEvents(content) {
           <td>${ev.affectedAreas.map(esc).join(', ')}</td>
           <td><span class="badge badge--${ev.status === 'active' ? 'active' : 'inactive'}">${esc(ev.status)}</span></td>
           <td>${fmtDate(ev.createdAt)}</td>
-          <td>${ev.status === 'active' ? `<button class="btn btn--sm" onclick="resolveEvent('${ev.id}')">Resolve</button>` : ''}</td>
+          <td>${ev.status === 'active' && canManage ? `<button class="btn btn--sm" onclick="resolveEvent('${ev.id}')">Resolve</button>` : ''}</td>
         </tr>`).join('') : '<tr><td colspan="6" class="empty-row">No events published yet.</td></tr>'}
       </tbody></table>
     </div>`;
@@ -595,11 +671,107 @@ async function resolveEvent(id) {
   catch (err) { toast(err.message, "err"); }
 }
 
+// ---- Power Control ----
+// Nationwide is HQ Super Admin only. Regional Manager/Staff toggle their own
+// region (selected/specific/all areas). Station Manager/Operator toggle
+// their own station's coverage areas the same way. Every button here is
+// just a convenience — the server independently re-checks role, permission
+// and org-unit scope on every request; see ecg-power.js.
+async function renderPower(content) {
+  const active = await ecgGet("/ecg/power/active").catch(() => []);
+  const unitType = ME.organizationUnit.type;
+  const cards = [];
+
+  if (ME.permissions.canControlNationwidePower) {
+    const off = active.find(a => a.scope === 'nationwide' && a.active);
+    cards.push(`
+      <div class="power-card ${off ? 'is-off' : 'is-on'}">
+        <div class="power-card__head"><h4><span class="power-dot ${off ? 'off' : 'on'}"></span>Nationwide</h4>
+          <span class="badge badge--${off ? 'inactive' : 'active'}">${off ? 'Power off' : 'Power on'}</span></div>
+        <p class="hint">Declares/restores power status for the entire country. Restricted to the HQ Super Admin — this immediately publishes to the public LightWatch news feed.</p>
+        <div class="field-wrap"><input type="text" id="pwReasonNationwide" placeholder="Reason (optional, shown publicly)"></div>
+        <div class="power-actions">
+          <button class="btn btn--power-off" onclick="togglePower('nationwide', 'power_off', null)">Turn Off Nationwide</button>
+          <button class="btn btn--power-on" onclick="togglePower('nationwide', 'power_restored', null)">Restore Nationwide</button>
+        </div>
+      </div>`);
+  }
+
+  if (ME.permissions.canControlRegionalPower && unitType === 'regional') {
+    const off = active.filter(a => a.scope === 'regional' && a.orgUnitId === ME.organizationUnit.id && a.active);
+    cards.push(`
+      <div class="power-card ${off.length ? 'is-off' : 'is-on'}">
+        <div class="power-card__head"><h4><span class="power-dot ${off.length ? 'off' : 'on'}"></span>${esc(ME.organizationUnit.name)}</h4>
+          <span class="badge badge--${off.length ? 'inactive' : 'active'}">${off.length ? off.length + ' area(s) off' : 'Power on'}</span></div>
+        <p class="hint">Toggle power for this region — choose specific district/station names, or leave blank for the whole region.</p>
+        <div class="field-wrap"><label class="field">Areas (comma-separated station/district names, or blank = all)</label><input type="text" id="pwAreasRegional"></div>
+        <div class="field-wrap"><input type="text" id="pwReasonRegional" placeholder="Reason (optional, shown publicly)"></div>
+        <div class="power-actions">
+          <button class="btn btn--power-off" onclick="togglePower('regional', 'power_off', '${ME.organizationUnit.id}')">Turn Off Selected/All</button>
+          <button class="btn btn--power-on" onclick="togglePower('regional', 'power_restored', '${ME.organizationUnit.id}')">Restore Selected/All</button>
+        </div>
+        ${off.length ? `<div class="power-status-list">${off.map(a => `<div class="power-status-row"><div><b>${esc(a.areas.join(', '))}</b><div class="meta">Off since ${fmtDate(a.startedAt)} · ${esc(a.byStaffName)}</div></div></div>`).join('')}</div>` : ''}
+      </div>`);
+  }
+
+  if (ME.permissions.canControlDistrictPower && unitType === 'district') {
+    const off = active.filter(a => a.scope === 'district' && a.orgUnitId === ME.organizationUnit.id && a.active);
+    const coverage = ME.organizationUnit.coverageAreas || [];
+    cards.push(`
+      <div class="power-card ${off.length ? 'is-off' : 'is-on'}">
+        <div class="power-card__head"><h4><span class="power-dot ${off.length ? 'off' : 'on'}"></span>${esc(ME.organizationUnit.name)}</h4>
+          <span class="badge badge--${off.length ? 'inactive' : 'active'}">${off.length ? off.length + ' area(s) off' : 'Power on'}</span></div>
+        <p class="hint">Toggle power for this station's coverage areas — select specific areas below, or leave none selected for the whole station.</p>
+        <div class="field-wrap"><label class="field">Areas</label>
+          <select id="pwAreasDistrict" multiple size="4">
+            ${coverage.map(a => `<option value="${esc(a)}">${esc(a)}</option>`).join('') || '<option disabled>No coverage areas assigned</option>'}
+          </select>
+        </div>
+        <div class="field-wrap"><input type="text" id="pwReasonDistrict" placeholder="Reason (optional, shown publicly)"></div>
+        <div class="power-actions">
+          <button class="btn btn--power-off" onclick="togglePower('district', 'power_off', '${ME.organizationUnit.id}')">Turn Off Selected/All</button>
+          <button class="btn btn--power-on" onclick="togglePower('district', 'power_restored', '${ME.organizationUnit.id}')">Restore Selected/All</button>
+        </div>
+        ${off.length ? `<div class="power-status-list">${off.map(a => `<div class="power-status-row"><div><b>${esc(a.areas.join(', '))}</b><div class="meta">Off since ${fmtDate(a.startedAt)} · ${esc(a.byStaffName)}</div></div></div>`).join('')}</div>` : ''}
+      </div>`);
+  }
+
+  content.innerHTML = `
+    <div class="panel">
+      <div class="panel__head"><div><h3>Power Status Control</h3><p>Toggling here records an authoritative status change and immediately pushes it to the public LightWatch news feed. It does not control physical grid hardware.</p></div></div>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:16px;">${cards.join('') || '<div class="panel">You don\'t have a power-control scope assigned.</div>'}</div>`;
+}
+async function togglePower(scope, action, orgUnitId) {
+  try {
+    let body = { action };
+    if (scope === 'regional') {
+      const raw = document.getElementById('pwAreasRegional').value.trim();
+      body.areas = raw ? raw.split(',').map(s => s.trim()).filter(Boolean) : ['all'];
+      body.reason = document.getElementById('pwReasonRegional').value.trim();
+      body.orgUnitId = orgUnitId;
+      await ecgPost('/ecg/power/regional', body);
+    } else if (scope === 'district') {
+      const sel = Array.from(document.getElementById('pwAreasDistrict').selectedOptions).map(o => o.value);
+      body.areas = sel.length ? sel : ['all'];
+      body.reason = document.getElementById('pwReasonDistrict').value.trim();
+      body.orgUnitId = orgUnitId;
+      await ecgPost('/ecg/power/district', body);
+    } else {
+      body.reason = document.getElementById('pwReasonNationwide').value.trim();
+      await ecgPost('/ecg/power/nationwide', body);
+    }
+    toast(action === 'power_off' ? "Power-off status recorded." : "Power-restored status recorded.");
+    switchTab('power');
+  } catch (err) { toast(err.message, "err"); }
+}
+
 // ---- Organization (HQ / Regional only) ----
 async function renderOrg(content) {
   if (!ME.permissions.canManageOrgUnits) { content.innerHTML = `<div class="panel">You don't have access to this section.</div>`; return; }
   const units = await ecgGet("/ecg/org-units");
-  const canCreateType = ME.staff.role === 'hq_admin' ? 'Regional Office' : 'District / Local Station (under your region)';
+  const canCreateType = ME.organizationUnit.type === 'headquarters' ? 'Regional Office' : 'District / Local Station (under your region)';
+  const canDelete = ME.permissions.canDeleteOrgUnits;
   content.innerHTML = `
     <div class="panel">
       <div class="panel__head">
@@ -616,16 +788,34 @@ async function renderOrg(content) {
           <td><span class="badge badge--${u.active ? 'active' : 'inactive'}">${u.active ? 'active' : 'inactive'}</span>
               ${u.type === 'district' ? `<button class="btn btn--sm" style="margin-left:8px" onclick="rotateBranchKey('${u.id}')">Rotate Key</button>` : ''}
               <button class="btn btn--sm" style="margin-left:6px" onclick="editCoverage('${u.id}', ${JSON.stringify(u.coverageAreas || []).replace(/"/g, '&quot;')})">Edit Coverage</button>
+              ${canDelete && u.type !== 'headquarters' ? `<button class="btn btn--sm btn--danger" style="margin-left:6px" onclick="deleteOrgUnit('${u.id}', ${JSON.stringify(u.name).replace(/"/g, '&quot;')})">Delete</button>` : ''}
           </td>
         </tr>`).join('')}
       </tbody></table>
     </div>`;
   window.__orgUnits = units;
 }
+async function deleteOrgUnit(id, name) {
+  if (!confirm(`Delete "${name}"? This cannot be undone. It must have no active sub-units first, and any active staff on it will need to be deactivated.`)) return;
+  try {
+    await ecgDelete(`/ecg/org-units/${id}`);
+    toast("Organization unit deleted.");
+    switchTab("org");
+  } catch (err) {
+    if (String(err.message || '').includes('staff account')) {
+      if (confirm(err.message + "\n\nDeactivate those staff accounts and delete anyway?")) {
+        try { await ecgDelete(`/ecg/org-units/${id}?force=true`); toast("Organization unit deleted."); switchTab("org"); }
+        catch (err2) { toast(err2.message, "err"); }
+      }
+    } else {
+      toast(err.message, "err");
+    }
+  }
+}
 function roleUnitBadge(type) { return { headquarters: 'hq', regional: 'regional', district: 'district' }[type] || 'operator'; }
 
 function openCreateUnitModal() {
-  const isHq = ME.staff.role === 'hq_admin';
+  const isHq = ME.organizationUnit.type === 'headquarters';
   const backdrop = document.createElement('div');
   backdrop.className = 'modal-backdrop';
 
@@ -850,19 +1040,31 @@ async function toggleStaff(id, active) {
 }
 
 // ---- Invitations ----
+const INVITABLE_ROLES = {
+  hq_super_admin: ['hq_super_admin', 'hq_manager', 'hq_staff', 'regional_manager', 'regional_staff', 'station_manager', 'station_operator'],
+  hq_manager: ['hq_staff'],
+  regional_manager: ['regional_staff', 'station_manager', 'station_operator'],
+  station_manager: ['station_operator']
+};
 async function renderInvitations(content) {
   if (!ME.permissions.canInviteStaff) { content.innerHTML = `<div class="panel">You don't have access to this section.</div>`; return; }
-  const [invites, units] = await Promise.all([ecgGet("/ecg/invitations"), ecgGet("/ecg/org-units")]);
-  const invitableRoles = ME.staff.role === 'hq_admin' ? ['hq_admin', 'regional_manager', 'district_manager', 'station_operator']
-    : ME.staff.role === 'regional_manager' ? ['district_manager', 'station_operator'] : ['station_operator'];
-  const unitOptions = units.map(u => `<option value="${u.id}">${esc(u.name)} (${u.type})</option>`).join('');
+  const [invites, units, catalog] = await Promise.all([ecgGet("/ecg/invitations"), ecgGet("/ecg/org-units"), loadPermCatalog()]);
+  const invitableRoles = INVITABLE_ROLES[ME.staff.role] || [];
+  const unitOptions = units.map(u => `<option value="${u.id}" ${u.id === ME.organizationUnit.id ? 'selected' : ''}>${esc(u.name)} (${u.type})</option>`).join('');
+  const grantable = catalog.grantable || [];
   content.innerHTML = `
     <div class="panel">
-      <div class="panel__head"><h3>Invite Staff</h3><p>Organization and role are fixed by you here — the invitee can't change them.</p></div>
+      <div class="panel__head"><h3>Invite ECG Staff</h3><p>Organization and role are fixed by you here — the invitee can't change them during signup.</p></div>
       <form onsubmit="return sendInvite(event)">
         <div class="field-wrap"><label class="field">Work Email</label><input type="email" id="invEmail" required></div>
         <div class="field-wrap"><label class="field">Role</label><select id="invRole">${invitableRoles.map(r => `<option value="${r}">${formatRole(r)}</option>`).join('')}</select></div>
-        <div class="field-wrap"><label class="field">Organization Unit</label><select id="invUnit">${unitOptions}</select></div>
+        <div class="field-wrap"><label class="field">Organization</label><select id="invUnit">${unitOptions}</select></div>
+        <div class="field-wrap"><label class="field">Permissions (in addition to the role's defaults)</label>
+          <div class="perm-grid">
+            ${grantable.length ? grantable.map(p => `<label class="perm-check"><input type="checkbox" value="${p}" class="inv-perm-cb"><span>${esc((PERM_LABELS[p] || [p])[0])}<span class="pdesc">${esc((PERM_LABELS[p] || ['', ''])[1] || '')}</span></span></label>`).join('') : '<span style="color:var(--faint);font-size:0.8rem">No additional permissions available to grant.</span>'}
+          </div>
+        </div>
+        <div style="height:6px"></div>
         <button class="btn btn--primary" type="submit">Send Invitation</button>
       </form>
     </div>
@@ -878,10 +1080,12 @@ async function renderInvitations(content) {
 async function sendInvite(e) {
   e.preventDefault();
   try {
+    const permissions = Array.from(document.querySelectorAll('.inv-perm-cb:checked')).map(c => c.value);
     const data = await ecgPost("/ecg/invitations", {
       email: document.getElementById("invEmail").value.trim(),
       role: document.getElementById("invRole").value,
-      orgUnitId: document.getElementById("invUnit").value
+      orgUnitId: document.getElementById("invUnit").value,
+      permissions
     });
     const backdrop = document.createElement('div');
     backdrop.className = 'modal-backdrop';
