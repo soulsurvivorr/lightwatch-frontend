@@ -1042,6 +1042,7 @@
        </div>
        <div class="loc-bulk-toolbar" id="locBulkToolbar" hidden>
         <label class="loc-bulk-toolbar__select"><input type="checkbox" id="locSelectAll" /> Select all</label>
+        <button class="btn-ghost" id="locDeselectAllBtn" type="button" style="font-size:0.8rem; padding:7px 11px;">Deselect all</button>
         <span class="loc-bulk-toolbar__count" id="locSelectedCount"></span>
         <button class="btn-ghost" id="locBulkOffBtn" type="button" disabled>Turn OFF selected</button>
         <button class="btn-ghost" id="locBulkOnBtn" type="button" disabled>Turn ON selected</button>
@@ -1850,6 +1851,9 @@
       }).addTo(locationsMap);
     });
     locationsMarkersLayer = L.layerGroup().addTo(locationsMap);
+    
+    // Re-render markers when zoom changes to hide/show city labels based on zoom level
+    locationsMap.on('zoomend', () => updateLocationMap(allLocations));
 
     // Belt-and-braces: force a size recheck shortly after construction in
     // case build + reveal landed in the same tick, before the browser
@@ -1891,6 +1895,8 @@
       });
 
       locationsMarkersLayer.clearLayers();
+      const currentZoom = locationsMap.getZoom();
+      const hideLabels = currentZoom < 3; // Hide city names when zoomed out to region level
       plottable.forEach(loc => {
         const color = LOC_STATUS_COLOR[locStatusKey(loc.status)] || LOC_STATUS_COLOR.unknown;
         const label = loc.name || loc.locationKey;
@@ -1898,11 +1904,11 @@
           className: 'admin-loc-marker-icon',
           // Wide enough to fit the label text beside the dot without
           // Leaflet clipping it against the icon's own bounding box.
-          iconSize: [160, 20],
-          iconAnchor: [7, 10],
+          iconSize: hideLabels ? [14, 14] : [160, 20],
+          iconAnchor: hideLabels ? [7, 7] : [7, 10],
           html: `
             <span class="admin-loc-marker__dot" style="--marker-fill:${color.fill};--marker-glow:${color.glow}"></span>
-            <span class="admin-loc-marker__label">${esc(label)}</span>
+            ${hideLabels ? '' : `<span class="admin-loc-marker__label">${esc(label)}</span>`}
           `
         });
         const marker = L.marker([Number(loc.lat), Number(loc.lng)], { icon, keyboard: false });
@@ -2150,6 +2156,12 @@
     const inView = activeLocFilter === "all" ? filtered : filtered.filter(l => (l.status || "unknown") === activeLocFilter);
     if (e.target.checked) inView.forEach(l => selectedLocationKeys.add(l.locationKey));
     else inView.forEach(l => selectedLocationKeys.delete(l.locationKey));
+    renderLocations(allLocations);
+  });
+  document.getElementById("locDeselectAllBtn")?.addEventListener("click", () => {
+    selectedLocationKeys.clear();
+    const selectAllCb = document.getElementById("locSelectAll");
+    if (selectAllCb) selectAllCb.checked = false;
     renderLocations(allLocations);
   });
   document.getElementById("locBulkOffBtn")?.addEventListener("click", () => {

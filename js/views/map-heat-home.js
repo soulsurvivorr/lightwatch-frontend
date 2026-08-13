@@ -219,6 +219,9 @@
             });
         }
 
+        // Re-render markers when zoom changes to hide/show city labels based on zoom level
+        map.on('zoomend', () => renderHeat(lastPlottable || []));
+
         // ---- Layer registry (future-ready) ----
         // Additional live overlays — weather radar, lightning strikes,
         // storm warnings, flood alerts, planned ECG maintenance zones —
@@ -357,6 +360,9 @@
         // a brand-new "unknown" one competing with lots of others) never
         // got a name/pin at all, even though the full map showed it fine.
         // Show every plottable location on both, same as the full map.
+        // Hide city labels when zoomed out to region level (zoom < 3).
+        const currentZoom = map ? map.getZoom() : DEFAULT_ZOOM;
+        const hideLabels = currentZoom < 3;
         plottable
             .forEach(loc => {
                 const color = colorFor(loc.status);
@@ -366,7 +372,7 @@
                     iconAnchor: [7, 7],
                     html: `
                         <span class="lwx-heat-marker__dot" style="--lwx-marker-fill:${color.fill};--lwx-marker-glow:${color.glow}"></span>
-                        <span class="lwx-heat-marker__label">${escapeHtml(loc.name)}</span>
+                        ${hideLabels ? '' : `<span class="lwx-heat-marker__label">${escapeHtml(loc.name)}</span>`}
                     `
                 });
                 const marker = L.marker([loc.lat, loc.lng], { icon, keyboard: false });

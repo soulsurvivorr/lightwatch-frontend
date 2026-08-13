@@ -176,7 +176,7 @@
                 description: risk.impactDescription || `Weather is shaping how quickly the area may shift today.`,
                 footLabel: 'Current window',
                 footValue: eta,
-                iconSvg: `<svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="24" cy="24" r="11" fill="#F2B33D"/><g stroke="#F2B33D" stroke-width="2.4" stroke-linecap="round"><path d="M24 5v5M42 24h-5M8 24H3M37.5 10.5l-3.5 3.5M13.9 34.1l-3.5 3.5M10.5 10.5 14 14"/></g><path d="M20 40a11 11 0 0 1 1.4-21.6 14 14 0 0 1 26.6 3.9 9.8 9.8 0 0 1-2 19.4H20Z" fill="#C7D0DE"/></svg>`,
+                iconSvg: `<img src="./images/cloud-lightining.png" alt="Storm cloud" style="width:100%;height:100%;object-fit:contain;display:block;" />`,
                 theme
             },
             {

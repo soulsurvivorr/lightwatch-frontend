@@ -939,7 +939,6 @@ function initTrendBannerCarousel() {
     const banner = document.getElementById('trendBanner');
     const viewport = document.getElementById('trendBannerViewport');
     const track = document.getElementById('trendBannerTrack');
-    const dotsHost = document.getElementById('trendBannerDots');
     if (!banner || !viewport || !track || typeof window.createLoopCarousel !== 'function') return null;
 
     function applyAvatars() {
@@ -950,17 +949,8 @@ function initTrendBannerCarousel() {
         });
     }
 
-    function renderDots(count, activeIndex) {
-        if (!dotsHost) return;
-        if (count <= 1) { dotsHost.innerHTML = ''; return; }
-        dotsHost.innerHTML = Array.from({ length: count }, (_, i) =>
-            `<span class="trend-banner__dot${i === activeIndex ? ' trend-banner__dot--active' : ''}" data-dot-index="${i}"></span>`
-        ).join('');
-    }
-
-    function handleSlideChange(activeIndex, count) {
+    function handleSlideChange() {
         applyAvatars();
-        renderDots(count, activeIndex);
     }
 
     const carousel = window.createLoopCarousel({
@@ -968,13 +958,6 @@ function initTrendBannerCarousel() {
         track,
         autoplayMs: 6000,
         onChange: handleSlideChange
-    });
-
-    dotsHost?.addEventListener('click', (event) => {
-        const dot = event.target.closest('[data-dot-index]');
-        if (!dot) return;
-        carousel.goTo(Number(dot.dataset.dotIndex));
-        carousel.startAutoplay();
     });
 
     const openTrendingSlide = (slideEl) => {
@@ -1127,7 +1110,7 @@ function initDidYouKnowCard() {
     // (e.g. a future fact added without one) fall back to `default`
     // instead of being forced into an unrelated icon.
     const ICONS = {
-        storm: `<svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M17 38a11 11 0 0 1 1.4-21.6A14 14 0 0 1 45 19.3a9.8 9.8 0 0 1-2 19.4H17Z" fill="#8C97AE"/><path d="M32 33 24 47h6l-4.5 11L38 43h-6l4.5-10Z" fill="#F2B33D"/></svg>`,
+        storm: `<img src="./images/cloud-lightining.png" alt="Storm cloud" style="width:100%;height:100%;object-fit:contain;display:block;" />`,
         report: `<svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M13 26v12a4 4 0 0 0 4 4h4l16 10V12L21 22h-4a4 4 0 0 0-4 4Z" fill="#8C97AE"/><path d="M40 20a14 14 0 0 1 0 24" stroke="#F2B33D" stroke-width="3.2" stroke-linecap="round"/><path d="M46 14a22 22 0 0 1 0 36" stroke="#F2B33D" stroke-width="3.2" stroke-linecap="round" opacity="0.55"/></svg>`,
         demand: `<svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="34" r="18" fill="#8C97AE"/><path d="M32 34A18 18 0 0 1 47 41" stroke="#F2B33D" stroke-width="4" stroke-linecap="round" fill="none"/><path d="M32 23v11l8 5" stroke="#F5F7FA" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><rect x="27" y="9" width="10" height="5" rx="2.5" fill="#8C97AE"/></svg>`,
         fridge: `<svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="19" y="9" width="26" height="46" rx="4" fill="#8C97AE"/><rect x="19" y="26" width="26" height="2.5" fill="#22160f" opacity="0.25"/><rect x="23" y="14" width="3" height="7" rx="1.5" fill="#F2B33D"/><rect x="23" y="31" width="3" height="7" rx="1.5" fill="#F2B33D"/></svg>`,
