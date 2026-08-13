@@ -42,7 +42,7 @@ if (isAndroidNative) {
     // or a platform where it happens to work) with 0 as the last resort.
     insetFixStyle.textContent = `
         :root {
-            --lw-nav-bar-height: 60px;
+            --lw-nav-bar-height: 48px;
             --lw-nav-surface-bg: var(--app-bg-solid, var(--bg-deep));
             --lw-nav-surface-border: var(--border-soft);
         }
@@ -72,7 +72,7 @@ if (isAndroidNative) {
             background: var(--lw-nav-surface-bg);
             border-top: 1px solid var(--lw-nav-surface-border);
             box-shadow: 0 -8px 18px rgba(0, 0, 0, 0.12);
-            padding-bottom: var(--lw-inset-bottom, env(safe-area-inset-bottom, 0px));
+            padding-bottom: var(--lw-inset-bottom, env(safe-area-inset-bottom, 0px)) !important;
             box-sizing: border-box;
         }
 

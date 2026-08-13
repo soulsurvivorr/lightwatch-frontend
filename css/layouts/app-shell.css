@@ -199,7 +199,7 @@
   }
 
   .bottom-icons-container {
-    padding: 7px 8px calc(7px + env(safe-area-inset-bottom));
+    padding: 2px 8px calc(2px + env(safe-area-inset-bottom));
   }
 
   .bottom-nav-link {

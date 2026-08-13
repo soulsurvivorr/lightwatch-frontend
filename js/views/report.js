@@ -2972,7 +2972,15 @@ window.addEventListener('lw:route-changed', (e) => {
     }
     lastRouteView = e.detail.view;
     if (isChatView && typeof window.LWNav === 'object' && typeof window.LWNav.applyActiveNav === 'function') {
-        window.LWNav.applyActiveNav(currentReportPanel === 'news' ? 'news' : 'community');
+        // Prefer any pending requested panel (set by nav handlers before
+        // navigation) so we don't briefly highlight News when the user
+        // actually asked to open Community Report. Fall back to the
+        // currently-known panel otherwise.
+        const pendingPanel = window.__lwPendingReportPanel;
+        const sectionToApply = pendingPanel === 'community'
+            ? 'community'
+            : (pendingPanel === 'news' ? 'news' : (currentReportPanel === 'news' ? 'news' : 'community'));
+        window.LWNav.applyActiveNav(sectionToApply);
     }
 
     if (e.detail.view !== 'home' && !isChatView) {

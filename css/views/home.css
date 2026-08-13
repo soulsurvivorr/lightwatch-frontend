@@ -6423,14 +6423,14 @@ html[data-theme="light"] #bottom_nav_wrapper .bottom-nav-link[aria-current="page
   box-shadow: none;
 }
 
-/* Requested: 2px of breathing room below the icons themselves, on
+/* Requested: minimal breathing room below the icons themselves, on
    top of whatever safe-area/bottom padding the container already
    has (see the #bottom_nav_wrapper .bottom-icons-container !important
    padding rule earlier in this file, and app-shell.css's narrow-phone
    version) — targets the same ID-scoped selector at equal specificity,
    appended last so it wins the cascade without needing !important. */
 #bottom_nav_wrapper .bottom-icons-container {
-  padding-bottom: calc(8px + 2px) !important;
+  padding-bottom: 0 !important;
 }
 
 /* ============================================================

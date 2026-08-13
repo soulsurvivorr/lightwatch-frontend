@@ -473,6 +473,133 @@ window.addEventListener('resize', () => {
 });
 updateTopbarVisibility();
 
+// ── Map tooltip: show alert when there are nearby outages ──────────
+// Periodically checks /locations/map for any "off" status locations
+// near the user's city and shows a red badge on the Map nav icon
+// to alert them to check the map view.
+
+(function() {
+    const POLL_MS = (typeof POLL_INTERVAL_FAST_MS !== 'undefined') ? POLL_INTERVAL_FAST_MS : 60 * 1000;
+    const NEARBY_RADIUS_KM = 60;
+    const MAX_OUTAGE_COUNT = 9;
+    let pollTimer = null;
+    let lastSeenOutages = 0;
+
+    function haversineDistance(lat1, lng1, lat2, lng2) {
+        const R = 6371; // Earth radius in km
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLng = (lng2 - lng1) * Math.PI / 180;
+        const a = 
+            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLng / 2) * Math.sin(dLng / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+    }
+
+    function getUserLocation() {
+        // Try to get user's location from session or localStorage
+        const session = typeof getSession === 'function' ? getSession() : null;
+        if (session?.user?.lat && session.user.lng) {
+            return { lat: session.user.lat, lng: session.user.lng };
+        }
+        
+        const stored = localStorage.getItem('currentUserData');
+        if (stored) {
+            try {
+                const user = JSON.parse(stored);
+                if (user.lat && user.lng) return { lat: user.lat, lng: user.lng };
+            } catch {}
+        }
+        return null;
+    }
+
+    function renderMapBadge(count) {
+        document.querySelectorAll('[data-nav-badge="location"]').forEach(el => {
+            if (count > 0) {
+                el.textContent = count > MAX_OUTAGE_COUNT ? `${MAX_OUTAGE_COUNT}+` : String(count);
+                el.hidden = false;
+                el.setAttribute('aria-hidden', 'false');
+            } else {
+                el.textContent = '';
+                el.hidden = true;
+                el.setAttribute('aria-hidden', 'true');
+            }
+        });
+    }
+
+    async function checkNearbyOutages() {
+        try {
+            const userLoc = getUserLocation();
+            if (!userLoc) {
+                renderMapBadge(0);
+                return;
+            }
+
+            const response = await fetch('/locations/map');
+            if (!response.ok) {
+                renderMapBadge(0);
+                return;
+            }
+
+            const data = await response.json();
+            const locations = Array.isArray(data.locations) ? data.locations : [];
+
+            // Count nearby locations with "off" status
+            let outageCount = 0;
+            for (const loc of locations) {
+                if (loc.status === 'off') {
+                    const distance = haversineDistance(
+                        userLoc.lat, userLoc.lng,
+                        loc.lat, loc.lng
+                    );
+                    if (distance <= NEARBY_RADIUS_KM) {
+                        outageCount++;
+                        if (outageCount >= MAX_OUTAGE_COUNT) break;
+                    }
+                }
+            }
+
+            renderMapBadge(outageCount);
+            lastSeenOutages = outageCount;
+        } catch (err) {
+            console.error('Nearby outage check error:', err.message);
+        }
+    }
+
+    // Start polling when nav loads
+    function startOutagePoller() {
+        if (pollTimer) return; // Already running
+        checkNearbyOutages();
+        pollTimer = setInterval(checkNearbyOutages, POLL_MS);
+    }
+
+    function stopOutagePoller() {
+        if (pollTimer) {
+            clearInterval(pollTimer);
+            pollTimer = null;
+        }
+    }
+
+    // Expose methods
+    window.LWMapBadge = { startOutagePoller, stopOutagePoller, checkNearbyOutages };
+
+    // Start polling when user is signed in
+    window.addEventListener('lw-session-changed', (e) => {
+        if (e.detail?.isSignedIn) {
+            startOutagePoller();
+        } else {
+            stopOutagePoller();
+        }
+    });
+
+    // Initial check if already signed in
+    const session = typeof getSession === 'function' ? getSession() : null;
+    if (session?.user?.id) {
+        startOutagePoller();
+    }
+})();
+
 function initNav() {
     applyNavVisibility();
     bindRouteLinks();
