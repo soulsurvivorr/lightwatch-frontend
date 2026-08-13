@@ -626,15 +626,16 @@ async function renderStaff(content) {
   content.innerHTML = `
     <div class="panel">
       <div class="panel__head"><h3>Staff In Your Scope</h3><p>Deactivating an account immediately revokes dashboard access.</p></div>
-      <table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Last Login</th><th></th></tr></thead>
+      <table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Assigned To</th><th>Status</th><th>Last Login</th><th></th></tr></thead>
       <tbody>${staff.length ? staff.map(s => `
         <tr>
           <td>${esc(s.name)}</td><td>${esc(s.email)}</td>
           <td><span class="badge badge--${roleBadgeClass(s.role)}">${esc(formatRole(s.role))}</span></td>
+          <td><b>${esc(s.orgUnitName || '—')}</b>${s.orgUnitRegion ? `<div style="color:var(--muted);font-size:0.72rem">${esc(s.orgUnitRegion)}</div>` : ''}</td>
           <td><span class="badge badge--${s.active ? 'active' : 'inactive'}">${s.active ? 'active' : 'inactive'}</span></td>
           <td>${fmtDate(s.lastLoginAt)}</td>
           <td>${s.id !== ME.staff.id ? `<button class="btn btn--sm ${s.active ? 'btn--danger' : ''}" onclick="toggleStaff('${s.id}', ${!s.active})">${s.active ? 'Deactivate' : 'Reactivate'}</button>` : '<span style="color:var(--faint)">you</span>'}</td>
-        </tr>`).join('') : '<tr><td colspan="6" class="empty-row">No staff visible in your scope.</td></tr>'}
+        </tr>`).join('') : '<tr><td colspan="7" class="empty-row">No staff visible in your scope.</td></tr>'}
       </tbody></table>
     </div>`;
 }
@@ -662,10 +663,10 @@ async function renderInvitations(content) {
     </div>
     <div class="panel">
       <div class="panel__head"><h3>Pending Invitations</h3></div>
-      <table><thead><tr><th>Email</th><th>Role</th><th>Expires</th><th></th></tr></thead>
+      <table><thead><tr><th>Email</th><th>Role</th><th>Assigned To</th><th>Expires</th><th></th></tr></thead>
       <tbody>${invites.length ? invites.map(i => `
-        <tr><td>${esc(i.email)}</td><td>${esc(formatRole(i.role))}</td><td>${fmtDate(i.expiresAt)}</td>
-        <td><button class="btn btn--sm btn--danger" onclick="revokeInvite('${i.id}')">Revoke</button></td></tr>`).join('') : '<tr><td colspan="4" class="empty-row">No pending invitations.</td></tr>'}
+        <tr><td>${esc(i.email)}</td><td>${esc(formatRole(i.role))}</td><td>${esc(i.orgUnitName || '—')}</td><td>${fmtDate(i.expiresAt)}</td>
+        <td><button class="btn btn--sm btn--danger" onclick="revokeInvite('${i.id}')">Revoke</button></td></tr>`).join('') : '<tr><td colspan="5" class="empty-row">No pending invitations.</td></tr>'}
       </tbody></table>
     </div>`;
 }
