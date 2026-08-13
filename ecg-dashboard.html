@@ -163,6 +163,9 @@
   .coverage-chip input { width: auto; margin: 0; accent-color: var(--green); }
   .illus-map-wrap { margin: 4px 0 14px; }
   .illus-map-label { font-size: 0.68rem; color: var(--faint); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; font-weight: 700; }
+  select[size] { background-image: none; padding: 6px; }
+  select[size] option { padding: 8px 10px; border-radius: 6px; font-size: 0.85rem; }
+  select[size] option:checked { background: var(--brand-dim); color: var(--brand); }
 
   #toastContainer { position: fixed; bottom: 22px; right: 22px; z-index: 1200; display: flex; flex-direction: column; gap: 10px; }
   .toast { background: var(--panel-raised); border: 1px solid var(--border2); border-radius: var(--r-md); padding: 12px 16px; font-size: 0.8rem; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,0.4); }
@@ -667,11 +670,20 @@ function openCreateUnitModal() {
         <input type="hidden" id="mName" value="">
         ${known.length ? `
         <div class="field-wrap">
-          <label class="field">District</label>
-          <input type="text" id="mDistrictSearch" placeholder="Search districts in ${esc(region)}…" oninput="filterDistrictList()" autocomplete="off">
-          <div class="search-list" id="mDistrictList">
-            ${available.length ? available.map(d => `<div class="search-item" data-val="${esc(d)}" onclick="selectDistrict('${esc(d).replace(/'/g, "\\'")}')">${esc(d)}</div>`).join('') : '<div class="search-empty">All known districts in this region already have a station.</div>'}
+          <label class="field">Search Districts</label>
+          <div style="display:flex; gap:8px;">
+            <input type="text" id="mDistrictSearch" placeholder="Type to filter ${esc(region)}'s districts…" autocomplete="off"
+              oninput="filterDistrictSelect()" onkeydown="if(event.key==='Enter'){event.preventDefault();filterDistrictSelect();}">
+            <button type="button" class="btn btn--sm" onclick="filterDistrictSelect()">Search</button>
           </div>
+        </div>
+        <div class="field-wrap">
+          <label class="field">District (A–Z)</label>
+          <select id="mDistrictSelect" size="8" onchange="selectDistrict(this.value)">
+            ${available.length
+              ? `<option value="" disabled selected>— ${available.length} districts, alphabetical —</option>` + available.map(d => `<option value="${esc(d)}">${esc(d)}</option>`).join('')
+              : `<option disabled selected>All known districts in this region already have a station</option>`}
+          </select>
         </div>
         <div id="mMapWrap"></div>
         <div class="field-wrap hidden" id="mCoverageWrap"></div>
@@ -688,17 +700,21 @@ function openCreateUnitModal() {
       </div>`;
   }
   document.body.appendChild(backdrop);
+  window.__districtOptions = available; // full alphabetical list, used by the search filter
 }
-function filterDistrictList() {
+function filterDistrictSelect() {
   const q = (document.getElementById('mDistrictSearch').value || '').trim().toLowerCase();
-  document.querySelectorAll('#mDistrictList .search-item').forEach(el => {
-    el.classList.toggle('hidden', !el.dataset.val.toLowerCase().includes(q));
-  });
+  const all = window.__districtOptions || [];
+  const filtered = q ? all.filter(d => d.toLowerCase().includes(q)) : all;
+  const sel = document.getElementById('mDistrictSelect');
+  const prevValue = sel.value;
+  sel.innerHTML = filtered.length
+    ? `<option value="" disabled ${filtered.includes(prevValue) ? '' : 'selected'}>— ${filtered.length} match${filtered.length === 1 ? '' : 'es'} —</option>` + filtered.map(d => `<option value="${esc(d)}" ${d === prevValue ? 'selected' : ''}>${esc(d)}</option>`).join('')
+    : `<option disabled selected>No districts match "${esc(q)}"</option>`;
 }
 function selectDistrict(name) {
+  if (!name) return;
   document.getElementById('mName').value = name;
-  document.getElementById('mDistrictSearch').value = name;
-  document.querySelectorAll('#mDistrictList .search-item').forEach(el => el.classList.toggle('active', el.dataset.val === name));
   const region = ME.organizationUnit.region;
   const towns = townsFor(region, name);
   document.getElementById('mMapWrap').innerHTML = towns.length ? renderIllustrativeMap(name, towns) : '';
