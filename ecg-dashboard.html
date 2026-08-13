@@ -1,0 +1,724 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <link rel="icon" href="/images/dev-logo.png" type="image/png">
+  <title>LightWatch — ECG Operations Dashboard</title>
+  <style>
+  :root {
+    --brand: #F2B33D; --brand-dim: #3A2C12;
+    --brand2: #4F86F7; --brand2-dim: #16233F;
+    --red: #FF5C66; --red-dim: #3A1418; --green: #35D07F; --green-dim: #143122;
+    --bg: #07090D; --panel: #10141D; --panel2: #151A25; --panel-raised: #181E2B;
+    --border: #232A38; --border2: #2E374A;
+    --txt: #F3F5F9; --muted: #9AA4B8; --faint: #5C6578;
+    --font: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --r-sm: 8px; --r-md: 12px; --r-lg: 18px;
+    --sidebar-w: 240px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { color-scheme: dark; }
+  body {
+    background: radial-gradient(900px 520px at 8% -10%, rgba(242,179,61,0.08), transparent 60%),
+                radial-gradient(900px 560px at 96% 0%, rgba(79,134,247,0.09), transparent 55%), var(--bg);
+    background-attachment: fixed; color: var(--txt); font-family: var(--font);
+    font-size: 14px; min-height: 100vh; -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; }
+  button, input, select, textarea { font-family: var(--font); }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 99px; }
+
+  .hidden { display: none !important; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 10px 16px; border-radius: var(--r-md); border: 1px solid var(--border2);
+    background: var(--panel-raised); color: var(--txt); font-weight: 600; font-size: 0.85rem;
+    cursor: pointer; transition: transform .12s ease, border-color .12s ease;
+  }
+  .btn:hover { border-color: var(--brand); }
+  .btn:active { transform: scale(0.97); }
+  .btn--primary { background: var(--brand); color: #241a05; border-color: var(--brand); }
+  .btn--danger { background: var(--red-dim); color: var(--red); border-color: rgba(255,92,102,0.4); }
+  .btn--ghost { background: transparent; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn--sm { padding: 6px 10px; font-size: 0.75rem; }
+
+  input[type=text], input[type=email], input[type=password], select, textarea {
+    width: 100%; padding: 11px 13px; border-radius: var(--r-md); border: 1px solid var(--border2);
+    background: var(--panel2); color: var(--txt); font-size: 0.88rem; outline: none;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--brand); }
+  label.field { display: block; font-size: 0.76rem; color: var(--muted); margin-bottom: 6px; font-weight: 600; }
+  .field-wrap { margin-bottom: 14px; }
+
+  .badge { display: inline-block; padding: 2px 9px; border-radius: 99px; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.02em; }
+  .badge--hq { background: var(--brand-dim); color: var(--brand); }
+  .badge--regional { background: var(--brand2-dim); color: var(--brand2); }
+  .badge--district { background: var(--green-dim); color: var(--green); }
+  .badge--operator { background: var(--panel-raised); color: var(--muted); border: 1px solid var(--border2); }
+  .badge--active { background: var(--green-dim); color: var(--green); }
+  .badge--inactive { background: var(--red-dim); color: var(--red); }
+
+  /* ===== AUTH VIEW ===== */
+  #authView {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px;
+  }
+  .auth-card {
+    width: 100%; max-width: 440px; background: var(--panel); border: 1px solid var(--border);
+    border-radius: 20px; padding: 30px 28px; box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+  }
+  .auth-card h1 { font-size: 1.15rem; margin-bottom: 4px; }
+  .auth-card p.sub { color: var(--muted); font-size: 0.82rem; margin-bottom: 22px; }
+  .auth-tabs { display: flex; gap: 6px; background: var(--panel2); padding: 4px; border-radius: var(--r-md); margin-bottom: 22px; }
+  .auth-tab { flex: 1; text-align: center; padding: 9px; border-radius: 8px; font-size: 0.8rem; font-weight: 700; cursor: pointer; color: var(--muted); }
+  .auth-tab.active { background: var(--brand); color: #241a05; }
+  .invite-info {
+    background: var(--panel2); border: 1px solid var(--border2); border-radius: var(--r-md);
+    padding: 12px 14px; margin-bottom: 16px; font-size: 0.8rem; color: var(--muted);
+  }
+  .invite-info b { color: var(--txt); }
+  .auth-error { background: var(--red-dim); color: var(--red); border-radius: var(--r-sm); padding: 9px 12px; font-size: 0.8rem; margin-bottom: 14px; }
+  .auth-note { text-align: center; margin-top: 16px; font-size: 0.74rem; color: var(--faint); line-height: 1.5; }
+
+  /* ===== APP SHELL ===== */
+  #appView { display: none; min-height: 100vh; }
+  #appView.show { display: flex; }
+  .sidebar {
+    width: var(--sidebar-w); flex-shrink: 0; background: var(--panel); border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; padding: 20px 14px; position: sticky; top: 0; height: 100vh;
+  }
+  .sidebar__brand { display: flex; align-items: center; gap: 10px; padding: 6px 8px 20px; }
+  .sidebar__brand-mark { width: 30px; height: 30px; border-radius: 8px; background: var(--brand); display: flex; align-items: center; justify-content: center; font-weight: 800; color: #241a05; }
+  .sidebar__brand-text b { display: block; font-size: 0.85rem; }
+  .sidebar__brand-text span { font-size: 0.68rem; color: var(--muted); }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: var(--r-md);
+    font-size: 0.83rem; font-weight: 600; color: var(--muted); cursor: pointer; margin-bottom: 2px;
+  }
+  .nav-item:hover { background: var(--panel2); color: var(--txt); }
+  .nav-item.active { background: var(--brand-dim); color: var(--brand); }
+  .sidebar__org { margin-top: auto; padding: 12px; border-radius: var(--r-md); background: var(--panel2); font-size: 0.75rem; }
+  .sidebar__org b { display: block; font-size: 0.82rem; margin-bottom: 3px; }
+  .sidebar__org span { color: var(--muted); }
+
+  .main { flex: 1; min-width: 0; }
+  .topbar { display: flex; align-items: center; justify-content: space-between; padding: 18px 28px; border-bottom: 1px solid var(--border); }
+  .topbar h2 { font-size: 1.05rem; }
+  .content { padding: 24px 28px 60px; max-width: 1080px; }
+
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 20px; margin-bottom: 20px; }
+  .panel__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; gap: 10px; flex-wrap: wrap; }
+  .panel__head h3 { font-size: 0.95rem; }
+  .panel__head p { color: var(--muted); font-size: 0.78rem; margin-top: 2px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  th { text-align: left; color: var(--muted); font-weight: 600; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+  td { padding: 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  .empty-row { color: var(--faint); text-align: center; padding: 24px; font-size: 0.8rem; }
+
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin-bottom: 20px; }
+  .stat-card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 16px; }
+  .stat-card b { display: block; font-size: 1.5rem; }
+  .stat-card span { color: var(--muted); font-size: 0.76rem; }
+
+  .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 999; padding: 20px; }
+  .modal-box { background: var(--panel); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 24px; width: 100%; max-width: 440px; }
+  .modal-box h3 { margin-bottom: 4px; }
+  .modal-box p.desc { color: var(--muted); font-size: 0.8rem; margin-bottom: 18px; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+  .key-reveal { background: var(--brand-dim); border: 1px dashed var(--brand); border-radius: var(--r-md); padding: 14px; text-align: center; font-family: monospace; font-size: 1rem; letter-spacing: 0.03em; color: var(--brand); margin: 12px 0; word-break: break-all; }
+
+  #toastContainer { position: fixed; bottom: 22px; right: 22px; z-index: 1200; display: flex; flex-direction: column; gap: 10px; }
+  .toast { background: var(--panel-raised); border: 1px solid var(--border2); border-radius: var(--r-md); padding: 12px 16px; font-size: 0.8rem; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,0.4); }
+  .toast--err { border-color: rgba(255,92,102,0.4); color: var(--red); }
+  .toast--ok { border-color: rgba(53,208,127,0.4); color: var(--green); }
+
+  @media (max-width: 860px) {
+    .sidebar { position: fixed; z-index: 500; left: -260px; transition: left .2s ease; }
+    .sidebar.open { left: 0; }
+    .content { padding: 18px; }
+    .topbar { padding: 14px 18px; }
+  }
+  </style>
+</head>
+<body>
+
+<div id="toastContainer"></div>
+
+<!-- ============== AUTH VIEW ============== -->
+<div id="authView">
+  <div class="auth-card">
+    <h1>LightWatch ECG Operations</h1>
+    <p class="sub">Staff access is invitation-only. This page is separate from the public LightWatch app.</p>
+
+    <div class="auth-tabs">
+      <div class="auth-tab active" id="tabLogin" onclick="switchAuthTab('login')">Staff Login</div>
+      <div class="auth-tab" id="tabInvite" onclick="switchAuthTab('invite')">Accept Invitation</div>
+    </div>
+
+    <div id="authErrorBox" class="auth-error hidden"></div>
+
+    <!-- LOGIN PANEL -->
+    <form id="loginForm" onsubmit="return handleLogin(event)">
+      <div class="field-wrap">
+        <label class="field">Work Email</label>
+        <input type="email" id="loginEmail" required autocomplete="username" placeholder="you@ecg.example">
+      </div>
+      <div class="field-wrap">
+        <label class="field">Password</label>
+        <input type="password" id="loginPassword" required autocomplete="current-password" placeholder="••••••••">
+      </div>
+      <button class="btn btn--primary" style="width:100%" type="submit" id="loginBtn">Sign In</button>
+    </form>
+
+    <!-- INVITATION ACCEPT PANEL -->
+    <form id="inviteForm" class="hidden" onsubmit="return handleAcceptInvite(event)">
+      <div class="field-wrap">
+        <label class="field">Invitation Link / Code</label>
+        <input type="text" id="inviteTokenInput" placeholder="Paste your invitation link or code" oninput="onInviteTokenTyped()">
+      </div>
+      <div id="inviteInfoBox" class="invite-info hidden"></div>
+
+      <div class="field-wrap">
+        <label class="field">Your Name</label>
+        <input type="text" id="inviteName" required placeholder="Full name">
+      </div>
+      <div id="branchKeyField" class="field-wrap hidden">
+        <label class="field">Branch Access Key</label>
+        <input type="text" id="inviteBranchKey" placeholder="Provided by your station manager">
+      </div>
+      <div class="field-wrap">
+        <label class="field">Create Password</label>
+        <input type="password" id="invitePassword" required minlength="10" placeholder="At least 10 characters">
+      </div>
+      <button class="btn btn--primary" style="width:100%" type="submit" id="inviteBtn">Create Account</button>
+    </form>
+
+    <p class="auth-note">Don't have an invitation? Ask your regional office or district station manager to invite you — ECG accounts can't be self-registered.</p>
+  </div>
+</div>
+
+<!-- ============== APP SHELL (shared dashboard, all roles) ============== -->
+<div id="appView">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar__brand">
+      <div class="sidebar__brand-mark">E</div>
+      <div class="sidebar__brand-text"><b>LightWatch</b><span>ECG Operations</span></div>
+    </div>
+    <nav>
+      <div class="nav-item active" data-tab="overview" onclick="switchTab('overview')">📊 Overview</div>
+      <div class="nav-item" data-tab="events" onclick="switchTab('events')">⚡ Electricity Events</div>
+      <div class="nav-item hidden" data-tab="org" data-role-gate="org" onclick="switchTab('org')">🏢 Organization</div>
+      <div class="nav-item" data-tab="staff" onclick="switchTab('staff')">👥 Staff</div>
+      <div class="nav-item" data-tab="invitations" onclick="switchTab('invitations')">✉️ Invitations</div>
+      <div class="nav-item" data-tab="audit" onclick="switchTab('audit')">🕓 Audit Log</div>
+    </nav>
+    <div class="sidebar__org">
+      <b id="sbOrgName">—</b>
+      <span id="sbRole">—</span>
+      <div style="margin-top:10px"><button class="btn btn--ghost btn--sm" style="width:100%" onclick="handleLogout()">Sign Out</button></div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <h2 id="topbarTitle">Overview</h2>
+      <div id="topbarStaffName" style="color:var(--muted);font-size:0.8rem;"></div>
+    </div>
+    <div class="content" id="content">
+      <!-- panels injected by JS -->
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// Config / API base — same resolution logic as admin.html so this
+// file behaves identically wherever it's deployed alongside it.
+// ============================================================
+const API = (typeof window.API_URL === "string" && window.API_URL)
+  || ((location.protocol === "file:" || location.hostname === "localhost" || location.hostname === "127.0.0.1")
+    ? "http://localhost:3000"
+    : "https://lightwatch-backend-lightwatch-backend.up.railway.app");
+
+const TK = "lw_ecg_tk";
+function getToken() { return sessionStorage.getItem(TK); }
+function setToken(t) { sessionStorage.setItem(TK, t); }
+function clearToken() { sessionStorage.removeItem(TK); }
+
+let ME = null; // { staff, organizationUnit, permissions }
+
+// ===== toast =====
+function toast(msg, type = "ok") {
+  const el = document.createElement("div");
+  el.className = `toast toast--${type}`;
+  el.textContent = msg;
+  document.getElementById("toastContainer").appendChild(el);
+  setTimeout(() => el.remove(), 4000);
+}
+
+function esc(str) { const d = document.createElement("div"); d.textContent = String(str ?? ""); return d.innerHTML; }
+function fmtDate(iso) { return iso ? new Date(iso).toLocaleString([], { dateStyle: "medium", timeStyle: "short" }) : "—"; }
+
+// ===== API helpers =====
+async function ecgFetch(path, opts = {}) {
+  const res = await fetch(`${API}${path}`, {
+    ...opts,
+    headers: {
+      ...(opts.body ? { "Content-Type": "application/json" } : {}),
+      ...(getToken() ? { Authorization: `Bearer ${getToken()}` } : {}),
+      ...(opts.headers || {})
+    }
+  });
+  if (res.status === 401) { clearToken(); showAuthView("Session expired. Please sign in again."); throw new Error("auth"); }
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+  return data;
+}
+const ecgGet = (p) => ecgFetch(p);
+const ecgPost = (p, body) => ecgFetch(p, { method: "POST", body: JSON.stringify(body || {}) });
+const ecgPatch = (p, body) => ecgFetch(p, { method: "PATCH", body: JSON.stringify(body || {}) });
+const ecgDelete = (p) => ecgFetch(p, { method: "DELETE" });
+
+// ============================================================
+// AUTH VIEW
+// ============================================================
+function switchAuthTab(which) {
+  document.getElementById("tabLogin").classList.toggle("active", which === "login");
+  document.getElementById("tabInvite").classList.toggle("active", which === "invite");
+  document.getElementById("loginForm").classList.toggle("hidden", which !== "login");
+  document.getElementById("inviteForm").classList.toggle("hidden", which !== "invite");
+  document.getElementById("authErrorBox").classList.add("hidden");
+}
+
+function showAuthError(msg) {
+  const box = document.getElementById("authErrorBox");
+  box.textContent = msg;
+  box.classList.remove("hidden");
+}
+
+function showAuthView(msg) {
+  document.getElementById("appView").classList.remove("show");
+  document.getElementById("authView").classList.remove("hidden");
+  if (msg) { switchAuthTab('login'); showAuthError(msg); }
+}
+
+async function handleLogin(e) {
+  e.preventDefault();
+  const btn = document.getElementById("loginBtn");
+  btn.disabled = true; btn.textContent = "Signing in…";
+  try {
+    const email = document.getElementById("loginEmail").value.trim();
+    const password = document.getElementById("loginPassword").value;
+    const data = await ecgPost("/ecg/auth/login", { email, password });
+    setToken(data.token);
+    await bootDashboard();
+  } catch (err) {
+    showAuthError(err.message || "Sign in failed");
+  } finally {
+    btn.disabled = false; btn.textContent = "Sign In";
+  }
+  return false;
+}
+
+let inviteLookupTimer = null;
+function extractInviteToken(raw) {
+  const val = (raw || "").trim();
+  const m = val.match(/[?&]invite=([a-f0-9]{20,})/i);
+  if (m) return m[1];
+  return val;
+}
+function onInviteTokenTyped() {
+  clearTimeout(inviteLookupTimer);
+  inviteLookupTimer = setTimeout(lookupInvite, 400);
+}
+async function lookupInvite() {
+  const token = extractInviteToken(document.getElementById("inviteTokenInput").value);
+  const box = document.getElementById("inviteInfoBox");
+  const branchField = document.getElementById("branchKeyField");
+  if (!token) { box.classList.add("hidden"); return; }
+  try {
+    const info = await fetch(`${API}/ecg/invitations/${token}`).then(r => r.ok ? r.json() : Promise.reject(new Error((r.status === 404) ? "Invitation not found" : "Invitation is no longer valid")));
+    box.classList.remove("hidden");
+    box.innerHTML = `
+      <div><b>Email:</b> ${esc(info.email)}</div>
+      <div><b>Organization:</b> ${esc(info.organizationUnit?.name || '—')}${info.organizationUnit?.region ? ' · ' + esc(info.organizationUnit.region) : ''}</div>
+      <div><b>Role:</b> ${esc(formatRole(info.role))}</div>`;
+    branchField.classList.toggle("hidden", !info.requiresBranchKey);
+    document.getElementById("inviteBranchKey").required = Boolean(info.requiresBranchKey);
+  } catch (err) {
+    box.classList.remove("hidden");
+    box.innerHTML = `<span style="color:var(--red)">${esc(err.message)}</span>`;
+    branchField.classList.add("hidden");
+  }
+}
+
+async function handleAcceptInvite(e) {
+  e.preventDefault();
+  const btn = document.getElementById("inviteBtn");
+  btn.disabled = true; btn.textContent = "Creating account…";
+  try {
+    const token = extractInviteToken(document.getElementById("inviteTokenInput").value);
+    if (!token) throw new Error("Paste your invitation link or code first");
+    const body = {
+      name: document.getElementById("inviteName").value.trim(),
+      password: document.getElementById("invitePassword").value,
+      branchKey: document.getElementById("inviteBranchKey").value.trim()
+    };
+    const data = await ecgPost(`/ecg/invitations/${token}/accept`, body);
+    setToken(data.token);
+    toast("Account created — welcome to LightWatch ECG Operations.");
+    await bootDashboard();
+  } catch (err) {
+    showAuthError(err.message || "Could not create account");
+  } finally {
+    btn.disabled = false; btn.textContent = "Create Account";
+  }
+  return false;
+}
+
+function formatRole(role) {
+  return { hq_admin: "ECG Headquarters Admin", regional_manager: "Regional Office Manager", district_manager: "District / Local Station Manager", station_operator: "Station Operator" }[role] || role;
+}
+function roleBadgeClass(role) {
+  return { hq_admin: "hq", regional_manager: "regional", district_manager: "district", station_operator: "operator" }[role] || "operator";
+}
+
+// ============================================================
+// BOOT
+// ============================================================
+async function bootDashboard() {
+  try {
+    ME = await ecgGet("/ecg/me");
+  } catch {
+    return; // ecgFetch already routed us back to the auth view on 401
+  }
+  document.getElementById("authView").classList.add("hidden");
+  document.getElementById("appView").classList.add("show");
+
+  document.getElementById("sbOrgName").textContent = ME.organizationUnit.name;
+  document.getElementById("sbRole").textContent = formatRole(ME.staff.role);
+  document.getElementById("topbarStaffName").textContent = `${ME.staff.name} · ${ME.organizationUnit.name}`;
+
+  document.querySelectorAll('[data-role-gate="org"]').forEach(el => el.classList.toggle("hidden", !ME.permissions.canManageOrgUnits));
+
+  switchTab("overview");
+}
+
+function handleLogout() {
+  ecgPost("/ecg/auth/logout").catch(() => {});
+  clearToken();
+  ME = null;
+  location.reload();
+}
+
+// ============================================================
+// TAB SWITCHING + RENDERING
+// ============================================================
+const TAB_TITLES = { overview: "Overview", events: "Electricity Events", org: "Organization", staff: "Staff", invitations: "Invitations", audit: "Audit Log" };
+
+async function switchTab(tab) {
+  document.querySelectorAll(".nav-item").forEach(el => el.classList.toggle("active", el.dataset.tab === tab));
+  document.getElementById("topbarTitle").textContent = TAB_TITLES[tab] || tab;
+  const content = document.getElementById("content");
+  content.innerHTML = `<div class="empty-row">Loading…</div>`;
+  try {
+    if (tab === "overview") await renderOverview(content);
+    else if (tab === "events") await renderEvents(content);
+    else if (tab === "org") await renderOrg(content);
+    else if (tab === "staff") await renderStaff(content);
+    else if (tab === "invitations") await renderInvitations(content);
+    else if (tab === "audit") await renderAudit(content);
+  } catch (err) {
+    content.innerHTML = `<div class="panel"><p style="color:var(--red)">${esc(err.message)}</p></div>`;
+  }
+}
+
+// ---- Overview ----
+async function renderOverview(content) {
+  const [orgUnits, events, staff] = await Promise.all([
+    ecgGet("/ecg/org-units"),
+    ecgGet(`/ecg/events?orgUnitId=${ME.organizationUnit.id}&status=active`).catch(() => []),
+    ecgGet("/ecg/staff")
+  ]);
+  const activeEvents = ME.organizationUnit.type === 'district' ? events.length
+    : (await ecgGet(`/ecg/events?region=${encodeURIComponent(ME.organizationUnit.region || '')}&status=active`).catch(() => [])).length;
+
+  content.innerHTML = `
+    <div class="stat-grid">
+      <div class="stat-card"><b>${orgUnits.length}</b><span>Organization units in view</span></div>
+      <div class="stat-card"><b>${staff.length}</b><span>Staff accounts in view</span></div>
+      <div class="stat-card"><b>${activeEvents}</b><span>Active electricity events</span></div>
+      <div class="stat-card"><b>${(ME.organizationUnit.coverageAreas || []).length}</b><span>Coverage areas (this unit)</span></div>
+    </div>
+    <div class="panel">
+      <div class="panel__head"><h3>Signed in as</h3></div>
+      <p><b>${esc(ME.staff.name)}</b> — ${esc(formatRole(ME.staff.role))}</p>
+      <p style="color:var(--muted);margin-top:6px">${esc(ME.organizationUnit.name)}${ME.organizationUnit.region ? ' · ' + esc(ME.organizationUnit.region) : ''}</p>
+      ${ME.organizationUnit.coverageAreas?.length ? `<p style="color:var(--muted);margin-top:10px"><b style="color:var(--txt)">Coverage:</b> ${ME.organizationUnit.coverageAreas.map(esc).join(', ')}</p>` : ''}
+    </div>`;
+}
+
+// ---- Events ----
+async function renderEvents(content) {
+  const canPublish = true; // every role can publish for their own unit; server enforces scope
+  const events = await ecgGet(`/ecg/events?orgUnitId=${ME.organizationUnit.id}`).catch(() => []);
+  content.innerHTML = `
+    <div class="panel">
+      <div class="panel__head">
+        <div><h3>Publish an Official Update</h3><p>Only areas assigned to your station's coverage can be selected.</p></div>
+      </div>
+      <form id="eventForm" onsubmit="return submitEvent(event)">
+        <div class="field-wrap"><label class="field">Type</label>
+          <select id="evType"><option value="outage">Outage</option><option value="restoration">Restoration</option><option value="maintenance">Planned Maintenance</option><option value="advisory">Advisory</option></select>
+        </div>
+        <div class="field-wrap"><label class="field">Headline</label><input type="text" id="evHeadline" required maxlength="200" placeholder="e.g. Unplanned outage — Bantama feeder fault"></div>
+        <div class="field-wrap"><label class="field">Summary</label><textarea id="evSummary" rows="2" placeholder="Optional details"></textarea></div>
+        <div class="field-wrap"><label class="field">Affected Areas</label>
+          <select id="evAreas" multiple size="4">
+            ${(ME.organizationUnit.coverageAreas || []).map(a => `<option value="${esc(a)}">${esc(a)}</option>`).join('') || '<option disabled>No coverage areas assigned to this unit yet</option>'}
+          </select>
+        </div>
+        <button class="btn btn--primary" type="submit">Publish</button>
+      </form>
+    </div>
+    <div class="panel">
+      <div class="panel__head"><h3>This Unit's Events</h3></div>
+      <table><thead><tr><th>Headline</th><th>Type</th><th>Areas</th><th>Status</th><th>Published</th><th></th></tr></thead>
+      <tbody>${events.length ? events.map(ev => `
+        <tr>
+          <td><b>${esc(ev.headline)}</b>${ev.summary ? `<div style="color:var(--muted);font-size:0.76rem;margin-top:2px">${esc(ev.summary)}</div>` : ''}</td>
+          <td>${esc(ev.eventType)}</td>
+          <td>${ev.affectedAreas.map(esc).join(', ')}</td>
+          <td><span class="badge badge--${ev.status === 'active' ? 'active' : 'inactive'}">${esc(ev.status)}</span></td>
+          <td>${fmtDate(ev.createdAt)}</td>
+          <td>${ev.status === 'active' ? `<button class="btn btn--sm" onclick="resolveEvent('${ev.id}')">Resolve</button>` : ''}</td>
+        </tr>`).join('') : '<tr><td colspan="6" class="empty-row">No events published yet.</td></tr>'}
+      </tbody></table>
+    </div>`;
+}
+async function submitEvent(e) {
+  e.preventDefault();
+  const areas = Array.from(document.getElementById("evAreas").selectedOptions).map(o => o.value);
+  if (!areas.length) { toast("Select at least one affected area", "err"); return false; }
+  try {
+    await ecgPost("/ecg/events", {
+      eventType: document.getElementById("evType").value,
+      headline: document.getElementById("evHeadline").value.trim(),
+      summary: document.getElementById("evSummary").value.trim(),
+      affectedAreas: areas
+    });
+    toast("Event published.");
+    switchTab("events");
+  } catch (err) { toast(err.message, "err"); }
+  return false;
+}
+async function resolveEvent(id) {
+  try { await ecgPatch(`/ecg/events/${id}`, { status: "resolved" }); toast("Marked resolved."); switchTab("events"); }
+  catch (err) { toast(err.message, "err"); }
+}
+
+// ---- Organization (HQ / Regional only) ----
+async function renderOrg(content) {
+  if (!ME.permissions.canManageOrgUnits) { content.innerHTML = `<div class="panel">You don't have access to this section.</div>`; return; }
+  const units = await ecgGet("/ecg/org-units");
+  const canCreateType = ME.staff.role === 'hq_admin' ? 'regional office or district/local station' : 'district/local station (under your region)';
+  content.innerHTML = `
+    <div class="panel">
+      <div class="panel__head">
+        <div><h3>Organization Units</h3><p>You can create a new ${canCreateType}. Branch keys are shown once and never displayed again.</p></div>
+        <button class="btn btn--primary btn--sm" onclick="openCreateUnitModal()">+ New Unit</button>
+      </div>
+      <table><thead><tr><th>Name</th><th>Type</th><th>Region</th><th>Coverage</th><th>Status</th></tr></thead>
+      <tbody>${units.map(u => `
+        <tr>
+          <td><b>${esc(u.name)}</b></td>
+          <td><span class="badge badge--${roleUnitBadge(u.type)}">${esc(u.type)}</span></td>
+          <td>${esc(u.region || '—')}</td>
+          <td>${(u.coverageAreas || []).length ? u.coverageAreas.map(esc).join(', ') : '<span style="color:var(--faint)">—</span>'}</td>
+          <td><span class="badge badge--${u.active ? 'active' : 'inactive'}">${u.active ? 'active' : 'inactive'}</span>
+              ${u.type === 'district' ? `<button class="btn btn--sm" style="margin-left:8px" onclick="rotateBranchKey('${u.id}')">Rotate Key</button>` : ''}
+              <button class="btn btn--sm" style="margin-left:6px" onclick="editCoverage('${u.id}', ${JSON.stringify(u.coverageAreas || []).replace(/"/g, '&quot;')})">Edit Coverage</button>
+          </td>
+        </tr>`).join('')}
+      </tbody></table>
+    </div>`;
+  window.__orgUnits = units;
+}
+function roleUnitBadge(type) { return { headquarters: 'hq', regional: 'regional', district: 'district' }[type] || 'operator'; }
+
+function openCreateUnitModal() {
+  const isHq = ME.staff.role === 'hq_admin';
+  const parentOptions = isHq ? (window.__orgUnits || []).filter(u => u.type !== 'district').map(u => `<option value="${u.id}">${esc(u.name)} (${u.type})</option>`).join('') : '';
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  backdrop.innerHTML = `
+    <div class="modal-box">
+      <h3>New Organization Unit</h3>
+      <p class="desc">Fields marked as coverage areas apply to district/local stations only.</p>
+      <div class="field-wrap"><label class="field">Name</label><input type="text" id="mName" placeholder="e.g. Bantama Local Station"></div>
+      ${isHq ? `
+      <div class="field-wrap"><label class="field">Type</label>
+        <select id="mType" onchange="document.getElementById('mParentWrap').classList.toggle('hidden', this.value!=='district'); document.getElementById('mRegionWrap').classList.toggle('hidden', this.value!=='regional')">
+          <option value="regional">Regional Office</option><option value="district">District / Local Station</option>
+        </select></div>
+      <div class="field-wrap" id="mRegionWrap"><label class="field">Region Name</label><input type="text" id="mRegion" placeholder="e.g. Ashanti Region"></div>
+      <div class="field-wrap hidden" id="mParentWrap"><label class="field">Parent Regional Office</label><select id="mParent">${parentOptions}</select></div>
+      ` : `<input type="hidden" id="mType" value="district">`}
+      <div class="field-wrap"><label class="field">Coverage Areas (comma-separated, district only)</label><input type="text" id="mCoverage" placeholder="Bantama, Abrepo, Krofrom"></div>
+      <div id="mKeyReveal"></div>
+      <div class="modal-actions">
+        <button class="btn" onclick="this.closest('.modal-backdrop').remove()">Cancel</button>
+        <button class="btn btn--primary" onclick="createUnit(this)">Create</button>
+      </div>
+    </div>`;
+  document.body.appendChild(backdrop);
+}
+async function createUnit(btn) {
+  const name = document.getElementById('mName').value.trim();
+  const type = document.getElementById('mType').value;
+  if (!name) { toast("Name is required", "err"); return; }
+  try {
+    const payload = {
+      name, type,
+      region: document.getElementById('mRegion')?.value?.trim(),
+      parentUnitId: document.getElementById('mParent')?.value,
+      coverageAreas: (document.getElementById('mCoverage').value || '').split(',').map(s => s.trim()).filter(Boolean)
+    };
+    const unit = await ecgPost("/ecg/org-units", payload);
+    if (unit.branchKey) {
+      document.getElementById('mKeyReveal').innerHTML = `<div class="key-reveal">${esc(unit.branchKey)}</div><p class="desc" style="color:var(--red)">Copy this now — it will not be shown again. Share it only with authorized branch staff.</p>`;
+      btn.closest('.modal-box').querySelector('.modal-actions').innerHTML = `<button class="btn btn--primary" onclick="this.closest('.modal-backdrop').remove(); switchTab('org')">Done</button>`;
+    } else {
+      toast("Organization unit created.");
+      btn.closest('.modal-backdrop').remove();
+      switchTab("org");
+    }
+  } catch (err) { toast(err.message, "err"); }
+}
+async function rotateBranchKey(unitId) {
+  try {
+    const data = await ecgPost(`/ecg/org-units/${unitId}/rotate-key`);
+    const backdrop = document.createElement('div');
+    backdrop.className = 'modal-backdrop';
+    backdrop.innerHTML = `<div class="modal-box"><h3>New Branch Key</h3><p class="desc">Copy this now — it will not be shown again.</p>
+      <div class="key-reveal">${esc(data.branchKey)}</div>
+      <div class="modal-actions"><button class="btn btn--primary" onclick="this.closest('.modal-backdrop').remove()">Done</button></div></div>`;
+    document.body.appendChild(backdrop);
+  } catch (err) { toast(err.message, "err"); }
+}
+async function editCoverage(unitId, current) {
+  const val = prompt("Coverage areas (comma-separated):", (current || []).join(', '));
+  if (val === null) return;
+  try {
+    await ecgPatch(`/ecg/org-units/${unitId}`, { coverageAreas: val.split(',').map(s => s.trim()).filter(Boolean) });
+    toast("Coverage updated.");
+    switchTab("org");
+  } catch (err) { toast(err.message, "err"); }
+}
+
+// ---- Staff ----
+async function renderStaff(content) {
+  const staff = await ecgGet("/ecg/staff");
+  content.innerHTML = `
+    <div class="panel">
+      <div class="panel__head"><h3>Staff In Your Scope</h3><p>Deactivating an account immediately revokes dashboard access.</p></div>
+      <table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Last Login</th><th></th></tr></thead>
+      <tbody>${staff.length ? staff.map(s => `
+        <tr>
+          <td>${esc(s.name)}</td><td>${esc(s.email)}</td>
+          <td><span class="badge badge--${roleBadgeClass(s.role)}">${esc(formatRole(s.role))}</span></td>
+          <td><span class="badge badge--${s.active ? 'active' : 'inactive'}">${s.active ? 'active' : 'inactive'}</span></td>
+          <td>${fmtDate(s.lastLoginAt)}</td>
+          <td>${s.id !== ME.staff.id ? `<button class="btn btn--sm ${s.active ? 'btn--danger' : ''}" onclick="toggleStaff('${s.id}', ${!s.active})">${s.active ? 'Deactivate' : 'Reactivate'}</button>` : '<span style="color:var(--faint)">you</span>'}</td>
+        </tr>`).join('') : '<tr><td colspan="6" class="empty-row">No staff visible in your scope.</td></tr>'}
+      </tbody></table>
+    </div>`;
+}
+async function toggleStaff(id, active) {
+  try { await ecgPatch(`/ecg/staff/${id}`, { active }); toast("Updated."); switchTab("staff"); }
+  catch (err) { toast(err.message, "err"); }
+}
+
+// ---- Invitations ----
+async function renderInvitations(content) {
+  if (!ME.permissions.canInviteStaff) { content.innerHTML = `<div class="panel">You don't have access to this section.</div>`; return; }
+  const [invites, units] = await Promise.all([ecgGet("/ecg/invitations"), ecgGet("/ecg/org-units")]);
+  const invitableRoles = ME.staff.role === 'hq_admin' ? ['hq_admin', 'regional_manager', 'district_manager', 'station_operator']
+    : ME.staff.role === 'regional_manager' ? ['district_manager', 'station_operator'] : ['station_operator'];
+  const unitOptions = units.map(u => `<option value="${u.id}">${esc(u.name)} (${u.type})</option>`).join('');
+  content.innerHTML = `
+    <div class="panel">
+      <div class="panel__head"><h3>Invite Staff</h3><p>Organization and role are fixed by you here — the invitee can't change them.</p></div>
+      <form onsubmit="return sendInvite(event)">
+        <div class="field-wrap"><label class="field">Work Email</label><input type="email" id="invEmail" required></div>
+        <div class="field-wrap"><label class="field">Role</label><select id="invRole">${invitableRoles.map(r => `<option value="${r}">${formatRole(r)}</option>`).join('')}</select></div>
+        <div class="field-wrap"><label class="field">Organization Unit</label><select id="invUnit">${unitOptions}</select></div>
+        <button class="btn btn--primary" type="submit">Send Invitation</button>
+      </form>
+    </div>
+    <div class="panel">
+      <div class="panel__head"><h3>Pending Invitations</h3></div>
+      <table><thead><tr><th>Email</th><th>Role</th><th>Expires</th><th></th></tr></thead>
+      <tbody>${invites.length ? invites.map(i => `
+        <tr><td>${esc(i.email)}</td><td>${esc(formatRole(i.role))}</td><td>${fmtDate(i.expiresAt)}</td>
+        <td><button class="btn btn--sm btn--danger" onclick="revokeInvite('${i.id}')">Revoke</button></td></tr>`).join('') : '<tr><td colspan="4" class="empty-row">No pending invitations.</td></tr>'}
+      </tbody></table>
+    </div>`;
+}
+async function sendInvite(e) {
+  e.preventDefault();
+  try {
+    const data = await ecgPost("/ecg/invitations", {
+      email: document.getElementById("invEmail").value.trim(),
+      role: document.getElementById("invRole").value,
+      orgUnitId: document.getElementById("invUnit").value
+    });
+    const backdrop = document.createElement('div');
+    backdrop.className = 'modal-backdrop';
+    backdrop.innerHTML = `<div class="modal-box"><h3>Invitation Created</h3><p class="desc">Share this link with ${esc(data.email)} — it will not be shown again here.</p>
+      <div class="key-reveal" style="font-size:0.78rem">${location.origin}${esc(data.acceptUrl)}</div>
+      <div class="modal-actions"><button class="btn btn--primary" onclick="this.closest('.modal-backdrop').remove(); switchTab('invitations')">Done</button></div></div>`;
+    document.body.appendChild(backdrop);
+  } catch (err) { toast(err.message, "err"); }
+  return false;
+}
+async function revokeInvite(id) {
+  try { await ecgDelete(`/ecg/invitations/${id}`); toast("Revoked."); switchTab("invitations"); }
+  catch (err) { toast(err.message, "err"); }
+}
+
+// ---- Audit Log ----
+async function renderAudit(content) {
+  const entries = await ecgGet("/ecg/audit-log?limit=150");
+  content.innerHTML = `
+    <div class="panel">
+      <div class="panel__head"><h3>Audit Log</h3><p>Who changed what, and when — scoped to your organization.</p></div>
+      <table><thead><tr><th>Time</th><th>Staff</th><th>Action</th><th>Unit</th></tr></thead>
+      <tbody>${entries.length ? entries.map(e => `
+        <tr><td>${fmtDate(e.createdAt)}</td><td>${esc(e.staffEmail || '—')}</td><td>${esc(e.action)}</td><td>${esc(e.orgUnitName || '—')}</td></tr>`).join('') : '<tr><td colspan="4" class="empty-row">No audit entries yet.</td></tr>'}
+      </tbody></table>
+    </div>`;
+}
+
+// ============================================================
+// INIT
+// ============================================================
+(function init() {
+  const params = new URLSearchParams(location.search);
+  const inviteToken = params.get('invite');
+  if (inviteToken) {
+    switchAuthTab('invite');
+    document.getElementById('inviteTokenInput').value = inviteToken;
+    lookupInvite();
+  }
+  if (getToken()) {
+    bootDashboard();
+  }
+})();
+</script>
+</body>
+</html>
