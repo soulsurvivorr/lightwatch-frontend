@@ -7,6 +7,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js" crossorigin=""></script>
   <title>LightWatch — ECG Operations Dashboard</title>
   <style>
   :root {
@@ -193,7 +196,7 @@
   .ov-chip { display: flex; align-items: center; gap: 7px; padding: 8.5px 14px; border-radius: 99px; background: var(--panel2); border: 1px solid var(--border2); font-size: 0.76rem; font-weight: 700; color: var(--muted); }
   .ov-chip b { color: var(--txt); font-weight: 750; }
 
-  .hero-strip { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; margin-bottom: 22px; }
+  .hero-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(178px, 1fr)); gap: 14px; margin-bottom: 22px; }
   .hero-card { background: linear-gradient(160deg, var(--panel-raised), var(--panel) 78%); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 16px 16px 15px; box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: 9px; min-width: 0; transition: transform .16s var(--ease), border-color .16s ease; }
   .hero-card:hover { transform: translateY(-2px); border-color: var(--border2); }
   .hero-card__top { display: flex; align-items: center; gap: 9px; }
@@ -209,8 +212,8 @@
 
   .dash-grid { display: grid; grid-template-columns: 1.35fr 1fr 1fr; gap: 20px; align-items: start; }
   .dash-col { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
-  @media (max-width: 1180px) { .dash-grid { grid-template-columns: 1fr 1fr; } .dash-col:nth-child(3) { grid-column: 1 / -1; } .hero-strip { grid-template-columns: repeat(3, 1fr); } }
-  @media (max-width: 760px) { .dash-grid { grid-template-columns: 1fr; } .hero-strip { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 1180px) { .dash-grid { grid-template-columns: 1fr 1fr; } .dash-col:nth-child(3) { grid-column: 1 / -1; } }
+  @media (max-width: 760px) { .dash-grid { grid-template-columns: 1fr; } }
 
   .heatmap-row { display: flex; gap: 14px; }
   .heatmap-wrap { position: relative; border-radius: var(--r-md); overflow: hidden; background: radial-gradient(circle at 50% 0%, #101725, #070A10 78%); border: 1px solid var(--border); flex: 1; min-height: 400px; }
@@ -221,7 +224,25 @@
   .map-refresh { cursor: pointer; width: 24px; height: 24px; border-radius: 99px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border2); color: var(--muted); transition: all .18s ease; background: var(--panel2); font-size: 0.8rem; }
   .map-refresh:hover { color: var(--brand); border-color: var(--brand); transform: rotate(90deg); }
 
-  .weather-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-height: 420px; overflow-y: auto; padding-right: 3px; }
+  /* ===== Real Leaflet basemap (heat map panel) ===== */
+  .lw-leaflet-map { width: 100%; height: 100%; min-height: 400px; background: #0A0E15; }
+  .lw-leaflet-map .leaflet-tile-pane { filter: brightness(0.62) saturate(0.75) invert(1) hue-rotate(180deg) contrast(0.9); }
+  .lw-leaflet-map .leaflet-control-attribution { background: rgba(5,7,11,0.72) !important; color: var(--faint) !important; font-size: 9px !important; }
+  .lw-leaflet-map .leaflet-control-attribution a { color: var(--muted) !important; }
+  .lw-leaflet-map .leaflet-control-zoom a { background: var(--panel-raised) !important; color: var(--txt) !important; border-color: var(--border2) !important; }
+  .lw-leaflet-map .leaflet-control-zoom a:hover { background: var(--panel2) !important; }
+  .lw-map-label { background: transparent; border: none; box-shadow: none; pointer-events: none; }
+  .lw-map-label__pin { display: flex; flex-direction: column; align-items: center; gap: 3px; transform: translateY(-2px); }
+  .lw-map-label__dot { width: 9px; height: 9px; border-radius: 99px; border: 1.5px solid #05070B; box-shadow: 0 0 0 3px rgba(255,255,255,0.06); }
+  .lw-map-label__name { font-family: var(--font); font-size: 11px; font-weight: 800; color: #F5F7FB; white-space: nowrap; text-shadow: 0 1px 3px #000, 0 0 8px rgba(0,0,0,0.9); letter-spacing: -0.01em; }
+  .lw-map-label__val { font-family: var(--font-mono); font-size: 9px; font-weight: 700; white-space: nowrap; text-shadow: 0 1px 3px #000; margin-top: -2px; }
+  .lw-map-popup .leaflet-popup-content-wrapper { background: var(--panel-raised); color: var(--txt); border: 1px solid var(--border2); border-radius: var(--r-md); box-shadow: var(--shadow-pop); }
+  .lw-map-popup .leaflet-popup-tip { background: var(--panel-raised); border: 1px solid var(--border2); }
+  .lw-map-popup .leaflet-popup-content { margin: 10px 12px; font-family: var(--font); }
+  .lw-map-popup b { font-size: 0.86rem; display: block; margin-bottom: 3px; }
+  .lw-map-popup .lw-pop-sub { color: var(--muted); font-size: 0.72rem; }
+
+  .weather-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); gap: 10px; max-height: 420px; overflow-y: auto; padding-right: 3px; }
   .weather-card { background: var(--panel2); border: 1px solid var(--border); border-radius: var(--r-md); padding: 12px 13px; transition: border-color .14s ease; }
   .weather-card:hover { border-color: var(--border2); }
   .weather-card b.wname { display: block; font-size: 0.72rem; font-weight: 800; margin-bottom: 9px; color: var(--txt); letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -265,8 +286,26 @@
   .topbar__right { display: flex; align-items: center; gap: 10px; }
   .topbar__bell { position: relative; width: 36px; height: 36px; border-radius: 99px; background: var(--panel2); border: 1px solid var(--border2); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.9rem; }
   .topbar__bell .dot { position: absolute; top: -3px; right: -3px; background: var(--ecg-red); color: #fff; font-size: 0.58rem; font-weight: 800; border-radius: 99px; min-width: 15px; height: 15px; display: flex; align-items: center; justify-content: center; padding: 0 3px; box-shadow: 0 0 0 2px var(--bg); }
-  .topbar__avatar { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(155deg, var(--brand2-solid), var(--brand2) 70%); display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.72rem; color: #0b1220; }
-  @media (max-width: 860px) { .weather-grid { grid-template-columns: repeat(2, 1fr); } }
+  .topbar__avatar-wrap { position: relative; }
+  .topbar__avatar { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(155deg, var(--brand2-solid), var(--brand2) 70%); display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.72rem; color: #0b1220; overflow: hidden; cursor: pointer; border: 1px solid var(--border2); padding: 0; transition: border-color .14s ease, transform .14s ease; }
+  .topbar__avatar:hover { border-color: var(--brand); transform: translateY(-1px); }
+  .topbar__avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+  .profile-menu { position: absolute; top: calc(100% + 10px); right: 0; width: 240px; background: var(--panel-raised); border: 1px solid var(--border2); border-radius: var(--r-lg); box-shadow: var(--shadow-pop); padding: 16px; z-index: 200; animation: popIn .14s var(--ease); }
+  .profile-menu__head { display: flex; align-items: center; gap: 11px; margin-bottom: 13px; }
+  .profile-menu__avatar { width: 46px; height: 46px; border-radius: 12px; background: linear-gradient(155deg, var(--brand2-solid), var(--brand2) 70%); display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.85rem; color: #0b1220; overflow: hidden; flex-shrink: 0; }
+  .profile-menu__avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .profile-menu__name { font-size: 0.85rem; font-weight: 800; letter-spacing: -0.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .profile-menu__role { font-size: 0.71rem; color: var(--muted); margin-top: 1px; }
+  .profile-menu__divider { height: 1px; background: var(--border); margin: 12px -16px; }
+  .profile-menu__btn { display: flex; align-items: center; gap: 9px; width: 100%; padding: 9px 8px; border-radius: 8px; border: none; background: transparent; color: var(--txt); font-size: 0.8rem; font-weight: 650; cursor: pointer; text-align: left; transition: background .12s ease; }
+  .profile-menu__btn:hover { background: var(--panel2); }
+  .profile-menu__btn--danger { color: var(--red); }
+
+  .table-avatar { width: 30px; height: 30px; border-radius: 9px; background: linear-gradient(155deg, var(--brand2-solid), var(--brand2) 70%); display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.62rem; color: #0b1220; overflow: hidden; flex-shrink: 0; }
+  .table-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .table-name-cell { display: flex; align-items: center; gap: 10px; }
+
 
   .modal-backdrop { position: fixed; inset: 0; background: rgba(3,4,7,0.72); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 999; padding: 20px; animation: fadeUp .18s ease; }
   .modal-box { background: linear-gradient(180deg, var(--panel-raised), var(--panel) 65%); border: 1px solid var(--border2); border-radius: var(--r-lg); padding: 26px; width: 100%; max-width: 448px; box-shadow: var(--shadow-pop); max-height: 88vh; overflow-y: auto; animation: popIn .22s var(--ease); }
@@ -429,7 +468,11 @@
       <div class="topbar__right">
         <div class="topbar__bell" title="Notifications">🔔<span class="dot" id="topbarBellCount">0</span></div>
         <div class="ov-chip" id="topbarDate">📅 <b>—</b></div>
-        <div class="topbar__avatar" id="topbarAvatar">EC</div>
+        <div class="topbar__avatar-wrap" id="profileMenuWrap">
+          <button class="topbar__avatar" id="topbarAvatar" title="My Profile" onclick="toggleProfileMenu(event)">EC</button>
+          <div class="profile-menu hidden" id="profileMenu"></div>
+        </div>
+        <input type="file" id="avatarFileInput" accept="image/*" class="hidden" onchange="handleAvatarFile(this)">
       </div>
     </div>
     <div class="content" id="content">
@@ -520,19 +563,32 @@ function timeAgo(iso) {
   return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
 }
 
-// Approximate, stylized region positions (0-100 grid) laid out to roughly
-// resemble Ghana's shape/orientation — illustrative, not survey-accurate.
-const REGION_COORDS = {
-  "Upper West": { x: 20, y: 6 }, "Upper East": { x: 50, y: 5 }, "North East": { x: 60, y: 16 },
-  "Northern": { x: 47, y: 24 }, "Savannah": { x: 27, y: 26 }, "Oti": { x: 68, y: 33 },
-  "Bono": { x: 20, y: 41 }, "Bono East": { x: 40, y: 39 }, "Ahafo": { x: 16, y: 51 },
-  "Ashanti": { x: 37, y: 56 }, "Eastern": { x: 54, y: 54 }, "Volta": { x: 72, y: 53 },
-  "Western North": { x: 16, y: 68 }, "Central": { x: 37, y: 78 }, "Greater Accra": { x: 58, y: 75 },
-  "Western": { x: 20, y: 85 }
+// Real-world lat/lng of each region's capital, used to place the heat map on
+// an actual Ghana basemap (Leaflet + OpenStreetMap) instead of a drawn silhouette.
+const REGION_LATLNG = {
+  "Ahafo": [6.8018, -2.5199], "Ashanti": [6.6885, -1.6244], "Bono": [7.3399, -2.3268],
+  "Bono East": [7.5911, -1.9391], "Central": [5.1053, -1.2466], "Eastern": [6.0940, -0.2591],
+  "Greater Accra": [5.6037, -0.1870], "North East": [10.5167, -0.3667], "Northern": [9.4034, -0.8424],
+  "Oti": [8.0667, 0.1833], "Savannah": [9.0833, -1.8167], "Upper East": [10.7856, -0.8514],
+  "Upper West": [10.0601, -2.5099], "Volta": [6.6113, 0.4713], "Western": [4.9047, -1.7554],
+  "Western North": [6.2039, -2.4839]
 };
-// Hand-drawn stylized outline (0-100 units) — an illustrative silhouette,
-// not a geographically accurate boundary of Ghana.
-const GHANA_OUTLINE = "M19,3 C34,1 48,1 58,6 C64,9 68,14 66,20 C71,22 76,26 74,32 C72,37 66,38 68,44 C70,50 64,53 60,55 C62,60 60,65 55,66 C57,71 54,76 50,80 C52,85 48,90 43,92 C40,96 33,96 29,92 C24,93 19,90 18,85 C13,84 10,79 12,74 C7,72 5,66 8,61 C4,57 4,50 8,45 C4,40 5,33 10,29 C7,24 9,18 14,15 C12,10 15,5 19,3 Z";
+const GHANA_CENTER = [7.9, -1.2];
+// District/town-level coordinates aren't hand-mapped, so a district or town
+// marker is placed a small, deterministic distance from its region's real
+// capital coordinate — real basemap, best-effort exact pin position.
+function jitterLatLng(baseLatLng, seed, spreadDeg) {
+  const rnd = seededRand(seed);
+  const angle = rnd() * Math.PI * 2, dist = rnd() * spreadDeg;
+  return [baseLatLng[0] + Math.cos(angle) * dist, baseLatLng[1] + Math.sin(angle) * dist * 1.15];
+}
+function latLngForNode(scope, name) {
+  if (scope === 'headquarters') return REGION_LATLNG[name] || GHANA_CENTER;
+  const regionBase = REGION_LATLNG[ME.organizationUnit.region] || GHANA_CENTER;
+  if (scope === 'regional') return jitterLatLng(regionBase, "district-geo:" + ME.organizationUnit.region + ":" + name, 0.42);
+  const stationBase = jitterLatLng(regionBase, "station-geo:" + ME.organizationUnit.id, 0.18);
+  return jitterLatLng(stationBase, "area-geo:" + ME.organizationUnit.id + ":" + name, 0.09);
+}
 
 // Reverse index: town/capital (lowercased) -> { region, district } — built
 // from the same GHANA_DATA used to power the coverage-area pickers, so a
@@ -568,41 +624,7 @@ function computeNodeMetrics(nodes, events, matchFn) {
   });
 }
 
-function layoutNodesOrganic(nodes, w, h, seedPrefix) {
-  const n = nodes.length || 1;
-  const cols = Math.max(1, Math.round(Math.sqrt(n * w / h)));
-  const rows = Math.ceil(n / cols);
-  const cellW = w / cols, cellH = h / rows;
-  return nodes.map((node, i) => {
-    const rnd = seededRand(seedPrefix + ":" + node.name);
-    const col = i % cols, row = Math.floor(i / cols);
-    const x = clamp(cellW * (col + 0.5) + (rnd() - 0.5) * cellW * 0.55, cellW * 0.25, w - cellW * 0.25);
-    const y = clamp(cellH * (row + 0.5) + (rnd() - 0.5) * cellH * 0.55, cellH * 0.35, h - cellH * 0.2);
-    return { ...node, x, y };
-  });
-}
-
-function renderHeatSVG(nodes, { outline = false, w = 520, h = 480 } = {}) {
-  const defs = nodes.map(n => {
-    const c = healthColor(100 - n.intensity);
-    return `<radialGradient id="g-${slugify(n.name)}" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="${c}" stop-opacity="0.85"/>
-      <stop offset="55%" stop-color="${c}" stop-opacity="0.32"/>
-      <stop offset="100%" stop-color="${c}" stop-opacity="0"/>
-    </radialGradient>`;
-  }).join('');
-  const blobs = nodes.map(n => `<circle cx="${(n.x / 100 * w).toFixed(1)}" cy="${(n.y / 100 * h).toFixed(1)}" r="${(44 + n.intensity * 0.55).toFixed(1)}" fill="url(#g-${slugify(n.name)})"/>`).join('');
-  const dots = nodes.map(n => `<circle cx="${(n.x / 100 * w).toFixed(1)}" cy="${(n.y / 100 * h).toFixed(1)}" r="4" fill="${healthColor(100 - n.intensity)}" stroke="#05070B" stroke-width="1.5"/>`).join('');
-  const labels = nodes.map(n => `<text x="${(n.x / 100 * w).toFixed(1)}" y="${(n.y / 100 * h - 10).toFixed(1)}" text-anchor="middle" font-size="10.5" font-weight="700" font-family="Inter,ui-sans-serif" fill="#EDF0F7" style="paint-order:stroke;stroke:#05070B;stroke-width:3px;stroke-linejoin:round;">${esc(n.name)}</text>`).join('');
-  const outlinePath = outline ? `<path d="${GHANA_OUTLINE}" transform="scale(${(w / 100).toFixed(3)},${(h / 100).toFixed(3)})" fill="#0D1420" stroke="#28324a" stroke-width="0.7" vector-effect="non-scaling-stroke"/>` : '';
-  return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:100%;display:block" xmlns="http://www.w3.org/2000/svg">
-    <defs>${defs}</defs>
-    ${outlinePath}
-    <g style="mix-blend-mode:screen">${blobs}</g>
-    ${dots}${labels}
-  </svg>`;
-}
-
+let LW_MAP = null; // the single live Leaflet map instance for the heat panel
 function scopeLabels(scope) {
   return scope === 'headquarters'
     ? { unit: 'Region', unitPlural: 'Regions', mapTitle: 'Live Outage Heat Map', mapSub: "Real-time outage intensity across Ghana", weatherTitle: 'Region Weather Overview', healthTitle: 'Region Power Health' }
@@ -612,16 +634,16 @@ function scopeLabels(scope) {
 }
 
 function renderHeatMapPanel(scope, metrics) {
-  const L = scopeLabels(scope);
-  let positioned, outline = false;
-  if (scope === 'headquarters') { positioned = metrics.map(n => ({ ...n, ...(REGION_COORDS[n.name] || { x: 50, y: 50 }) })); outline = true; }
-  else if (scope === 'regional') positioned = layoutNodesOrganic(metrics, 100, 100, "district:" + (ME.organizationUnit.region || ''));
-  else positioned = layoutNodesOrganic(metrics, 100, 100, "area:" + ME.organizationUnit.id);
-  const svg = renderHeatSVG(positioned, { outline });
+  const Lb = scopeLabels(scope);
+  const positioned = metrics.map(n => ({ ...n, latlng: latLngForNode(scope, n.name) }));
+  // Stash for mountHeatMap(), called once this markup is actually in the DOM
+  // (a live Leaflet instance can't attach to a detached innerHTML string).
+  window.__lwHeatNodes = positioned;
+  window.__lwHeatScope = scope;
   return `<div class="panel">
-    <div class="panel__head"><div><h3>🗺️ ${L.mapTitle}</h3><p>${L.mapSub}</p></div></div>
+    <div class="panel__head"><div><h3>🗺️ ${Lb.mapTitle}</h3><p>${Lb.mapSub}</p></div></div>
     <div class="heatmap-row">
-      <div class="heatmap-wrap">${svg}</div>
+      <div class="heatmap-wrap"><div id="lwLeafletMap" class="lw-leaflet-map"></div></div>
       <div class="map-legend-col"><span>High</span><div class="grad"></div><span>Low</span></div>
     </div>
     <div class="map-updated">
@@ -629,6 +651,55 @@ function renderHeatMapPanel(scope, metrics) {
       <div class="map-refresh" title="Refresh" onclick="switchTab('overview')">⟳</div>
     </div>
   </div>`;
+}
+
+// Mounts (or refreshes) the real Leaflet + OpenStreetMap heat map into
+// #lwLeafletMap. Called right after renderHeatMapPanel's markup lands in the
+// DOM. Every region/district/area gets a permanent name label, plus an
+// intensity-weighted heat layer so the panel reads at a glance like the
+// reference "Live Outage Heat Map" design, on a real map instead of a
+// hand-drawn illustration.
+function mountHeatMap() {
+  const el = document.getElementById('lwLeafletMap');
+  const nodes = window.__lwHeatNodes || [];
+  if (!el || !window.L) return;
+
+  if (LW_MAP) { LW_MAP.remove(); LW_MAP = null; }
+  LW_MAP = L.map(el, { zoomControl: true, attributionControl: true, scrollWheelZoom: false });
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '© OpenStreetMap, © CARTO', maxZoom: 18, subdomains: 'abcd'
+  }).addTo(LW_MAP);
+
+  if (!nodes.length) { LW_MAP.setView(GHANA_CENTER, 6.3); return; }
+
+  // Heat layer — brighter/redder where outage intensity is higher.
+  if (window.L.heatLayer) {
+    const heatPoints = nodes.map(n => [n.latlng[0], n.latlng[1], Math.max(0.08, n.intensity / 100)]);
+    L.heatLayer(heatPoints, {
+      radius: 60, blur: 45, maxZoom: 10, minOpacity: 0.35,
+      gradient: { 0.15: '#2FE08C', 0.4: '#F2C230', 0.65: '#FF9A4D', 1.0: '#E4392E' }
+    }).addTo(LW_MAP);
+  }
+
+  // Permanent name + value label for every node, exactly on its real coordinate.
+  const bounds = [];
+  nodes.forEach(n => {
+    bounds.push(n.latlng);
+    const color = healthColor(100 - n.intensity);
+    const icon = L.divIcon({
+      className: 'lw-map-label',
+      html: `<div class="lw-map-label__pin"><div class="lw-map-label__dot" style="background:${color}"></div><div class="lw-map-label__name">${esc(n.name)}</div><div class="lw-map-label__val" style="color:${color}">${n.intensity}% load</div></div>`,
+      iconSize: [1, 1], iconAnchor: [0, 6]
+    });
+    const marker = L.marker(n.latlng, { icon }).addTo(LW_MAP);
+    marker.bindPopup(`<b>${esc(n.name)}</b><div class="lw-pop-sub">Outage intensity: ${n.intensity}% · Health: ${n.health}% · ${n.outageCount} active report${n.outageCount === 1 ? '' : 's'}</div>`, { className: 'lw-map-popup' });
+  });
+
+  if (bounds.length === 1) LW_MAP.setView(bounds[0], 9);
+  else LW_MAP.fitBounds(bounds, { padding: [34, 34], maxZoom: window.__lwHeatScope === 'headquarters' ? 7.4 : 10.5 });
+
+  // Ensure correct sizing once the panel/tab has finished laying out.
+  setTimeout(() => LW_MAP && LW_MAP.invalidateSize(), 60);
 }
 
 function renderWeatherPanel(scope, metrics) {
@@ -662,30 +733,101 @@ function genDemandSeries(ns) {
 function svgSeriesPath(points, key, w, h, maxV, minV) {
   return points.map((p, i) => `${i === 0 ? 'M' : 'L'}${((p.h / 24) * w).toFixed(1)},${(h - ((p[key] - minV) / (maxV - minV)) * h).toFixed(1)}`).join(' ');
 }
+// Plot geometry lives outside the render function so the hover handler
+// (attached after the markup is in the DOM) can convert mouse position back
+// into a series index without recomputing the whole chart.
+const GD_CHART = { w: 560, h: 210, padL: 46, padB: 26, padT: 10 };
 function renderGenDemandChart(scope) {
   const series = genDemandSeries(scope + ':' + (ME.organizationUnit.name || ''));
-  const w = 560, h = 200;
+  const { w, h, padL, padB, padT } = GD_CHART;
   const allV = series.flatMap(p => [p.gen, p.demand]);
-  const maxV = Math.max(...allV) * 1.08, minV = Math.min(...allV) * 0.88;
+  const maxV = Math.ceil((Math.max(...allV) * 1.1) / 100) * 100;
+  const minV = Math.floor((Math.min(...allV) * 0.9) / 100) * 100;
   const genPath = svgSeriesPath(series, 'gen', w, h, maxV, minV);
   const demPath = svgSeriesPath(series, 'demand', w, h, maxV, minV);
   const genArea = `${genPath} L${w},${h} L0,${h} Z`;
-  const gridLines = [0, 0.25, 0.5, 0.75, 1].map(f => `<line x1="0" y1="${h * f}" x2="${w}" y2="${h * f}" stroke="#1D2432" stroke-width="1"/>`).join('');
-  const hourLabels = [0, 4, 8, 12, 16, 20, 24].map(hh => `<text x="${(hh / 24) * w}" y="${h + 17}" font-size="9.5" fill="#576074" text-anchor="middle" font-family="Inter">${hh === 0 || hh === 24 ? '12 AM' : hh === 12 ? '12 PM' : hh < 12 ? hh + ' AM' : (hh - 12) + ' PM'}</text>`).join('');
+  const demArea = `${demPath} L${w},${h} L0,${h} Z`;
+  const now = series[series.length - 1];
+  const nowGen = series.find(p => p.h === new Date().getHours()) || now;
+  const reserve = nowGen.gen - nowGen.demand;
+  const ySteps = 4;
+  const gridLines = Array.from({ length: ySteps + 1 }, (_, i) => i / ySteps).map(f => {
+    const val = Math.round(maxV - f * (maxV - minV));
+    return `<line x1="0" y1="${(h * f).toFixed(1)}" x2="${w}" y2="${(h * f).toFixed(1)}" stroke="#1D2432" stroke-width="1"/>
+      <text x="-10" y="${(h * f + 3.5).toFixed(1)}" font-size="10" fill="#7C879C" text-anchor="end" font-family="JetBrains Mono,monospace">${val.toLocaleString()}</text>`;
+  }).join('');
+  const hourLabels = [0, 4, 8, 12, 16, 20, 24].map(hh => `<text x="${(hh / 24) * w}" y="${h + 18}" font-size="9.5" fill="#7C879C" text-anchor="middle" font-family="Inter">${hh === 0 || hh === 24 ? '12 AM' : hh === 12 ? '12 PM' : hh < 12 ? hh + ' AM' : (hh - 12) + ' PM'}</text>`).join('');
+  const nowX = (new Date().getHours() / 24) * w;
+  const dotsGen = series.map(p => `<circle class="gd-pt" data-h="${p.h}" cx="${((p.h / 24) * w).toFixed(1)}" cy="${(h - ((p.gen - minV) / (maxV - minV)) * h).toFixed(1)}" r="2.6" fill="#2FE08C"/>`).join('');
+  const dotsDem = series.map(p => `<circle class="gd-pt" data-h="${p.h}" cx="${((p.h / 24) * w).toFixed(1)}" cy="${(h - ((p.demand - minV) / (maxV - minV)) * h).toFixed(1)}" r="2.6" fill="#5B8CF9"/>`).join('');
+  window.__lwChartSeries = series; window.__lwChartRange = { maxV, minV };
   return `<div class="panel">
     <div class="panel__head">
-      <div><h3>📈 Generation vs Demand (24H)</h3><p>Last 24 hours</p></div>
+      <div><h3>📈 Generation vs Demand (24H)</h3><p>Reserve margin right now: <b style="color:${reserve > 0 ? 'var(--green)' : 'var(--red)'}">${reserve > 0 ? '+' : ''}${reserve.toLocaleString()} MW</b></p></div>
       <div class="chart-legend"><span><i class="dot" style="background:var(--green)"></i>Generation (MW)</span><span><i class="dot" style="background:var(--brand2-solid)"></i>Demand (MW)</span></div>
     </div>
-    <svg viewBox="0 -6 ${w} ${h + 32}" style="width:100%;height:230px;overflow:visible">
-      <defs><linearGradient id="genFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2FE08C" stop-opacity="0.32"/><stop offset="100%" stop-color="#2FE08C" stop-opacity="0"/></linearGradient></defs>
-      ${gridLines}
-      <path d="${genArea}" fill="url(#genFill)"/>
-      <path d="${genPath}" fill="none" stroke="#2FE08C" stroke-width="2.25"/>
-      <path d="${demPath}" fill="none" stroke="#5B8CF9" stroke-width="2.25"/>
-      ${hourLabels}
-    </svg>
+    <div class="chart-wrap" id="genDemandChartWrap" style="position:relative">
+      <svg id="gdChartSvg" viewBox="${-padL} ${-padT} ${w + padL + 8} ${h + padT + padB}" style="width:100%;height:246px;overflow:visible;display:block">
+        <defs>
+          <linearGradient id="genFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2FE08C" stop-opacity="0.38"/><stop offset="100%" stop-color="#2FE08C" stop-opacity="0"/></linearGradient>
+          <linearGradient id="demFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#5B8CF9" stop-opacity="0.30"/><stop offset="100%" stop-color="#5B8CF9" stop-opacity="0"/></linearGradient>
+        </defs>
+        ${gridLines}
+        <line x1="${nowX.toFixed(1)}" y1="0" x2="${nowX.toFixed(1)}" y2="${h}" stroke="#F2B33D" stroke-width="1.25" stroke-dasharray="3 4" opacity="0.55"/>
+        <text x="${nowX.toFixed(1)}" y="-2" font-size="9" fill="#F2B33D" text-anchor="middle" font-family="Inter" font-weight="700">NOW</text>
+        <path d="${demArea}" fill="url(#demFill)"/>
+        <path d="${genArea}" fill="url(#genFill)"/>
+        <path d="${demPath}" fill="none" stroke="#5B8CF9" stroke-width="2.5" stroke-linejoin="round"/>
+        <path d="${genPath}" fill="none" stroke="#2FE08C" stroke-width="2.5" stroke-linejoin="round"/>
+        ${dotsDem}${dotsGen}
+        ${hourLabels}
+        <g id="gdCrosshair" style="opacity:0;pointer-events:none">
+          <line id="gdCrosshairLine" x1="0" y1="0" x2="0" y2="${h}" stroke="#8E99B0" stroke-width="1" stroke-dasharray="2 3"/>
+          <circle id="gdCrosshairGen" r="4.5" fill="#2FE08C" stroke="#05070B" stroke-width="1.5"/>
+          <circle id="gdCrosshairDem" r="4.5" fill="#5B8CF9" stroke="#05070B" stroke-width="1.5"/>
+        </g>
+      </svg>
+      <div id="gdTooltip" style="position:absolute;top:8px;pointer-events:none;opacity:0;transition:opacity .1s ease;background:var(--panel-raised);border:1px solid var(--border2);border-radius:9px;padding:8px 11px;font-size:0.72rem;box-shadow:var(--shadow-pop);white-space:nowrap;z-index:5"></div>
+    </div>
   </div>`;
+}
+function initGenDemandChart() {
+  const wrap = document.getElementById('genDemandChartWrap');
+  const svg = document.getElementById('gdChartSvg');
+  const series = window.__lwChartSeries, range = window.__lwChartRange;
+  if (!wrap || !svg || !series) return;
+  const { w, h } = GD_CHART;
+  const crosshair = document.getElementById('gdCrosshair');
+  const line = document.getElementById('gdCrosshairLine');
+  const cGen = document.getElementById('gdCrosshairGen');
+  const cDem = document.getElementById('gdCrosshairDem');
+  const tip = document.getElementById('gdTooltip');
+  function show(evt) {
+    const pt = svg.createSVGPoint();
+    pt.x = evt.clientX; pt.y = evt.clientY;
+    const loc = pt.matrixTransform(svg.getScreenCTM().inverse());
+    const hour = Math.max(0, Math.min(24, Math.round((loc.x / w) * 24)));
+    const p = series.find(s => s.h === hour) || series[0];
+    const x = (p.h / 24) * w;
+    const yGen = h - ((p.gen - range.minV) / (range.maxV - range.minV)) * h;
+    const yDem = h - ((p.demand - range.minV) / (range.maxV - range.minV)) * h;
+    line.setAttribute('x1', x); line.setAttribute('x2', x);
+    cGen.setAttribute('cx', x); cGen.setAttribute('cy', yGen);
+    cDem.setAttribute('cx', x); cDem.setAttribute('cy', yDem);
+    crosshair.style.opacity = '1';
+    const hh = p.h === 0 ? '12 AM' : p.h === 12 ? '12 PM' : p.h < 12 ? p.h + ' AM' : (p.h - 12) + ' PM';
+    tip.innerHTML = `<b style="display:block;margin-bottom:4px">${hh}</b><span style="color:#2FE08C">● Gen ${p.gen.toLocaleString()} MW</span><br><span style="color:#5B8CF9">● Demand ${p.demand.toLocaleString()} MW</span>`;
+    tip.style.opacity = '1';
+    const wrapW = wrap.getBoundingClientRect().width;
+    const leftPct = Math.min(78, Math.max(2, (x / w) * 100));
+    tip.style.left = leftPct + '%';
+    tip.style.transform = leftPct > 55 ? 'translateX(-100%)' : 'none';
+  }
+  function hide() { crosshair.style.opacity = '0'; tip.style.opacity = '0'; }
+  wrap.onmousemove = show;
+  wrap.onmouseleave = hide;
+  wrap.ontouchmove = (e) => { if (e.touches[0]) show(e.touches[0]); };
+  wrap.ontouchend = hide;
 }
 
 function renderHealthPanel(scope, metrics) {
@@ -984,8 +1126,7 @@ async function bootDashboard() {
   document.getElementById("sbRole").textContent = formatRole(ME.staff.role);
   document.getElementById("topbarStaffName").textContent = `${ME.staff.name} · ${ME.organizationUnit.name}`;
   document.getElementById("navOverviewLabel").textContent = ME.organizationUnit.type === 'headquarters' ? 'Headquarters Dashboard' : ME.organizationUnit.type === 'regional' ? 'Regional Dashboard' : 'Station Dashboard';
-  const initials = (ME.staff.name || 'EC').trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase();
-  document.getElementById("topbarAvatar").textContent = initials || 'EC';
+  renderTopbarAvatar();
   const tick = () => { const el = document.getElementById("topbarDate"); if (el) el.innerHTML = `📅 <b>${new Date().toLocaleDateString([], { month: 'short', day: 'numeric' })}</b>`; const c = document.getElementById("ovClock"); if (c) c.innerHTML = `🕐 <b>${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</b>`; };
   tick(); clearInterval(window.__lwClockTimer); window.__lwClockTimer = setInterval(tick, 30000);
 
@@ -1003,6 +1144,87 @@ function handleLogout() {
   clearToken();
   ME = null;
   location.reload();
+}
+
+// ---- Profile photos ----
+// Stored per-account on this device (localStorage) as a small resized JPEG
+// data URL. If/when the backend exposes a real `avatarUrl` on staff records,
+// getAvatar() below already prefers that for accounts other than yourself.
+function initialsFor(name) { return (name || 'EC').trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase() || 'EC'; }
+function avatarStorageKey(id) { return `lw_avatar_${id}`; }
+function getLocalAvatar(id) { try { return localStorage.getItem(avatarStorageKey(id)) || null; } catch { return null; } }
+function setLocalAvatar(id, dataUrl) { try { localStorage.setItem(avatarStorageKey(id), dataUrl); } catch {} }
+function removeLocalAvatar(id) { try { localStorage.removeItem(avatarStorageKey(id)); } catch {} }
+function avatarFor(staffLike) {
+  // staffLike: { id, name, avatarUrl? }
+  const remote = staffLike && staffLike.avatarUrl;
+  const local = staffLike && staffLike.id === (ME && ME.staff && ME.staff.id) ? getLocalAvatar(staffLike.id) : null;
+  const src = remote || local;
+  return src ? `<img src="${src}" alt="">` : esc(initialsFor(staffLike && staffLike.name));
+}
+function renderTopbarAvatar() {
+  const el = document.getElementById("topbarAvatar");
+  if (!el || !ME) return;
+  el.innerHTML = avatarFor(ME.staff);
+}
+function toggleProfileMenu(evt) {
+  if (evt) evt.stopPropagation();
+  const menu = document.getElementById("profileMenu");
+  if (!menu) return;
+  if (!menu.classList.contains("hidden")) { menu.classList.add("hidden"); return; }
+  const hasPhoto = !!getLocalAvatar(ME.staff.id);
+  menu.innerHTML = `
+    <div class="profile-menu__head">
+      <div class="profile-menu__avatar">${avatarFor(ME.staff)}</div>
+      <div style="min-width:0">
+        <div class="profile-menu__name" title="${esc(ME.staff.name)}">${esc(ME.staff.name)}</div>
+        <div class="profile-menu__role">${esc(formatRole(ME.staff.role))}</div>
+      </div>
+    </div>
+    <button class="profile-menu__btn" onclick="document.getElementById('avatarFileInput').click()">🖼️ ${hasPhoto ? 'Change photo' : 'Upload photo'}</button>
+    ${hasPhoto ? `<button class="profile-menu__btn profile-menu__btn--danger" onclick="clearOwnAvatar()">🗑️ Remove photo</button>` : ''}
+    <div class="profile-menu__divider"></div>
+    <button class="profile-menu__btn profile-menu__btn--danger" onclick="handleLogout()">↪️ Sign Out</button>`;
+  menu.classList.remove("hidden");
+}
+document.addEventListener("click", (e) => {
+  const wrap = document.getElementById("profileMenuWrap");
+  if (wrap && !wrap.contains(e.target)) document.getElementById("profileMenu")?.classList.add("hidden");
+});
+function handleAvatarFile(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  if (!file.type.startsWith("image/")) { toast("Please choose an image file.", "err"); return; }
+  const reader = new FileReader();
+  reader.onload = () => {
+    const img = new Image();
+    img.onload = () => {
+      const size = 160;
+      const canvas = document.createElement("canvas");
+      canvas.width = size; canvas.height = size;
+      const ctx = canvas.getContext("2d");
+      const scale = Math.max(size / img.width, size / img.height);
+      const sw = size / scale, sh = size / scale;
+      const sx = (img.width - sw) / 2, sy = (img.height - sh) / 2;
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, size, size);
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.87);
+      setLocalAvatar(ME.staff.id, dataUrl);
+      renderTopbarAvatar();
+      document.getElementById("profileMenu").classList.add("hidden");
+      toast("Profile photo updated.");
+      if (document.querySelector('.nav-item[data-tab="staff"].active')) switchTab("staff");
+    };
+    img.src = reader.result;
+  };
+  reader.readAsDataURL(file);
+  input.value = "";
+}
+function clearOwnAvatar() {
+  removeLocalAvatar(ME.staff.id);
+  renderTopbarAvatar();
+  document.getElementById("profileMenu").classList.add("hidden");
+  toast("Profile photo removed.");
+  if (document.querySelector('.nav-item[data-tab="staff"].active')) switchTab("staff");
 }
 
 // ============================================================
@@ -1090,6 +1312,8 @@ async function renderOverview(content) {
         ${renderActivityPanel(recentEvents)}
       </div>
     </div>`;
+  mountHeatMap();
+  initGenDemandChart(scope);
 }
 
 // ---- Events ----
@@ -1504,16 +1728,17 @@ async function renderStaff(content) {
   content.innerHTML = `
     <div class="panel">
       <div class="panel__head"><h3>Staff In Your Scope</h3><p>Deactivating an account immediately revokes dashboard access.</p></div>
-      <table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Assigned To</th><th>Status</th><th>Last Login</th><th></th></tr></thead>
+      <table><thead><tr><th></th><th>Name</th><th>Email</th><th>Role</th><th>Assigned To</th><th>Status</th><th>Last Login</th><th></th></tr></thead>
       <tbody>${staff.length ? staff.map(s => `
         <tr>
-          <td>${esc(s.name)}</td><td>${esc(s.email)}</td>
+          <td><div class="table-avatar">${avatarFor(s)}</div></td>
+          <td>${esc(s.name)}${s.id === ME.staff.id ? ` <span style="color:var(--faint);font-size:0.72rem">(you)</span>` : ''}</td><td>${esc(s.email)}</td>
           <td><span class="badge badge--${roleBadgeClass(s.role)}">${esc(formatRole(s.role))}</span></td>
           <td><b>${esc(s.orgUnitName || '—')}</b>${s.orgUnitRegion ? `<div style="color:var(--muted);font-size:0.72rem">${esc(s.orgUnitRegion)}</div>` : ''}</td>
           <td><span class="badge badge--${s.active ? 'active' : 'inactive'}">${s.active ? 'active' : 'inactive'}</span></td>
           <td>${fmtDate(s.lastLoginAt)}</td>
-          <td>${s.id !== ME.staff.id ? `<button class="btn btn--sm ${s.active ? 'btn--danger' : ''}" onclick="toggleStaff('${s.id}', ${!s.active})">${s.active ? 'Deactivate' : 'Reactivate'}</button>` : '<span style="color:var(--faint)">you</span>'}</td>
-        </tr>`).join('') : '<tr><td colspan="7" class="empty-row">No staff visible in your scope.</td></tr>'}
+          <td>${s.id !== ME.staff.id ? `<button class="btn btn--sm ${s.active ? 'btn--danger' : ''}" onclick="toggleStaff('${s.id}', ${!s.active})">${s.active ? 'Deactivate' : 'Reactivate'}</button>` : `<button class="btn btn--sm" onclick="document.getElementById('avatarFileInput').click()">${getLocalAvatar(s.id) ? 'Change photo' : 'Add photo'}</button>`}</td>
+        </tr>`).join('') : '<tr><td colspan="8" class="empty-row">No staff visible in your scope.</td></tr>'}
       </tbody></table>
     </div>`;
 }
