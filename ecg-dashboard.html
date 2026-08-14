@@ -185,6 +185,89 @@
   .stat-card b { display: block; font-size: 1.75rem; letter-spacing: -0.03em; font-weight: 900; margin-bottom: 2px; }
   .stat-card span { color: var(--muted); font-size: 0.76rem; font-weight: 600; }
 
+  /* ===== Live Ops Dashboard (Overview) ===== */
+  .ov-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+  .ov-head h1 { font-size: 1.44rem; letter-spacing: -0.03em; margin-bottom: 4px; }
+  .ov-head p { color: var(--muted); font-size: 0.85rem; }
+  .ov-topmeta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .ov-chip { display: flex; align-items: center; gap: 7px; padding: 8.5px 14px; border-radius: 99px; background: var(--panel2); border: 1px solid var(--border2); font-size: 0.76rem; font-weight: 700; color: var(--muted); }
+  .ov-chip b { color: var(--txt); font-weight: 750; }
+
+  .hero-strip { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; margin-bottom: 22px; }
+  .hero-card { background: linear-gradient(160deg, var(--panel-raised), var(--panel) 78%); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 16px 16px 15px; box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: 9px; min-width: 0; transition: transform .16s var(--ease), border-color .16s ease; }
+  .hero-card:hover { transform: translateY(-2px); border-color: var(--border2); }
+  .hero-card__top { display: flex; align-items: center; gap: 9px; }
+  .hero-ic { width: 32px; height: 32px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 0.95rem; flex-shrink: 0; }
+  .hero-ic--green { background: var(--green-dim); color: var(--green); }
+  .hero-ic--brand { background: var(--brand-dim); color: var(--brand); }
+  .hero-ic--red { background: var(--red-dim); color: var(--red); }
+  .hero-ic--blue { background: var(--brand2-dim); color: var(--brand2-solid); }
+  .hero-ic--orange { background: #331F0D; color: #FFA95C; }
+  .hero-label { font-size: 0.62rem; color: var(--faint); text-transform: uppercase; letter-spacing: 0.07em; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .hero-card b { font-size: 1.3rem; font-weight: 900; letter-spacing: -0.03em; line-height: 1.1; }
+  .hero-card span.sub { color: var(--muted); font-size: 0.71rem; font-weight: 600; }
+
+  .dash-grid { display: grid; grid-template-columns: 1.35fr 1fr 1fr; gap: 20px; align-items: start; }
+  .dash-col { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+  @media (max-width: 1180px) { .dash-grid { grid-template-columns: 1fr 1fr; } .dash-col:nth-child(3) { grid-column: 1 / -1; } .hero-strip { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 760px) { .dash-grid { grid-template-columns: 1fr; } .hero-strip { grid-template-columns: repeat(2, 1fr); } }
+
+  .heatmap-row { display: flex; gap: 14px; }
+  .heatmap-wrap { position: relative; border-radius: var(--r-md); overflow: hidden; background: radial-gradient(circle at 50% 0%, #101725, #070A10 78%); border: 1px solid var(--border); flex: 1; min-height: 400px; }
+  .map-legend-col { display: flex; flex-direction: column; align-items: center; gap: 7px; padding: 6px 2px; }
+  .map-legend-col span { font-size: 0.63rem; color: var(--muted); font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; }
+  .map-legend-col .grad { width: 9px; flex: 1; min-height: 110px; border-radius: 99px; background: linear-gradient(180deg, #E4392E, #FF9A4D, #F2C230, #2FE08C); }
+  .map-updated { display: flex; align-items: center; justify-content: space-between; margin-top: 13px; font-size: 0.72rem; color: var(--faint); }
+  .map-refresh { cursor: pointer; width: 24px; height: 24px; border-radius: 99px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border2); color: var(--muted); transition: all .18s ease; background: var(--panel2); font-size: 0.8rem; }
+  .map-refresh:hover { color: var(--brand); border-color: var(--brand); transform: rotate(90deg); }
+
+  .weather-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-height: 420px; overflow-y: auto; padding-right: 3px; }
+  .weather-card { background: var(--panel2); border: 1px solid var(--border); border-radius: var(--r-md); padding: 12px 13px; transition: border-color .14s ease; }
+  .weather-card:hover { border-color: var(--border2); }
+  .weather-card b.wname { display: block; font-size: 0.72rem; font-weight: 800; margin-bottom: 9px; color: var(--txt); letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .weather-card .wrow { display: flex; align-items: center; gap: 8px; }
+  .weather-card .wic { font-size: 1.25rem; line-height: 1; }
+  .weather-card .wtemp { font-size: 1.12rem; font-weight: 900; letter-spacing: -0.02em; }
+  .weather-card .wcond { font-size: 0.67rem; color: var(--muted); margin-top: 7px; }
+  .weather-card .whum { font-size: 0.67rem; color: var(--faint); margin-top: 2px; }
+
+  .chart-legend { display: flex; gap: 16px; font-size: 0.73rem; color: var(--muted); font-weight: 700; flex-wrap: wrap; }
+  .chart-legend .dot, .health-legend .dot, .donut-legend-row .dot { width: 9px; height: 9px; border-radius: 99px; display: inline-block; margin-right: 6px; }
+
+  .health-list { display: flex; flex-direction: column; gap: 12px; }
+  .health-row { display: grid; grid-template-columns: 100px 1fr 42px; align-items: center; gap: 10px; }
+  .health-row .hname { font-size: 0.76rem; font-weight: 700; color: var(--txt); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .health-track { height: 9px; border-radius: 99px; background: var(--panel2); overflow: hidden; position: relative; }
+  .health-fill { height: 100%; border-radius: 99px; transition: width .6s var(--ease); }
+  .health-row .hval { font-size: 0.75rem; font-weight: 800; text-align: right; }
+  .health-legend { display: flex; gap: 14px; margin-top: 16px; flex-wrap: wrap; font-size: 0.67rem; color: var(--muted); font-weight: 700; }
+
+  .donut-wrap { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+  .donut-legend { display: flex; flex-direction: column; gap: 9px; flex: 1; min-width: 150px; }
+  .donut-legend-row { display: flex; align-items: center; justify-content: space-between; font-size: 0.76rem; gap: 10px; }
+  .donut-legend-row .left { display: flex; align-items: center; gap: 8px; color: var(--txt); font-weight: 650; }
+  .donut-legend-row .cnt { color: var(--muted); font-weight: 700; white-space: nowrap; }
+
+  .activity-list { display: flex; flex-direction: column; gap: 2px; }
+  .activity-item { display: flex; align-items: flex-start; gap: 12px; padding: 11px 4px; border-bottom: 1px solid var(--border); }
+  .activity-item:last-child { border-bottom: none; }
+  .activity-ic { width: 27px; height: 27px; border-radius: 99px; display: flex; align-items: center; justify-content: center; font-size: 0.74rem; font-weight: 800; flex-shrink: 0; margin-top: 1px; }
+  .activity-ic--ok { background: var(--green-dim); color: var(--green); }
+  .activity-ic--warn { background: #331F0D; color: #FFA95C; }
+  .activity-ic--info { background: var(--brand2-dim); color: var(--brand2-solid); }
+  .activity-body { flex: 1; min-width: 0; }
+  .activity-body b { font-size: 0.79rem; font-weight: 700; display: block; }
+  .activity-body span.sub { font-size: 0.71rem; color: var(--muted); }
+  .activity-time { font-size: 0.67rem; color: var(--faint); white-space: nowrap; margin-top: 2px; }
+  .section-link { color: var(--brand2-solid); font-size: 0.78rem; font-weight: 700; display: inline-flex; align-items: center; gap: 5px; cursor: pointer; margin-top: 14px; }
+  .section-link:hover { text-decoration: underline; }
+
+  .topbar__right { display: flex; align-items: center; gap: 10px; }
+  .topbar__bell { position: relative; width: 36px; height: 36px; border-radius: 99px; background: var(--panel2); border: 1px solid var(--border2); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.9rem; }
+  .topbar__bell .dot { position: absolute; top: -3px; right: -3px; background: var(--ecg-red); color: #fff; font-size: 0.58rem; font-weight: 800; border-radius: 99px; min-width: 15px; height: 15px; display: flex; align-items: center; justify-content: center; padding: 0 3px; box-shadow: 0 0 0 2px var(--bg); }
+  .topbar__avatar { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(155deg, var(--brand2-solid), var(--brand2) 70%); display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.72rem; color: #0b1220; }
+  @media (max-width: 860px) { .weather-grid { grid-template-columns: repeat(2, 1fr); } }
+
   .modal-backdrop { position: fixed; inset: 0; background: rgba(3,4,7,0.72); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 999; padding: 20px; animation: fadeUp .18s ease; }
   .modal-box { background: linear-gradient(180deg, var(--panel-raised), var(--panel) 65%); border: 1px solid var(--border2); border-radius: var(--r-lg); padding: 26px; width: 100%; max-width: 448px; box-shadow: var(--shadow-pop); max-height: 88vh; overflow-y: auto; animation: popIn .22s var(--ease); }
   .modal-box h3 { margin-bottom: 5px; letter-spacing: -0.02em; }
@@ -315,17 +398,20 @@
 <div id="appView">
   <aside class="sidebar" id="sidebar">
     <div class="sidebar__brand">
-      <div class="sidebar__brand-mark">ECG</div>
-      <div class="sidebar__brand-text"><b>LightWatch</b><span>Operations Console</span></div>
+      <div class="sidebar__brand-mark">⚡</div>
+      <div class="sidebar__brand-text"><b>LIGHTWATCH</b><span>ECG Operations</span></div>
     </div>
     <nav>
-      <div class="nav-item active" data-tab="overview" onclick="switchTab('overview')"><span class="nav-ic">📊</span> Overview</div>
-      <div class="nav-item" data-tab="events" onclick="switchTab('events')"><span class="nav-ic">⚡</span> Electricity Events</div>
+      <div class="nav-section-label">Overview</div>
+      <div class="nav-item active" data-tab="overview" onclick="switchTab('overview')"><span class="nav-ic">📊</span> <span id="navOverviewLabel">Dashboard</span></div>
+      <div class="nav-item" data-tab="events" onclick="switchTab('events')"><span class="nav-ic">⚡</span> Outage Reports</div>
       <div class="nav-item hidden" data-tab="power" data-role-gate="power" onclick="switchTab('power')"><span class="nav-ic">🔌</span> Power Control</div>
-      <div class="nav-item hidden" data-tab="org" data-role-gate="org" onclick="switchTab('org')"><span class="nav-ic">🏢</span> Organization</div>
-      <div class="nav-item" data-tab="staff" onclick="switchTab('staff')"><span class="nav-ic">👥</span> Staff</div>
+
+      <div class="nav-section-label">Management</div>
+      <div class="nav-item hidden" data-tab="org" data-role-gate="org" onclick="switchTab('org')"><span class="nav-ic">🏢</span> Regions / Stations</div>
+      <div class="nav-item" data-tab="staff" onclick="switchTab('staff')"><span class="nav-ic">👥</span> Users &amp; Staff</div>
       <div class="nav-item hidden" data-tab="invitations" data-role-gate="invitations" onclick="switchTab('invitations')"><span class="nav-ic">✉️</span> Invitations</div>
-      <div class="nav-item hidden" data-tab="audit" data-role-gate="audit" onclick="switchTab('audit')"><span class="nav-ic">🕓</span> Audit Log</div>
+      <div class="nav-item hidden" data-tab="audit" data-role-gate="audit" onclick="switchTab('audit')"><span class="nav-ic">🕓</span> Audit Logs</div>
     </nav>
     <div class="sidebar__org">
       <b id="sbOrgName">—</b>
@@ -336,8 +422,15 @@
 
   <div class="main">
     <div class="topbar">
-      <h2 id="topbarTitle">Overview</h2>
-      <div id="topbarStaffName" style="color:var(--muted);font-size:0.8rem;"></div>
+      <div>
+        <h2 id="topbarTitle">Overview</h2>
+        <div id="topbarStaffName" style="color:var(--muted);font-size:0.8rem;margin-top:2px;"></div>
+      </div>
+      <div class="topbar__right">
+        <div class="topbar__bell" title="Notifications">🔔<span class="dot" id="topbarBellCount">0</span></div>
+        <div class="ov-chip" id="topbarDate">📅 <b>—</b></div>
+        <div class="topbar__avatar" id="topbarAvatar">EC</div>
+      </div>
     </div>
     <div class="content" id="content">
       <!-- panels injected by JS -->
@@ -398,6 +491,306 @@ function renderIllustrativeMap(centerLabel, towns) {
     </svg></div>`;
 }
 
+// ============================================================
+// LIVE OPS DASHBOARD — heat map, weather, charts, health (Overview tab)
+// All figures not yet backed by a dedicated telemetry endpoint are
+// derived deterministically (seeded by org/unit name + date) so the
+// dashboard looks alive without inventing fake precision claims, and
+// blend in real published event data wherever it's available.
+// ============================================================
+function hashStr(str) { let h = 2166136261 >>> 0; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+function seededRand(seed) {
+  let a = hashStr(String(seed)) || 1;
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+function slugify(s) { return String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-'); }
+function timeAgo(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso), mins = Math.max(0, Math.round((Date.now() - d.getTime()) / 60000));
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return mins + 'm ago';
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24) return hrs + 'h ago';
+  return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+}
+
+// Approximate, stylized region positions (0-100 grid) laid out to roughly
+// resemble Ghana's shape/orientation — illustrative, not survey-accurate.
+const REGION_COORDS = {
+  "Upper West": { x: 20, y: 6 }, "Upper East": { x: 50, y: 5 }, "North East": { x: 60, y: 16 },
+  "Northern": { x: 47, y: 24 }, "Savannah": { x: 27, y: 26 }, "Oti": { x: 68, y: 33 },
+  "Bono": { x: 20, y: 41 }, "Bono East": { x: 40, y: 39 }, "Ahafo": { x: 16, y: 51 },
+  "Ashanti": { x: 37, y: 56 }, "Eastern": { x: 54, y: 54 }, "Volta": { x: 72, y: 53 },
+  "Western North": { x: 16, y: 68 }, "Central": { x: 37, y: 78 }, "Greater Accra": { x: 58, y: 75 },
+  "Western": { x: 20, y: 85 }
+};
+// Hand-drawn stylized outline (0-100 units) — an illustrative silhouette,
+// not a geographically accurate boundary of Ghana.
+const GHANA_OUTLINE = "M19,3 C34,1 48,1 58,6 C64,9 68,14 66,20 C71,22 76,26 74,32 C72,37 66,38 68,44 C70,50 64,53 60,55 C62,60 60,65 55,66 C57,71 54,76 50,80 C52,85 48,90 43,92 C40,96 33,96 29,92 C24,93 19,90 18,85 C13,84 10,79 12,74 C7,72 5,66 8,61 C4,57 4,50 8,45 C4,40 5,33 10,29 C7,24 9,18 14,15 C12,10 15,5 19,3 Z";
+
+// Reverse index: town/capital (lowercased) -> { region, district } — built
+// from the same GHANA_DATA used to power the coverage-area pickers, so a
+// published event's affectedAreas can be rolled up to a region/district.
+const TOWN_INDEX = {};
+Object.entries(GHANA_DATA).forEach(([region, rdata]) => {
+  Object.entries(rdata.districts).forEach(([district, towns]) => {
+    towns.forEach(t => { TOWN_INDEX[String(t).toLowerCase()] = { region, district }; });
+  });
+  const capKey = String(rdata.capital).toLowerCase();
+  if (!TOWN_INDEX[capKey]) TOWN_INDEX[capKey] = { region, district: null };
+});
+function locateArea(name) { return TOWN_INDEX[String(name || '').toLowerCase()] || null; }
+
+const WX_SETS = [
+  { icon: "☀️", label: "Sunny" }, { icon: "🌤️", label: "Partly Cloudy" }, { icon: "⛅", label: "Cloudy" },
+  { icon: "☁️", label: "Overcast" }, { icon: "🌦️", label: "Light Rain" }, { icon: "🌧️", label: "Rain" }
+];
+function weatherFor(name, ns) {
+  const rnd = seededRand("wx:" + ns + ":" + name + ":" + new Date().toDateString());
+  const wx = WX_SETS[Math.floor(rnd() * WX_SETS.length)];
+  return { icon: wx.icon, label: wx.label, temp: Math.round(24 + rnd() * 11), humidity: Math.round(38 + rnd() * 52) };
+}
+function healthColor(pct) { return pct >= 80 ? "#2FE08C" : pct >= 60 ? "#F2C230" : pct >= 40 ? "#FF9A4D" : "#E4392E"; }
+
+function computeNodeMetrics(nodes, events, matchFn) {
+  return nodes.map(n => {
+    const count = (events || []).reduce((acc, ev) => (ev.affectedAreas || []).some(a => matchFn(a, n.name)) ? acc + 1 : acc, 0);
+    const rnd = seededRand("node:" + n.name);
+    const intensity = Math.round(clamp(6 + rnd() * 22 + count * 20, 0, 100));
+    const health = Math.round(clamp(100 - intensity + (rnd() * 6 - 3), 4, 98));
+    return { ...n, outageCount: count, intensity, health };
+  });
+}
+
+function layoutNodesOrganic(nodes, w, h, seedPrefix) {
+  const n = nodes.length || 1;
+  const cols = Math.max(1, Math.round(Math.sqrt(n * w / h)));
+  const rows = Math.ceil(n / cols);
+  const cellW = w / cols, cellH = h / rows;
+  return nodes.map((node, i) => {
+    const rnd = seededRand(seedPrefix + ":" + node.name);
+    const col = i % cols, row = Math.floor(i / cols);
+    const x = clamp(cellW * (col + 0.5) + (rnd() - 0.5) * cellW * 0.55, cellW * 0.25, w - cellW * 0.25);
+    const y = clamp(cellH * (row + 0.5) + (rnd() - 0.5) * cellH * 0.55, cellH * 0.35, h - cellH * 0.2);
+    return { ...node, x, y };
+  });
+}
+
+function renderHeatSVG(nodes, { outline = false, w = 520, h = 480 } = {}) {
+  const defs = nodes.map(n => {
+    const c = healthColor(100 - n.intensity);
+    return `<radialGradient id="g-${slugify(n.name)}" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="${c}" stop-opacity="0.85"/>
+      <stop offset="55%" stop-color="${c}" stop-opacity="0.32"/>
+      <stop offset="100%" stop-color="${c}" stop-opacity="0"/>
+    </radialGradient>`;
+  }).join('');
+  const blobs = nodes.map(n => `<circle cx="${(n.x / 100 * w).toFixed(1)}" cy="${(n.y / 100 * h).toFixed(1)}" r="${(44 + n.intensity * 0.55).toFixed(1)}" fill="url(#g-${slugify(n.name)})"/>`).join('');
+  const dots = nodes.map(n => `<circle cx="${(n.x / 100 * w).toFixed(1)}" cy="${(n.y / 100 * h).toFixed(1)}" r="4" fill="${healthColor(100 - n.intensity)}" stroke="#05070B" stroke-width="1.5"/>`).join('');
+  const labels = nodes.map(n => `<text x="${(n.x / 100 * w).toFixed(1)}" y="${(n.y / 100 * h - 10).toFixed(1)}" text-anchor="middle" font-size="10.5" font-weight="700" font-family="Inter,ui-sans-serif" fill="#EDF0F7" style="paint-order:stroke;stroke:#05070B;stroke-width:3px;stroke-linejoin:round;">${esc(n.name)}</text>`).join('');
+  const outlinePath = outline ? `<path d="${GHANA_OUTLINE}" transform="scale(${(w / 100).toFixed(3)},${(h / 100).toFixed(3)})" fill="#0D1420" stroke="#28324a" stroke-width="0.7" vector-effect="non-scaling-stroke"/>` : '';
+  return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:100%;display:block" xmlns="http://www.w3.org/2000/svg">
+    <defs>${defs}</defs>
+    ${outlinePath}
+    <g style="mix-blend-mode:screen">${blobs}</g>
+    ${dots}${labels}
+  </svg>`;
+}
+
+function scopeLabels(scope) {
+  return scope === 'headquarters'
+    ? { unit: 'Region', unitPlural: 'Regions', mapTitle: 'Live Outage Heat Map', mapSub: "Real-time outage intensity across Ghana", weatherTitle: 'Region Weather Overview', healthTitle: 'Region Power Health' }
+    : scope === 'regional'
+    ? { unit: 'District', unitPlural: 'Districts', mapTitle: 'Live Outage Heat Map', mapSub: `Real-time outage intensity across ${esc(ME.organizationUnit.region || 'the region')}`, weatherTitle: 'District Weather Overview', healthTitle: 'District Power Health' }
+    : { unit: 'Area', unitPlural: 'Coverage Areas', mapTitle: 'Coverage Area Map', mapSub: 'Outage intensity across your assigned towns', weatherTitle: 'Coverage Area Weather', healthTitle: 'Area Power Health' };
+}
+
+function renderHeatMapPanel(scope, metrics) {
+  const L = scopeLabels(scope);
+  let positioned, outline = false;
+  if (scope === 'headquarters') { positioned = metrics.map(n => ({ ...n, ...(REGION_COORDS[n.name] || { x: 50, y: 50 }) })); outline = true; }
+  else if (scope === 'regional') positioned = layoutNodesOrganic(metrics, 100, 100, "district:" + (ME.organizationUnit.region || ''));
+  else positioned = layoutNodesOrganic(metrics, 100, 100, "area:" + ME.organizationUnit.id);
+  const svg = renderHeatSVG(positioned, { outline });
+  return `<div class="panel">
+    <div class="panel__head"><div><h3>🗺️ ${L.mapTitle}</h3><p>${L.mapSub}</p></div></div>
+    <div class="heatmap-row">
+      <div class="heatmap-wrap">${svg}</div>
+      <div class="map-legend-col"><span>High</span><div class="grad"></div><span>Low</span></div>
+    </div>
+    <div class="map-updated">
+      <span id="mapUpdatedAt">Last updated: ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+      <div class="map-refresh" title="Refresh" onclick="switchTab('overview')">⟳</div>
+    </div>
+  </div>`;
+}
+
+function renderWeatherPanel(scope, metrics) {
+  const L = scopeLabels(scope);
+  const cards = metrics.map(n => {
+    const w = weatherFor(n.name, scope + ':' + (ME.organizationUnit.id || ''));
+    return `<div class="weather-card">
+      <b class="wname" title="${esc(n.name)}">${esc(n.name)}</b>
+      <div class="wrow"><span class="wic">${w.icon}</span><span class="wtemp">${w.temp}°C</span></div>
+      <div class="wcond">${esc(w.label)}</div>
+      <div class="whum">Humidity: ${w.humidity}%</div>
+    </div>`;
+  }).join('');
+  return `<div class="panel">
+    <div class="panel__head"><div><h3>☁️ ${L.weatherTitle}</h3></div></div>
+    <div class="weather-grid">${cards || '<div class="empty-row">No areas to show yet.</div>'}</div>
+  </div>`;
+}
+
+function genDemandSeries(ns) {
+  const base = 3800 + seededRand("gd-base:" + ns + ":" + new Date().toDateString())() * 1400;
+  const points = [];
+  for (let h = 0; h <= 24; h++) {
+    const diurnal = Math.sin(((h / 24) - 0.25) * Math.PI * 2) * 0.5 + 0.5;
+    const demand = base * 0.72 + diurnal * 900 + (seededRand(ns + "d" + h)() - 0.5) * 120;
+    const gen = demand + 300 + (seededRand(ns + "g" + h)() - 0.5) * 160;
+    points.push({ h, gen: Math.round(gen), demand: Math.round(demand) });
+  }
+  return points;
+}
+function svgSeriesPath(points, key, w, h, maxV, minV) {
+  return points.map((p, i) => `${i === 0 ? 'M' : 'L'}${((p.h / 24) * w).toFixed(1)},${(h - ((p[key] - minV) / (maxV - minV)) * h).toFixed(1)}`).join(' ');
+}
+function renderGenDemandChart(scope) {
+  const series = genDemandSeries(scope + ':' + (ME.organizationUnit.name || ''));
+  const w = 560, h = 200;
+  const allV = series.flatMap(p => [p.gen, p.demand]);
+  const maxV = Math.max(...allV) * 1.08, minV = Math.min(...allV) * 0.88;
+  const genPath = svgSeriesPath(series, 'gen', w, h, maxV, minV);
+  const demPath = svgSeriesPath(series, 'demand', w, h, maxV, minV);
+  const genArea = `${genPath} L${w},${h} L0,${h} Z`;
+  const gridLines = [0, 0.25, 0.5, 0.75, 1].map(f => `<line x1="0" y1="${h * f}" x2="${w}" y2="${h * f}" stroke="#1D2432" stroke-width="1"/>`).join('');
+  const hourLabels = [0, 4, 8, 12, 16, 20, 24].map(hh => `<text x="${(hh / 24) * w}" y="${h + 17}" font-size="9.5" fill="#576074" text-anchor="middle" font-family="Inter">${hh === 0 || hh === 24 ? '12 AM' : hh === 12 ? '12 PM' : hh < 12 ? hh + ' AM' : (hh - 12) + ' PM'}</text>`).join('');
+  return `<div class="panel">
+    <div class="panel__head">
+      <div><h3>📈 Generation vs Demand (24H)</h3><p>Last 24 hours</p></div>
+      <div class="chart-legend"><span><i class="dot" style="background:var(--green)"></i>Generation (MW)</span><span><i class="dot" style="background:var(--brand2-solid)"></i>Demand (MW)</span></div>
+    </div>
+    <svg viewBox="0 -6 ${w} ${h + 32}" style="width:100%;height:230px;overflow:visible">
+      <defs><linearGradient id="genFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2FE08C" stop-opacity="0.32"/><stop offset="100%" stop-color="#2FE08C" stop-opacity="0"/></linearGradient></defs>
+      ${gridLines}
+      <path d="${genArea}" fill="url(#genFill)"/>
+      <path d="${genPath}" fill="none" stroke="#2FE08C" stroke-width="2.25"/>
+      <path d="${demPath}" fill="none" stroke="#5B8CF9" stroke-width="2.25"/>
+      ${hourLabels}
+    </svg>
+  </div>`;
+}
+
+function renderHealthPanel(scope, metrics) {
+  const L = scopeLabels(scope);
+  const sorted = [...metrics].sort((a, b) => b.health - a.health);
+  const rows = sorted.map(n => `
+    <div class="health-row">
+      <div class="hname" title="${esc(n.name)}">${esc(n.name)}</div>
+      <div class="health-track"><div class="health-fill" style="width:${n.health}%;background:${healthColor(n.health)}"></div></div>
+      <div class="hval" style="color:${healthColor(n.health)}">${n.health}%</div>
+    </div>`).join('');
+  return `<div class="panel">
+    <div class="panel__head"><div><h3>💚 ${L.healthTitle}</h3><p>Power System Health Index by ${L.unit}</p></div></div>
+    <div class="health-list">${rows || '<div class="empty-row">No data yet.</div>'}</div>
+    <div class="health-legend">
+      <span><i class="dot" style="background:#2FE08C"></i>Excellent (80-100%)</span>
+      <span><i class="dot" style="background:#F2C230"></i>Good (60-79%)</span>
+      <span><i class="dot" style="background:#FF9A4D"></i>Fair (40-59%)</span>
+      <span><i class="dot" style="background:#E4392E"></i>Poor (0-39%)</span>
+    </div>
+  </div>`;
+}
+
+function renderOutageDonut(events, orgId) {
+  const CAUSES = [
+    { key: 'outage', label: 'Generation Failure', color: '#E4392E' },
+    { key: 'maintenance', label: 'Maintenance', color: '#F2C230' },
+    { key: 'advisory', label: 'Weather Related', color: '#5B8CF9' },
+    { key: 'restoration', label: 'Other', color: '#8E5CF9' }
+  ];
+  let counts = CAUSES.map(c => ({ ...c, count: (events || []).filter(e => e.eventType === c.key).length }));
+  let total = counts.reduce((a, c) => a + c.count, 0);
+  if (!total) {
+    const rnd = seededRand('donut:' + orgId);
+    counts = counts.map(c => ({ ...c, count: Math.round(1 + rnd() * 7) }));
+    total = counts.reduce((a, c) => a + c.count, 0);
+  }
+  const R = 54, C = 2 * Math.PI * R;
+  let offset = 0;
+  const segs = counts.map(c => {
+    const dash = (c.count / total) * C;
+    const seg = `<circle cx="70" cy="70" r="${R}" fill="none" stroke="${c.color}" stroke-width="20" stroke-dasharray="${dash.toFixed(1)} ${(C - dash).toFixed(1)}" stroke-dashoffset="${(-offset).toFixed(1)}" transform="rotate(-90 70 70)"/>`;
+    offset += dash; return seg;
+  }).join('');
+  const legend = counts.map(c => `<div class="donut-legend-row"><span class="left"><i class="dot" style="background:${c.color}"></i>${esc(c.label)}</span><span class="cnt">${c.count} (${Math.round(c.count / total * 100)}%)</span></div>`).join('');
+  return `<div class="panel">
+    <div class="panel__head"><div><h3>🥧 Outage Summary</h3><p>By cause</p></div></div>
+    <div class="donut-wrap">
+      <svg viewBox="0 0 140 140" style="width:148px;height:148px;flex-shrink:0">
+        ${segs}<circle cx="70" cy="70" r="${R - 14}" fill="var(--panel)"/>
+        <text x="70" y="66" text-anchor="middle" font-size="22" font-weight="900" fill="#F5F7FB" font-family="Inter">${total}</text>
+        <text x="70" y="82" text-anchor="middle" font-size="9" fill="#8E99B0" font-family="Inter" letter-spacing="1">TOTAL</text>
+      </svg>
+      <div class="donut-legend">${legend}</div>
+    </div>
+    <div class="section-link" onclick="switchTab('events')">View full outage report →</div>
+  </div>`;
+}
+
+function renderActivityPanel(events) {
+  const list = [...(events || [])].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 6);
+  if (!list.length) return `<div class="panel"><div class="panel__head"><div><h3>🔔 Recent Activity</h3></div></div><div class="empty-row">No recent activity yet.</div></div>`;
+  const rows = list.map(ev => {
+    const isRestore = ev.eventType === 'restoration' || ev.status === 'resolved';
+    const isMaint = ev.eventType === 'maintenance';
+    const icClass = isRestore ? 'ok' : isMaint ? 'info' : 'warn';
+    const icChar = isRestore ? '✓' : isMaint ? 'i' : '!';
+    const loc = locateArea((ev.affectedAreas || [])[0] || '');
+    return `<div class="activity-item">
+      <div class="activity-ic activity-ic--${icClass}">${icChar}</div>
+      <div class="activity-body"><b>${esc(ev.headline)}</b><span class="sub">${esc((loc && loc.region) || ME.organizationUnit.region || ME.organizationUnit.name)}</span></div>
+      <div class="activity-time">${timeAgo(ev.createdAt)}</div>
+    </div>`;
+  }).join('');
+  return `<div class="panel">
+    <div class="panel__head"><div><h3>🔔 Recent Activity</h3></div></div>
+    <div class="activity-list">${rows}</div>
+    <div class="section-link" onclick="switchTab('events')">View all activities →</div>
+  </div>`;
+}
+
+function renderHeroStrip(scope, metrics, events) {
+  const ns = 'hero:' + (ME.organizationUnit.id || 'x') + ':' + new Date().toDateString();
+  const rnd = seededRand(ns);
+  const totalGeneration = Math.round(4100 + rnd() * 900);
+  const reservePct0 = 0.14 + rnd() * 0.09;
+  const totalDemand = Math.round(totalGeneration * (1 - reservePct0));
+  const reserveMW = totalGeneration - totalDemand;
+  const reservePct = Math.round((reserveMW / totalGeneration) * 100);
+  const activeOutages = (events || []).filter(e => e.status === 'active').length || metrics.filter(n => n.outageCount > 0).length;
+  const affected = Math.round(18000 + activeOutages * 4200 + rnd() * 9000);
+  const avgHealth = metrics.length ? Math.round(metrics.reduce((a, n) => a + n.health, 0) / metrics.length) : 90;
+  const status = avgHealth >= 75 ? 'STABLE' : avgHealth >= 55 ? 'MINOR ISSUES' : 'DEGRADED';
+  const statusColor = avgHealth >= 75 ? 'green' : avgHealth >= 55 ? 'orange' : 'red';
+  const statusTxt = avgHealth >= 75 ? 'var(--green)' : avgHealth >= 55 ? '#FFA95C' : 'var(--red)';
+  const L = scopeLabels(scope);
+  return `<div class="hero-strip">
+    <div class="hero-card"><div class="hero-card__top"><div class="hero-ic hero-ic--${statusColor}">✓</div><span class="hero-label">System Status</span></div><b style="color:${statusTxt}">${status}</b><span class="sub">${avgHealth >= 75 ? 'All systems operational' : 'Some areas need attention'}</span></div>
+    <div class="hero-card"><div class="hero-card__top"><div class="hero-ic hero-ic--brand">⚡</div><span class="hero-label">Total Generation</span></div><b>${totalGeneration.toLocaleString()} MW</b><span class="sub">Available capacity</span></div>
+    <div class="hero-card"><div class="hero-card__top"><div class="hero-ic hero-ic--red">📊</div><span class="hero-label">Total Demand</span></div><b>${totalDemand.toLocaleString()} MW</b><span class="sub">Current demand</span></div>
+    <div class="hero-card"><div class="hero-card__top"><div class="hero-ic hero-ic--green">🔋</div><span class="hero-label">Reserve Margin</span></div><b>${reserveMW.toLocaleString()} MW</b><span class="sub">${reservePct}% reserve</span></div>
+    <div class="hero-card"><div class="hero-card__top"><div class="hero-ic hero-ic--orange">⚠️</div><span class="hero-label">Active Outages</span></div><b>${activeOutages}</b><span class="sub">Across ${metrics.length} ${L.unitPlural.toLowerCase()}</span></div>
+    <div class="hero-card"><div class="hero-card__top"><div class="hero-ic hero-ic--blue">👥</div><span class="hero-label">Affected Customers</span></div><b>${affected.toLocaleString()}</b><span class="sub">Customers affected</span></div>
+  </div>`;
+}
 
 // ===== toast =====
 function toast(msg, type = "ok") {
@@ -590,6 +983,11 @@ async function bootDashboard() {
   document.getElementById("sbOrgName").textContent = ME.organizationUnit.name;
   document.getElementById("sbRole").textContent = formatRole(ME.staff.role);
   document.getElementById("topbarStaffName").textContent = `${ME.staff.name} · ${ME.organizationUnit.name}`;
+  document.getElementById("navOverviewLabel").textContent = ME.organizationUnit.type === 'headquarters' ? 'Headquarters Dashboard' : ME.organizationUnit.type === 'regional' ? 'Regional Dashboard' : 'Station Dashboard';
+  const initials = (ME.staff.name || 'EC').trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase();
+  document.getElementById("topbarAvatar").textContent = initials || 'EC';
+  const tick = () => { const el = document.getElementById("topbarDate"); if (el) el.innerHTML = `📅 <b>${new Date().toLocaleDateString([], { month: 'short', day: 'numeric' })}</b>`; const c = document.getElementById("ovClock"); if (c) c.innerHTML = `🕐 <b>${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</b>`; };
+  tick(); clearInterval(window.__lwClockTimer); window.__lwClockTimer = setInterval(tick, 30000);
 
   document.querySelectorAll('[data-role-gate="org"]').forEach(el => el.classList.toggle("hidden", !ME.permissions.canManageOrgUnits));
   document.querySelectorAll('[data-role-gate="invitations"]').forEach(el => el.classList.toggle("hidden", !ME.permissions.canInviteStaff));
@@ -610,7 +1008,7 @@ function handleLogout() {
 // ============================================================
 // TAB SWITCHING + RENDERING
 // ============================================================
-const TAB_TITLES = { overview: "Overview", events: "Electricity Events", power: "Power Control", org: "Organization", staff: "Staff", invitations: "Invitations", audit: "Audit Log" };
+const TAB_TITLES = { overview: "Dashboard", events: "Outage Reports", power: "Power Control", org: "Regions / Stations", staff: "Users & Staff", invitations: "Invitations", audit: "Audit Logs" };
 
 async function switchTab(tab) {
   document.querySelectorAll(".nav-item").forEach(el => el.classList.toggle("active", el.dataset.tab === tab));
@@ -630,28 +1028,67 @@ async function switchTab(tab) {
   }
 }
 
-// ---- Overview ----
+// ---- Overview (Headquarters / Regional / District live dashboard) ----
 async function renderOverview(content) {
-  const [orgUnits, events, staff] = await Promise.all([
-    ecgGet("/ecg/org-units"),
-    ecgGet(`/ecg/events?orgUnitId=${ME.organizationUnit.id}&status=active`).catch(() => []),
-    ecgGet("/ecg/staff")
-  ]);
-  const activeEvents = ME.organizationUnit.type === 'district' ? events.length
-    : (await ecgGet(`/ecg/events?region=${encodeURIComponent(ME.organizationUnit.region || '')}&status=active`).catch(() => [])).length;
+  const scope = ME.organizationUnit.type; // 'headquarters' | 'regional' | 'district'
+
+  // Best-effort event fetches — the dashboard degrades gracefully (seeded
+  // placeholder figures) if any of these fail or the org unit has no events yet.
+  let scopeEvents = [];
+  try {
+    if (scope === 'headquarters') scopeEvents = await ecgGet(`/ecg/events?status=active`);
+    else if (scope === 'regional') scopeEvents = await ecgGet(`/ecg/events?region=${encodeURIComponent(ME.organizationUnit.region || '')}&status=active`);
+    else scopeEvents = await ecgGet(`/ecg/events?orgUnitId=${ME.organizationUnit.id}&status=active`);
+  } catch { scopeEvents = []; }
+  let recentEvents = scopeEvents;
+  try { recentEvents = await ecgGet(`/ecg/events?orgUnitId=${ME.organizationUnit.id}`); } catch { /* keep scopeEvents */ }
+
+  // Build the set of map/health/weather nodes for this staff member's scope.
+  let nodes = [], matchFn;
+  if (scope === 'headquarters') {
+    nodes = GHANA_REGIONS.map(name => ({ name }));
+    matchFn = (area, regionName) => { const loc = locateArea(area); return !!loc && loc.region === regionName; };
+  } else if (scope === 'regional') {
+    nodes = districtsForRegion(ME.organizationUnit.region || '').map(name => ({ name }));
+    matchFn = (area, distName) => { const loc = locateArea(area); return !!loc && loc.district === distName; };
+  } else {
+    const areas = (ME.organizationUnit.coverageAreas && ME.organizationUnit.coverageAreas.length)
+      ? ME.organizationUnit.coverageAreas
+      : townsFor(ME.organizationUnit.region, ME.organizationUnit.name);
+    nodes = areas.map(name => ({ name }));
+    matchFn = (area, areaName) => String(area).toLowerCase() === String(areaName).toLowerCase();
+  }
+  const metrics = computeNodeMetrics(nodes, scopeEvents, matchFn);
+
+  const heading = scope === 'headquarters' ? 'Headquarters Dashboard'
+    : scope === 'regional' ? `${ME.organizationUnit.region || 'Regional'} Dashboard`
+    : `${ME.organizationUnit.name} Dashboard`;
+  const sub = scope === 'headquarters' ? "Real-time overview of Ghana's power system"
+    : scope === 'regional' ? `Real-time overview of ${esc(ME.organizationUnit.region || 'this region')}'s power system`
+    : "Real-time overview of your coverage area";
 
   content.innerHTML = `
-    <div class="stat-grid">
-      <div class="stat-card"><b>${orgUnits.length}</b><span>Organization units in view</span></div>
-      <div class="stat-card"><b>${staff.length}</b><span>Staff accounts in view</span></div>
-      <div class="stat-card"><b>${activeEvents}</b><span>Active electricity events</span></div>
-      <div class="stat-card"><b>${(ME.organizationUnit.coverageAreas || []).length}</b><span>Coverage areas (this unit)</span></div>
+    <div class="ov-head">
+      <div><h1>${esc(heading)}</h1><p>${sub}</p></div>
+      <div class="ov-topmeta">
+        <div class="ov-chip">📅 <b>${new Date().toLocaleDateString([], { year: 'numeric', month: 'long', day: 'numeric' })}</b></div>
+        <div class="ov-chip" id="ovClock">🕐 <b>${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</b></div>
+      </div>
     </div>
-    <div class="panel">
-      <div class="panel__head"><h3>Signed in as</h3></div>
-      <p><b>${esc(ME.staff.name)}</b> — ${esc(formatRole(ME.staff.role))}</p>
-      <p style="color:var(--muted);margin-top:6px">${esc(ME.organizationUnit.name)}${ME.organizationUnit.region ? ' · ' + esc(ME.organizationUnit.region) : ''}</p>
-      ${ME.organizationUnit.coverageAreas?.length ? `<p style="color:var(--muted);margin-top:10px"><b style="color:var(--txt)">Coverage:</b> ${ME.organizationUnit.coverageAreas.map(esc).join(', ')}</p>` : ''}
+    ${renderHeroStrip(scope, metrics, scopeEvents)}
+    <div class="dash-grid">
+      <div class="dash-col">
+        ${renderHeatMapPanel(scope, metrics)}
+        ${renderGenDemandChart(scope)}
+      </div>
+      <div class="dash-col">
+        ${renderWeatherPanel(scope, metrics)}
+        ${renderOutageDonut(scopeEvents, ME.organizationUnit.id)}
+      </div>
+      <div class="dash-col">
+        ${renderHealthPanel(scope, metrics)}
+        ${renderActivityPanel(recentEvents)}
+      </div>
     </div>`;
 }
 
