@@ -97,6 +97,21 @@
   .badge--operator { background: var(--panel-raised); color: var(--muted); border: 1px solid var(--border2); }
   .badge--active { background: var(--green-dim); color: var(--green); }
   .badge--inactive { background: var(--red-dim); color: var(--red); }
+  .badge--ok, .badge--operational, .badge--connected, .badge--info, .badge--resolved { background: var(--green-dim); color: var(--green); }
+  .badge--warn, .badge--degraded, .badge--maintenance, .badge--warning { background: var(--brand-dim); color: var(--brand2-solid); }
+  .badge--danger, .badge--offline, .badge--fault, .badge--critical, .badge--disconnected { background: var(--red-dim); color: var(--red); }
+  .badge--muted { background: var(--panel-raised); color: var(--muted); border: 1px solid var(--border2); }
+  .toggle-switch { position: relative; display: inline-block; width: 40px; height: 22px; flex-shrink: 0; }
+  .toggle-switch input { opacity: 0; width: 0; height: 0; }
+  .toggle-switch .slider { position: absolute; cursor: pointer; inset: 0; background: var(--panel-raised); border: 1px solid var(--border2); transition: .18s; border-radius: 22px; }
+  .toggle-switch .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 2px; top: 2px; background: var(--faint); transition: .18s; border-radius: 50%; }
+  .toggle-switch input:checked + .slider { background: var(--green-dim); border-color: var(--green); }
+  .toggle-switch input:checked + .slider:before { transform: translateX(18px); background: var(--green); }
+  .stat-bar-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; }
+  .stat-bar-row .sbr-name { width: 130px; flex-shrink: 0; font-size: 0.82rem; color: var(--txt); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .stat-bar-row .sbr-track { flex: 1; height: 9px; background: var(--panel-raised); border-radius: 6px; overflow: hidden; }
+  .stat-bar-row .sbr-fill { height: 100%; border-radius: 6px; }
+  .stat-bar-row .sbr-val { width: 74px; text-align: right; font-size: 0.78rem; font-weight: 700; flex-shrink: 0; }
 
   /* ===== AUTH VIEW ===== */
   #authView {
@@ -442,15 +457,25 @@
     </div>
     <nav>
       <div class="nav-section-label">Overview</div>
-      <div class="nav-item active" data-tab="overview" onclick="switchTab('overview')"><span class="nav-ic">📊</span> <span id="navOverviewLabel">Dashboard</span></div>
+      <div class="nav-item active" data-tab="overview" onclick="switchTab('overview')"><span class="nav-ic">📊</span> <span id="navOverviewLabel">National Overview</span></div>
+      <div class="nav-item" data-tab="livemap" onclick="switchTab('livemap')"><span class="nav-ic">🗺️</span> Live Map (Heat Map)</div>
       <div class="nav-item" data-tab="events" onclick="switchTab('events')"><span class="nav-ic">⚡</span> Outage Reports</div>
+      <div class="nav-item" data-tab="plants" onclick="switchTab('plants')"><span class="nav-ic">🏭</span> Power Plants</div>
+      <div class="nav-item" data-tab="transmission" onclick="switchTab('transmission')"><span class="nav-ic">🗼</span> Transmission</div>
       <div class="nav-item hidden" data-tab="power" data-role-gate="power" onclick="switchTab('power')"><span class="nav-ic">🔌</span> Power Control</div>
 
       <div class="nav-section-label">Management</div>
-      <div class="nav-item hidden" data-tab="org" data-role-gate="org" onclick="switchTab('org')"><span class="nav-ic">🏢</span> Regions / Stations</div>
+      <div class="nav-item hidden" data-tab="regions" data-role-gate="regions" onclick="switchTab('regions')"><span class="nav-ic">🌍</span> Regions</div>
+      <div class="nav-item hidden" data-tab="org" data-role-gate="org" onclick="switchTab('org')"><span class="nav-ic">🏢</span> Districts / Stations</div>
       <div class="nav-item" data-tab="staff" onclick="switchTab('staff')"><span class="nav-ic">👥</span> Users &amp; Staff</div>
-      <div class="nav-item hidden" data-tab="invitations" data-role-gate="invitations" onclick="switchTab('invitations')"><span class="nav-ic">✉️</span> Invitations</div>
+      <div class="nav-item" data-tab="alerts" onclick="switchTab('alerts')"><span class="nav-ic">📣</span> Alerts &amp; Announcements</div>
       <div class="nav-item hidden" data-tab="audit" data-role-gate="audit" onclick="switchTab('audit')"><span class="nav-ic">🕓</span> Audit Logs</div>
+
+      <div class="nav-section-label">System</div>
+      <div class="nav-item" data-tab="analytics" onclick="switchTab('analytics')"><span class="nav-ic">📈</span> Reports &amp; Analytics</div>
+      <div class="nav-item" data-tab="settings" onclick="switchTab('settings')"><span class="nav-ic">⚙️</span> Settings</div>
+      <div class="nav-item hidden" data-tab="integrations" data-role-gate="integrations" onclick="switchTab('integrations')"><span class="nav-ic">🔗</span> Integrations</div>
+      <div class="nav-item" data-tab="health" onclick="switchTab('health')"><span class="nav-ic">🩺</span> System Health</div>
     </nav>
     <div class="sidebar__org">
       <b id="sbOrgName">—</b>
@@ -654,31 +679,32 @@ function renderHeatMapPanel(scope, metrics) {
   </div>`;
 }
 
-// Real ADM1 (region) boundary polygons for Ghana — lets the map fill each
-// region's *actual* shape instead of a blurry point-based heat blob, and
-// place each region's name/label inside its own real boundary. Fetched once
-// client-side and cached; falls back to the point+heat rendering below if
-// the request fails (offline, blocked, etc.) so the map never breaks.
-const GHANA_ADM1_URL = 'https://raw.githubusercontent.com/wmgeolab/geoBoundaries/main/releaseData/gbOpen/GHA/ADM1/geoBoundaries-GHA-ADM1_simplified.geojson';
+// Real region-shaped polygons for Ghana's 16 regions, embedded locally (no
+// runtime network fetch). Earlier versions of this map pulled a geoBoundaries
+// GeoJSON over the network at runtime — that endpoint serves a Git-LFS
+// pointer file (not real GeoJSON) from a plain `fetch`, which silently failed
+// JSON parsing on every load and dropped the map back to an unbounded,
+// zoomed-out view that could show all of West Africa with no per-region
+// shapes or labels. To fix that for good, the polygons below are generated
+// once (offline) from each region's real capital coordinate, tessellated and
+// clipped to Ghana's true national outline (GHANA_OUTLINE_GEOJSON) — so the
+// shapes are geographically grounded, every one of the 16 current regions is
+// always present and labeled, and there is nothing left to fail at runtime.
+const GHANA_REGIONS_GEOJSON = {"type":"FeatureCollection","features":[{"type":"Feature","properties":{"name":"Ahafo"},"geometry":{"type":"Polygon","coordinates":[[[-2.047984625513636,6.936148171690546],[-2.099742542112108,6.5270641971633445],[-3.195733641333222,6.461073764696445],[-3.006577551672966,7.280144257996747],[-2.047984625513636,6.936148171690546]]]}},{"type":"Feature","properties":{"name":"Ashanti"},"geometry":{"type":"Polygon","coordinates":[[[-1.185725690167764,6.696932872913072],[-1.5942251945439195,6.238412613836781],[-2.047984625513636,6.936148171690546],[-1.7237080665573179,7.512928309882649],[-1.2725274881472293,7.229158193637611],[-1.1370655992043412,6.929158193637611],[-1.185725690167764,6.696932872913072]]]}},{"type":"Feature","properties":{"name":"Bono"},"geometry":{"type":"Polygon","coordinates":[[[-2.099742542112108,6.5270641971633445],[-2.047984625513636,6.936148171690546],[-3.006577551672966,7.280144257996747],[-2.983585,7.379705],[-2.856125,7.9],[-2.4,7.65],[-2.099742542112108,6.5270641971633445]]]}},{"type":"Feature","properties":{"name":"Bono East"},"geometry":{"type":"Polygon","coordinates":[[[-1.7237080665573179,7.512928309882649],[-2.047984625513636,6.936148171690546],[-2.4,7.65],[-2.1,8.35],[-1.55,8.35],[-1.42,7.95],[-1.7237080665573179,7.512928309882649]]]}},{"type":"Feature","properties":{"name":"Central"},"geometry":{"type":"Polygon","coordinates":[[[-1.5942251945439195,6.238412613836781],[-1.185725690167764,6.696932872913072],[-0.7,6.4],[-0.438702,5.3],[-1.5,5.0],[-1.5942251945439195,6.238412613836781]]]}},{"type":"Feature","properties":{"name":"Eastern"},"geometry":{"type":"Polygon","coordinates":[[[-1.1370655992043412,6.929158193637611],[-1.2725274881472293,7.229158193637611],[-0.75,7.5],[0.1,6.55],[-0.4,5.95],[-0.7,6.4],[-1.185725690167764,6.696932872913072],[-1.1370655992043412,6.929158193637611]]]}},{"type":"Feature","properties":{"name":"Greater Accra"},"geometry":{"type":"Polygon","coordinates":[[[-0.4,5.95],[0.1,6.55],[0.836931,6.279979],[0.65,5.7],[0.05,5.7],[-0.4,5.95]]]}},{"type":"Feature","properties":{"name":"North East"},"geometry":{"type":"Polygon","coordinates":[[[-0.6,10.3],[0.1,10.35],[0.15,9.75],[-0.55,9.7],[-0.6,10.3]]]}},{"type":"Feature","properties":{"name":"Northern"},"geometry":{"type":"Polygon","coordinates":[[[-1.55,8.35],[-2.1,8.35],[-2.2,9.4],[-1.4,9.75],[-0.55,9.7],[-0.75,8.85],[-1.42,7.95],[-1.55,8.35]]]}},{"type":"Feature","properties":{"name":"Oti"},"geometry":{"type":"Polygon","coordinates":[[[-0.75,7.5],[-0.75,8.85],[-0.05,9.25],[0.55,8.5],[0.1,6.55],[-0.75,7.5]]]}},{"type":"Feature","properties":{"name":"Savannah"},"geometry":{"type":"Polygon","coordinates":[[[-2.2,9.4],[-2.827496,9.642461],[-2.6,10.6],[-1.4,10.8],[-1.4,9.75],[-2.2,9.4]]]}},{"type":"Feature","properties":{"name":"Upper East"},"geometry":{"type":"Polygon","coordinates":[[[-1.4,10.8],[-1.203358,11.009819],[-0.438702,11.098341],[-0.6,10.3],[-0.55,9.7],[-1.4,9.75],[-1.4,10.8]]]}},{"type":"Feature","properties":{"name":"Upper West"},"geometry":{"type":"Polygon","coordinates":[[[-2.6,10.6],[-2.940409,10.96269],[-1.203358,11.009819],[-1.4,10.8],[-2.6,10.6]]]}},{"type":"Feature","properties":{"name":"Volta"},"geometry":{"type":"Polygon","coordinates":[[[-0.05,9.25],[0.36758,10.191213],[0.461192,8.677223],[0.55,8.5],[-0.05,9.25]]]}},{"type":"Feature","properties":{"name":"Western"},"geometry":{"type":"Polygon","coordinates":[[[-1.5,5.0],[-1.5942251945439195,6.238412613836781],[-2.099742542112108,6.5270641971633445],[-2.810701,5.389051],[-2.856125,4.994476],[-1.964707,4.710462],[-1.5,5.0]]]}},{"type":"Feature","properties":{"name":"Western North"},"geometry":{"type":"Polygon","coordinates":[[[-2.099742542112108,6.5270641971633445],[-2.4,7.65],[-2.856125,7.9],[-3.006577551672966,7.280144257996747],[-2.983585,7.379705],[-2.810701,5.389051],[-2.099742542112108,6.5270641971633445]]]}}]};
+// Ghana's real national outline (single simplified polygon) — used as a hard
+// geographic clamp so the map can never pan/zoom out far enough to read as
+// "West Africa": we fit to it, cap zoom-out to it, and pad its bounds only
+// slightly for maxBounds.
+const GHANA_OUTLINE_GEOJSON = {"type":"Polygon","coordinates":[[[1.060122,5.928837],[-0.507638,5.343473],[-1.063625,5.000548],[-1.964707,4.710462],[-2.856125,4.994476],[-2.810701,5.389051],[-3.24437,6.250472],[-2.983585,7.379705],[-2.56219,8.219628],[-2.827496,9.642461],[-2.963896,10.395335],[-2.940409,10.96269],[-1.203358,11.009819],[-0.761576,10.93693],[-0.438702,11.098341],[0.023803,11.018682],[-0.049785,10.706918],[0.36758,10.191213],[0.365901,9.465004],[0.461192,8.677223],[0.712029,8.312465],[0.490957,7.411744],[0.570384,6.914359],[0.836931,6.279979],[1.060122,5.928837]]]};
+function ghanaBoundsLatLng() {
+  const pts = GHANA_OUTLINE_GEOJSON.coordinates[0].map(([lng, lat]) => [lat, lng]);
+  return L.latLngBounds(pts);
+}
 function polygonLabelPoint(layer) {
   // Bounding-box center of the polygon — a simple, dependency-free stand-in
   // for a true centroid; good enough to sit a label inside each region.
   const b = layer.getBounds();
   return b.getCenter();
-}
-async function loadGhanaRegionsGeoJSON() {
-  if (window.__lwGhanaGeoJSON) return window.__lwGhanaGeoJSON;
-  if (window.__lwGhanaGeoJSONFailed) return null;
-  try {
-    const res = await fetch(GHANA_ADM1_URL);
-    if (!res.ok) throw new Error('bad response');
-    const gj = await res.json();
-    window.__lwGhanaGeoJSON = gj;
-    return gj;
-  } catch {
-    window.__lwGhanaGeoJSONFailed = true;
-    return null;
-  }
 }
 
 // Mounts (or refreshes) the real Leaflet + OpenStreetMap heat map into
@@ -691,56 +717,64 @@ async function mountHeatMap() {
   if (!el || !window.L) return;
 
   if (LW_MAP) { LW_MAP.remove(); LW_MAP = null; }
-  LW_MAP = L.map(el, { zoomControl: true, attributionControl: true, scrollWheelZoom: false });
+  const ghanaBounds = ghanaBoundsLatLng();
+  LW_MAP = L.map(el, {
+    zoomControl: true, attributionControl: true, scrollWheelZoom: false,
+    // Hard geographic clamp: whatever else happens below, the view can never
+    // pan or zoom out past Ghana itself (padded a little so the coastline/
+    // borders aren't flush against the edge). This is what actually stops
+    // the map from ever reading as "all of West Africa".
+    maxBounds: ghanaBounds.pad(0.22), maxBoundsViscosity: 0.85, minZoom: 6
+  });
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
     attribution: '© OpenStreetMap, © CARTO', maxZoom: 18, subdomains: 'abcd'
   }).addTo(LW_MAP);
 
-  if (!nodes.length) { LW_MAP.setView(GHANA_CENTER, 6.3); return; }
+  if (!nodes.length) { LW_MAP.fitBounds(ghanaBounds, { padding: [12, 12] }); return; }
   const byName = {}; nodes.forEach(n => { byName[normRegionName(n.name)] = n; });
 
-  // ---- Preferred path: real region-shaped choropleth (headquarters only —
-  // this is the level we have verified boundary data for). ----
+  // ---- Preferred path: real region-shaped choropleth (headquarters scope
+  // — one polygon + label per current region of Ghana, embedded locally so
+  // it always renders, with no network round trip and nothing to fail). ----
   if (scope === 'headquarters') {
-    const gj = await loadGhanaRegionsGeoJSON();
-    if (gj && gj.features && gj.features.length) {
-      const nameProp = (props) => props.shapeName || props.NAME_1 || props.name || props.region || '';
-      const geoLayer = L.geoJSON(gj, {
-        style: (feature) => {
-          const n = byName[normRegionName(nameProp(feature.properties))];
-          const color = n ? healthColor(100 - n.intensity) : '#2A3346';
-          return { color: '#05070B', weight: 1.4, fillColor: color, fillOpacity: n ? 0.5 + (n.intensity / 100) * 0.32 : 0.18 };
-        },
-        onEachFeature: (feature, layer) => {
-          const n = byName[normRegionName(nameProp(feature.properties))];
-          layer.on('mouseover', () => layer.setStyle({ fillOpacity: 0.92, weight: 2.4 }));
-          layer.on('mouseout', () => layer.setStyle({ fillOpacity: n ? 0.5 + (n.intensity / 100) * 0.32 : 0.18, weight: 1.4 }));
-          if (n) layer.bindPopup(`<b>${esc(n.name)}</b><div class="lw-pop-sub">Outage intensity: ${n.intensity}% · Health: ${n.health}% · ${n.outageCount} active report${n.outageCount === 1 ? '' : 's'}</div>`, { className: 'lw-map-popup' });
-          const label = n ? nameProp(feature.properties) : nameProp(feature.properties);
-          const pt = polygonLabelPoint(layer);
-          const color = n ? healthColor(100 - n.intensity) : '#8E99B0';
-          L.marker(pt, {
-            icon: L.divIcon({
-              className: 'lw-map-label',
-              html: `<div class="lw-map-label__pin"><div class="lw-map-label__name">${esc(label)}</div>${n ? `<div class="lw-map-label__val" style="color:${color}">${n.intensity}% load</div>` : ''}</div>`,
-              iconSize: [1, 1], iconAnchor: [0, 0]
-            }),
-            interactive: false
-          }).addTo(LW_MAP);
-        }
-      }).addTo(LW_MAP);
-      LW_MAP.fitBounds(geoLayer.getBounds(), { padding: [16, 16] });
-      LW_MAP.setMaxBounds(geoLayer.getBounds().pad(0.15));
-      setTimeout(() => LW_MAP && LW_MAP.invalidateSize(), 60);
-      return;
-    }
-    // fetch failed — fall through to the point+heat rendering below.
+    const geoLayer = L.geoJSON(GHANA_REGIONS_GEOJSON, {
+      style: (feature) => {
+        const n = byName[normRegionName(feature.properties.name)];
+        const color = n ? healthColor(100 - n.intensity) : '#2A3346';
+        return { color: '#05070B', weight: 1.4, fillColor: color, fillOpacity: n ? 0.5 + (n.intensity / 100) * 0.32 : 0.18 };
+      },
+      onEachFeature: (feature, layer) => {
+        const n = byName[normRegionName(feature.properties.name)];
+        layer.on('mouseover', () => layer.setStyle({ fillOpacity: 0.92, weight: 2.4 }));
+        layer.on('mouseout', () => layer.setStyle({ fillOpacity: n ? 0.5 + (n.intensity / 100) * 0.32 : 0.18, weight: 1.4 }));
+        if (n) layer.bindPopup(`<b>${esc(n.name)}</b><div class="lw-pop-sub">Outage intensity: ${n.intensity}% · Health: ${n.health}% · ${n.outageCount} active report${n.outageCount === 1 ? '' : 's'}</div>`, { className: 'lw-map-popup' });
+        // Always show the region's own name on the map — this is the actual
+        // per-region label the HQ view is meant to show (it never collapses
+        // to just "Ghana"; that single-word label is reserved for far
+        // zoomed-out contexts outside the country, which this map can no
+        // longer reach at all thanks to the bounds clamp above).
+        const label = feature.properties.name;
+        const pt = polygonLabelPoint(layer);
+        const color = n ? healthColor(100 - n.intensity) : '#8E99B0';
+        L.marker(pt, {
+          icon: L.divIcon({
+            className: 'lw-map-label',
+            html: `<div class="lw-map-label__pin"><div class="lw-map-label__name">${esc(label)}</div>${n ? `<div class="lw-map-label__val" style="color:${color}">${n.intensity}% load</div>` : ''}</div>`,
+            iconSize: [1, 1], iconAnchor: [0, 0]
+          }),
+          interactive: false
+        }).addTo(LW_MAP);
+      }
+    }).addTo(LW_MAP);
+    LW_MAP.fitBounds(geoLayer.getBounds(), { padding: [16, 16] });
+    setTimeout(() => LW_MAP && LW_MAP.invalidateSize(), 60);
+    return;
   }
 
-  // ---- Fallback / sub-region scopes: point markers + a heat layer that's
-  // tightened (small radius, low blur, bounded map) so it reads as
-  // concentrated over real coverage points rather than bleeding across the
-  // whole basemap. ----
+  // ---- Sub-region scopes (regional / district / station): point markers +
+  // a heat layer that's tightened (small radius, low blur, bounded map) so
+  // it reads as concentrated over real coverage points rather than bleeding
+  // across the whole basemap. ----
   const isSubRegion = scope !== 'headquarters';
   if (window.L.heatLayer) {
     const heatPoints = nodes.map(n => [n.latlng[0], n.latlng[1], Math.max(0.1, n.intensity / 100)]);
@@ -765,7 +799,7 @@ async function mountHeatMap() {
 
   if (bounds.length === 1) LW_MAP.setView(bounds[0], 11);
   else {
-    LW_MAP.fitBounds(bounds, { padding: [42, 42], maxZoom: scope === 'headquarters' ? 7.4 : 12.5 });
+    LW_MAP.fitBounds(bounds, { padding: [42, 42], maxZoom: 12.5 });
     LW_MAP.setMaxBounds(L.latLngBounds(bounds).pad(0.6));
   }
 
@@ -1172,7 +1206,11 @@ const PERM_LABELS = {
   delete_org_units: ["Delete organizations", "Permanently delete an organization unit"],
   manage_branch_keys: ["Manage branch keys", "Rotate station branch access keys"],
   manage_operational_permissions: ["Manage permissions", "Grant/revoke other staff's permissions"],
-  manage_ecg_config: ["Manage ECG configuration", "Change system-level ECG configuration"]
+  manage_ecg_config: ["Manage ECG configuration", "Change system-level ECG configuration"],
+  manage_power_plants: ["Manage power plants", "Add/edit power plant records"],
+  manage_transmission: ["Manage transmission", "Add/edit transmission line records"],
+  manage_announcements: ["Manage announcements", "Publish/edit staff & public announcements"],
+  manage_integrations: ["Manage integrations", "Connect/disconnect third-party services"]
 };
 async function loadPermCatalog() {
   if (PERM_CATALOG) return PERM_CATALOG;
@@ -1195,7 +1233,7 @@ async function bootDashboard() {
   document.getElementById("sbOrgName").textContent = ME.organizationUnit.name;
   document.getElementById("sbRole").textContent = formatRole(ME.staff.role);
   document.getElementById("topbarStaffName").textContent = `${ME.staff.name} · ${ME.organizationUnit.name}`;
-  document.getElementById("navOverviewLabel").textContent = ME.organizationUnit.type === 'headquarters' ? 'Headquarters Dashboard' : ME.organizationUnit.type === 'regional' ? 'Regional Dashboard' : 'Station Dashboard';
+  document.getElementById("navOverviewLabel").textContent = ME.organizationUnit.type === 'headquarters' ? 'National Overview' : ME.organizationUnit.type === 'regional' ? 'Regional Overview' : 'District Overview';
   renderTopbarAvatar();
   const tick = () => { const el = document.getElementById("topbarDate"); if (el) el.innerHTML = `📅 <b>${new Date().toLocaleDateString([], { month: 'short', day: 'numeric' })}</b>`; const c = document.getElementById("ovClock"); if (c) c.innerHTML = `🕐 <b>${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</b>`; };
   tick(); clearInterval(window.__lwClockTimer); window.__lwClockTimer = setInterval(tick, 30000);
@@ -1203,6 +1241,8 @@ async function bootDashboard() {
   document.querySelectorAll('[data-role-gate="org"]').forEach(el => el.classList.toggle("hidden", !ME.permissions.canManageOrgUnits));
   document.querySelectorAll('[data-role-gate="invitations"]').forEach(el => el.classList.toggle("hidden", !ME.permissions.canInviteStaff));
   document.querySelectorAll('[data-role-gate="audit"]').forEach(el => el.classList.toggle("hidden", !ME.permissions.canViewAuditLog));
+  document.querySelectorAll('[data-role-gate="regions"]').forEach(el => el.classList.toggle("hidden", !ME.permissions.canViewRegionsOverview));
+  document.querySelectorAll('[data-role-gate="integrations"]').forEach(el => el.classList.toggle("hidden", ME.organizationUnit.type !== 'headquarters'));
   const canTogglePower = ME.permissions.canControlNationwidePower || ME.permissions.canControlRegionalPower || ME.permissions.canControlDistrictPower;
   document.querySelectorAll('[data-role-gate="power"]').forEach(el => el.classList.toggle("hidden", !canTogglePower));
 
@@ -1300,7 +1340,12 @@ function clearOwnAvatar() {
 // ============================================================
 // TAB SWITCHING + RENDERING
 // ============================================================
-const TAB_TITLES = { overview: "Dashboard", events: "Outage Reports", power: "Power Control", org: "Regions / Stations", staff: "Users & Staff", invitations: "Invitations", audit: "Audit Logs" };
+const TAB_TITLES = {
+  overview: "Dashboard", livemap: "Live Map (Heat Map)", events: "Outage Reports", plants: "Power Plants",
+  transmission: "Transmission", power: "Power Control", regions: "Regions", org: "Districts / Stations",
+  staff: "Users & Staff", invitations: "Invitations", alerts: "Alerts & Announcements", audit: "Audit Logs",
+  analytics: "Reports & Analytics", settings: "Settings", integrations: "Integrations", health: "System Health"
+};
 
 async function switchTab(tab) {
   document.querySelectorAll(".nav-item").forEach(el => el.classList.toggle("active", el.dataset.tab === tab));
@@ -1309,33 +1354,39 @@ async function switchTab(tab) {
   content.innerHTML = `<div class="empty-row">Loading…</div>`;
   try {
     if (tab === "overview") await renderOverview(content);
+    else if (tab === "livemap") await renderLiveMapPage(content);
     else if (tab === "events") await renderEvents(content);
+    else if (tab === "plants") await renderPlants(content);
+    else if (tab === "transmission") await renderTransmission(content);
     else if (tab === "power") await renderPower(content);
+    else if (tab === "regions") await renderRegions(content);
     else if (tab === "org") await renderOrg(content);
     else if (tab === "staff") await renderStaff(content);
     else if (tab === "invitations") await renderInvitations(content);
+    else if (tab === "alerts") await renderAlerts(content);
     else if (tab === "audit") await renderAudit(content);
+    else if (tab === "analytics") await renderAnalytics(content);
+    else if (tab === "settings") await renderSettings(content);
+    else if (tab === "integrations") await renderIntegrations(content);
+    else if (tab === "health") await renderSystemHealth(content);
   } catch (err) {
     content.innerHTML = `<div class="panel"><p style="color:var(--red)">${esc(err.message)}</p></div>`;
   }
 }
 
 // ---- Overview (Headquarters / Regional / District live dashboard) ----
-async function renderOverview(content) {
-  const scope = ME.organizationUnit.type; // 'headquarters' | 'regional' | 'district'
-
-  // Best-effort event fetches — the dashboard degrades gracefully (seeded
-  // placeholder figures) if any of these fail or the org unit has no events yet.
+// Shared by renderOverview() and renderLiveMapPage(): builds the node list +
+// computed metrics for this staff member's scope (region names at HQ level,
+// district names at regional level, coverage-area names at district level).
+async function buildScopeMetrics() {
+  const scope = ME.organizationUnit.type;
   let scopeEvents = [];
   try {
     if (scope === 'headquarters') scopeEvents = await ecgGet(`/ecg/events?status=active`);
     else if (scope === 'regional') scopeEvents = await ecgGet(`/ecg/events?region=${encodeURIComponent(ME.organizationUnit.region || '')}&status=active`);
     else scopeEvents = await ecgGet(`/ecg/events?orgUnitId=${ME.organizationUnit.id}&status=active`);
   } catch { scopeEvents = []; }
-  let recentEvents = scopeEvents;
-  try { recentEvents = await ecgGet(`/ecg/events?orgUnitId=${ME.organizationUnit.id}`); } catch { /* keep scopeEvents */ }
 
-  // Build the set of map/health/weather nodes for this staff member's scope.
   let nodes = [], matchFn;
   if (scope === 'headquarters') {
     nodes = GHANA_REGIONS.map(name => ({ name }));
@@ -1351,10 +1402,17 @@ async function renderOverview(content) {
     matchFn = (area, areaName) => String(area).toLowerCase() === String(areaName).toLowerCase();
   }
   const metrics = computeNodeMetrics(nodes, scopeEvents, matchFn);
+  return { scope, scopeEvents, nodes, metrics };
+}
 
-  const heading = scope === 'headquarters' ? 'Headquarters Dashboard'
-    : scope === 'regional' ? `${ME.organizationUnit.region || 'Regional'} Dashboard`
-    : `${ME.organizationUnit.name} Dashboard`;
+async function renderOverview(content) {
+  const { scope, scopeEvents, metrics } = await buildScopeMetrics();
+  let recentEvents = scopeEvents;
+  try { recentEvents = await ecgGet(`/ecg/events?orgUnitId=${ME.organizationUnit.id}`); } catch { /* keep scopeEvents */ }
+
+  const heading = scope === 'headquarters' ? 'National Overview'
+    : scope === 'regional' ? `${ME.organizationUnit.region || 'Regional'} Overview`
+    : `${ME.organizationUnit.name} Overview`;
   const sub = scope === 'headquarters' ? "Real-time overview of Ghana's power system"
     : scope === 'regional' ? `Real-time overview of ${esc(ME.organizationUnit.region || 'this region')}'s power system`
     : "Real-time overview of your coverage area";
@@ -1384,6 +1442,48 @@ async function renderOverview(content) {
     </div>`;
   mountHeatMap();
   initGenDemandChart(scope);
+}
+
+// ---- Live Map (Heat Map) — the same real-time map as the overview panel,
+// shown full-size as its own page, plus a compact stats strip. ----
+async function renderLiveMapPage(content) {
+  const { scope, scopeEvents, metrics } = await buildScopeMetrics();
+  const Lb = scopeLabels(scope);
+  const total = metrics.length;
+  const affected = metrics.filter(m => m.outageCount > 0).length;
+  const avgIntensity = total ? Math.round(metrics.reduce((s, m) => s + m.intensity, 0) / total) : 0;
+  const worst = [...metrics].sort((a, b) => b.intensity - a.intensity)[0];
+
+  content.innerHTML = `
+    <div class="ov-head">
+      <div><h1>Live Outage Heat Map</h1><p>${Lb.mapSub}</p></div>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:14px; margin-bottom:16px;">
+      ${statChip('🗺️', total, scope === 'headquarters' ? 'Regions tracked' : scope === 'regional' ? 'Districts tracked' : 'Coverage areas')}
+      ${statChip('⚠️', affected, 'Currently affected')}
+      ${statChip('📊', avgIntensity + '%', 'Average outage intensity')}
+      ${statChip('🔥', worst ? worst.name : '—', 'Highest intensity area')}
+    </div>
+    <div class="panel" style="padding:0; overflow:hidden;">
+      <div class="heatmap-row" style="padding:20px;">
+        <div class="heatmap-wrap" style="flex:1;"><div id="lwLeafletMap" class="lw-leaflet-map" style="height:560px;"></div></div>
+        <div class="map-legend-col"><span>High</span><div class="grad"></div><span>Low</span></div>
+      </div>
+      <div class="map-updated" style="padding:0 20px 16px;">
+        <span id="mapUpdatedAt">Last updated: ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+        <div class="map-refresh" title="Refresh" onclick="switchTab('livemap')">⟳</div>
+      </div>
+    </div>`;
+  window.__lwHeatNodes = metrics.map(n => ({ ...n, latlng: latLngForNode(scope, n.name) }));
+  window.__lwHeatScope = scope;
+  mountHeatMap();
+}
+
+function statChip(icon, value, label) {
+  return `<div class="panel" style="padding:16px; display:flex; align-items:center; gap:12px;">
+    <div style="font-size:22px;">${icon}</div>
+    <div><div style="font-size:20px; font-weight:700;">${esc(String(value))}</div><div style="color:var(--muted); font-size:12.5px;">${esc(label)}</div></div>
+  </div>`;
 }
 
 // ---- Events ----
@@ -1888,6 +1988,568 @@ async function renderAudit(content) {
       <table><thead><tr><th>Time</th><th>Staff</th><th>Action</th><th>Unit</th></tr></thead>
       <tbody>${entries.length ? entries.map(e => `
         <tr><td>${fmtDate(e.createdAt)}</td><td>${esc(e.staffEmail || '—')}</td><td>${esc(e.action)}</td><td>${esc(e.orgUnitName || '—')}</td></tr>`).join('') : '<tr><td colspan="4" class="empty-row">No audit entries yet.</td></tr>'}
+      </tbody></table>
+    </div>`;
+}
+
+// ============================================================
+// POWER PLANTS
+// ============================================================
+async function renderPlants(content) {
+  const scope = ME.organizationUnit.type;
+  const region = scope === 'headquarters' ? '' : (ME.organizationUnit.region || '');
+  const plants = await ecgGet(`/ecg/plants${region ? `?region=${encodeURIComponent(region)}` : ''}`).catch(() => []);
+  const canManage = ME.permissions.canManagePowerPlants;
+  const totalCap = plants.reduce((s, p) => s + (p.capacityMW || 0), 0);
+  const totalOut = plants.reduce((s, p) => s + (p.currentOutputMW || 0), 0);
+  const sorted = [...plants].sort((a, b) => b.capacityMW - a.capacityMW);
+  const bars = sorted.map(p => {
+    const pct = p.capacityMW ? Math.round((p.currentOutputMW / p.capacityMW) * 100) : 0;
+    const color = p.status === 'offline' ? '#E4392E' : p.status === 'maintenance' || p.status === 'degraded' ? '#F2C230' : '#2FE08C';
+    return `<div class="stat-bar-row">
+      <div class="sbr-name" title="${esc(p.name)}">${esc(p.name)}</div>
+      <div class="sbr-track"><div class="sbr-fill" style="width:${Math.min(pct,100)}%;background:${color}"></div></div>
+      <div class="sbr-val" style="color:${color}">${p.currentOutputMW}/${p.capacityMW} MW</div>
+    </div>`;
+  }).join('');
+
+  content.innerHTML = `
+    <div class="ov-head"><div><h1>Power Plants</h1><p>${scope === 'headquarters' ? 'All generation assets, nationwide' : `Generation assets in ${esc(region || 'your region')}`}</p></div></div>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:14px; margin-bottom:16px;">
+      ${statChip('🏭', plants.length, 'Power plants')}
+      ${statChip('⚡', totalCap.toLocaleString() + ' MW', 'Total capacity')}
+      ${statChip('📈', totalOut.toLocaleString() + ' MW', 'Current output')}
+      ${statChip('🚨', plants.filter(p => p.status === 'offline').length, 'Offline')}
+    </div>
+    <div class="panel">
+      <div class="panel__head"><div><h3>📊 Output vs. Capacity</h3><p>Current output as a share of rated capacity, by plant</p></div></div>
+      <div class="health-list">${bars || '<div class="empty-row">No power plants recorded yet.</div>'}</div>
+    </div>
+    <div class="panel">
+      <div class="panel__head">
+        <div><h3>Plant Registry</h3><p>Generation assets and their live status</p></div>
+        ${canManage ? `<button class="btn btn--primary btn--sm" onclick="openPlantModal()">+ Add Plant</button>` : ''}
+      </div>
+      <table><thead><tr><th>Name</th><th>Type</th><th>Region</th><th>Capacity</th><th>Output</th><th>Status</th>${canManage ? '<th></th>' : ''}</tr></thead>
+      <tbody>${plants.length ? plants.map(p => `
+        <tr>
+          <td><b>${esc(p.name)}</b></td>
+          <td style="text-transform:capitalize">${esc(p.plantType)}</td>
+          <td>${esc(p.region)}</td>
+          <td>${p.capacityMW} MW</td>
+          <td>${p.currentOutputMW} MW</td>
+          <td><span class="badge badge--${p.status}">${esc(p.status)}</span></td>
+          ${canManage ? `<td>
+            <button class="btn btn--sm" onclick='openPlantModal(${JSON.stringify(p)})'>Edit</button>
+            <button class="btn btn--sm btn--danger" style="margin-left:6px" onclick="deletePlant('${p.id}','${esc(p.name)}')">Delete</button>
+          </td>` : ''}
+        </tr>`).join('') : `<tr><td colspan="${canManage ? 7 : 6}" class="empty-row">No power plants recorded yet.</td></tr>`}
+      </tbody></table>
+    </div>`;
+}
+function openPlantModal(plant) {
+  const editing = !!plant;
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  const scope = ME.organizationUnit.type;
+  const fixedRegion = scope !== 'headquarters' ? (ME.organizationUnit.region || '') : '';
+  backdrop.innerHTML = `<div class="modal-box">
+    <h3>${editing ? 'Edit' : 'Add'} Power Plant</h3>
+    <div class="field-wrap"><label class="field">Name</label><input id="pfName" value="${editing ? esc(plant.name) : ''}" placeholder="e.g. Akosombo Hydro Station"></div>
+    <div class="field-wrap"><label class="field">Type</label>
+      <select id="pfType">${['hydro','thermal','solar','wind','other'].map(t => `<option value="${t}" ${editing && plant.plantType === t ? 'selected' : ''}>${t[0].toUpperCase()+t.slice(1)}</option>`).join('')}</select>
+    </div>
+    <div class="field-wrap"><label class="field">Region</label>
+      ${fixedRegion ? `<div class="static-field">${esc(fixedRegion)}</div><input type="hidden" id="pfRegion" value="${esc(fixedRegion)}">`
+        : `<select id="pfRegion">${GHANA_REGIONS.map(r => `<option value="${r}" ${editing && plant.region === r ? 'selected' : ''}>${r}</option>`).join('')}</select>`}
+    </div>
+    <div class="field-wrap"><label class="field">Capacity (MW)</label><input id="pfCap" type="number" min="0" value="${editing ? plant.capacityMW : ''}"></div>
+    <div class="field-wrap"><label class="field">Current Output (MW)</label><input id="pfOut" type="number" min="0" value="${editing ? plant.currentOutputMW : 0}"></div>
+    <div class="field-wrap"><label class="field">Status</label>
+      <select id="pfStatus">${['operational','degraded','maintenance','offline'].map(s => `<option value="${s}" ${editing && plant.status === s ? 'selected' : ''}>${s[0].toUpperCase()+s.slice(1)}</option>`).join('')}</select>
+    </div>
+    <div class="field-wrap"><label class="field">Operator</label><input id="pfOperator" value="${editing ? esc(plant.operator || '') : 'ECG / VRA'}"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="this.closest('.modal-backdrop').remove()">Cancel</button>
+      <button class="btn btn--primary" onclick="savePlant(${editing ? `'${plant.id}'` : 'null'})">${editing ? 'Save' : 'Add'}</button>
+    </div>
+  </div>`;
+  document.body.appendChild(backdrop);
+}
+async function savePlant(id) {
+  const body = {
+    name: document.getElementById('pfName').value.trim(),
+    plantType: document.getElementById('pfType').value,
+    region: document.getElementById('pfRegion').value,
+    capacityMW: Number(document.getElementById('pfCap').value),
+    currentOutputMW: Number(document.getElementById('pfOut').value),
+    status: document.getElementById('pfStatus').value,
+    operator: document.getElementById('pfOperator').value.trim()
+  };
+  try {
+    if (id) await ecgPatch(`/ecg/plants/${id}`, body); else await ecgPost('/ecg/plants', body);
+    document.querySelector('.modal-backdrop').remove();
+    toast(id ? "Plant updated." : "Plant added.");
+    switchTab('plants');
+  } catch (err) { toast(err.message, "err"); }
+}
+async function deletePlant(id, name) {
+  if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+  try { await ecgDelete(`/ecg/plants/${id}`); toast("Plant deleted."); switchTab('plants'); }
+  catch (err) { toast(err.message, "err"); }
+}
+
+// ============================================================
+// TRANSMISSION
+// ============================================================
+async function renderTransmission(content) {
+  const scope = ME.organizationUnit.type;
+  const region = scope === 'headquarters' ? '' : (ME.organizationUnit.region || '');
+  const lines = await ecgGet(`/ecg/transmission-lines${region ? `?region=${encodeURIComponent(region)}` : ''}`).catch(() => []);
+  const canManage = ME.permissions.canManageTransmission;
+  const faulted = lines.filter(l => l.status === 'fault' || l.status === 'offline').length;
+  const avgLoad = lines.length ? Math.round(lines.reduce((s, l) => s + (l.loadPercent || 0), 0) / lines.length) : 0;
+
+  content.innerHTML = `
+    <div class="ov-head"><div><h1>Transmission</h1><p>${scope === 'headquarters' ? 'All transmission lines, nationwide' : `Transmission lines in ${esc(region || 'your region')}`}</p></div></div>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:14px; margin-bottom:16px;">
+      ${statChip('🗼', lines.length, 'Transmission lines')}
+      ${statChip('📊', avgLoad + '%', 'Average load')}
+      ${statChip('🚨', faulted, 'Fault / offline')}
+      ${statChip('✅', lines.filter(l => l.status === 'active').length, 'Active')}
+    </div>
+    <div class="panel">
+      <div class="panel__head"><div><h3>🔌 Network Schematic</h3><p>Substation-to-substation lines, colored by status</p></div></div>
+      ${renderTransmissionSvg(lines)}
+    </div>
+    <div class="panel">
+      <div class="panel__head">
+        <div><h3>Line Registry</h3><p>Voltage, length, load and live status</p></div>
+        ${canManage ? `<button class="btn btn--primary btn--sm" onclick="openLineModal()">+ Add Line</button>` : ''}
+      </div>
+      <table><thead><tr><th>Name</th><th>From → To</th><th>Region</th><th>Voltage</th><th>Load</th><th>Status</th>${canManage ? '<th></th>' : ''}</tr></thead>
+      <tbody>${lines.length ? lines.map(l => `
+        <tr>
+          <td><b>${esc(l.name)}</b></td>
+          <td>${esc(l.fromSubstation)} → ${esc(l.toSubstation)}</td>
+          <td>${esc(l.region)}</td>
+          <td>${l.voltageKV} kV</td>
+          <td>${l.loadPercent}%</td>
+          <td><span class="badge badge--${l.status}">${esc(l.status)}</span></td>
+          ${canManage ? `<td>
+            <button class="btn btn--sm" onclick='openLineModal(${JSON.stringify(l)})'>Edit</button>
+            <button class="btn btn--sm btn--danger" style="margin-left:6px" onclick="deleteLine('${l.id}','${esc(l.name)}')">Delete</button>
+          </td>` : ''}
+        </tr>`).join('') : `<tr><td colspan="${canManage ? 7 : 6}" class="empty-row">No transmission lines recorded yet.</td></tr>`}
+      </tbody></table>
+    </div>`;
+}
+function renderTransmissionSvg(lines) {
+  if (!lines.length) return `<div class="empty-row">No transmission lines to display.</div>`;
+  const subs = new Map();
+  lines.forEach(l => { [l.fromSubstation, l.toSubstation].forEach(s => { if (!subs.has(s)) subs.set(s, subs.size); }); });
+  const names = Array.from(subs.keys());
+  const n = names.length;
+  const W = 780, Hh = 40 + Math.ceil(n / 4) * 90;
+  const cols = Math.min(4, n) || 1;
+  const pos = {};
+  names.forEach((name, i) => {
+    const col = i % cols, row = Math.floor(i / cols);
+    pos[name] = { x: 90 + col * ((W - 180) / Math.max(cols - 1, 1) || 1), y: 60 + row * 90 };
+  });
+  const statusColor = { active: '#2FE08C', fault: '#E4392E', maintenance: '#F2C230', offline: '#576074' };
+  const edges = lines.map(l => {
+    const a = pos[l.fromSubstation], b = pos[l.toSubstation];
+    const c = statusColor[l.status] || '#576074';
+    return `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="${c}" stroke-width="${2 + Math.min(l.loadPercent||0,100)/25}" opacity="0.85"/>`;
+  }).join('');
+  const nodes = names.map(name => {
+    const p = pos[name];
+    return `<circle cx="${p.x}" cy="${p.y}" r="7" fill="#131824" stroke="#5B8CF9" stroke-width="2"/>
+      <text x="${p.x}" y="${p.y - 14}" text-anchor="middle" font-size="11" fill="#8E99B0" font-family="Inter">${esc(name)}</text>`;
+  }).join('');
+  return `<svg viewBox="0 0 ${W} ${Hh}" style="width:100%; height:auto;">${edges}${nodes}</svg>
+    <div class="health-legend">
+      <span><i class="dot" style="background:#2FE08C"></i>Active</span>
+      <span><i class="dot" style="background:#F2C230"></i>Maintenance</span>
+      <span><i class="dot" style="background:#E4392E"></i>Fault</span>
+      <span><i class="dot" style="background:#576074"></i>Offline</span>
+    </div>`;
+}
+function openLineModal(line) {
+  const editing = !!line;
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  const scope = ME.organizationUnit.type;
+  const fixedRegion = scope !== 'headquarters' ? (ME.organizationUnit.region || '') : '';
+  backdrop.innerHTML = `<div class="modal-box">
+    <h3>${editing ? 'Edit' : 'Add'} Transmission Line</h3>
+    <div class="field-wrap"><label class="field">Name</label><input id="lfName" value="${editing ? esc(line.name) : ''}" placeholder="e.g. Tema–Achimota 161kV"></div>
+    <div class="field-wrap"><label class="field">From Substation</label><input id="lfFrom" value="${editing ? esc(line.fromSubstation) : ''}"></div>
+    <div class="field-wrap"><label class="field">To Substation</label><input id="lfTo" value="${editing ? esc(line.toSubstation) : ''}"></div>
+    <div class="field-wrap"><label class="field">Region</label>
+      ${fixedRegion ? `<div class="static-field">${esc(fixedRegion)}</div><input type="hidden" id="lfRegion" value="${esc(fixedRegion)}">`
+        : `<select id="lfRegion">${GHANA_REGIONS.map(r => `<option value="${r}" ${editing && line.region === r ? 'selected' : ''}>${r}</option>`).join('')}</select>`}
+    </div>
+    <div class="field-wrap"><label class="field">Voltage (kV)</label><input id="lfVoltage" type="number" min="0" value="${editing ? line.voltageKV : ''}"></div>
+    <div class="field-wrap"><label class="field">Length (km)</label><input id="lfLength" type="number" min="0" value="${editing ? (line.lengthKm ?? '') : ''}"></div>
+    <div class="field-wrap"><label class="field">Load (%)</label><input id="lfLoad" type="number" min="0" max="150" value="${editing ? line.loadPercent : 0}"></div>
+    <div class="field-wrap"><label class="field">Status</label>
+      <select id="lfStatus">${['active','fault','maintenance','offline'].map(s => `<option value="${s}" ${editing && line.status === s ? 'selected' : ''}>${s[0].toUpperCase()+s.slice(1)}</option>`).join('')}</select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="this.closest('.modal-backdrop').remove()">Cancel</button>
+      <button class="btn btn--primary" onclick="saveLine(${editing ? `'${line.id}'` : 'null'})">${editing ? 'Save' : 'Add'}</button>
+    </div>
+  </div>`;
+  document.body.appendChild(backdrop);
+}
+async function saveLine(id) {
+  const body = {
+    name: document.getElementById('lfName').value.trim(),
+    fromSubstation: document.getElementById('lfFrom').value.trim(),
+    toSubstation: document.getElementById('lfTo').value.trim(),
+    region: document.getElementById('lfRegion').value,
+    voltageKV: Number(document.getElementById('lfVoltage').value),
+    lengthKm: document.getElementById('lfLength').value ? Number(document.getElementById('lfLength').value) : null,
+    loadPercent: Number(document.getElementById('lfLoad').value),
+    status: document.getElementById('lfStatus').value
+  };
+  try {
+    if (id) await ecgPatch(`/ecg/transmission-lines/${id}`, body); else await ecgPost('/ecg/transmission-lines', body);
+    document.querySelector('.modal-backdrop').remove();
+    toast(id ? "Line updated." : "Line added.");
+    switchTab('transmission');
+  } catch (err) { toast(err.message, "err"); }
+}
+async function deleteLine(id, name) {
+  if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+  try { await ecgDelete(`/ecg/transmission-lines/${id}`); toast("Line deleted."); switchTab('transmission'); }
+  catch (err) { toast(err.message, "err"); }
+}
+
+// ============================================================
+// REGIONS (HQ-level structural overview of all 16 regions)
+// ============================================================
+async function renderRegions(content) {
+  const regions = await ecgGet('/ecg/regions/summary').catch(() => []);
+  const canEdit = ME.organizationUnit.type === 'headquarters' || ME.organizationUnit.type === 'regional';
+  const sorted = [...regions].sort((a, b) => b.totalCapacityMW - a.totalCapacityMW);
+  const bars = sorted.map(r => {
+    const color = r.hasRegionalOffice ? '#5B8CF9' : '#576074';
+    return `<div class="stat-bar-row">
+      <div class="sbr-name" title="${esc(r.region)}">${esc(r.region)}</div>
+      <div class="sbr-track"><div class="sbr-fill" style="width:${Math.min((r.totalCapacityMW / (sorted[0].totalCapacityMW || 1)) * 100, 100)}%;background:${color}"></div></div>
+      <div class="sbr-val" style="color:${color}">${r.totalCapacityMW} MW</div>
+    </div>`;
+  }).join('');
+  content.innerHTML = `
+    <div class="ov-head"><div><h1>Regions</h1><p>Ghana's 16 regions — structure, generation and staffing at a glance</p></div></div>
+    <div class="panel">
+      <div class="panel__head"><div><h3>⚡ Generation Capacity by Region</h3></div></div>
+      <div class="health-list">${bars || '<div class="empty-row">No data yet.</div>'}</div>
+    </div>
+    <div class="panel">
+      <div class="panel__head"><div><h3>Region Directory</h3><p>Every region of Ghana, whether ECG has a regional office established, and its live asset counts</p></div></div>
+      <table><thead><tr><th>Region</th><th>Regional Office</th><th>Districts</th><th>Staff</th><th>Plants</th><th>Capacity</th><th>Lines</th><th>Customers</th>${canEdit ? '<th></th>' : ''}</tr></thead>
+      <tbody>${regions.map(r => `
+        <tr>
+          <td><b>${esc(r.region)}</b>${r.capitalTown ? `<div style="color:var(--faint);font-size:0.74rem">${esc(r.capitalTown)}</div>` : ''}</td>
+          <td><span class="badge badge--${r.hasRegionalOffice ? 'active' : 'inactive'}">${r.hasRegionalOffice ? 'Established' : 'Not yet established'}</span></td>
+          <td>${r.districtCount}</td>
+          <td>${r.staffCount}</td>
+          <td>${r.plantCount}</td>
+          <td>${r.totalCapacityMW} MW</td>
+          <td>${r.transmissionLineCount}</td>
+          <td>${r.customerCount != null ? r.customerCount.toLocaleString() : '<span style="color:var(--faint)">—</span>'}</td>
+          ${canEdit ? `<td><button class="btn btn--sm" onclick='openRegionProfileModal(${JSON.stringify(r)})'>Edit</button></td>` : ''}
+        </tr>`).join('')}
+      </tbody></table>
+    </div>`;
+}
+function openRegionProfileModal(r) {
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  backdrop.innerHTML = `<div class="modal-box">
+    <h3>${esc(r.region)} — Region Profile</h3>
+    <div class="field-wrap"><label class="field">Capital Town</label><input id="rfCapital" value="${esc(r.capitalTown || '')}"></div>
+    <div class="field-wrap"><label class="field">Population</label><input id="rfPop" type="number" min="0" value="${r.population ?? ''}"></div>
+    <div class="field-wrap"><label class="field">Customer Count</label><input id="rfCust" type="number" min="0" value="${r.customerCount ?? ''}"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="this.closest('.modal-backdrop').remove()">Cancel</button>
+      <button class="btn btn--primary" onclick="saveRegionProfile('${esc(r.region)}')">Save</button>
+    </div>
+  </div>`;
+  document.body.appendChild(backdrop);
+}
+async function saveRegionProfile(region) {
+  const body = {
+    capitalTown: document.getElementById('rfCapital').value.trim(),
+    population: document.getElementById('rfPop').value ? Number(document.getElementById('rfPop').value) : null,
+    customerCount: document.getElementById('rfCust').value ? Number(document.getElementById('rfCust').value) : null
+  };
+  try {
+    await ecgPatch(`/ecg/regions/${encodeURIComponent(region)}`, body);
+    document.querySelector('.modal-backdrop').remove();
+    toast("Region profile updated.");
+    switchTab('regions');
+  } catch (err) { toast(err.message, "err"); }
+}
+
+// ============================================================
+// ALERTS & ANNOUNCEMENTS
+// ============================================================
+async function renderAlerts(content) {
+  const items = await ecgGet('/ecg/announcements').catch(() => []);
+  const canManage = ME.permissions.canManageAnnouncements;
+  const SEV = [{ key: 'info', label: 'Info', color: '#5B8CF9' }, { key: 'warning', label: 'Warning', color: '#F2C230' }, { key: 'critical', label: 'Critical', color: '#E4392E' }];
+  let counts = SEV.map(s => ({ ...s, count: items.filter(a => a.severity === s.key).length }));
+  const total = counts.reduce((a, c) => a + c.count, 0) || 1;
+  const R = 54, C = 2 * Math.PI * R;
+  let offset = 0;
+  const segs = counts.map(c => {
+    const dash = (c.count / total) * C;
+    const seg = `<circle cx="70" cy="70" r="${R}" fill="none" stroke="${c.color}" stroke-width="20" stroke-dasharray="${dash.toFixed(1)} ${(C - dash).toFixed(1)}" stroke-dashoffset="${(-offset).toFixed(1)}" transform="rotate(-90 70 70)"/>`;
+    offset += dash; return seg;
+  }).join('');
+  const legend = counts.map(c => `<div class="donut-legend-row"><span class="left"><i class="dot" style="background:${c.color}"></i>${c.label}</span><span class="cnt">${c.count}</span></div>`).join('');
+
+  content.innerHTML = `
+    <div class="ov-head"><div><h1>Alerts &amp; Announcements</h1><p>Staff and public-facing notices, scoped to your organization</p></div></div>
+    <div class="dash-grid" style="grid-template-columns: 1fr 320px;">
+      <div class="dash-col">
+        <div class="panel">
+          <div class="panel__head">
+            <div><h3>Announcements</h3><p>Most recent first</p></div>
+            ${canManage ? `<button class="btn btn--primary btn--sm" onclick="openAnnouncementModal()">+ New Announcement</button>` : ''}
+          </div>
+          ${items.length ? items.map(a => `
+            <div class="activity-item" style="align-items:flex-start;">
+              <div class="activity-ic activity-ic--${a.severity === 'critical' ? 'warn' : a.severity === 'warning' ? 'warn' : 'info'}">${a.severity === 'critical' ? '!' : a.severity === 'warning' ? '!' : 'i'}</div>
+              <div class="activity-body" style="flex:1;">
+                <b>${esc(a.title)}</b>
+                <span class="sub">${esc(a.orgUnitName)} · ${esc(a.audience)} · <span class="badge badge--${a.severity}">${esc(a.severity)}</span> ${a.active ? '' : '<span class="badge badge--muted">archived</span>'}</span>
+                ${a.body ? `<p style="margin-top:6px; color:var(--muted); font-size:0.85rem;">${esc(a.body)}</p>` : ''}
+              </div>
+              <div class="activity-time" style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
+                ${timeAgo(a.createdAt)}
+                ${canManage ? `<button class="btn btn--sm" onclick="toggleAnnouncement('${a.id}', ${!a.active})">${a.active ? 'Archive' : 'Reactivate'}</button>` : ''}
+              </div>
+            </div>`).join('') : '<div class="empty-row">No announcements yet.</div>'}
+        </div>
+      </div>
+      <div class="dash-col">
+        <div class="panel">
+          <div class="panel__head"><div><h3>🥧 By Severity</h3></div></div>
+          <div class="donut-wrap">
+            <svg viewBox="0 0 140 140" style="width:120px;height:120px;flex-shrink:0">
+              ${segs}<circle cx="70" cy="70" r="${R - 14}" fill="var(--panel)"/>
+              <text x="70" y="66" text-anchor="middle" font-size="20" font-weight="900" fill="#F5F7FB" font-family="Inter">${items.length}</text>
+              <text x="70" y="82" text-anchor="middle" font-size="8" fill="#8E99B0" font-family="Inter" letter-spacing="1">TOTAL</text>
+            </svg>
+            <div class="donut-legend">${legend}</div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+function openAnnouncementModal() {
+  const scope = ME.organizationUnit.type;
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  backdrop.innerHTML = `<div class="modal-box">
+    <h3>New Announcement</h3>
+    <div class="field-wrap"><label class="field">Title</label><input id="afTitle" placeholder="e.g. Scheduled maintenance this weekend"></div>
+    <div class="field-wrap"><label class="field">Body</label><textarea id="afBody" rows="4" placeholder="Details…"></textarea></div>
+    <div class="field-wrap"><label class="field">Severity</label>
+      <select id="afSeverity">${['info','warning','critical'].map(s => `<option value="${s}">${s[0].toUpperCase()+s.slice(1)}</option>`).join('')}</select>
+    </div>
+    <div class="field-wrap"><label class="field">Audience</label>
+      <select id="afAudience">${['staff','public','both'].map(s => `<option value="${s}">${s[0].toUpperCase()+s.slice(1)}</option>`).join('')}</select>
+    </div>
+    <div class="field-wrap"><label class="field">Scope</label>
+      <select id="afScope" onchange="document.getElementById('afScope').value">
+        ${scope === 'headquarters' ? `<option value="nationwide">Nationwide</option><option value="regional">Specific region</option><option value="district">Specific district</option>` : `<option value="${scope === 'regional' ? 'regional' : 'district'}">${scope === 'regional' ? esc(ME.organizationUnit.region) + ' (your region)' : esc(ME.organizationUnit.name) + ' (your station)'}</option>`}
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="this.closest('.modal-backdrop').remove()">Cancel</button>
+      <button class="btn btn--primary" onclick="saveAnnouncement()">Publish</button>
+    </div>
+  </div>`;
+  document.body.appendChild(backdrop);
+}
+async function saveAnnouncement() {
+  const body = {
+    title: document.getElementById('afTitle').value.trim(),
+    body: document.getElementById('afBody').value.trim(),
+    severity: document.getElementById('afSeverity').value,
+    audience: document.getElementById('afAudience').value,
+    scope: document.getElementById('afScope').value,
+    orgUnitId: ME.organizationUnit.type !== 'headquarters' ? ME.organizationUnit.id : undefined
+  };
+  if (!body.title) { toast("Title is required.", "err"); return; }
+  try {
+    await ecgPost('/ecg/announcements', body);
+    document.querySelector('.modal-backdrop').remove();
+    toast("Announcement published.");
+    switchTab('alerts');
+  } catch (err) { toast(err.message, "err"); }
+}
+async function toggleAnnouncement(id, active) {
+  try { await ecgPatch(`/ecg/announcements/${id}`, { active }); toast(active ? "Reactivated." : "Archived."); switchTab('alerts'); }
+  catch (err) { toast(err.message, "err"); }
+}
+
+// ============================================================
+// REPORTS & ANALYTICS
+// ============================================================
+async function renderAnalytics(content) {
+  const data = await ecgGet('/ecg/analytics/overview').catch(() => null);
+  if (!data) { content.innerHTML = `<div class="panel">Analytics are unavailable right now.</div>`; return; }
+  const maxTrend = Math.max(1, ...data.dailyEventTrend.map(d => d.count));
+  const pts = data.dailyEventTrend.map((d, i) => {
+    const x = data.dailyEventTrend.length > 1 ? (i / (data.dailyEventTrend.length - 1)) * 680 : 0;
+    const y = 140 - (d.count / maxTrend) * 120;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+  const TYPE_COLOR = { outage: '#E4392E', restoration: '#2FE08C', maintenance: '#F2C230', advisory: '#5B8CF9' };
+  const typeBars = data.eventsByType.map(t => `<div class="stat-bar-row">
+      <div class="sbr-name" style="text-transform:capitalize">${esc(t.type)}</div>
+      <div class="sbr-track"><div class="sbr-fill" style="width:${Math.min((t.count / Math.max(1, ...data.eventsByType.map(x=>x.count))) * 100, 100)}%;background:${TYPE_COLOR[t.type] || '#5B8CF9'}"></div></div>
+      <div class="sbr-val">${t.count}</div>
+    </div>`).join('') || '<div class="empty-row">No events yet.</div>';
+
+  content.innerHTML = `
+    <div class="ov-head"><div><h1>Reports &amp; Analytics</h1><p>Real, server-aggregated figures for your organization's scope</p></div></div>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:14px; margin-bottom:16px;">
+      ${statChip('🏭', data.plants.count, `Power plants · ${data.plants.capacityMW} MW`)}
+      ${statChip('🗼', data.transmission.count, `Transmission lines · ${data.transmission.avgLoadPercent}% avg load`)}
+      ${statChip('👥', data.activeStaffCount, 'Active staff')}
+      ${statChip('📅', data.dailyEventTrend.reduce((s,d)=>s+d.count,0), 'Events (last 30 days)')}
+    </div>
+    <div class="dash-grid" style="grid-template-columns: 1.4fr 1fr;">
+      <div class="dash-col">
+        <div class="panel">
+          <div class="panel__head"><div><h3>📈 Daily Event Volume — Last 30 Days</h3></div></div>
+          <svg viewBox="0 0 700 160" style="width:100%; height:auto;">
+            <polyline points="${pts}" fill="none" stroke="#5B8CF9" stroke-width="2.5"/>
+            ${data.dailyEventTrend.length ? `<polygon points="0,140 ${pts} 680,140" fill="#5B8CF9" opacity="0.12"/>` : ''}
+          </svg>
+          ${!data.dailyEventTrend.length ? '<div class="empty-row">No events in the last 30 days.</div>' : ''}
+        </div>
+      </div>
+      <div class="dash-col">
+        <div class="panel">
+          <div class="panel__head"><div><h3>Events by Type</h3></div></div>
+          <div class="health-list">${typeBars}</div>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ============================================================
+// SETTINGS
+// ============================================================
+async function renderSettings(content) {
+  const s = await ecgGet('/ecg/settings').catch(() => ({}));
+  content.innerHTML = `
+    <div class="ov-head"><div><h1>Settings</h1><p>Preferences for ${esc(ME.organizationUnit.name)}</p></div></div>
+    <div class="panel" style="max-width:640px;">
+      <div class="panel__head"><div><h3>Notifications</h3></div></div>
+      <div class="field-wrap" style="display:flex; align-items:center; justify-content:space-between;">
+        <label class="field" style="margin:0;">Notify on new outage</label>
+        <label class="toggle-switch"><input type="checkbox" id="stNewOutage" ${s.notifyOnNewOutage ? 'checked' : ''}><span class="slider"></span></label>
+      </div>
+      <div class="field-wrap" style="display:flex; align-items:center; justify-content:space-between;">
+        <label class="field" style="margin:0;">Notify on restoration</label>
+        <label class="toggle-switch"><input type="checkbox" id="stRestoration" ${s.notifyOnRestoration ? 'checked' : ''}><span class="slider"></span></label>
+      </div>
+      <div class="field-wrap"><label class="field">Escalate unresolved outages after (minutes)</label><input id="stEscalation" type="number" min="5" value="${s.outageEscalationMinutes ?? 60}"></div>
+      <div class="field-wrap"><label class="field">Reserve margin warning threshold (%)</label><input id="stReserve" type="number" min="0" max="100" value="${s.reserveMarginWarningPct ?? 15}"></div>
+      <div class="panel__head" style="margin-top:8px;"><div><h3>Public Contact</h3></div></div>
+      <div class="field-wrap"><label class="field">Contact Email</label><input id="stEmail" value="${esc(s.publicContactEmail || '')}"></div>
+      <div class="field-wrap"><label class="field">Contact Phone</label><input id="stPhone" value="${esc(s.publicContactPhone || '')}"></div>
+      <div class="modal-actions" style="justify-content:flex-start; padding-top:8px;">
+        <button class="btn btn--primary" onclick="saveSettings()">Save Changes</button>
+      </div>
+    </div>`;
+}
+async function saveSettings() {
+  const body = {
+    notifyOnNewOutage: document.getElementById('stNewOutage').checked,
+    notifyOnRestoration: document.getElementById('stRestoration').checked,
+    outageEscalationMinutes: Number(document.getElementById('stEscalation').value),
+    reserveMarginWarningPct: Number(document.getElementById('stReserve').value),
+    publicContactEmail: document.getElementById('stEmail').value.trim(),
+    publicContactPhone: document.getElementById('stPhone').value.trim()
+  };
+  try { await ecgPatch('/ecg/settings', body); toast("Settings saved."); }
+  catch (err) { toast(err.message, "err"); }
+}
+
+// ============================================================
+// INTEGRATIONS (HQ only)
+// ============================================================
+async function renderIntegrations(content) {
+  const items = await ecgGet('/ecg/integrations').catch(() => []);
+  const canManage = ME.permissions.canManageIntegrations;
+  const byCat = {};
+  items.forEach(i => { (byCat[i.category] ||= []).push(i); });
+  const CAT_LABEL = { notifications: 'Notifications', weather: 'Weather', maps: 'Maps', payments: 'Payments', monitoring: 'Monitoring' };
+  content.innerHTML = `
+    <div class="ov-head"><div><h1>Integrations</h1><p>Third-party services this deployment connects to</p></div></div>
+    ${Object.keys(byCat).map(cat => `
+      <div class="panel">
+        <div class="panel__head"><div><h3>${esc(CAT_LABEL[cat] || cat)}</h3></div></div>
+        ${byCat[cat].map(i => `
+          <div class="activity-item">
+            <div class="activity-ic activity-ic--${i.connected ? 'ok' : 'info'}">${i.connected ? '✓' : '○'}</div>
+            <div class="activity-body" style="flex:1;"><b>${esc(i.name)}</b><span class="sub">${esc(i.description || '')}</span></div>
+            <div style="display:flex; align-items:center; gap:10px;">
+              <span class="badge badge--${i.connected ? 'connected' : 'disconnected'}">${i.connected ? 'Connected' : 'Disconnected'}</span>
+              ${canManage ? `<label class="toggle-switch"><input type="checkbox" ${i.connected ? 'checked' : ''} onchange="toggleIntegration('${i.key}', this.checked)"><span class="slider"></span></label>` : ''}
+            </div>
+          </div>`).join('')}
+      </div>`).join('') || '<div class="panel">No integrations configured.</div>'}`;
+}
+async function toggleIntegration(key, connected) {
+  try { await ecgPatch(`/ecg/integrations/${key}`, { connected }); toast(connected ? "Connected." : "Disconnected."); }
+  catch (err) { toast(err.message, "err"); switchTab('integrations'); }
+}
+
+// ============================================================
+// SYSTEM HEALTH
+// ============================================================
+async function renderSystemHealth(content) {
+  const h = await ecgGet('/ecg/system-health').catch(() => null);
+  if (!h) { content.innerHTML = `<div class="panel">System health is unavailable right now.</div>`; return; }
+  const gauges = [
+    { label: 'Database', ok: h.database.ok, sub: h.database.state },
+    { label: 'Active Outage Events', value: h.operations.activeOutageEvents, warn: h.operations.activeOutageEvents > 0 },
+    { label: 'Active Power Incidents', value: h.operations.activePowerIncidents, warn: h.operations.activePowerIncidents > 0 },
+    { label: 'Plants Offline/Maint.', value: h.operations.plantsOffline, warn: h.operations.plantsOffline > 0 },
+    { label: 'Lines Faulted/Offline', value: h.operations.linesFaulted, warn: h.operations.linesFaulted > 0 },
+    { label: 'Staff Online (15 min)', value: `${h.staff.onlineLast15Min}/${h.staff.totalActive}` }
+  ];
+  content.innerHTML = `
+    <div class="ov-head"><div><h1>System Health</h1><p>Live, server-derived operational status — checked ${fmtDate(h.checkedAt)}</p></div></div>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:14px; margin-bottom:16px;">
+      ${gauges.map(g => `<div class="panel" style="padding:16px;">
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+          <span style="color:var(--muted); font-size:0.8rem;">${esc(g.label)}</span>
+          <span style="width:9px; height:9px; border-radius:50%; background:${g.ok === false ? '#E4392E' : g.warn ? '#F2C230' : '#2FE08C'};"></span>
+        </div>
+        <div style="font-size:22px; font-weight:800; margin-top:6px;">${g.value !== undefined ? g.value : (g.ok ? 'Online' : 'Offline')}</div>
+        ${g.sub ? `<div style="color:var(--faint); font-size:0.74rem; text-transform:capitalize;">${esc(g.sub)}</div>` : ''}
+      </div>`).join('')}
+    </div>
+    <div class="panel">
+      <div class="panel__head"><div><h3>⚙️ API Process</h3></div></div>
+      <table><tbody>
+        <tr><td>Uptime</td><td>${Math.floor(h.api.uptimeSeconds / 3600)}h ${Math.floor((h.api.uptimeSeconds % 3600) / 60)}m</td></tr>
+        <tr><td>Memory (heap used / total)</td><td>${h.api.memoryUsedMB} MB / ${h.api.memoryTotalMB} MB</td></tr>
+        <tr><td>Node.js version</td><td>${esc(h.api.nodeVersion)}</td></tr>
       </tbody></table>
     </div>`;
 }

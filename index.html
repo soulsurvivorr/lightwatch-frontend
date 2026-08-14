@@ -2167,11 +2167,18 @@
              lost by dropping this home-page teaser. -->
 
         <!-- Community activity: who reported / chatted from your area -->
-        <div class="lw-section">
+        <div class="lw-section lw-section--history">
           <div class="lw-section__head">
             <span class="lw-section__title">Light status history</span>
           </div>
-          <div class="lw-community-card">
+          <div class="lw-community-card lw-community-card--history">
+            <div class="lw-community-card__head">
+              <span class="lw-community-card__icon" aria-hidden="true">
+                <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="10" cy="10" r="7.4" stroke="currentColor" stroke-width="1.5"/><path d="M10 6v4.2l2.9 1.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </span>
+              <span class="lw-community-card__label">Recent status changes near you</span>
+              <span class="lw-community-card__live" aria-hidden="true"><span class="lw-community-card__live-dot"></span>Live</span>
+            </div>
             <div class="report-list report-list--compact" id="recentReportsList"></div>
           </div>
         </div>
@@ -2180,18 +2187,25 @@
              reliability meter and the community-trust mini card — all
              real bound content, just consolidated here instead of the
              old scattered accordion/mosaic layout (item 10). -->
-        <div class="lw-section">
-          <span class="lw-section__title">More insights</span>
+        <div class="lw-section lw-section--insights">
+          <div class="lw-section__head">
+            <span class="lw-section__title">More insights</span>
+          </div>
           <div class="lw-more-insights">
-            <div class="reliability-meter">
-              <div class="reliability-meter__head">
-                <span class="reliability-meter__label">Reliability</span>
-                <span class="reliability-meter__value" id="reliabilityMeterValue">—</span>
+            <div class="lw-insight-tile lw-insight-tile--reliability">
+              <div class="reliability-meter">
+                <div class="reliability-meter__head">
+                  <span class="reliability-meter__label">
+                    <span class="reliability-meter__icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 15.5A8 8 0 1 1 16 15.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M10 11.2 13.2 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="10" cy="11.2" r="1.15" fill="currentColor"/></svg></span>
+                    Reliability
+                  </span>
+                  <span class="reliability-meter__value" id="reliabilityMeterValue">—</span>
+                </div>
+                <div class="reliability-meter__track" role="progressbar" aria-label="Reliability" aria-valuemin="0" aria-valuemax="100" id="reliabilityMeterTrack">
+                  <div class="reliability-meter__fill" id="reliabilityMeterFill"></div>
+                </div>
+                <span class="reliability-meter__caption" id="reliabilityMeterCaption">Calculating from recent reports…</span>
               </div>
-              <div class="reliability-meter__track" role="progressbar" aria-label="Reliability" aria-valuemin="0" aria-valuemax="100" id="reliabilityMeterTrack">
-                <div class="reliability-meter__fill" id="reliabilityMeterFill"></div>
-              </div>
-              <span class="reliability-meter__caption" id="reliabilityMeterCaption">Calculating from recent reports…</span>
             </div>
 
             <div class="hero-mini-card" id="heroMiniCard">
@@ -2213,14 +2227,20 @@
             </div>
 
             <div class="pulse-section">
-              <span class="pulse-section__title">Today's activity</span>
+              <span class="pulse-section__title">
+                <span class="pulse-section__icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 10.5h3.2l2-5.4 3 10 2-6.6h3.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                Today's activity
+              </span>
               <ul class="status-timeline" id="statusTimeline">
                 <li class="status-timeline__empty">No status changes yet today.</li>
               </ul>
             </div>
 
             <div class="pulse-section">
-              <span class="pulse-section__title">Nearby</span>
+              <span class="pulse-section__title">
+                <span class="pulse-section__icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 17.5s6-4.6 6-9.6a6 6 0 1 0-12 0c0 5 6 9.6 6 9.6Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="10" cy="7.9" r="2" stroke="currentColor" stroke-width="1.5"/></svg></span>
+                Nearby
+              </span>
               <div class="nearby-list" id="nearbyList">
                 <span class="nearby-list__empty">Loading nearby location…</span>
               </div>
@@ -2229,6 +2249,9 @@
         </div>
 
         <div class="card achievement-card" id="achievementCard">
+          <span class="achievement-card__glow" aria-hidden="true"></span>
+          <span class="achievement-card__sparkle achievement-card__sparkle--1" aria-hidden="true"></span>
+          <span class="achievement-card__sparkle achievement-card__sparkle--2" aria-hidden="true"></span>
           <div class="achievement-card__head">
             <span class="achievement-card__badge" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:1em;height:1em;"><circle cx="10" cy="12.5" r="5" fill="#D6A24A" stroke="#A66C14" stroke-width="1"/><path d="m7.3 2.5 2.7 4 2.7-4M8 8.2l-2.6-3.9M12 8.2l2.6-3.9" stroke="#A66C14" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8.6 13.1 9.7 11l1.1 2.1 2.2.3-1.6 1.5.4 2.2-2-1-2 1 .4-2.2-1.6-1.5Z" fill="#FCEBC8"/></svg></span>
             <span class="achievement-card__title" id="achievementHeadline">You helped today</span>
@@ -2236,10 +2259,12 @@
           <div class="achievement-card__points" id="achievementPoints">+0 <span>points</span></div>
           <div class="achievement-card__stats">
             <div class="achievement-card__stat">
+              <span class="achievement-card__stat-icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="3.5" width="12" height="13" rx="1.6" stroke="currentColor" stroke-width="1.4"/><path d="M7 7.3h6M7 10h6M7 12.7h3.6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span>
               <strong id="achievementWeekReports">—</strong>
               <span>Reports this week</span>
             </div>
             <div class="achievement-card__stat">
+              <span class="achievement-card__stat-icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 3.3 12 8l5.1.5-3.9 3.4 1.2 5-4.4-2.7-4.4 2.7 1.2-5-3.9-3.4L8 8l2-4.7Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg></span>
               <strong id="achievementTotalReports">—</strong>
               <span>Total reports</span>
             </div>

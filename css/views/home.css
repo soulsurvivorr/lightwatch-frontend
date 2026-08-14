@@ -4042,15 +4042,54 @@ body.lw-location-panel-open {
 
 /* ---- Achievements card ---- */
 .achievement-card {
+  position: relative;
   text-align: left;
   border-radius: 18px;
-  border: 1px solid var(--lw-border);
+  border: 1px solid color-mix(in srgb, var(--lw-border) 65%, var(--lw-amber) 35%);
   padding: 14px 15px;
   background: var(--lw-panel);
-  box-shadow: none;
+  box-shadow: 0 12px 30px rgba(214, 162, 74, 0.12);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* Decorative warm glow in the top-right corner — purely visual, no
+   markup dependency beyond the empty .achievement-card__glow span. */
+.achievement-card__glow {
+  position: absolute;
+  top: -46px;
+  right: -46px;
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--lw-amber) 35%, transparent) 0%, transparent 72%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.achievement-card__sparkle {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--lw-amber);
+  box-shadow: 0 0 6px var(--lw-amber);
+  pointer-events: none;
+  z-index: 0;
+  animation: achievementTwinkle 2.6s ease-in-out infinite;
+}
+
+.achievement-card__sparkle--1 { top: 16px; right: 34px; animation-delay: 0s; }
+.achievement-card__sparkle--2 { top: 42px; right: 14px; width: 3px; height: 3px; animation-delay: 1.1s; }
+
+@keyframes achievementTwinkle {
+  0%, 100% { opacity: 0.25; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.15); }
 }
 
 .achievement-card__head {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -4061,13 +4100,16 @@ body.lw-location-panel-open {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--lw-amber) 12%, var(--lw-panel));
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--lw-amber) 16%, var(--lw-panel));
   color: var(--lw-amber);
   line-height: 1;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--lw-amber) 30%, transparent), 0 4px 12px color-mix(in srgb, var(--lw-amber) 25%, transparent);
 }
+
+.achievement-card__badge svg { width: 18px; height: 18px; }
 
 .achievement-card__title {
   font-size: 0.92rem;
@@ -4076,10 +4118,18 @@ body.lw-location-panel-open {
 }
 
 .achievement-card__points {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
   font-family: var(--font-display);
   font-size: 1.55rem;
   font-weight: 700;
-  color: var(--lw-text);
+  background: linear-gradient(135deg, var(--lw-amber), color-mix(in srgb, var(--lw-amber) 55%, #fff 45%));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
   margin: 2px 0 12px;
 }
 
@@ -4087,22 +4137,46 @@ body.lw-location-panel-open {
   font-size: 0.76rem;
   font-weight: 600;
   color: var(--lw-text-faint);
-  margin-left: 6px;
+  margin-left: 2px;
+  -webkit-text-fill-color: var(--lw-text-faint);
 }
 
 .achievement-card__stats {
+  position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 10px;
 }
 
 .achievement-card__stat {
-  padding: 10px;
+  position: relative;
+  padding: 12px 10px 10px;
   border-radius: 12px;
   background: color-mix(in srgb, var(--lw-panel) 90%, white 10%);
   border: 1px solid var(--lw-border);
   text-align: center;
+  transition: border-color 0.14s ease, transform 0.14s ease;
 }
+
+.achievement-card__stat:hover {
+  border-color: color-mix(in srgb, var(--lw-border) 65%, var(--lw-amber) 35%);
+  transform: translateY(-1px);
+}
+
+.achievement-card__stat-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  margin-bottom: 6px;
+  color: var(--lw-amber);
+  background: color-mix(in srgb, var(--lw-amber) 14%, transparent);
+}
+
+.achievement-card__stat-icon svg { width: 13px; height: 13px; }
 
 .achievement-card__stat strong {
   display: block;
@@ -5913,9 +5987,126 @@ html[data-show-home-stats="0"] #view-home .lw-stat-grid.lwx-stat-grid-5 {
   padding: 6px 6px 8px;
 }
 
+/* ---- Light status history: redesigned shell with its own header
+   strip (icon + caption + a live pulse chip) instead of a bare list
+   dropped straight into a plain panel. Only the wrapper/header is
+   new — #recentReportsList and everything JS renders inside it keep
+   their existing classes untouched. ---- */
+#view-home .lw-section--history .lw-section__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+#view-home .lw-section--history .lw-section__title::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  background: var(--lw-teal, var(--teal));
+  box-shadow: 0 0 9px var(--lw-teal, var(--teal));
+}
+
+.lw-community-card--history {
+  position: relative;
+  overflow: hidden;
+}
+
+.lw-community-card--history::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--teal), var(--brand2, #4A90D9), transparent);
+  opacity: 0.7;
+}
+
+.lw-community-card__head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 13px 14px 11px;
+  border-bottom: 1px solid var(--lw-border);
+}
+
+.lw-community-card__icon {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--teal) 14%, var(--lw-panel));
+  color: var(--teal);
+}
+
+.lw-community-card__icon svg { width: 15px; height: 15px; }
+
+.lw-community-card__label {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--lw-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lw-community-card__live {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--lw-green, var(--teal));
+  background: color-mix(in srgb, var(--lw-green, var(--teal)) 14%, transparent);
+  border-radius: 999px;
+  padding: 3px 8px 3px 6px;
+}
+
+.lw-community-card__live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  display: inline-block;
+  animation: communityPulse 1.6s ease-in-out infinite;
+}
+
+@media (max-width: 480px) {
+  .lw-community-card__label { font-size: 0.76rem; }
+  .lw-community-card__live { display: none; }
+}
+
 /* ---- "More insights" bonus section (item 10): folds the old
    reliability meter, hero-mini-card and today's timeline / nearby
-   list into one place instead of deleting real bound data. ---- */
+   list into one place instead of deleting real bound data. Redesigned
+   from one flat gray panel into distinct tiles with their own icon
+   accents so each metric reads as its own graphic, not a text list. ---- */
+#view-home .lw-section--insights .lw-section__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+#view-home .lw-section--insights .lw-section__title::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  background: var(--brand2, #4A90D9);
+  box-shadow: 0 0 9px var(--brand2, #4A90D9);
+}
+
 .lw-more-insights {
   background: var(--lw-panel);
   border: 1px solid var(--lw-border);
@@ -5924,6 +6115,116 @@ html[data-show-home-stats="0"] #view-home .lw-stat-grid.lwx-stat-grid-5 {
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.lw-insight-tile--reliability {
+  padding: 14px 15px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--teal) 6%, var(--lw-panel-raised, var(--lw-panel)));
+  border: 1px solid color-mix(in srgb, var(--lw-border) 70%, var(--teal) 30%);
+}
+
+.reliability-meter__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.reliability-meter__icon {
+  display: inline-flex;
+  width: 16px;
+  height: 16px;
+  color: var(--teal);
+  flex: 0 0 auto;
+}
+
+.reliability-meter__icon svg { width: 100%; height: 100%; }
+
+.reliability-meter__track {
+  position: relative;
+}
+
+.reliability-meter__fill {
+  background: linear-gradient(90deg, var(--teal), var(--brand2, #4A90D9));
+  box-shadow: 0 0 10px color-mix(in srgb, var(--teal) 55%, transparent);
+  position: relative;
+  overflow: hidden;
+}
+
+.reliability-meter__fill::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    115deg,
+    rgba(255, 255, 255, 0.22) 0 6px,
+    transparent 6px 14px
+  );
+  animation: reliabilityStripe 2.4s linear infinite;
+}
+
+@keyframes reliabilityStripe {
+  from { transform: translateX(-14px); }
+  to { transform: translateX(0); }
+}
+
+/* Icon badges for the pulse-section titles (Today's activity / Nearby) */
+.pulse-section__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.pulse-section__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 7px;
+  color: var(--brand2, #4A90D9);
+  background: color-mix(in srgb, var(--brand2, #4A90D9) 14%, transparent);
+  flex: 0 0 auto;
+}
+
+.pulse-section__icon svg { width: 12px; height: 12px; }
+
+/* Timeline dots get a stronger glow + the most recent entry pulses,
+   so the log reads as "live" rather than a flat bullet list. */
+.status-timeline__item:first-child .status-timeline__dot {
+  animation: communityPulse 1.8s ease-in-out infinite;
+}
+
+.status-timeline__dot {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--teal) 22%, transparent), 0 0 8px color-mix(in srgb, var(--teal) 45%, transparent);
+}
+
+.status-timeline__item--off .status-timeline__dot {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--red) 22%, transparent), 0 0 8px color-mix(in srgb, var(--red) 45%, transparent);
+}
+
+/* Nearby mini-cards: subtle lift + accent bar so they read as tappable
+   status tiles instead of plain bordered boxes. */
+.nearby-item {
+  position: relative;
+  padding-left: 14px;
+  overflow: hidden;
+  transition: transform 0.14s ease, border-color 0.14s ease, background 0.14s ease;
+}
+
+.nearby-item::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--teal);
+}
+
+.nearby-item:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--lw-border) 70%, var(--teal) 30%);
 }
 
 /* ============================================================
