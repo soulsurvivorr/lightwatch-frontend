@@ -171,8 +171,8 @@
     }
 
     const NEWS_CACHE_KEY = 'lw_cache_news_feed';
-    const NEWS_CACHE_MAX_AGE_MS = 1 * 60 * 1000;   // 1 min — refresh quickly to show fresh articles
-    const NEWS_POLL_INTERVAL_MS = 2 * 60 * 1000;   // poll every 2 min while tab is open for faster updates
+    const NEWS_CACHE_MAX_AGE_MS = 30 * 1000;   // 30 sec — refresh frequently to show latest articles
+    const NEWS_POLL_INTERVAL_MS = 60 * 1000;   // poll every 1 min while tab is open for fresh updates
 
     let newsPollTimer = null;
     let newsLoadedOnce = false;

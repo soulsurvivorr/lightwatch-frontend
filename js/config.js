@@ -3,7 +3,7 @@
 // ============================================================
 
 // Production backend URL - used by all platforms (Web & Android)
-const API_URL = "https://lightwatch-backend-lightwatch-backend.up.railway.app";
+const API_URL = "https://lightwatch-backend-1yko.onrender.com";
 
 // Expose the configured backend URL on window as a compatibility shim
 // for older scripts that still read window.API_URL directly.

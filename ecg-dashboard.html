@@ -514,7 +514,7 @@
 const API = (typeof window.API_URL === "string" && window.API_URL)
   || ((location.protocol === "file:" || location.hostname === "localhost" || location.hostname === "127.0.0.1")
     ? "http://localhost:3000"
-    : "https://lightwatch-backend-lightwatch-backend.up.railway.app");
+    : "https://lightwatch-backend-1yko.onrender.com");
 
 const TK = "lw_ecg_tk";
 function getToken() { return sessionStorage.getItem(TK); }
