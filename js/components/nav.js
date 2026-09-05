@@ -536,7 +536,7 @@ updateTopbarVisibility();
                 return;
             }
 
-            const response = await fetch('/locations/map');
+            const response = await fetch(`${API_URL}/locations/map`);
             if (!response.ok) {
                 renderMapBadge(0);
                 return;
