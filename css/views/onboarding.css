@@ -122,8 +122,8 @@ body.lw-onboarding-open {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--amber-dim, var(--onb-amber-dim));
-  color: var(--brand, var(--onb-amber));
+  background: linear-gradient(135deg, #583714 0%, #ffeb97 100%);
+  color: #ffeb97;
   margin-bottom: 4px;
 }
 
@@ -139,8 +139,8 @@ body.lw-onboarding-open {
 }
 
 .onboarding-slide--location .onboarding-slide__icon {
-  background: var(--teal-dim, var(--onb-teal-dim));
-  color: var(--teal, var(--onb-teal));
+  background: linear-gradient(135deg, #583714 0%, #ffeb97 100%);
+  color: #ffeb97;
 }
 
 .onboarding-slide h2 {
@@ -191,7 +191,7 @@ body.lw-onboarding-open {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--teal);
+  background: #ffeb97;
   margin-top: 6px;
   flex-shrink: 0;
 }
@@ -247,13 +247,13 @@ body.lw-onboarding-open {
 
 .onboarding-next.btn.btn--primary {
   min-width: 108px;
-  background: linear-gradient(180deg, #f2b33d 0%, #dc9a2e 100%);
+  background: linear-gradient(135deg, #583714 0%, #ffeb97 100%);
   color: #241a06;
   border-color: transparent;
 }
 
 .onboarding-next.btn.btn--primary:hover {
-  background: linear-gradient(180deg, #f7bf58 0%, #e3a439 100%);
+  background: linear-gradient(135deg, #6b451b 0%, #fff0ae 100%);
   color: #241a06;
   opacity: 1;
 }
